@@ -423,7 +423,12 @@ class IndexService:
             payload: dict[str, Any] = {"error": error, "exchange": None, "metadata": None}
             now = utcnow()
             if entry is not None:
-                entry.next_check_at = next_check(now, check.interval)
+                # A check skipped by the rate limit counts from the retrieval that
+                # caused the skip, not from now.
+                base = (
+                    entry.last_retrieval_at if result is None and entry.last_retrieval_at else now
+                )
+                entry.next_check_at = next_check(base, check.interval)
             if result is not None and entry is not None:
                 previous = entry.state
                 payload["exchange"] = result.exchange

@@ -172,6 +172,20 @@ async def test_a_running_check_is_not_started_twice(services: Services) -> None:
     assert count == 3
 
 
+async def test_a_rate_limited_check_counts_from_the_last_retrieval(services: Services) -> None:
+    await ping(services)
+    retrieved = (await _entry(services)).last_retrieval_at
+    assert retrieved is not None
+    await _make_due(services, retrieved_ago=timedelta(minutes=2))  # inside the 10 min limit
+    await _check(services)
+    entry = await _entry(services)
+    events, _ = await services.index.events(entry.uuid, limit=1)
+    assert events[0].payload["healthCheck"]["error"] == "Rate limit reached (skipping)"
+    assert entry.next_check_at is not None and entry.last_retrieval_at is not None
+    delay = entry.next_check_at - entry.last_retrieval_at
+    assert timedelta(hours=21) < delay < timedelta(hours=27)
+
+
 async def test_rejected_entries_are_not_checked_by_default(services: Services) -> None:
     await ping(services)
     entry = await _entry(services)

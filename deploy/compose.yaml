@@ -50,7 +50,9 @@ services:
       FDPINDEX_API_UPSTREAM: http://server:8000
       FDPINDEX_PUBLIC_ORIGIN: ${FDPINDEX_PUBLIC_ORIGIN:-}
     ports:
-      - "${FDPINDEX_PORT:-8090}:80"
+      # Loopback by default; set FDPINDEX_BIND=0.0.0.0 (or put a reverse proxy in
+      # front) for FDPs on other hosts to reach the index.
+      - "${FDPINDEX_BIND:-127.0.0.1}:${FDPINDEX_PORT:-8090}:80"
     depends_on:
       - server
     restart: unless-stopped

@@ -15,7 +15,7 @@ from testcontainers.community.postgres import PostgresContainer
 from fdpindex.cli import alembic_config
 from fdpindex.db import make_engine, make_session_factory
 from fdpindex.jobs import JobRunner
-from fdpindex.models import EntryState, Event, EventType, HarvestedNode, IndexEntry
+from fdpindex.models import EntryPermit, EntryState, Event, EventType, HarvestedNode, IndexEntry
 from fdpindex.outbound import OutboundClient
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
@@ -121,6 +121,12 @@ async def test_concurrent_pings_retrievals_harvests_and_webhooks(
     assert deliveries == 24
     events = sorted(json.loads(call.content)["event"] for call in network.webhook_calls)
     assert events.count("EntryValid") == 8
+
+    # Search reads the title out of the JSONB metadata on PostgreSQL.
+    found = await service.list_entries(permits=list(EntryPermit), query="FDP3")
+    assert [entry.client_url for entry in found.items] == ["https://fdp3.example.org"]
+    counts = await service.counts(list(EntryPermit))
+    assert counts["ACTIVE"] == 8
 
 
 async def test_simultaneous_first_pings_for_one_url_make_one_entry(

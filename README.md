@@ -79,6 +79,18 @@ Rate limits, durations, the deny list, auto-permit and the liveness checks
 (interval, failure threshold, which permits) are index settings, changed at
 runtime under `/index/settings` or on the Settings page.
 
+## Moving from a Java FAIR Data Point's index
+
+```bash
+fdpindex import-java postgresql://fdp:…@old-host:5432/fdp --dry-run
+fdpindex import-java postgresql://fdp:…@old-host:5432/fdp
+```
+
+Entries (with their identifiers), the event log, settings and webhooks come
+across; harvested metadata is fetched again by the liveness checks. Then
+point the old index's address at this one, or ask FDPs to ping the new
+address, and switch `FDP_INDEX` off on the Java FDP.
+
 ## Development
 
 ```bash

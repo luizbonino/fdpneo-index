@@ -1,0 +1,79 @@
+# FDP Index CI: the same gates as locally. Prepared while the repository is
+# local only (TASKS 0.8); it runs once the repository is on GitHub.
+# Integration tests need Docker (testcontainers) and run on pushes to main only,
+# to keep Actions minutes down.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Every commit is signed off
+        run: |
+          missing=$(git log --format='%H %(trailers:key=Signed-off-by,valueonly)' \
+            ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+            | awk 'NF < 2 {print $1}')
+          if [ -n "$missing" ]; then echo "Missing Signed-off-by: $missing"; exit 1; fi
+
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv sync --frozen --extra dev
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pyright
+      - run: uv run pytest -m unit
+      - name: pip-audit
+        run: uv run --with pip-audit pip-audit --skip-editable
+
+  server-integration:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv sync --frozen --extra dev
+      - run: uv run pytest -m integration
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint && npm run format:check
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm audit --omit=dev

@@ -22,7 +22,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 - [x] 0.5 ADR-0004 active liveness checks (proposed; implemented in Phase 4)
 - [x] 0.6 Server tooling: uv, ruff, pyright strict, pytest (unit with SQLite, integration with testcontainers)
 - [x] 0.7 Client tooling: Vite, Vue 3, TypeScript, ESLint, Prettier, Vitest
-- [ ] 0.8 CI workflows prepared (`.github/workflows`), enabled once the GitHub repository exists
+- [x] 0.8 CI workflows prepared (`.github/workflows`); they run once the GitHub repository exists
 
 ## Phase 1 — Server: port of the reference index
 
@@ -53,7 +53,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 - [x] 3.1 Server image (uv, non-root, migrations on start); client image (static, runtime config)
 - [~] 3.2 Compose stack: PostgreSQL, server, client; optional Keycloak profile (stack done, Keycloak profile open)
 - [~] 3.3 Operator documentation: configuration reference, reverse proxy (client IP for rate limiting), backup (configuration in README; backup open)
-- [ ] 3.4 Importer: entries, events, settings and webhooks from a Java FAIR Data Point database (index tables)
+- [x] 3.4 Importer: entries, events, settings and webhooks from a Java FAIR Data Point database (index tables)
 - [ ] 3.5 Release process (tag-driven, signed multi-arch images, release metadata) once the GitHub repository exists
 
 ## Phase 4 — Active liveness checks (new)

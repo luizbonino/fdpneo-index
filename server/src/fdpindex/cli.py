@@ -84,3 +84,42 @@ def openapi(output: str = typer.Argument("-", help="File to write, or - for stdo
         typer.echo(text, nl=False)
     else:
         Path(output).write_text(text, encoding="utf-8")
+
+
+@app.command("import-java")
+def import_java_command(
+    source: str = typer.Argument(
+        ..., help="Database URL of the Java FDP, e.g. postgresql://fdp:…@host/fdp"
+    ),
+    events: bool = typer.Option(True, help="Import the event log too"),
+    dry_run: bool = typer.Option(False, help="Read and validate everything, write nothing"),
+) -> None:
+    """Import entries, events, settings and webhooks from a Java FAIR Data Point's index."""
+    import asyncio
+
+    from fdpindex.config import get_settings
+    from fdpindex.db import make_engine, make_session_factory
+    from fdpindex.importer import async_url, import_java
+
+    settings = get_settings()
+
+    async def run() -> None:
+        engine = make_engine(settings.database_url)
+        try:
+            report = await import_java(
+                async_url(source),
+                make_session_factory(engine),
+                events=events,
+                dry_run=dry_run,
+                auto_permit_default=settings.auto_permit,
+            )
+        finally:
+            await engine.dispose()
+        prefix = "would import" if dry_run else "imported"
+        typer.echo(
+            f"{prefix}: {report.entries} entries ({report.entries_skipped} already present), "
+            f"{report.events} events ({report.events_closed} unfinished, now closed), "
+            f"{report.webhooks} webhooks, settings: {'yes' if report.settings else 'no'}"
+        )
+
+    asyncio.run(run())

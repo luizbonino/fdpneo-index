@@ -9,7 +9,14 @@ export default defineConfigWithVueTs(
   },
   {
     name: "app/files-to-ignore",
-    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "src/api/schema.ts"],
+    ignores: [
+      "**/dist/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+      "src/api/schema.ts",
+      "tests/e2e/**",
+      "playwright.config.ts",
+    ],
   },
   ...pluginVue.configs["flat/recommended"],
   vueTsConfigs.recommendedTypeChecked,

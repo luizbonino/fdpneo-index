@@ -46,7 +46,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 - [x] 2.2 Directory: state summary, searchable / filterable / sortable table, entry detail (metadata card, event timeline, harvested data preview and download)
 - [x] 2.3 Administration: approval queue with bulk accept / reject, entry actions (check now, delete), settings with human-readable durations, deny-list editor with a live URL test, webhooks with a test delivery
 - [x] 2.4 Accessibility (keyboard, focus, contrast), responsive layout, empty and error states
-- [~] 2.5 Tests: unit (Vitest) and an end-to-end smoke test (Playwright) (unit done; the e2e smoke ran by hand, not yet committed)
+- [x] 2.5 Tests: unit (Vitest) and an end-to-end smoke test (Playwright, `npm run test:e2e` against a running stack)
 
 ## Phase 3 — Packaging and operations
 

@@ -61,11 +61,11 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 Instead of only waiting for each FDP's periodic ping, the index checks
 registered FDPs itself. See [ADR-0004](docs/adr/0004-active-liveness-checks.md).
 
-- [ ] 4.1 ADR-0004 accepted (settle the open questions)
-- [ ] 4.2 Scheduler: periodic sweep, per-entry due time with jitter, bounded concurrency, respects the retrieval rate limit
-- [ ] 4.3 `HealthCheck` events; consecutive-failure threshold before an entry becomes Unreachable; webhooks only on state transitions
-- [ ] 4.4 Settings: enabled, interval, failure threshold, permits checked, re-harvest when the metadata changed
-- [ ] 4.5 UI: last check, liveness history, "check now"
+- [x] 4.1 ADR-0004 accepted (settle the open questions)
+- [x] 4.2 Scheduler: periodic sweep, per-entry due time with jitter, bounded concurrency, respects the retrieval rate limit
+- [x] 4.3 `HealthCheck` events; consecutive-failure threshold before an entry becomes Unreachable; webhooks only on state transitions
+- [x] 4.4 Settings: enabled, interval, failure threshold, permits checked, re-harvest when the metadata changed
+- [x] 4.5 UI: last check, liveness history, "check now"
 - [ ] 4.6 Optional policy for entries unreachable for a long time (notify, or hide from the public list)
 
 ## Phase 5 — Separation from the FAIR Data Point

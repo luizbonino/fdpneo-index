@@ -29,6 +29,7 @@ from fdpindex.api.schemas import (
     EventPageView,
     EventView,
     HarvestView,
+    HealthView,
     PingRequest,
     RepositoryMetadataView,
     ServiceInfo,
@@ -241,6 +242,11 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
         modification_time=instant(entry.updated_at) or "",
         last_retrieval_time=instant(entry.last_retrieval_at),
         harvest=HarvestView(nodes=nodes, harvested_at=instant(harvested_at)),
+        health=HealthView(
+            next_check_time=instant(entry.next_check_at),
+            last_success_time=instant(entry.last_success_at),
+            consecutive_failures=entry.consecutive_failures,
+        ),
     )
 
 

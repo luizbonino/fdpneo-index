@@ -140,3 +140,39 @@ async def test_simultaneous_first_pings_for_one_url_make_one_entry(
     async with factory() as session:  # type: ignore[operator]
         count = await session.scalar(select(func.count()).select_from(IndexEntry))
     assert count == 1
+
+
+async def test_concurrent_sweeps_claim_each_due_entry_once(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    from fdpindex.db import utcnow
+
+    service, jobs, network, extra = index
+    factory, _ = extra  # type: ignore[misc]
+    urls = [f"https://due{i}.example.org" for i in range(6)]
+    for url in urls:
+        network.serve(url, f"<{url}> a <https://w3id.org/fdp/fdp-o#MetadataService> .")
+        outcome = await service.accept_ping(
+            url, remote_addr="203.0.113.50", method="POST", path="/", headers={}, body="{}"
+        )
+        service.after_trigger(outcome.event_id)
+    await jobs.drain()
+    async with factory() as session, session.begin():  # type: ignore[operator]
+        await session.execute(
+            update(IndexEntry).values(
+                next_check_at=utcnow() - timedelta(minutes=1),
+                last_retrieval_at=utcnow() - timedelta(hours=2),
+            )
+        )
+    started = await asyncio.gather(*(service.schedule_due_checks() for _ in range(3)))
+    assert sum(started) == 6
+    await jobs.drain()
+    async with factory() as session:  # type: ignore[operator]
+        checks = await session.scalar(
+            select(func.count()).select_from(Event).where(Event.type == EventType.HEALTH_CHECK)
+        )
+    assert checks == 6

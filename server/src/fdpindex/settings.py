@@ -6,6 +6,11 @@ shape is the reference's ``IndexSettingsDTO``: ``retrieval``
 ``rateLimitDuration``, ``rateLimitHits``, ``denyList``), ``autoPermit`` and
 ``isDefault``. As in the reference, ``isDefault`` compares retrieval and
 ping settings only, not ``autoPermit``.
+
+Addition: ``healthCheck`` configures the scheduled liveness checks of
+ADR-0004 (``enabled``, ``interval``, ``failureThreshold``, ``permits``,
+``reharvestOnChange``). Stored settings without it take its defaults, and it
+counts towards ``isDefault``.
 """
 
 from __future__ import annotations
@@ -25,7 +30,7 @@ from pydantic import (
 
 from fdpindex.db import utcnow
 from fdpindex.durations import format_duration, parse_duration
-from fdpindex.models import IndexSettingsRow
+from fdpindex.models import EntryPermit, IndexSettingsRow
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -47,7 +52,10 @@ Duration = Annotated[
 
 
 class _Camel(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+    # Responses always carry every field, so the output schema lists them as required.
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
 
 class RetrievalSettings(_Camel):
@@ -95,13 +103,40 @@ class PingSettings(_Camel):
         return patterns
 
 
+class HealthCheckSettings(_Camel):
+    enabled: bool = True
+    interval: Duration = timedelta(hours=24)
+    failure_threshold: int = Field(default=3, alias="failureThreshold", ge=1, le=100)
+    permits: list[EntryPermit] = Field(default_factory=lambda: [EntryPermit.ACCEPTED])
+    reharvest_on_change: bool = Field(default=True, alias="reharvestOnChange")
+
+    @field_validator("interval")
+    @classmethod
+    def _at_least_a_minute(cls, value: timedelta) -> timedelta:
+        if value < timedelta(minutes=1):
+            raise ValueError("must be at least one minute")
+        return value
+
+    @field_validator("permits")
+    @classmethod
+    def _unique(cls, value: list[EntryPermit]) -> list[EntryPermit]:
+        return [permit for permit in EntryPermit if permit in value]
+
+
 class IndexSettings(_Camel):
     retrieval: RetrievalSettings
     ping: PingSettings
     auto_permit: bool = Field(alias="autoPermit")
+    health_check: HealthCheckSettings = Field(
+        default_factory=HealthCheckSettings, alias="healthCheck"
+    )
 
     def matches_defaults(self, defaults: IndexSettings) -> bool:
-        return self.retrieval == defaults.retrieval and self.ping == defaults.ping
+        return (
+            self.retrieval == defaults.retrieval
+            and self.ping == defaults.ping
+            and self.health_check == defaults.health_check
+        )
 
     def denies(self, client_url: str) -> bool:
         """Whether ``client_url`` matches a deny-list pattern (whole-string match, as Java's)."""
@@ -167,5 +202,6 @@ class SettingsService:
             retrieval=settings.retrieval,
             ping=settings.ping,
             autoPermit=settings.auto_permit,
+            healthCheck=settings.health_check,
             isDefault=settings.matches_defaults(self.defaults()),
         )

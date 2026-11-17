@@ -18,7 +18,9 @@ SNAPSHOT = Path(__file__).resolve().parents[1] / "openapi.json"
 def test_openapi_snapshot_is_current() -> None:
     current = create_app(Settings(), configure_logs=False).openapi()
     committed = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    assert current == committed, "run `uv run fdpindex openapi openapi.json` and regenerate client types"
+    assert current == committed, (
+        "run `uv run fdpindex openapi openapi.json` and regenerate client types"
+    )
 
 
 def test_reference_paths_are_served() -> None:

@@ -5,7 +5,8 @@ Matching and delivery follow the reference's ``WebhookService``:
 * An index event maps to webhook events: ``AdminTrigger``; ``IncomingPing``
   (plus ``NewEntry`` for a first ping); ``MetadataRetrieval`` to
   ``EntryValid`` / ``EntryInvalid`` / ``EntryUnreachable`` by the entry's
-  state; ``WebhookPing``.
+  state; ``WebhookPing``. A scheduled ``HealthCheck`` (ADR-0004) maps like a
+  retrieval, but only when it changed the entry's state.
 * A webhook matches when it is enabled, takes all events or that event, and
   takes all entries or the event's entry (events without an entry match).
 * Each delivery is a ``WebhookTrigger`` event with the recorded exchange.
@@ -69,6 +70,17 @@ def webhook_events_for(event: Event, entry: IndexEntry | None) -> list[WebhookEv
             return [mapping[state]] if state is not None and state in mapping else []
         case EventType.WEBHOOK_PING:
             return [WebhookEvent.WEBHOOK_PING]
+        case EventType.HEALTH_CHECK:
+            # Scheduled checks notify on state transitions only (ADR-0004).
+            if not (event.payload.get("healthCheck") or {}).get("stateChanged"):
+                return []
+            state = entry.state if entry is not None else None
+            mapping = {
+                EntryState.VALID: WebhookEvent.ENTRY_VALID,
+                EntryState.INVALID: WebhookEvent.ENTRY_INVALID,
+                EntryState.UNREACHABLE: WebhookEvent.ENTRY_UNREACHABLE,
+            }
+            return [mapping[state]] if state is not None and state in mapping else []
         case _:
             return []
 

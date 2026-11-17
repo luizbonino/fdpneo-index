@@ -45,6 +45,10 @@ class Settings(BaseSettings):
 
     # --- background work -------------------------------------------------------
     worker_concurrency: int = Field(default=4, gt=0)
+    # Liveness checks (ADR-0004): how often to look for due checks, and how many to
+    # start per sweep. Whether checks run, and their interval, are index settings.
+    health_sweep_seconds: float = Field(default=60, gt=0)
+    health_batch: int = Field(default=100, gt=0)
     # Recorded HTTP bodies are cut at this size so the event log stays bounded.
     event_body_max_chars: int = Field(default=65536, ge=0)
 

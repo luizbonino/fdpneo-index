@@ -8,7 +8,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueryClient } from "@tanstack/vue-query";
-import { api, type Settings, type SettingsUpdate } from "@/api";
+import { PERMITS, api, type Settings, type SettingsUpdate } from "@/api";
 import { ApiError } from "@/api/client";
 import { keys, useSettings } from "@/composables/queries";
 import { confirm, toast } from "@/composables/feedback";
@@ -18,10 +18,20 @@ const { t } = useI18n();
 const client = useQueryClient();
 const settings = useSettings();
 
-const form = reactive<SettingsUpdate>({
+// The response shape minus isDefault: every group present, unlike the request type.
+type SettingsForm = Omit<Settings, "isDefault">;
+
+const form = reactive<SettingsForm>({
   autoPermit: true,
   ping: { validDuration: "PT168H", rateLimitDuration: "PT6H", rateLimitHits: 10, denyList: [] },
   retrieval: { rateLimitWait: "PT10M", timeout: "PT1M" },
+  healthCheck: {
+    enabled: true,
+    interval: "PT24H",
+    failureThreshold: 3,
+    permits: ["ACCEPTED"],
+    reharvestOnChange: true,
+  },
 });
 const errors = ref<Record<string, string>>({});
 const saving = ref(false);
@@ -30,6 +40,7 @@ function load(value: Settings) {
   form.autoPermit = value.autoPermit;
   form.ping = { ...value.ping, denyList: [...value.ping.denyList] };
   form.retrieval = { ...value.retrieval };
+  form.healthCheck = { ...value.healthCheck, permits: [...value.healthCheck.permits] };
 }
 watch(
   () => settings.data.value,
@@ -183,6 +194,53 @@ function fieldError(path: string): string | undefined {
       </section>
 
       <section class="card stack">
+        <h2>{{ t("settings.health") }}</h2>
+        <p class="muted small">{{ t("settings.healthLead") }}</p>
+        <label class="check">
+          <input v-model="form.healthCheck.enabled" type="checkbox" />
+          {{ t("settings.healthEnabled") }}
+        </label>
+        <fieldset class="stack plain" :disabled="!form.healthCheck.enabled">
+          <div class="field">
+            <label for="health-interval">{{ t("settings.healthInterval") }}</label>
+            <DurationInput
+              id="health-interval"
+              v-model="form.healthCheck.interval"
+              :units="['minutes', 'hours', 'days']"
+            />
+          </div>
+          <div class="field">
+            <label for="health-threshold">{{ t("settings.healthThreshold") }}</label>
+            <div class="row">
+              <input
+                id="health-threshold"
+                v-model.number="form.healthCheck.failureThreshold"
+                class="input hits"
+                type="number"
+                min="1"
+                max="100"
+              />
+              <span class="muted">{{ t("settings.healthThresholdSuffix") }}</span>
+            </div>
+            <span class="help">{{ t("settings.healthThresholdHelp") }}</span>
+          </div>
+          <div class="field">
+            <span class="label">{{ t("settings.healthPermits") }}</span>
+            <div class="row">
+              <label v-for="permit in PERMITS" :key="permit" class="check">
+                <input v-model="form.healthCheck.permits" type="checkbox" :value="permit" />
+                {{ t(`permit.${permit}`) }}
+              </label>
+            </div>
+          </div>
+          <label class="check">
+            <input v-model="form.healthCheck.reharvestOnChange" type="checkbox" />
+            {{ t("settings.healthReharvest") }}
+          </label>
+        </fieldset>
+      </section>
+
+      <section class="card stack">
         <h2>{{ t("settings.denyList") }}</h2>
         <p class="muted small">{{ t("settings.denyListHelp") }}</p>
         <div v-for="(_, index) in form.ping.denyList" :key="index" class="pattern">
@@ -244,6 +302,11 @@ function fieldError(path: string): string | undefined {
 }
 .hits {
   width: 90px;
+}
+.plain {
+  border: 0;
+  padding: 0;
+  margin: 0;
 }
 .pattern {
   display: grid;

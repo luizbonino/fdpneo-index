@@ -72,6 +72,13 @@ def test_default_settings_serialise_like_the_reference() -> None:
             "denyList": ["^(http|https)://localhost(:[0-9]+){0,1}.*$"],
         },
         "autoPermit": True,
+        "healthCheck": {
+            "enabled": True,
+            "interval": "PT24H",
+            "failureThreshold": 3,
+            "permits": ["ACCEPTED"],
+            "reharvestOnChange": True,
+        },
     }
 
 

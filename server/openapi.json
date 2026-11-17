@@ -50,6 +50,16 @@
               }
             ]
           },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "lastRetrievalTime": {
             "anyOf": [
               {
@@ -451,12 +461,133 @@
         "title": "HarvestView",
         "type": "object"
       },
+      "HealthCheckSettings-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "failureThreshold": {
+            "default": 3,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Failurethreshold",
+            "type": "integer"
+          },
+          "interval": {
+            "default": "P1D",
+            "format": "duration",
+            "title": "Interval",
+            "type": "string"
+          },
+          "permits": {
+            "items": {
+              "$ref": "#/components/schemas/EntryPermit"
+            },
+            "title": "Permits",
+            "type": "array"
+          },
+          "reharvestOnChange": {
+            "default": true,
+            "title": "Reharvestonchange",
+            "type": "boolean"
+          }
+        },
+        "title": "HealthCheckSettings",
+        "type": "object"
+      },
+      "HealthCheckSettings-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "failureThreshold": {
+            "default": 3,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Failurethreshold",
+            "type": "integer"
+          },
+          "interval": {
+            "default": "PT24H",
+            "title": "Interval",
+            "type": "string"
+          },
+          "permits": {
+            "items": {
+              "$ref": "#/components/schemas/EntryPermit"
+            },
+            "title": "Permits",
+            "type": "array"
+          },
+          "reharvestOnChange": {
+            "default": true,
+            "title": "Reharvestonchange",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "interval",
+          "failureThreshold",
+          "permits",
+          "reharvestOnChange"
+        ],
+        "title": "HealthCheckSettings",
+        "type": "object"
+      },
+      "HealthView": {
+        "description": "Liveness-check state of an entry (addition, ADR-0004).",
+        "properties": {
+          "consecutiveFailures": {
+            "title": "Consecutivefailures",
+            "type": "integer"
+          },
+          "lastSuccessTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastsuccesstime"
+          },
+          "nextCheckTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextchecktime"
+          }
+        },
+        "required": [
+          "nextCheckTime",
+          "lastSuccessTime",
+          "consecutiveFailures"
+        ],
+        "title": "HealthView",
+        "type": "object"
+      },
       "IndexSettings": {
         "additionalProperties": false,
         "properties": {
           "autoPermit": {
             "title": "Autopermit",
             "type": "boolean"
+          },
+          "healthCheck": {
+            "$ref": "#/components/schemas/HealthCheckSettings-Input"
           },
           "ping": {
             "$ref": "#/components/schemas/PingSettings-Input"
@@ -480,6 +611,9 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "healthCheck": {
+            "$ref": "#/components/schemas/HealthCheckSettings-Output"
+          },
           "isDefault": {
             "title": "Isdefault",
             "type": "boolean"
@@ -495,6 +629,7 @@
           "retrieval",
           "ping",
           "autoPermit",
+          "healthCheck",
           "isDefault"
         ],
         "title": "IndexSettingsView",

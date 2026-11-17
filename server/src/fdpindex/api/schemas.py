@@ -145,6 +145,14 @@ class HarvestView(_Api):
     harvested_at: str | None = Field(serialization_alias="harvestedAt")
 
 
+class HealthView(_Api):
+    """Liveness-check state of an entry (addition, ADR-0004)."""
+
+    next_check_time: str | None = Field(serialization_alias="nextCheckTime")
+    last_success_time: str | None = Field(serialization_alias="lastSuccessTime")
+    consecutive_failures: int = Field(serialization_alias="consecutiveFailures")
+
+
 class EntryDetailView(_Api):
     uuid: str
     client_url: str = Field(serialization_alias="clientUrl")
@@ -157,6 +165,7 @@ class EntryDetailView(_Api):
     last_retrieval_time: str | None = Field(serialization_alias="lastRetrievalTime")
     # additions
     harvest: HarvestView | None = None
+    health: HealthView | None = None
 
 
 class EntryUpdateRequest(BaseModel):
@@ -258,5 +267,16 @@ def event_outcome(event: Event) -> str | None:
         case "AdminTrigger":
             trigger = payload.get("adminTrigger") or {}
             return f"Triggered by {trigger.get('tokenName') or 'admin'}"
+        case "HealthCheck":
+            check = payload.get("healthCheck") or {}
+            if check.get("error"):
+                failures = check.get("consecutiveFailures")
+                suffix = f" (failure {failures} in a row)" if failures else ""
+                return f"{check['error']}{suffix}"
+            if check.get("notModified"):
+                return "Reachable, unchanged"
+            if check.get("metadataChanged"):
+                return "Reachable, metadata changed"
+            return "Reachable" if check.get("exchange") else None
         case _:
             return None

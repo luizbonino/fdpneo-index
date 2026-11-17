@@ -1,6 +1,6 @@
 # ADR-0004: The index checks registered FDPs itself
 
-- Status: proposed
+- Status: accepted (implemented with the proposed defaults; open questions below remain open)
 - Date: 2026-11-17
 
 ## Context
@@ -13,14 +13,17 @@ on its outbound traffic) drifts to `INACTIVE` although it is up; an FDP that
 goes down between pings stays `ACTIVE` until the valid duration lapses.
 Directory users cannot tell the two apart.
 
-## Decision (proposed)
+## Decision
 
 The index runs a scheduled **liveness check** of registered entries, in
 addition to ping-triggered retrievals:
 
-- A sweep runs every minute and picks entries whose next check is due. Each
-  entry's next check is its last retrieval plus the check interval
-  (default 24 hours), with random jitter so checks spread out.
+- A sweep runs every minute (`FDPINDEX_HEALTH_SWEEP_SECONDS`) and starts a
+  check for each entry whose next check is due, up to `FDPINDEX_HEALTH_BATCH`
+  per sweep. Every retrieval, scheduled or ping-triggered, sets the next check
+  to now plus the check interval (default 24 hours), ±10% jitter. Entries
+  with a check already running are skipped, and rows are claimed with
+  `FOR UPDATE SKIP LOCKED`, so several replicas can sweep at once.
 - A check is a metadata retrieval recorded as a `HealthCheck` event; it uses
   the outbound safety rules of ADR-0002 and the retrieval rate limit.
 - An entry becomes `Unreachable` only after `failure_threshold` consecutive
@@ -28,10 +31,18 @@ addition to ping-triggered retrievals:
   retrievals keep the reference behaviour.
 - Webhooks for state changes fire on transitions only, so a long outage does
   not send a notification per check.
-- When a successful check finds changed metadata (by content hash), an
-  accepted entry is harvested again.
-- Settings (in the index settings, with defaults): enabled, interval, failure
-  threshold, concurrency, and which permits are checked (default: accepted).
+- When a successful check finds changed root metadata (SHA-256 of the
+  response), an accepted entry is harvested again. Ping-triggered retrievals
+  keep harvesting every time, as in the reference.
+- Checks send `If-None-Match` / `If-Modified-Since` when the FDP sent
+  validators; a `304` counts as reachable and unchanged.
+- Settings (in the index settings, with defaults): enabled (on), interval
+  (24 hours), failure threshold (3), which permits are checked (accepted), and
+  re-harvest on change (on). Concurrency is the worker pool's
+  (`FDPINDEX_WORKER_CONCURRENCY`).
+
+The entry API gains `health` (`nextCheckTime`, `lastSuccessTime`,
+`consecutiveFailures`); the events gain the `HealthCheck` type.
 
 ## Open questions
 
@@ -40,6 +51,7 @@ addition to ping-triggered retrievals:
   directory users expect; the label stays, its documentation changes.
 - Should entries unreachable for longer than a configurable period be hidden
   from the public list (not deleted)? Proposed: off by default.
-- Should the check use `HEAD` or a conditional `GET`? Proposed: conditional
-  `GET` with `If-None-Match` / `If-Modified-Since` when the FDP sent
-  validators; a `304` counts as success without re-parsing.
+- Change detection looks at the root metadata only; a change deeper in the
+  tree (a new dataset) is picked up by the next ping-triggered harvest, or by
+  a check when the root's modification date changes with it. A periodic full
+  re-harvest (say weekly) would close the gap.

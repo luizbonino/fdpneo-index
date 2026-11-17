@@ -50,6 +50,7 @@ def api(network: FakeNetwork) -> Iterator[Api]:
         resolver=public_resolver,
         create_tables=True,
         configure_logs=False,
+        run_scheduler=False,
     )
     with TestClient(app) as client:
         yield Api(client, app)

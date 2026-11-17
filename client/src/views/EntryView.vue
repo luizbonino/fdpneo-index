@@ -196,6 +196,22 @@ async function remove() {
             <dd :title="absoluteTime(detail.lastRetrievalTime)">
               {{ relativeTime(detail.lastRetrievalTime) }}
             </dd>
+            <template v-if="detail.health?.lastSuccessTime">
+              <dt>{{ t("entry.lastSuccess") }}</dt>
+              <dd :title="absoluteTime(detail.health.lastSuccessTime)">
+                {{ relativeTime(detail.health.lastSuccessTime) }}
+              </dd>
+            </template>
+            <template v-if="detail.health?.consecutiveFailures">
+              <dt>{{ t("entry.failures") }}</dt>
+              <dd class="failures">{{ detail.health.consecutiveFailures }}</dd>
+            </template>
+            <template v-if="detail.health?.nextCheckTime">
+              <dt>{{ t("entry.nextCheck") }}</dt>
+              <dd :title="absoluteTime(detail.health.nextCheckTime)">
+                {{ relativeTime(detail.health.nextCheckTime) }}
+              </dd>
+            </template>
           </dl>
         </section>
 
@@ -270,6 +286,10 @@ async function remove() {
 .description {
   margin-bottom: var(--fair-space-4);
   color: var(--fair-text-strong);
+}
+.failures {
+  color: var(--fair-warning);
+  font-weight: var(--fair-weight-semibold);
 }
 .timing {
   margin-top: var(--fair-space-6);

@@ -31,7 +31,11 @@ reference client works against its API (see
    was retrieved for the valid duration (7 days by default).
 4. For accepted entries it then harvests the FDP's metadata tree, served at
    `/index/entries/{uuid}/data`.
-5. Webhooks notify other systems of new entries, pings and state changes.
+5. Every day (configurable) the index also checks each accepted FDP itself,
+   so an FDP that stopped pinging stays `ACTIVE` while it answers, and one
+   that went down becomes `UNREACHABLE` after three failed checks in a row
+   ([ADR-0004](docs/adr/0004-active-liveness-checks.md)).
+6. Webhooks notify other systems of new entries, pings and state changes.
 
 Every step is recorded as an event, with the HTTP exchange it involved.
 
@@ -67,11 +71,13 @@ Every step is recorded as an event, with the HTTP exchange it involved.
 | `FDPINDEX_OUTBOUND_MAX_BYTES` | `5242880` | Largest response read |
 | `FDPINDEX_HARVEST_MAX_NODES` | `2000` | Most nodes harvested per FDP |
 | `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs |
+| `FDPINDEX_HEALTH_SWEEP_SECONDS`, `FDPINDEX_HEALTH_BATCH` | `60`, `100` | How often due liveness checks are started, and how many per sweep |
 | `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted (needed for the per-IP rate limit) |
 
-Rate limits, durations, the deny list and auto-permit are index settings,
-changed at runtime under `/index/settings`.
+Rate limits, durations, the deny list, auto-permit and the liveness checks
+(interval, failure threshold, which permits) are index settings, changed at
+runtime under `/index/settings` or on the Settings page.
 
 ## Development
 

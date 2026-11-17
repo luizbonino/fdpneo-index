@@ -18,14 +18,16 @@ Deliberate differences, all small:
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import random
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 import structlog
 from rdflib import Graph
-from sqlalchemy import ColumnElement, and_, delete, func, select
+from sqlalchemy import ColumnElement, and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from fdpindex import exchange
@@ -74,6 +76,16 @@ class Retrieval:
     error: str | None
     metadata: dict[str, Any] | None
     exchange: dict[str, Any]
+    not_modified: bool = False
+    content_hash: str | None = None
+    etag: str | None = None
+    last_modified: str | None = None
+
+
+def next_check(now: datetime, interval: timedelta) -> datetime:
+    """``now + interval``, spread by up to ±10% so checks do not bunch up."""
+    jitter = interval.total_seconds() * random.uniform(-0.1, 0.1)  # noqa: S311 - not security
+    return now + interval + timedelta(seconds=jitter)
 
 
 @dataclass
@@ -289,6 +301,7 @@ class IndexService:
             )
 
     async def run_retrieval(self, retrieval_id: UUID) -> None:
+        """Run a ``MetadataRetrieval`` (after a ping or trigger) or a ``HealthCheck`` (scheduled)."""
         settings = await self._settings.get()
         async with self._session_factory() as session:
             event = await session.get(Event, retrieval_id)
@@ -301,19 +314,42 @@ class IndexService:
                 return
             client_url = entry.client_url
             last = entry.last_retrieval_at
+            scheduled = event.type is EventType.HEALTH_CHECK
+            # Conditional requests only make sense for a check of something already valid.
+            validators = (
+                (entry.http_etag, entry.http_last_modified)
+                if scheduled and entry.state is EntryState.VALID
+                else (None, None)
+            )
         wait = settings.retrieval.rate_limit_wait
         if last is not None and utcnow() - last <= wait:
             log.info("retrieval_rate_limited", client_url=client_url)
-            await self._finish_retrieval(retrieval_id, None, error="Rate limit reached (skipping)")
+            await self._finish_retrieval(
+                retrieval_id, None, error="Rate limit reached (skipping)", settings=settings
+            )
             return
         async with self._session_factory() as session, session.begin():
             event = await session.get(Event, retrieval_id)
             if event is not None:
                 event.executed_at = utcnow()
-        result = await self.retrieve(client_url, settings)
-        await self._finish_retrieval(retrieval_id, result, error=result.error)
+        result = await self.retrieve(
+            client_url, settings, etag=validators[0], last_modified=validators[1]
+        )
+        await self._finish_retrieval(retrieval_id, result, error=result.error, settings=settings)
 
-    async def retrieve(self, client_url: str, settings: IndexSettings) -> Retrieval:
+    async def retrieve(
+        self,
+        client_url: str,
+        settings: IndexSettings,
+        *,
+        etag: str | None = None,
+        last_modified: str | None = None,
+    ) -> Retrieval:
+        headers = {"Accept": ACCEPT}
+        if etag:
+            headers["If-None-Match"] = etag
+        if last_modified:
+            headers["If-Modified-Since"] = last_modified
         response: OutboundResponse | None = None
         error: OutboundError | None = None
         try:
@@ -321,7 +357,7 @@ class IndexService:
                 "GET",
                 client_url,
                 timeout_seconds=settings.retrieval.timeout.total_seconds(),
-                headers={"Accept": ACCEPT},
+                headers=headers,
             )
         except OutboundError as err:
             error = err
@@ -336,6 +372,8 @@ class IndexService:
         if response is None:
             assert error is not None
             return Retrieval(EntryState.UNREACHABLE, error.message, None, recorded)
+        if response.status == 304 and (etag or last_modified):
+            return Retrieval(EntryState.VALID, None, None, recorded, not_modified=True)
         if response.status >= 500:
             return Retrieval(EntryState.UNREACHABLE, f"HTTP {response.status}", None, recorded)
         if not 200 <= response.status < 300:
@@ -354,35 +392,144 @@ class IndexService:
             "repositoryUri": repository.repository_uri,
             "metadata": repository.metadata,
         }
-        return Retrieval(EntryState.VALID, None, metadata, recorded)
+        return Retrieval(
+            EntryState.VALID,
+            None,
+            metadata,
+            recorded,
+            content_hash=hashlib.sha256(response.body.encode("utf-8")).hexdigest(),
+            etag=(response.headers.get("etag") or [None])[0],
+            last_modified=(response.headers.get("last-modified") or [None])[0],
+        )
 
     async def _finish_retrieval(
-        self, retrieval_id: UUID, result: Retrieval | None, *, error: str | None
+        self,
+        retrieval_id: UUID,
+        result: Retrieval | None,
+        *,
+        error: str | None,
+        settings: IndexSettings,
     ) -> None:
+        check = settings.health_check
         harvest_entry: UUID | None = None
+        state_changed = False
+        scheduled = False
         async with self._session_factory() as session, session.begin():
             event = await session.get(Event, retrieval_id)
             if event is None:
                 return
+            scheduled = event.type is EventType.HEALTH_CHECK
             entry = await session.get(IndexEntry, event.related_to) if event.related_to else None
             payload: dict[str, Any] = {"error": error, "exchange": None, "metadata": None}
+            now = utcnow()
+            if entry is not None:
+                entry.next_check_at = next_check(now, check.interval)
             if result is not None and entry is not None:
+                previous = entry.state
                 payload["exchange"] = result.exchange
                 payload["metadata"] = result.metadata
-                entry.state = result.state
-                entry.last_retrieval_at = utcnow()
-                if result.metadata is not None:
-                    entry.repository_uri = result.metadata["repositoryUri"]
-                    entry.repository_metadata = dict(result.metadata["metadata"])
-                    entry.metadata_version = int(result.metadata["metadataVersion"])
-                if result.state is EntryState.VALID and entry.permit is EntryPermit.ACCEPTED:
+                changed = self._apply(
+                    entry, result, scheduled=scheduled, threshold=check.failure_threshold
+                )
+                entry.last_retrieval_at = now
+                state_changed = entry.state is not previous
+                if scheduled:
+                    payload["notModified"] = result.not_modified
+                    payload["metadataChanged"] = changed
+                    payload["stateChanged"] = state_changed
+                    payload["consecutiveFailures"] = entry.consecutive_failures
+                wants_harvest = not scheduled or (changed and check.reharvest_on_change)
+                if (
+                    entry.state is EntryState.VALID
+                    and entry.permit is EntryPermit.ACCEPTED
+                    and wants_harvest
+                ):
                     harvest_entry = entry.uuid
-            event.payload = {"metadataRetrieval": payload}
-            event.finished_at = utcnow()
-        if result is not None:
+            key = "healthCheck" if scheduled else "metadataRetrieval"
+            event.payload = {key: payload}
+            event.finished_at = now
+        # Pings notify on every retrieval, as in the reference; scheduled checks only
+        # when the state changed, so an outage does not send a message per check.
+        if result is not None and (not scheduled or state_changed):
             self._webhooks.schedule_trigger(retrieval_id)
         if harvest_entry is not None:
             self.schedule_harvest(harvest_entry)
+
+    @staticmethod
+    def _apply(entry: IndexEntry, result: Retrieval, *, scheduled: bool, threshold: int) -> bool:
+        """Update ``entry`` from ``result``; return whether its root metadata changed."""
+        if result.state is EntryState.UNREACHABLE:
+            entry.consecutive_failures += 1
+            # A ping-triggered failure counts at once (reference behaviour); a scheduled
+            # check only after ``threshold`` failures in a row, to ride out short outages.
+            if not scheduled or entry.consecutive_failures >= threshold:
+                entry.state = EntryState.UNREACHABLE
+            return False
+        entry.consecutive_failures = 0
+        entry.state = result.state
+        if result.state is not EntryState.VALID:
+            return False
+        entry.last_success_at = utcnow()
+        if result.not_modified or result.metadata is None:
+            return False
+        entry.repository_uri = result.metadata["repositoryUri"]
+        entry.repository_metadata = dict(result.metadata["metadata"])
+        entry.metadata_version = int(result.metadata["metadataVersion"])
+        entry.http_etag = result.etag
+        entry.http_last_modified = result.last_modified
+        changed = result.content_hash != entry.metadata_hash
+        entry.metadata_hash = result.content_hash
+        return changed
+
+    # --- liveness checks (ADR-0004) -------------------------------------------------
+
+    async def schedule_due_checks(self, *, batch: int = 100) -> int:
+        """Start a ``HealthCheck`` for every entry whose next check is due; return how many."""
+        settings = await self._settings.get()
+        check = settings.health_check
+        if not check.enabled or not check.permits:
+            return 0
+        now = utcnow()
+        busy = (
+            select(Event.uuid)
+            .where(
+                Event.related_to == IndexEntry.uuid,
+                Event.finished_at.is_(None),
+                Event.type.in_([EventType.HEALTH_CHECK, EventType.METADATA_RETRIEVAL]),
+            )
+            .exists()
+        )
+        started: list[UUID] = []
+        async with self._session_factory() as session, session.begin():
+            rows = await session.execute(
+                select(IndexEntry)
+                .where(
+                    IndexEntry.permit.in_(check.permits),
+                    or_(IndexEntry.next_check_at.is_(None), IndexEntry.next_check_at <= now),
+                    ~busy,
+                )
+                .order_by(IndexEntry.next_check_at.asc().nulls_first())
+                .limit(batch)
+                # Several replicas may sweep at once: each claims different rows.
+                .with_for_update(skip_locked=True)
+            )
+            for entry in rows.scalars():
+                # Claim it now, so the next sweep does not pick it up while the check runs.
+                entry.next_check_at = next_check(now, check.interval)
+                event = Event(
+                    uuid=uuid4(),
+                    type=EventType.HEALTH_CHECK,
+                    related_to=entry.uuid,
+                    payload={"healthCheck": {}},
+                    created_at=now,
+                )
+                session.add(event)
+                started.append(event.uuid)
+        for event_id in started:
+            self._jobs.submit(f"health:{event_id}", lambda eid=event_id: self.run_retrieval(eid))
+        if started:
+            log.info("health_checks_started", count=len(started))
+        return len(started)
 
     # --- harvest -------------------------------------------------------------------
 
@@ -476,7 +623,7 @@ class IndexService:
             )
             unfinished = [(row[0], row[1]) for row in rows]
         for event_id, event_type in unfinished:
-            if event_type is EventType.METADATA_RETRIEVAL:
+            if event_type in (EventType.METADATA_RETRIEVAL, EventType.HEALTH_CHECK):
                 self._jobs.submit(
                     f"resume:{event_id}", lambda eid=event_id: self.run_retrieval(eid)
                 )

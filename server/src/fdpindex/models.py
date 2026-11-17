@@ -48,6 +48,7 @@ class EventType(enum.StrEnum):
     WEBHOOK_TRIGGER = "WebhookTrigger"
     INCOMING_PING = "IncomingPing"
     WEBHOOK_PING = "WebhookPing"
+    HEALTH_CHECK = "HealthCheck"  # addition: scheduled liveness check (ADR-0004)
 
 
 class WebhookEvent(enum.StrEnum):
@@ -89,10 +90,20 @@ class IndexEntry(Base):
     repository_metadata: Mapped[dict[str, str]] = mapped_column(
         "metadata", JsonType, nullable=False, default=dict
     )
+    # --- liveness checks (ADR-0004) ---
+    next_check_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # SHA-256 of the last root metadata parsed; a change triggers a new harvest.
+    metadata_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Validators for conditional requests (If-None-Match / If-Modified-Since).
+    http_etag: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    http_last_modified: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         Index("ix_index_entry_state_permit", "state", "permit"),
         Index("ix_index_entry_created_at", "created_at"),
+        Index("ix_index_entry_next_check_at", "next_check_at"),
     )
 
 

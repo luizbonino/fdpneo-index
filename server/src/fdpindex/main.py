@@ -22,6 +22,7 @@ from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.config import Settings, get_settings
 from fdpindex.db import create_schema, make_engine, make_session_factory
 from fdpindex.errors import register_exception_handlers
+from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
@@ -45,6 +46,7 @@ def create_app(
     resolver: Callable[[str, int], Awaitable[list[str]]] | None = None,
     resume_on_startup: bool = True,
     create_tables: bool = False,
+    run_scheduler: bool = True,
     configure_logs: bool = True,
 ) -> FastAPI:
     """Build the app. The keyword arguments exist for tests (an in-memory database, a mocked network)."""
@@ -105,10 +107,16 @@ def create_app(
         app.state.authenticator = authenticator
         if resume_on_startup:
             await index.resume_unfinished()
+        scheduler = HealthScheduler(
+            index, sweep_seconds=config.health_sweep_seconds, batch=config.health_batch
+        )
+        if run_scheduler:
+            scheduler.start()
         log.info("fdpindex_started", version=__version__)
         try:
             yield
         finally:
+            await scheduler.stop()
             await jobs.close()
             await http.aclose()
             if engine is not None:

@@ -4,1296 +4,1369 @@
  */
 
 export interface paths {
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Service Info */
-        get: operations["service_info__get"];
-        put?: never;
-        /**
-         * Ping: announce a running FAIR Data Point
-         * @description Inform about a running FAIR Data Point. It is expected to send pings regularly (at least weekly). There is a rate limit per IP address within a period of time.
-         */
-        post: operations["receive_ping__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/ping-webhook": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ping Webhook */
-        post: operations["ping_webhook_index_admin_ping_webhook_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Service Info */
+    get: operations["service_info__get"];
+    put?: never;
+    /**
+     * Ping: announce a running FAIR Data Point
+     * @description Inform about a running FAIR Data Point. It is expected to send pings regularly (at least weekly). There is a rate limit per IP address within a period of time.
+     */
+    post: operations["receive_ping__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/ping-webhook": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/trigger": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Trigger
-         * @description Retrieve (and, for accepted entries, harvest) one FDP now; creates the entry if missing.
-         */
-        post: operations["trigger_index_admin_trigger_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Ping Webhook */
+    post: operations["ping_webhook_index_admin_ping_webhook_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/trigger": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/trigger-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger All */
-        post: operations["trigger_all_index_admin_trigger_all_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Trigger
+     * @description Retrieve (and, for accepted entries, harvest) one FDP now; creates the entry if missing.
+     */
+    post: operations["trigger_index_admin_trigger_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/trigger-all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Client Config
-         * @description What the web client needs to know: version, and how administrators sign in.
-         */
-        get: operations["client_config_index_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Trigger All */
+    post: operations["trigger_all_index_admin_trigger_all_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/config": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Entries */
-        get: operations["list_entries_index_entries_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Client Config
+     * @description What the web client needs to know: version, and how administrators sign in.
+     */
+    get: operations["client_config_index_config_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** All Entries */
-        get: operations["all_entries_index_entries_all_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Entries */
+    get: operations["list_entries_index_entries_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Entries Info */
-        get: operations["entries_info_index_entries_info_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** All Entries */
+    get: operations["all_entries_index_entries_all_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Entry */
-        get: operations["get_entry_index_entries__entry_id__get"];
-        /** Update Entry */
-        put: operations["update_entry_index_entries__entry_id__put"];
-        post?: never;
-        /** Delete Entry */
-        delete: operations["delete_entry_index_entries__entry_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Entries Info */
+    get: operations["entries_info_index_entries_info_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}/data": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Entry Data
-         * @description The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
-         */
-        get: operations["entry_data_index_entries__entry_id__data_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Entry */
+    get: operations["get_entry_index_entries__entry_id__get"];
+    /** Update Entry */
+    put: operations["update_entry_index_entries__entry_id__put"];
+    post?: never;
+    /** Delete Entry */
+    delete: operations["delete_entry_index_entries__entry_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/data": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Entry Events */
-        get: operations["entry_events_index_entries__entry_id__events_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Entry Data
+     * @description The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
+     */
+    get: operations["entry_data_index_entries__entry_id__data_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/events/{event_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Event */
-        get: operations["get_event_index_events__event_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Entry Events */
+    get: operations["entry_events_index_entries__entry_id__events_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/events/{event_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Settings */
-        get: operations["get_settings_index_settings_get"];
-        /** Update Settings */
-        put: operations["update_settings_index_settings_put"];
-        post?: never;
-        /** Reset Settings */
-        delete: operations["reset_settings_index_settings_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Event */
+    get: operations["get_event_index_events__event_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/webhooks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Webhooks */
-        get: operations["list_webhooks_index_webhooks_get"];
-        put?: never;
-        /** Create Webhook */
-        post: operations["create_webhook_index_webhooks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Settings */
+    get: operations["get_settings_index_settings_get"];
+    /** Update Settings */
+    put: operations["update_settings_index_settings_put"];
+    post?: never;
+    /** Reset Settings */
+    delete: operations["reset_settings_index_settings_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/webhooks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/webhooks/{webhook_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Webhook */
-        get: operations["get_webhook_index_webhooks__webhook_id__get"];
-        /** Update Webhook */
-        put: operations["update_webhook_index_webhooks__webhook_id__put"];
-        post?: never;
-        /** Delete Webhook */
-        delete: operations["delete_webhook_index_webhooks__webhook_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Webhooks */
+    get: operations["list_webhooks_index_webhooks_get"];
+    put?: never;
+    /** Create Webhook */
+    post: operations["create_webhook_index_webhooks_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/webhooks/{webhook_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** Get Webhook */
+    get: operations["get_webhook_index_webhooks__webhook_id__get"];
+    /** Update Webhook */
+    put: operations["update_webhook_index_webhooks__webhook_id__put"];
+    post?: never;
+    /** Delete Webhook */
+    delete: operations["delete_webhook_index_webhooks__webhook_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** EntriesInfoView */
-        EntriesInfoView: {
-            /** Entriescount */
-            entriesCount: {
-                [key: string]: number;
-            };
-        };
-        /** EntryDetailView */
-        EntryDetailView: {
-            /** Clienturl */
-            clientUrl: string;
-            currentMetadata: components["schemas"]["RepositoryMetadataView"] | null;
-            /** Events */
-            events: components["schemas"]["EventView"][];
-            harvest?: components["schemas"]["HarvestView"] | null;
-            /** Lastretrievaltime */
-            lastRetrievalTime: string | null;
-            /** Modificationtime */
-            modificationTime: string;
-            permit: components["schemas"]["EntryPermit"];
-            /** Registrationtime */
-            registrationTime: string;
-            /** State */
-            state: string;
-            /** Uuid */
-            uuid: string;
-        };
-        /**
-         * EntryPageView
-         * @description A Spring Data ``Page`` as Jackson writes it, minus ``pageable`` / ``sort`` internals.
-         */
-        EntryPageView: {
-            /** Content */
-            content: components["schemas"]["EntryView"][];
-            /** Empty */
-            empty: boolean;
-            /** First */
-            first: boolean;
-            /** Last */
-            last: boolean;
-            /** Number */
-            number: number;
-            /** Numberofelements */
-            numberOfElements: number;
-            /** Size */
-            size: number;
-            /** Totalelements */
-            totalElements: number;
-            /** Totalpages */
-            totalPages: number;
-        };
-        /**
-         * EntryPermit
-         * @enum {string}
-         */
-        EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
-        /** EntryUpdateRequest */
-        EntryUpdateRequest: {
-            permit: components["schemas"]["EntryPermit"];
-        };
-        /** EntryView */
-        EntryView: {
-            /** Clienturl */
-            clientUrl: string;
-            /** Lastretrievaltime */
-            lastRetrievalTime: string | null;
-            /** Modificationtime */
-            modificationTime: string;
-            permit: components["schemas"]["EntryPermit"];
-            /** Registrationtime */
-            registrationTime: string;
-            /** State */
-            state: string;
-            /** Title */
-            title?: string | null;
-            /** Uuid */
-            uuid: string;
-        };
-        /**
-         * EventDetailView
-         * @description Admin-only: the whole event, including recorded exchanges (addition).
-         */
-        EventDetailView: {
-            /** Created */
-            created: string;
-            /** Executed */
-            executed?: string | null;
-            /** Finished */
-            finished: string | null;
-            /** Outcome */
-            outcome?: string | null;
-            /** Payload */
-            payload: {
-                [key: string]: unknown;
-            };
-            /** Relatedto */
-            relatedTo: string | null;
-            /** Triggeredby */
-            triggeredBy: string | null;
-            /** Type */
-            type: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
-        /** EventPageView */
-        EventPageView: {
-            /** Content */
-            content: components["schemas"]["EventDetailView"][];
-            /** Number */
-            number: number;
-            /** Size */
-            size: number;
-            /** Totalelements */
-            totalElements: number;
-        };
-        /** EventView */
-        EventView: {
-            /** Created */
-            created: string;
-            /** Executed */
-            executed?: string | null;
-            /** Finished */
-            finished: string | null;
-            /** Outcome */
-            outcome?: string | null;
-            /** Type */
-            type: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** HarvestView */
-        HarvestView: {
-            /** Harvestedat */
-            harvestedAt: string | null;
-            /** Nodes */
-            nodes: number;
-        };
-        /** IndexSettings */
-        IndexSettings: {
-            /** Autopermit */
-            autoPermit: boolean;
-            ping: components["schemas"]["PingSettings-Input"];
-            retrieval: components["schemas"]["RetrievalSettings-Input"];
-        };
-        /** IndexSettingsView */
-        IndexSettingsView: {
-            /** Autopermit */
-            autoPermit: boolean;
-            /** Isdefault */
-            isDefault: boolean;
-            ping: components["schemas"]["PingSettings-Output"];
-            retrieval: components["schemas"]["RetrievalSettings-Output"];
-        };
-        /** PingRequest */
-        PingRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /** PingSettings */
-        "PingSettings-Input": {
-            /** Denylist */
-            denyList: string[];
-            /**
-             * Ratelimitduration
-             * Format: duration
-             */
-            rateLimitDuration: string;
-            /** Ratelimithits */
-            rateLimitHits: number;
-            /**
-             * Validduration
-             * Format: duration
-             */
-            validDuration: string;
-        };
-        /** PingSettings */
-        "PingSettings-Output": {
-            /** Denylist */
-            denyList: string[];
-            /** Ratelimitduration */
-            rateLimitDuration: string;
-            /** Ratelimithits */
-            rateLimitHits: number;
-            /** Validduration */
-            validDuration: string;
-        };
-        /** RepositoryMetadataView */
-        RepositoryMetadataView: {
-            /** Metadata */
-            metadata: {
-                [key: string]: string;
-            };
-            /** Metadataversion */
-            metadataVersion: number;
-            /** Repositoryuri */
-            repositoryUri: string | null;
-        };
-        /** RetrievalSettings */
-        "RetrievalSettings-Input": {
-            /**
-             * Ratelimitwait
-             * Format: duration
-             */
-            rateLimitWait: string;
-            /**
-             * Timeout
-             * Format: duration
-             */
-            timeout: string;
-        };
-        /** RetrievalSettings */
-        "RetrievalSettings-Output": {
-            /** Ratelimitwait */
-            rateLimitWait: string;
-            /** Timeout */
-            timeout: string;
-        };
-        /** ServiceInfo */
-        ServiceInfo: {
-            /** Auth */
-            auth: ("oidc" | "token")[];
-            /** Name */
-            name: string;
-            /** Oidc */
-            oidc: {
-                [key: string]: string | null;
-            } | null;
-            /** Ping */
-            ping: string;
-            /** Version */
-            version: string;
-        };
-        /** TriggerRequest */
-        TriggerRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-        };
-        /**
-         * WebhookEvent
-         * @enum {string}
-         */
-        WebhookEvent: "NewEntry" | "IncomingPing" | "EntryValid" | "EntryInvalid" | "EntryUnreachable" | "AdminTrigger" | "WebhookPing";
-        /** WebhookRequest */
-        WebhookRequest: {
-            /**
-             * Allentries
-             * @default true
-             */
-            allEntries: boolean;
-            /**
-             * Allevents
-             * @default false
-             */
-            allEvents: boolean;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /** Entries */
-            entries?: string[];
-            /** Events */
-            events?: components["schemas"]["WebhookEvent"][];
-            /** Payloadurl */
-            payloadUrl: string;
-            /** Secret */
-            secret?: string | null;
-        };
-        /** WebhookView */
-        WebhookView: {
-            /** Allentries */
-            allEntries: boolean;
-            /** Allevents */
-            allEvents: boolean;
-            /** Createdat */
-            createdAt: string;
-            /** Enabled */
-            enabled: boolean;
-            /** Entries */
-            entries: string[];
-            /** Events */
-            events: components["schemas"]["WebhookEvent"][];
-            /** Hassecret */
-            hasSecret: boolean;
-            /** Payloadurl */
-            payloadUrl: string;
-            /** Updatedat */
-            updatedAt: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
+  schemas: {
+    /** EntriesInfoView */
+    EntriesInfoView: {
+      /** Entriescount */
+      entriesCount: {
+        [key: string]: number;
+      };
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /** EntryDetailView */
+    EntryDetailView: {
+      /** Clienturl */
+      clientUrl: string;
+      currentMetadata: components["schemas"]["RepositoryMetadataView"] | null;
+      /** Events */
+      events: components["schemas"]["EventView"][];
+      harvest?: components["schemas"]["HarvestView"] | null;
+      health?: components["schemas"]["HealthView"] | null;
+      /** Lastretrievaltime */
+      lastRetrievalTime: string | null;
+      /** Modificationtime */
+      modificationTime: string;
+      permit: components["schemas"]["EntryPermit"];
+      /** Registrationtime */
+      registrationTime: string;
+      /** State */
+      state: string;
+      /** Uuid */
+      uuid: string;
+    };
+    /**
+     * EntryPageView
+     * @description A Spring Data ``Page`` as Jackson writes it, minus ``pageable`` / ``sort`` internals.
+     */
+    EntryPageView: {
+      /** Content */
+      content: components["schemas"]["EntryView"][];
+      /** Empty */
+      empty: boolean;
+      /** First */
+      first: boolean;
+      /** Last */
+      last: boolean;
+      /** Number */
+      number: number;
+      /** Numberofelements */
+      numberOfElements: number;
+      /** Size */
+      size: number;
+      /** Totalelements */
+      totalElements: number;
+      /** Totalpages */
+      totalPages: number;
+    };
+    /**
+     * EntryPermit
+     * @enum {string}
+     */
+    EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
+    /** EntryUpdateRequest */
+    EntryUpdateRequest: {
+      permit: components["schemas"]["EntryPermit"];
+    };
+    /** EntryView */
+    EntryView: {
+      /** Clienturl */
+      clientUrl: string;
+      /** Lastretrievaltime */
+      lastRetrievalTime: string | null;
+      /** Modificationtime */
+      modificationTime: string;
+      permit: components["schemas"]["EntryPermit"];
+      /** Registrationtime */
+      registrationTime: string;
+      /** State */
+      state: string;
+      /** Title */
+      title?: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /**
+     * EventDetailView
+     * @description Admin-only: the whole event, including recorded exchanges (addition).
+     */
+    EventDetailView: {
+      /** Created */
+      created: string;
+      /** Executed */
+      executed?: string | null;
+      /** Finished */
+      finished: string | null;
+      /** Outcome */
+      outcome?: string | null;
+      /** Payload */
+      payload: {
+        [key: string]: unknown;
+      };
+      /** Relatedto */
+      relatedTo: string | null;
+      /** Triggeredby */
+      triggeredBy: string | null;
+      /** Type */
+      type: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+    /** EventPageView */
+    EventPageView: {
+      /** Content */
+      content: components["schemas"]["EventDetailView"][];
+      /** Number */
+      number: number;
+      /** Size */
+      size: number;
+      /** Totalelements */
+      totalElements: number;
+    };
+    /** EventView */
+    EventView: {
+      /** Created */
+      created: string;
+      /** Executed */
+      executed?: string | null;
+      /** Finished */
+      finished: string | null;
+      /** Outcome */
+      outcome?: string | null;
+      /** Type */
+      type: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /** HarvestView */
+    HarvestView: {
+      /** Harvestedat */
+      harvestedAt: string | null;
+      /** Nodes */
+      nodes: number;
+    };
+    /** HealthCheckSettings */
+    "HealthCheckSettings-Input": {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Failurethreshold
+       * @default 3
+       */
+      failureThreshold: number;
+      /**
+       * Interval
+       * Format: duration
+       * @default P1D
+       */
+      interval: string;
+      /** Permits */
+      permits?: components["schemas"]["EntryPermit"][];
+      /**
+       * Reharvestonchange
+       * @default true
+       */
+      reharvestOnChange: boolean;
+    };
+    /** HealthCheckSettings */
+    "HealthCheckSettings-Output": {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Failurethreshold
+       * @default 3
+       */
+      failureThreshold: number;
+      /**
+       * Interval
+       * @default PT24H
+       */
+      interval: string;
+      /** Permits */
+      permits: components["schemas"]["EntryPermit"][];
+      /**
+       * Reharvestonchange
+       * @default true
+       */
+      reharvestOnChange: boolean;
+    };
+    /**
+     * HealthView
+     * @description Liveness-check state of an entry (addition, ADR-0004).
+     */
+    HealthView: {
+      /** Consecutivefailures */
+      consecutiveFailures: number;
+      /** Lastsuccesstime */
+      lastSuccessTime: string | null;
+      /** Nextchecktime */
+      nextCheckTime: string | null;
+    };
+    /** IndexSettings */
+    IndexSettings: {
+      /** Autopermit */
+      autoPermit: boolean;
+      healthCheck?: components["schemas"]["HealthCheckSettings-Input"];
+      ping: components["schemas"]["PingSettings-Input"];
+      retrieval: components["schemas"]["RetrievalSettings-Input"];
+    };
+    /** IndexSettingsView */
+    IndexSettingsView: {
+      /** Autopermit */
+      autoPermit: boolean;
+      healthCheck: components["schemas"]["HealthCheckSettings-Output"];
+      /** Isdefault */
+      isDefault: boolean;
+      ping: components["schemas"]["PingSettings-Output"];
+      retrieval: components["schemas"]["RetrievalSettings-Output"];
+    };
+    /** PingRequest */
+    PingRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /** PingSettings */
+    "PingSettings-Input": {
+      /** Denylist */
+      denyList: string[];
+      /**
+       * Ratelimitduration
+       * Format: duration
+       */
+      rateLimitDuration: string;
+      /** Ratelimithits */
+      rateLimitHits: number;
+      /**
+       * Validduration
+       * Format: duration
+       */
+      validDuration: string;
+    };
+    /** PingSettings */
+    "PingSettings-Output": {
+      /** Denylist */
+      denyList: string[];
+      /** Ratelimitduration */
+      rateLimitDuration: string;
+      /** Ratelimithits */
+      rateLimitHits: number;
+      /** Validduration */
+      validDuration: string;
+    };
+    /** RepositoryMetadataView */
+    RepositoryMetadataView: {
+      /** Metadata */
+      metadata: {
+        [key: string]: string;
+      };
+      /** Metadataversion */
+      metadataVersion: number;
+      /** Repositoryuri */
+      repositoryUri: string | null;
+    };
+    /** RetrievalSettings */
+    "RetrievalSettings-Input": {
+      /**
+       * Ratelimitwait
+       * Format: duration
+       */
+      rateLimitWait: string;
+      /**
+       * Timeout
+       * Format: duration
+       */
+      timeout: string;
+    };
+    /** RetrievalSettings */
+    "RetrievalSettings-Output": {
+      /** Ratelimitwait */
+      rateLimitWait: string;
+      /** Timeout */
+      timeout: string;
+    };
+    /** ServiceInfo */
+    ServiceInfo: {
+      /** Auth */
+      auth: ("oidc" | "token")[];
+      /** Name */
+      name: string;
+      /** Oidc */
+      oidc: {
+        [key: string]: string | null;
+      } | null;
+      /** Ping */
+      ping: string;
+      /** Version */
+      version: string;
+    };
+    /** TriggerRequest */
+    TriggerRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Context */
+      ctx?: Record<string, never>;
+      /** Input */
+      input?: unknown;
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+    };
+    /**
+     * WebhookEvent
+     * @enum {string}
+     */
+    WebhookEvent:
+      | "NewEntry"
+      | "IncomingPing"
+      | "EntryValid"
+      | "EntryInvalid"
+      | "EntryUnreachable"
+      | "AdminTrigger"
+      | "WebhookPing";
+    /** WebhookRequest */
+    WebhookRequest: {
+      /**
+       * Allentries
+       * @default true
+       */
+      allEntries: boolean;
+      /**
+       * Allevents
+       * @default false
+       */
+      allEvents: boolean;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /** Entries */
+      entries?: string[];
+      /** Events */
+      events?: components["schemas"]["WebhookEvent"][];
+      /** Payloadurl */
+      payloadUrl: string;
+      /** Secret */
+      secret?: string | null;
+    };
+    /** WebhookView */
+    WebhookView: {
+      /** Allentries */
+      allEntries: boolean;
+      /** Allevents */
+      allEvents: boolean;
+      /** Createdat */
+      createdAt: string;
+      /** Enabled */
+      enabled: boolean;
+      /** Entries */
+      entries: string[];
+      /** Events */
+      events: components["schemas"]["WebhookEvent"][];
+      /** Hassecret */
+      hasSecret: boolean;
+      /** Payloadurl */
+      payloadUrl: string;
+      /** Updatedat */
+      updatedAt: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    service_info__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceInfo"];
-                };
-            };
-        };
+  service_info__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    receive_ping__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PingRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["ServiceInfo"];
         };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid ping */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description URL denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    ping_webhook_index_admin_ping_webhook_post: {
-        parameters: {
-            query: {
-                webhook: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  receive_ping__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    trigger_index_admin_trigger_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TriggerRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PingRequest"];
+      };
     };
-    trigger_all_index_admin_trigger_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content?: never;
+      };
+      /** @description Invalid ping */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description URL denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    client_config_index_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceInfo"];
-                };
-            };
-        };
+  };
+  ping_webhook_index_admin_ping_webhook_post: {
+    parameters: {
+      query: {
+        webhook: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    list_entries_index_entries_get: {
-        parameters: {
-            query?: {
-                state?: string;
-                permit?: string;
-                q?: string;
-                page?: number;
-                size?: number;
-                sort?: string[] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryPageView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    all_entries_index_entries_all_get: {
-        parameters: {
-            query?: {
-                permit?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryView"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  trigger_index_admin_trigger_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    entries_info_index_entries_info_get: {
-        parameters: {
-            query?: {
-                permit?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntriesInfoView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TriggerRequest"];
+      };
     };
-    get_entry_index_entries__entry_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    update_entry_index_entries__entry_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EntryUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  trigger_all_index_admin_trigger_all_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    delete_entry_index_entries__entry_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+        content?: never;
+      };
     };
-    entry_data_index_entries__entry_id__data_get: {
-        parameters: {
-            query?: {
-                format?: string | null;
-            };
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  client_config_index_config_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    entry_events_index_entries__entry_id__events_get: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EventPageView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ServiceInfo"];
         };
+      };
     };
-    get_event_index_events__event_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                event_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EventDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  list_entries_index_entries_get: {
+    parameters: {
+      query?: {
+        state?: string;
+        permit?: string;
+        q?: string;
+        page?: number;
+        size?: number;
+        sort?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_settings_index_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EntryPageView"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    update_settings_index_settings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IndexSettings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  all_entries_index_entries_all_get: {
+    parameters: {
+      query?: {
+        permit?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    reset_settings_index_settings_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EntryView"][];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    list_webhooks_index_webhooks_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"][];
-                };
-            };
-        };
+  };
+  entries_info_index_entries_info_get: {
+    parameters: {
+      query?: {
+        permit?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    create_webhook_index_webhooks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebhookRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["EntriesInfoView"];
         };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    get_webhook_index_webhooks__webhook_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  get_entry_index_entries__entry_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
     };
-    update_webhook_index_webhooks__webhook_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebhookRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
         };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    delete_webhook_index_webhooks__webhook_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  update_entry_index_entries__entry_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntryUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_entry_index_entries__entry_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_data_index_entries__entry_id__data_get: {
+    parameters: {
+      query?: {
+        format?: string | null;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_events_index_entries__entry_id__events_get: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventPageView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_event_index_events__event_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_settings_index_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+    };
+  };
+  update_settings_index_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IndexSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_settings_index_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+    };
+  };
+  list_webhooks_index_webhooks_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"][];
+        };
+      };
+    };
+  };
+  create_webhook_index_webhooks_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebhookRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_webhook_index_webhooks__webhook_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_webhook_index_webhooks__webhook_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebhookRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_webhook_index_webhooks__webhook_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

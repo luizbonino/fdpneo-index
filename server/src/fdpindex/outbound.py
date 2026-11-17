@@ -1,0 +1,191 @@
+"""The one HTTP client for every outbound request (ADR-0002).
+
+Metadata retrieval, harvesting and webhook delivery all go through
+:class:`OutboundClient`, which:
+
+* accepts only ``http`` and ``https`` URLs;
+* resolves the host and refuses loopback, private, link-local, multicast,
+  reserved and unspecified addresses, unless private targets are allowed;
+* follows redirects itself, re-checking every hop, up to a limit;
+* stops reading a response body after a size limit.
+
+DNS is resolved separately from the connection, so a host that changes its
+answer between the two (DNS rebinding) is not fully covered; the check still
+stops the plain case of a ping naming an internal address.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import ipaddress
+import socket
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+from urllib.parse import urljoin, urlsplit
+
+import httpx
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Mapping
+
+_REDIRECTS = frozenset({301, 302, 303, 307, 308})
+
+
+class OutboundError(Exception):
+    """A request that did not produce a response.
+
+    ``kind`` is ``blocked`` (refused by policy), ``timeout`` or ``failed``.
+    """
+
+    def __init__(self, kind: str, message: str) -> None:
+        super().__init__(message)
+        self.kind = kind
+        self.message = message
+
+
+@dataclass
+class OutboundResponse:
+    status: int
+    url: str
+    headers: dict[str, list[str]]
+    body: str
+    truncated: bool = False
+    requested_url: str = ""
+    request_headers: dict[str, list[str]] = field(default_factory=lambda: {})
+
+    @property
+    def content_type(self) -> str:
+        values = self.headers.get("content-type") or [""]
+        return values[0].split(";", 1)[0].strip().lower()
+
+
+async def system_resolver(host: str, port: int) -> list[str]:
+    loop = asyncio.get_running_loop()
+    infos = await loop.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    return sorted({str(info[4][0]) for info in infos})
+
+
+def _blocked_address(address: str) -> bool:
+    ip = ipaddress.ip_address(address.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return (
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def _headers(raw: httpx.Headers) -> dict[str, list[str]]:
+    result: dict[str, list[str]] = {}
+    for key, value in raw.multi_items():
+        result.setdefault(key.lower(), []).append(value)
+    return result
+
+
+class OutboundClient:
+    def __init__(
+        self,
+        http: httpx.AsyncClient,
+        *,
+        allow_private: bool,
+        max_bytes: int,
+        max_redirects: int,
+        user_agent: str,
+        resolver: Callable[[str, int], Awaitable[list[str]]] = system_resolver,
+    ) -> None:
+        self._http = http
+        self._allow_private = allow_private
+        self._max_bytes = max_bytes
+        self._max_redirects = max_redirects
+        self._user_agent = user_agent
+        self._resolver = resolver
+
+    async def check_url(self, url: str) -> None:
+        """Raise :class:`OutboundError` (``blocked``) when ``url`` may not be requested."""
+        parts = urlsplit(url)
+        if parts.scheme not in {"http", "https"}:
+            raise OutboundError("blocked", f"unsupported URL scheme: {parts.scheme or '(none)'}")
+        host = parts.hostname
+        if not host:
+            raise OutboundError("blocked", "URL has no host")
+        if self._allow_private:
+            return
+        try:
+            port = parts.port or (443 if parts.scheme == "https" else 80)
+        except ValueError as err:
+            raise OutboundError("blocked", f"invalid port: {err}") from err
+        try:
+            ipaddress.ip_address(host)
+            addresses = [host]
+        except ValueError:
+            try:
+                addresses = await self._resolver(host, port)
+            except OSError as err:
+                raise OutboundError("failed", f"cannot resolve {host}: {err}") from err
+        if not addresses:
+            raise OutboundError("failed", f"cannot resolve {host}")
+        for address in addresses:
+            if _blocked_address(address):
+                raise OutboundError(
+                    "blocked", f"{host} resolves to a non-public address ({address})"
+                )
+
+    async def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        timeout_seconds: float,
+        headers: Mapping[str, str] | None = None,
+        content: str | None = None,
+    ) -> OutboundResponse:
+        request_headers = {"User-Agent": self._user_agent, **(headers or {})}
+        current, current_method, body = url, method, content
+        for _hop in range(self._max_redirects + 1):
+            await self.check_url(current)
+            try:
+                async with asyncio.timeout(timeout_seconds):
+                    response = await self._send(current_method, current, request_headers, body)
+            except TimeoutError as err:
+                raise OutboundError("timeout", "Timeout") from err
+            except httpx.TimeoutException as err:
+                raise OutboundError("timeout", "Timeout") from err
+            except httpx.HTTPError as err:
+                raise OutboundError("failed", f"IO error: {err}") from err
+            locations = response.headers.get("location", [])
+            if response.status not in _REDIRECTS or not locations:
+                response.requested_url = url
+                response.request_headers = {k.lower(): [v] for k, v in request_headers.items()}
+                return response
+            current = urljoin(current, locations[0])
+            if response.status == 303:
+                current_method, body = "GET", None
+        raise OutboundError("failed", f"more than {self._max_redirects} redirects")
+
+    async def _send(
+        self, method: str, url: str, headers: Mapping[str, str], content: str | None
+    ) -> OutboundResponse:
+        async with self._http.stream(method, url, headers=dict(headers), content=content) as resp:
+            chunks: list[bytes] = []
+            size = 0
+            truncated = False
+            async for chunk in resp.aiter_bytes():
+                size += len(chunk)
+                if size > self._max_bytes:
+                    chunks.append(chunk[: len(chunk) - (size - self._max_bytes)])
+                    truncated = True
+                    break
+                chunks.append(chunk)
+            raw = b"".join(chunks)
+            encoding = resp.charset_encoding or "utf-8"
+            return OutboundResponse(
+                status=resp.status_code,
+                url=str(resp.url),
+                headers=_headers(resp.headers),
+                body=raw.decode(encoding, errors="replace"),
+                truncated=truncated,
+            )

@@ -46,6 +46,16 @@ from fdpindex.webhooks import WebhookService
 
 MAX_PAGE_SIZE = 2000  # Spring Data's default cap
 
+# Readable prefixes for harvested data (rdflib invents ns1, ns2, … otherwise).
+PREFIXES = {
+    "ldp": "http://www.w3.org/ns/ldp#",
+    "fdp": "https://w3id.org/fdp/fdp-o#",
+    "r3d": "http://www.re3data.org/schema/3-0#",
+    "vcard": "http://www.w3.org/2006/vcard/ns#",
+    "sio": "http://semanticscience.org/resource/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+}
+
 RDF_TYPES = {
     "text/turtle": "turtle",
     "application/ld+json": "json-ld",
@@ -271,6 +281,8 @@ async def entry_data(
     await _visible(index, caller, entry_id)
     media = _negotiate(format, request.headers.get("accept", ""))
     graph = await index.harvested_graph(entry_id)
+    for prefix, namespace in PREFIXES.items():
+        graph.bind(prefix, namespace, override=False)
     body = graph.serialize(format=RDF_TYPES[media])
     return Response(content=body, media_type=media)
 

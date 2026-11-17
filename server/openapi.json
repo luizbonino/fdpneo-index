@@ -1,0 +1,1845 @@
+{
+  "components": {
+    "schemas": {
+      "EntriesInfoView": {
+        "properties": {
+          "entriesCount": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Entriescount",
+            "type": "object"
+          }
+        },
+        "required": [
+          "entriesCount"
+        ],
+        "title": "EntriesInfoView",
+        "type": "object"
+      },
+      "EntryDetailView": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "currentMetadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepositoryMetadataView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventView"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "harvest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HarvestView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastRetrievalTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastretrievaltime"
+          },
+          "modificationTime": {
+            "title": "Modificationtime",
+            "type": "string"
+          },
+          "permit": {
+            "$ref": "#/components/schemas/EntryPermit"
+          },
+          "registrationTime": {
+            "title": "Registrationtime",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "clientUrl",
+          "state",
+          "permit",
+          "currentMetadata",
+          "events",
+          "registrationTime",
+          "modificationTime",
+          "lastRetrievalTime"
+        ],
+        "title": "EntryDetailView",
+        "type": "object"
+      },
+      "EntryPageView": {
+        "description": "A Spring Data ``Page`` as Jackson writes it, minus ``pageable`` / ``sort`` internals.",
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/EntryView"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "empty": {
+            "title": "Empty",
+            "type": "boolean"
+          },
+          "first": {
+            "title": "First",
+            "type": "boolean"
+          },
+          "last": {
+            "title": "Last",
+            "type": "boolean"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "numberOfElements": {
+            "title": "Numberofelements",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "totalElements": {
+            "title": "Totalelements",
+            "type": "integer"
+          },
+          "totalPages": {
+            "title": "Totalpages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "totalElements",
+          "totalPages",
+          "number",
+          "size",
+          "numberOfElements",
+          "first",
+          "last",
+          "empty"
+        ],
+        "title": "EntryPageView",
+        "type": "object"
+      },
+      "EntryPermit": {
+        "enum": [
+          "PENDING",
+          "ACCEPTED",
+          "REJECTED"
+        ],
+        "title": "EntryPermit",
+        "type": "string"
+      },
+      "EntryUpdateRequest": {
+        "properties": {
+          "permit": {
+            "$ref": "#/components/schemas/EntryPermit"
+          }
+        },
+        "required": [
+          "permit"
+        ],
+        "title": "EntryUpdateRequest",
+        "type": "object"
+      },
+      "EntryView": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "lastRetrievalTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastretrievaltime"
+          },
+          "modificationTime": {
+            "title": "Modificationtime",
+            "type": "string"
+          },
+          "permit": {
+            "$ref": "#/components/schemas/EntryPermit"
+          },
+          "registrationTime": {
+            "title": "Registrationtime",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "clientUrl",
+          "state",
+          "permit",
+          "registrationTime",
+          "modificationTime",
+          "lastRetrievalTime"
+        ],
+        "title": "EntryView",
+        "type": "object"
+      },
+      "EventDetailView": {
+        "description": "Admin-only: the whole event, including recorded exchanges (addition).",
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "string"
+          },
+          "executed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executed"
+          },
+          "finished": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "relatedTo": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relatedto"
+          },
+          "triggeredBy": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggeredby"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uuid": {
+            "format": "uuid",
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "type",
+          "created",
+          "finished",
+          "triggeredBy",
+          "relatedTo",
+          "payload"
+        ],
+        "title": "EventDetailView",
+        "type": "object"
+      },
+      "EventPageView": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/EventDetailView"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "totalElements": {
+            "title": "Totalelements",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "totalElements",
+          "number",
+          "size"
+        ],
+        "title": "EventPageView",
+        "type": "object"
+      },
+      "EventView": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "string"
+          },
+          "executed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executed"
+          },
+          "finished": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "uuid": {
+            "format": "uuid",
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "type",
+          "created",
+          "finished"
+        ],
+        "title": "EventView",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HarvestView": {
+        "properties": {
+          "harvestedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvestedat"
+          },
+          "nodes": {
+            "title": "Nodes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nodes",
+          "harvestedAt"
+        ],
+        "title": "HarvestView",
+        "type": "object"
+      },
+      "IndexSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "autoPermit": {
+            "title": "Autopermit",
+            "type": "boolean"
+          },
+          "ping": {
+            "$ref": "#/components/schemas/PingSettings-Input"
+          },
+          "retrieval": {
+            "$ref": "#/components/schemas/RetrievalSettings-Input"
+          }
+        },
+        "required": [
+          "retrieval",
+          "ping",
+          "autoPermit"
+        ],
+        "title": "IndexSettings",
+        "type": "object"
+      },
+      "IndexSettingsView": {
+        "additionalProperties": false,
+        "properties": {
+          "autoPermit": {
+            "title": "Autopermit",
+            "type": "boolean"
+          },
+          "isDefault": {
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "ping": {
+            "$ref": "#/components/schemas/PingSettings-Output"
+          },
+          "retrieval": {
+            "$ref": "#/components/schemas/RetrievalSettings-Output"
+          }
+        },
+        "required": [
+          "retrieval",
+          "ping",
+          "autoPermit",
+          "isDefault"
+        ],
+        "title": "IndexSettingsView",
+        "type": "object"
+      },
+      "PingRequest": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientUrl"
+        ],
+        "title": "PingRequest",
+        "type": "object"
+      },
+      "PingSettings-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "denyList": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Denylist",
+            "type": "array"
+          },
+          "rateLimitDuration": {
+            "format": "duration",
+            "title": "Ratelimitduration",
+            "type": "string"
+          },
+          "rateLimitHits": {
+            "minimum": 0.0,
+            "title": "Ratelimithits",
+            "type": "integer"
+          },
+          "validDuration": {
+            "format": "duration",
+            "title": "Validduration",
+            "type": "string"
+          }
+        },
+        "required": [
+          "validDuration",
+          "rateLimitDuration",
+          "rateLimitHits",
+          "denyList"
+        ],
+        "title": "PingSettings",
+        "type": "object"
+      },
+      "PingSettings-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "denyList": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Denylist",
+            "type": "array"
+          },
+          "rateLimitDuration": {
+            "title": "Ratelimitduration",
+            "type": "string"
+          },
+          "rateLimitHits": {
+            "minimum": 0.0,
+            "title": "Ratelimithits",
+            "type": "integer"
+          },
+          "validDuration": {
+            "title": "Validduration",
+            "type": "string"
+          }
+        },
+        "required": [
+          "validDuration",
+          "rateLimitDuration",
+          "rateLimitHits",
+          "denyList"
+        ],
+        "title": "PingSettings",
+        "type": "object"
+      },
+      "RepositoryMetadataView": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "metadataVersion": {
+            "title": "Metadataversion",
+            "type": "integer"
+          },
+          "repositoryUri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repositoryuri"
+          }
+        },
+        "required": [
+          "metadataVersion",
+          "repositoryUri",
+          "metadata"
+        ],
+        "title": "RepositoryMetadataView",
+        "type": "object"
+      },
+      "RetrievalSettings-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "rateLimitWait": {
+            "format": "duration",
+            "title": "Ratelimitwait",
+            "type": "string"
+          },
+          "timeout": {
+            "format": "duration",
+            "title": "Timeout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rateLimitWait",
+          "timeout"
+        ],
+        "title": "RetrievalSettings",
+        "type": "object"
+      },
+      "RetrievalSettings-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "rateLimitWait": {
+            "title": "Ratelimitwait",
+            "type": "string"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rateLimitWait",
+          "timeout"
+        ],
+        "title": "RetrievalSettings",
+        "type": "object"
+      },
+      "ServiceInfo": {
+        "properties": {
+          "auth": {
+            "items": {
+              "enum": [
+                "oidc",
+                "token"
+              ],
+              "type": "string"
+            },
+            "title": "Auth",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "oidc": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oidc"
+          },
+          "ping": {
+            "title": "Ping",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "ping",
+          "oidc",
+          "auth"
+        ],
+        "title": "ServiceInfo",
+        "type": "object"
+      },
+      "TriggerRequest": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientUrl"
+        ],
+        "title": "TriggerRequest",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WebhookEvent": {
+        "enum": [
+          "NewEntry",
+          "IncomingPing",
+          "EntryValid",
+          "EntryInvalid",
+          "EntryUnreachable",
+          "AdminTrigger",
+          "WebhookPing"
+        ],
+        "title": "WebhookEvent",
+        "type": "string"
+      },
+      "WebhookRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "allEntries": {
+            "default": true,
+            "title": "Allentries",
+            "type": "boolean"
+          },
+          "allEvents": {
+            "default": false,
+            "title": "Allevents",
+            "type": "boolean"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "entries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "payloadUrl": {
+            "title": "Payloadurl",
+            "type": "string"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          }
+        },
+        "required": [
+          "payloadUrl"
+        ],
+        "title": "WebhookRequest",
+        "type": "object"
+      },
+      "WebhookView": {
+        "properties": {
+          "allEntries": {
+            "title": "Allentries",
+            "type": "boolean"
+          },
+          "allEvents": {
+            "title": "Allevents",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "entries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "hasSecret": {
+            "title": "Hassecret",
+            "type": "boolean"
+          },
+          "payloadUrl": {
+            "title": "Payloadurl",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "uuid": {
+            "format": "uuid",
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "payloadUrl",
+          "hasSecret",
+          "allEvents",
+          "events",
+          "allEntries",
+          "entries",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "WebhookView",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "A directory of FAIR Data Points: ping intake, reachability, harvest and administration.",
+    "title": "FDP Index",
+    "version": "0.1.0.dev0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "service_info__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Info",
+        "tags": [
+          "Service"
+        ]
+      },
+      "post": {
+        "description": "Inform about a running FAIR Data Point. It is expected to send pings regularly (at least weekly). There is a rate limit per IP address within a period of time.",
+        "operationId": "receive_ping__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Invalid ping"
+          },
+          "403": {
+            "description": "URL denied"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "summary": "Ping: announce a running FAIR Data Point",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/admin/ping-webhook": {
+      "post": {
+        "operationId": "ping_webhook_index_admin_ping_webhook_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "webhook",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ping Webhook",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/admin/trigger": {
+      "post": {
+        "description": "Retrieve (and, for accepted entries, harvest) one FDP now; creates the entry if missing.",
+        "operationId": "trigger_index_admin_trigger_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TriggerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/admin/trigger-all": {
+      "post": {
+        "operationId": "trigger_all_index_admin_trigger_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Trigger All",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/config": {
+      "get": {
+        "description": "What the web client needs to know: version, and how administrators sign in.",
+        "operationId": "client_config_index_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Client Config",
+        "tags": [
+          "Service"
+        ]
+      }
+    },
+    "/index/entries": {
+      "get": {
+        "operationId": "list_entries_index_entries_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "State",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "permit",
+            "required": false,
+            "schema": {
+              "default": "accepted",
+              "title": "Permit",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Entries",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/entries/all": {
+      "get": {
+        "operationId": "all_entries_index_entries_all_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "permit",
+            "required": false,
+            "schema": {
+              "default": "accepted",
+              "title": "Permit",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EntryView"
+                  },
+                  "title": "Response All Entries Index Entries All Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "All Entries",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/entries/info": {
+      "get": {
+        "operationId": "entries_info_index_entries_info_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "permit",
+            "required": false,
+            "schema": {
+              "default": "accepted",
+              "title": "Permit",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntriesInfoView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Entries Info",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}": {
+      "delete": {
+        "operationId": "delete_entry_index_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Entry",
+        "tags": [
+          "Index"
+        ]
+      },
+      "get": {
+        "operationId": "get_entry_index_entries__entry_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Entry",
+        "tags": [
+          "Index"
+        ]
+      },
+      "put": {
+        "operationId": "update_entry_index_entries__entry_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Entry",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}/data": {
+      "get": {
+        "description": "The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.",
+        "operationId": "entry_data_index_entries__entry_id__data_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/ld+json": {},
+              "application/n-triples": {},
+              "application/rdf+xml": {},
+              "text/turtle": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Entry Data",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}/events": {
+      "get": {
+        "operationId": "entry_events_index_entries__entry_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventPageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Entry Events",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/events/{event_id}": {
+      "get": {
+        "operationId": "get_event_index_events__event_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Event",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/settings": {
+      "delete": {
+        "operationId": "reset_settings_index_settings_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Settings",
+        "tags": [
+          "Index"
+        ]
+      },
+      "get": {
+        "operationId": "get_settings_index_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "Index"
+        ]
+      },
+      "put": {
+        "operationId": "update_settings_index_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/webhooks": {
+      "get": {
+        "operationId": "list_webhooks_index_webhooks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookView"
+                  },
+                  "title": "Response List Webhooks Index Webhooks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Webhooks",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "post": {
+        "operationId": "create_webhook_index_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    },
+    "/index/webhooks/{webhook_id}": {
+      "delete": {
+        "operationId": "delete_webhook_index_webhooks__webhook_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "get": {
+        "operationId": "get_webhook_index_webhooks__webhook_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "put": {
+        "operationId": "update_webhook_index_webhooks__webhook_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "webhook_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Webhook Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+/*
+ * FDP Index — theme layer over the FAIR Ecosystem tokens (shared with
+ * fdpneo-client): the AA-adjusted greys, the cool-slate dark palette, and the
+ * directory tool accent, which marks this app as the index.
+ */
+
+:root {
+  --fair-text-muted: #5c6673;
+  --fair-text-light: #616b78;
+  --fair-text-on-accent: #ffffff;
+  --tool-accent: var(--tool-directory);
+  --tool-accent-tint: var(--tool-directory-tint);
+}
+
+/* ---- Dark mode (cool-slate) ---- */
+.theme-dark {
+  --fair-bg: #10161e;
+  --fair-surface: #1a2230;
+  --fair-surface-input: #141b24;
+  --fair-canvas: #141b24;
+  --fair-highlight: #232c3a;
+  --fair-code-bg: #131a23;
+  --fair-border: #2b3543;
+  --fair-separator: #222c39;
+  --fair-text: #c6ceda;
+  --fair-text-muted: #8a94a2;
+  --fair-text-light: #868f9c; /* light: AA on dark bg (was #5f6a78, 2.9:1) */
+  --fair-text-strong: #eef2f7;
+  --fair-ink-soft: #3a4655;
+  --fair-ink-tint: #1e2733;
+
+  /* NOTE: ink flips light so it can serve as text/structure on dark surfaces. */
+  --fair-ink: #eef2f7;
+  /* ...but ink-lighter stays dark, so it's the fill for primary buttons (see .pbtn). */
+  --fair-ink-lighter: #2f3a49;
+
+  --fair-node: #5fc2bc;
+  --fair-node-darker: #8fd8d3;
+  --fair-node-soft: #2a4a48;
+  --fair-node-tint: #15302e;
+  --tool-directory: #7aa7f0;
+  --tool-directory-tint: #16233a;
+  --tool-accent: #7aa7f0;
+  --tool-accent-tint: #16233a;
+
+  --fair-success: #5bb97a;
+  --fair-success-tint: #183021;
+  --fair-warning: #c9a23a;
+  --fair-warning-tint: #2c2510;
+  --fair-danger: #e07a70;
+  --fair-danger-tint: #331b19;
+
+  /* accent lightens in dark mode → on-accent text must go dark to stay legible */
+  --fair-text-on-accent: #10161e;
+
+  --fair-shadow-2: 0 18px 44px -16px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * The ink-fill trap: any primary button/badge styled `background: var(--fair-ink);
+ * color:#fff` would be white-on-near-white in dark mode. Add class="pbtn" to those
+ * elements and this override gives them a dark-slate fill + light text in dark mode.
+ */
+.theme-dark .pbtn {
+  background: var(--fair-ink-lighter) !important;
+  color: var(--fair-text-strong) !important;
+  border-color: var(--fair-ink-lighter) !important;
+}

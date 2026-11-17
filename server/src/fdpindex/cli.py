@@ -67,3 +67,20 @@ def serve(
         proxy_headers=True,
         log_config=None,
     )
+
+
+@app.command("openapi")
+def openapi(output: str = typer.Argument("-", help="File to write, or - for stdout")) -> None:
+    """Print the OpenAPI document (the client generates its types from it)."""
+    import json
+    from pathlib import Path
+
+    from fdpindex.config import Settings
+    from fdpindex.main import create_app
+
+    document = create_app(Settings(), configure_logs=False).openapi()
+    text = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    if output == "-":
+        typer.echo(text, nl=False)
+    else:
+        Path(output).write_text(text, encoding="utf-8")

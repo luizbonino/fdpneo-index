@@ -1,0 +1,49 @@
+{
+  "name": "fdpindex-client",
+  "private": true,
+  "version": "0.1.0-dev",
+  "description": "FDP Index web client: the directory of FAIR Data Points and its administration.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "lint": "eslint . --report-unused-disable-directives",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src",
+    "typecheck": "vue-tsc --build",
+    "generate-api": "openapi-typescript ../server/openapi.json -o src/api/schema.ts"
+  },
+  "dependencies": {
+    "@tanstack/vue-query": "^5.59.0",
+    "oidc-client-ts": "^3.1.0",
+    "vue": "^3.5.0",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/eslint-config-prettier": "^10.1.0",
+    "@vue/eslint-config-typescript": "^14.1.0",
+    "@vue/test-utils": "^2.4.0",
+    "@vue/tsconfig": "^0.9.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "jiti": "^2.7.0",
+    "jsdom": "^29.1.1",
+    "openapi-typescript": "^7.4.0",
+    "prettier": "^3.3.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.16",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.3.3"
+  }
+}

@@ -41,6 +41,9 @@ def configure_logging(environment: Literal["development", "production"]) -> None
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(logging.DEBUG if environment == "development" else logging.INFO)
+    # Driver chatter drowns everything else at DEBUG.
+    for name in ("aiosqlite", "asyncio", "httpcore", "httpx"):
+        logging.getLogger(name).setLevel(logging.INFO)
     for name in _UVICORN_LOGGERS:
         logger = logging.getLogger(name)
         logger.handlers = []

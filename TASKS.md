@@ -21,7 +21,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 - [x] 0.4 ADR-0003 administrator authentication
 - [x] 0.5 ADR-0004 active liveness checks (proposed; implemented in Phase 4)
 - [x] 0.6 Server tooling: uv, ruff, pyright strict, pytest (unit with SQLite, integration with testcontainers)
-- [ ] 0.7 Client tooling: Vite, Vue 3, TypeScript, ESLint, Prettier, Vitest
+- [x] 0.7 Client tooling: Vite, Vue 3, TypeScript, ESLint, Prettier, Vitest
 - [ ] 0.8 CI workflows prepared (`.github/workflows`), enabled once the GitHub repository exists
 
 ## Phase 1 — Server: port of the reference index
@@ -38,21 +38,21 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 - [x] 1.10 Webhooks: matching, delivery with the reference `X-Signature` (SHA-1) and an HMAC-SHA256 `X-Signature-256`, recorded exchanges; management API (new: the reference has none)
 - [x] 1.11 Authentication: OIDC bearer tokens with an admin role; static admin tokens for scripts; anonymous read of accepted entries
 - [x] 1.12 Outbound safety: deny list, no loopback / private / link-local targets unless allowed, redirects re-checked, response size cap
-- [~] 1.13 OpenAPI snapshot and contract tests; integration tests against PostgreSQL and a fake FDP (integration tests done)
+- [x] 1.13 OpenAPI snapshot and contract tests; integration tests against PostgreSQL and a fake FDP
 
 ## Phase 2 — Admin client (UI/UX)
 
-- [ ] 2.1 Scaffold: FAIR Ecosystem tokens (shared with fdpneo-client), light/dark, i18n (en), routing, OIDC sign-in
-- [ ] 2.2 Directory: state summary, searchable / filterable / sortable table, entry detail (metadata card, event timeline, harvested data preview and download)
-- [ ] 2.3 Administration: approval queue with bulk accept / reject, entry actions (check now, delete), settings with human-readable durations, deny-list editor with a live URL test, webhooks with a test delivery
-- [ ] 2.4 Accessibility (keyboard, focus, contrast), responsive layout, empty and error states
-- [ ] 2.5 Tests: unit (Vitest) and an end-to-end smoke test (Playwright)
+- [x] 2.1 Scaffold: FAIR Ecosystem tokens (shared with fdpneo-client), light/dark, i18n (en), routing, OIDC sign-in
+- [x] 2.2 Directory: state summary, searchable / filterable / sortable table, entry detail (metadata card, event timeline, harvested data preview and download)
+- [x] 2.3 Administration: approval queue with bulk accept / reject, entry actions (check now, delete), settings with human-readable durations, deny-list editor with a live URL test, webhooks with a test delivery
+- [x] 2.4 Accessibility (keyboard, focus, contrast), responsive layout, empty and error states
+- [~] 2.5 Tests: unit (Vitest) and an end-to-end smoke test (Playwright) (unit done; the e2e smoke ran by hand, not yet committed)
 
 ## Phase 3 — Packaging and operations
 
-- [ ] 3.1 Server image (uv, non-root, migrations on start); client image (static, runtime config)
-- [ ] 3.2 Compose stack: PostgreSQL, server, client; optional Keycloak profile
-- [ ] 3.3 Operator documentation: configuration reference, reverse proxy (client IP for rate limiting), backup
+- [x] 3.1 Server image (uv, non-root, migrations on start); client image (static, runtime config)
+- [~] 3.2 Compose stack: PostgreSQL, server, client; optional Keycloak profile (stack done, Keycloak profile open)
+- [~] 3.3 Operator documentation: configuration reference, reverse proxy (client IP for rate limiting), backup (configuration in README; backup open)
 - [ ] 3.4 Importer: entries, events, settings and webhooks from a Java FAIR Data Point database (index tables)
 - [ ] 3.5 Release process (tag-driven, signed multi-arch images, release metadata) once the GitHub repository exists
 

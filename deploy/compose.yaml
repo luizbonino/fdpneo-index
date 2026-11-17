@@ -1,0 +1,59 @@
+# FDP Index stack: PostgreSQL, the index server, and the client (nginx), which
+# serves the app and proxies the API on one origin, http://localhost:8090.
+#
+#   cp deploy/.env.example deploy/.env    # then set an admin token digest
+#   docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --build
+#
+# FDPs ping http://<this host>:8090/ . The server is not published: it trusts
+# X-Forwarded-For from the client container only, which the per-IP ping rate
+# limit relies on.
+
+name: fdpindex
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: fdpindex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: fdpindex
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fdpindex"]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  server:
+    build: ../server
+    image: ${SERVER_IMAGE:-fdpindex-server}:${SERVER_IMAGE_TAG:-dev}
+    environment:
+      FDPINDEX_DATABASE_URL: postgresql+asyncpg://fdpindex:${POSTGRES_PASSWORD}@postgres:5432/fdpindex
+      FDPINDEX_ADMIN_TOKENS: ${FDPINDEX_ADMIN_TOKENS:-}
+      FDPINDEX_OIDC_ISSUER: ${FDPINDEX_OIDC_ISSUER:-}
+      FDPINDEX_OIDC_AUDIENCE: ${FDPINDEX_OIDC_AUDIENCE:-}
+      FDPINDEX_OIDC_CLIENT_ID: ${FDPINDEX_OIDC_CLIENT_ID:-}
+      FDPINDEX_AUTO_PERMIT: ${FDPINDEX_AUTO_PERMIT:-true}
+      FDPINDEX_OUTBOUND_ALLOW_PRIVATE: ${FDPINDEX_OUTBOUND_ALLOW_PRIVATE:-false}
+      # Only the client container reaches the server; trust its forwarded headers.
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build: ../client
+    image: ${CLIENT_IMAGE:-fdpindex-client}:${CLIENT_IMAGE_TAG:-dev}
+    environment:
+      FDPINDEX_API_UPSTREAM: http://server:8000
+      FDPINDEX_PUBLIC_ORIGIN: ${FDPINDEX_PUBLIC_ORIGIN:-}
+    ports:
+      - "${FDPINDEX_PORT:-8090}:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

@@ -1,7 +1,7 @@
 // English copy. vue-i18n treats @ { } | as syntax: write them as {'@'} etc.
 export const en = {
   app: {
-    name: "FDP Index",
+    name: "FDPneo Index",
     tagline: "A directory of FAIR Data Points",
     skip: "Skip to content",
   },
@@ -17,23 +17,36 @@ export const en = {
   },
   state: {
     ACTIVE: "Active",
-    INACTIVE: "Inactive",
+    INACTIVE: "Not seen recently",
     UNREACHABLE: "Unreachable",
-    INVALID: "Invalid",
+    INVALID: "Invalid metadata",
     UNKNOWN: "Not checked yet",
     ALL: "All",
     help: {
-      ACTIVE: "Metadata retrieved successfully within the valid period.",
-      INACTIVE: "Valid metadata, but nothing retrieved within the valid period.",
-      UNREACHABLE: "The last retrieval could not reach the FDP.",
-      INVALID: "The FDP answered, but its metadata could not be used.",
-      UNKNOWN: "Registered; the first retrieval has not finished yet.",
+      ACTIVE: "Answered with valid FAIR Data Point metadata at a recent check or ping.",
+      INACTIVE:
+        "Its metadata was valid, but nothing was retrieved within the valid period (7 days by default). Typically an FDP that stopped pinging and that the index does not check, such as one awaiting approval.",
+      UNREACHABLE:
+        "Did not answer: down, timed out, or returned a server error. A scheduled check marks an FDP unreachable only after several failures in a row.",
+      INVALID: "Answered, but not with usable FAIR Data Point metadata.",
+      UNKNOWN: "Just registered; the first retrieval has not finished yet.",
     },
   },
   permit: {
     PENDING: "Awaiting approval",
     ACCEPTED: "Accepted",
     REJECTED: "Rejected",
+    help: {
+      ACCEPTED: "Listed in the public directory, checked regularly, and harvested.",
+      PENDING: "Waiting for an administrator; hidden from the public directory.",
+      REJECTED: "Hidden from the public directory and not harvested.",
+    },
+  },
+  statusHelp: {
+    open: "What do the statuses mean?",
+    title: "What the statuses mean",
+    lead: "The index checks every listed FDP regularly, and again whenever the FDP pings it.",
+    permitsTitle: "Approval",
   },
   directory: {
     title: "FAIR Data Points",
@@ -46,6 +59,7 @@ export const en = {
       name: "Address (A–Z)",
     },
     permitFilter: "Show",
+    byStatus: "By status",
     columns: {
       fdp: "FAIR Data Point",
       state: "State",

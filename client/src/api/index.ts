@@ -24,9 +24,9 @@ export type ServiceInfo = Schemas["ServiceInfo"];
 export type EntryState = "ACTIVE" | "INACTIVE" | "UNREACHABLE" | "INVALID" | "UNKNOWN";
 export const ENTRY_STATES: EntryState[] = [
   "ACTIVE",
-  "INACTIVE",
   "UNREACHABLE",
   "INVALID",
+  "INACTIVE",
   "UNKNOWN",
 ];
 export const PERMITS: Permit[] = ["PENDING", "ACCEPTED", "REJECTED"];

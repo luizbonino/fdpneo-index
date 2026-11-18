@@ -10,6 +10,7 @@ import { keys, useEntry, useInvalidateEntries } from "@/composables/queries";
 import { confirm, toast } from "@/composables/feedback";
 import StateBadge from "@/components/StateBadge.vue";
 import PermitBadge from "@/components/PermitBadge.vue";
+import StatusHelp from "@/components/StatusHelp.vue";
 import EventTimeline from "@/components/EventTimeline.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
 
@@ -128,6 +129,7 @@ async function remove() {
             <StateBadge :state="detail.state" />
             <PermitBadge v-if="session.isAdmin" :permit="detail.permit" />
             <span class="muted small">{{ t(`state.help.${detail.state}`) }}</span>
+            <StatusHelp :permits="session.isAdmin" />
           </div>
         </div>
       </header>

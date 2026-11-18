@@ -81,6 +81,15 @@ describe("DirectoryView", () => {
     );
   });
 
+  it("shows the rare states' tiles only when they have entries or are selected", async () => {
+    const { wrapper } = await setup();
+    expect(wrapper.find(".tile-UNREACHABLE").exists()).toBe(true);
+    expect(wrapper.find(".tile-INACTIVE").exists()).toBe(false);
+    expect(wrapper.find(".tile-UNKNOWN").exists()).toBe(false);
+    const selected = await setup("/?state=INACTIVE");
+    expect(selected.wrapper.find(".tile-INACTIVE").exists()).toBe(true);
+  });
+
   it("reads the page and sort from the URL", async () => {
     await setup("/?sort=name&page=3");
     expect(entries).toHaveBeenLastCalledWith(

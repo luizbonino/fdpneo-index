@@ -12,6 +12,7 @@ import { useCounts, useEntries, useInvalidateEntries } from "@/composables/queri
 import { toast } from "@/composables/feedback";
 import StateBadge from "@/components/StateBadge.vue";
 import PermitBadge from "@/components/PermitBadge.vue";
+import StatusHelp from "@/components/StatusHelp.vue";
 import { absoluteTime, hostOf, relativeTime } from "@/utils/format";
 
 const route = useRoute();
@@ -77,13 +78,16 @@ watch(
   },
 );
 
+// "Not seen recently" and "Not checked yet" are rare once liveness checks run;
+// their tiles appear only when some entry is in that state (or it is selected).
+const OCCASIONAL = new Set<string>(["INACTIVE", "UNKNOWN"]);
 const tiles = computed(() => [
   { key: "", label: t("state.ALL"), count: counts.data.value?.entriesCount.ALL },
   ...ENTRY_STATES.map((s) => ({
     key: s,
     label: t(`state.${s}`),
     count: counts.data.value?.entriesCount[s],
-  })),
+  })).filter((tile) => !OCCASIONAL.has(tile.key) || !!tile.count || state.value === tile.key),
 ]);
 
 const filtered = computed(() => !!(state.value || param("q")));
@@ -125,7 +129,11 @@ async function checkAll() {
       {{ t("directory.pending", { n: pending }) }} →
     </router-link>
 
-    <nav class="tiles" :aria-label="t('state.ALL')">
+    <div class="tiles-head">
+      <span class="eyebrow">{{ t("directory.byStatus") }}</span>
+      <StatusHelp :permits="session.isAdmin" />
+    </div>
+    <nav class="tiles" :aria-label="t('directory.byStatus')">
       <button
         v-for="tile in tiles"
         :key="tile.key"
@@ -262,6 +270,12 @@ async function checkAll() {
 .pending {
   display: block;
   font-weight: var(--fair-weight-semibold);
+}
+.tiles-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fair-space-1);
+  margin-bottom: calc(-1 * var(--fair-space-2));
 }
 .tiles {
   display: grid;

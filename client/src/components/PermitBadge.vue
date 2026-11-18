@@ -11,5 +11,7 @@ const tone = computed(() =>
 </script>
 
 <template>
-  <span :class="['chip', tone]">{{ t(`permit.${permit}`) }}</span>
+  <span :class="['chip', tone]" :title="t(`permit.help.${permit}`)">{{
+    t(`permit.${permit}`)
+  }}</span>
 </template>

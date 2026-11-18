@@ -1,4 +1,10 @@
-# FDP Index
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/fdpneo-index-dark.svg">
+    <img src="docs/assets/fdpneo-index.svg" width="48" height="48" alt="" align="absmiddle">
+  </picture>
+  FDPneo Index
+</h1>
 
 A directory of FAIR Data Points, as a standalone service. FAIR Data Points
 announce themselves with a ping; the index retrieves their metadata, tracks
@@ -38,6 +44,24 @@ reference client works against its API (see
 6. Webhooks notify other systems of new entries, pings and state changes.
 
 Every step is recorded as an event, with the HTTP exchange it involved.
+
+## Statuses
+
+Every FDP has a status, from its last metadata retrieval (a ping or a
+scheduled check). The values are the Java index's, so existing clients keep
+working; the web client shows the labels below and explains them behind the
+ⓘ button.
+
+| API value | Shown as | Meaning |
+|---|---|---|
+| `ACTIVE` | Active | Answered with valid FAIR Data Point metadata recently |
+| `UNREACHABLE` | Unreachable | Did not answer (down, timeout, server error); after three failed checks in a row |
+| `INVALID` | Invalid metadata | Answered, but not with usable FDP metadata |
+| `INACTIVE` | Not seen recently | Valid metadata, but nothing retrieved within the valid period (7 days). With liveness checks on, an FDP the index checks does not end up here; one it does not check, such as a pending one, can |
+| `UNKNOWN` | Not checked yet | Registered; the first retrieval has not finished |
+
+Administrators also see the approval status: `ACCEPTED` (listed, checked,
+harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 
 ## API
 

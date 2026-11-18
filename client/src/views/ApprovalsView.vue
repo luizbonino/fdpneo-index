@@ -9,6 +9,7 @@ import { api, type Entry, type Permit } from "@/api";
 import { useEntries, useInvalidateEntries, useSettings } from "@/composables/queries";
 import { toast } from "@/composables/feedback";
 import StateBadge from "@/components/StateBadge.vue";
+import StatusHelp from "@/components/StatusHelp.vue";
 import { hostOf, relativeTime } from "@/utils/format";
 
 const { t } = useI18n();
@@ -60,7 +61,7 @@ async function decide(uuids: string[], permit: Permit) {
   <div class="page">
     <header class="page-head">
       <div>
-        <h1>{{ t("approvals.title") }}</h1>
+        <h1 class="row">{{ t("approvals.title") }} <StatusHelp permits /></h1>
         <p class="lead">{{ t("approvals.lead") }}</p>
       </div>
     </header>

@@ -64,3 +64,20 @@ test("a visitor runs a ready-made SPARQL question and a query from the editor", 
   await page.getByRole("tab", { name: "History" }).click();
   await expect(page.locator(".history li")).toHaveCount(2);
 });
+
+test("a visitor searches, filters by a facet and opens a resource", async ({ page }) => {
+  await page.goto("/search");
+  await expect(page.getByRole("heading", { name: "Search metadata" })).toBeVisible();
+  await expect(page.locator(".count-line")).toHaveText(/results?|No results/);
+  const hits = page.locator(".result");
+  if ((await hits.count()) === 0) return; // nothing harvested in this stack yet
+  const first = page.locator(".facet input[type=checkbox]").first();
+  await first.check();
+  await expect(page).toHaveURL(/\?.+=/);
+  await expect(page.locator(".active-chip")).toHaveCount(1);
+  await page.locator(".result h3 a").first().click();
+  await expect(page.locator(".resource-page h1")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Query this in SPARQL" })).toBeVisible();
+  await page.goBack();
+  await expect(page.locator(".active-chip")).toHaveCount(1);
+});

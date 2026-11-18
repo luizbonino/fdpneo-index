@@ -179,6 +179,9 @@ export interface paths {
     /**
      * Entry Data
      * @description The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
+     *
+     *     N-Triples are served as stored; other formats are rendered in a thread (a
+     *     large harvest takes seconds), and anonymous callers are rate limited.
      */
     get: operations["entry_data_index_entries__entry_id__data_get"];
     put?: never;
@@ -215,6 +218,158 @@ export interface paths {
     };
     /** Get Event */
     get: operations["get_event_index_events__event_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search the harvested metadata
+     * @description Faceted search over every accepted FDP's harvested DCAT metadata.
+     *
+     *     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
+     *     `license`, `accessRights`, …) is a repeatable parameter; values within a
+     *     field are ORed, fields are ANDed, `!value` excludes. Also `type`, `fdp`,
+     *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
+     *     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
+     *     `facets` (comma-separated, or `none`) and `facetSize`.
+     */
+    get: operations["search_index_search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/facets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** All buckets of one facet */
+    get: operations["facet_index_search_facets_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/labels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Labels for IRIs */
+    get: operations["labels_index_search_labels_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/landing": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Counters and facet descriptions */
+    get: operations["landing_index_search_landing_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The search profile */
+    get: operations["profile_index_search_profile_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/reindex": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Re-project harvested metadata */
+    post: operations["reindex_index_search_reindex_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/resources/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One resource
+     * @description The resource with every value and its parents and children, as JSON.
+     *
+     *     With `format` (`ttl`, `jsonld`, `nt`, `rdf`) or an RDF `Accept` header, the
+     *     triples harvested for it, as the FDP published them.
+     */
+    get: operations["resource_index_search_resources__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Projection statistics */
+    get: operations["stats_index_search_stats_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -797,6 +952,14 @@ export interface components {
       /** Validduration */
       validDuration: string;
     };
+    /** ReindexRequest */
+    ReindexRequest: {
+      /**
+       * Entry
+       * @description One entry; all when absent
+       */
+      entry?: string | null;
+    };
     /** RepositoryMetadataView */
     RepositoryMetadataView: {
       /** Metadata */
@@ -840,6 +1003,10 @@ export interface components {
       } | null;
       /** Ping */
       ping: string;
+      /** Search */
+      search?: {
+        [key: string]: unknown;
+      } | null;
       /** Sparql */
       sparql?: {
         [key: string]: unknown;
@@ -1414,6 +1581,250 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  search_index_search_get: {
+    parameters: {
+      query?: {
+        /** @description Words, "phrases", or, -word */
+        q?: string;
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  facet_index_search_facets_get: {
+    parameters: {
+      query: {
+        field: string;
+        contains?: string;
+        size?: number;
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  labels_index_search_labels_get: {
+    parameters: {
+      query: {
+        iri: string[];
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  landing_index_search_landing_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  profile_index_search_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  reindex_index_search_reindex_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ReindexRequest"] | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  resource_index_search_resources__public_id__get: {
+    parameters: {
+      query?: {
+        format?: string | null;
+        lang?: string | null;
+      };
+      header?: never;
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  stats_index_search_stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
     };

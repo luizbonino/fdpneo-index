@@ -55,9 +55,22 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
    SPARQL that runs in any endpoint.
 5. **Faceted search is a projection into PostgreSQL**: tables, full-text
    vectors and facet values (design §3). It is built after the SPARQL
-   endpoint.
-6. **Only new paths are added**: `/index/sparql*` now, `/index/search*`
-   later. The reference `/index/*` contract is unchanged.
+   endpoint. As built, it differs from the design in these ways:
+   - Each entry is projected as a whole, because parents, roll-ups and
+     counts span nodes. Only rows whose content hash changed are written.
+   - `search_entry_state` records each entry's fingerprint, so the start-up
+     reconcile finds what changed while the server was down. There is no
+     `search_reindex` event.
+   - Harvested labels are stored per entry, so they leave with the entry.
+     Bundled labels are a Python table, not rows.
+   - Untagged literals are stemmed as English, the index's default
+     language. The accent-folded `simple` vector still matches any language.
+   - Plain words also match as prefixes ("demo" finds "demonstration"). A
+     prefix match ranks at half a whole-word match.
+   - There is no facet cache yet (task 6.15 decides), and no
+     administrator-editable profile yet.
+6. **Only new paths are added**: `/index/sparql*` and `/index/search*`.
+   The reference `/index/*` contract is unchanged.
 
 ## Consequences
 

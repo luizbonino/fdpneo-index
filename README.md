@@ -77,6 +77,9 @@ harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 | `GET` / `PUT` / `DELETE /index/settings` | admin | Settings; `DELETE` resets |
 | `POST /index/admin/trigger`, `/trigger-all` | admin | Retrieve (and harvest) now |
 | `/index/webhooks`, `POST /index/admin/ping-webhook` | admin | Manage and test webhooks |
+| `GET /index/search` | anyone† | Faceted search over all harvested metadata: words, phrases, `or`, `-word`; every facet field (`theme`, `keyword`, `publisher`, `format`, `license`, `accessRights`, …) as a repeatable filter, `!value` to exclude; `type`, `fdp`, date ranges, `fdpState=ACTIVE`, `sort`, `page`, `size`, `facets` |
+| `GET /index/search/facets`, `GET …/resources/{id}`, `GET …/landing`, `GET …/labels` | anyone† | All values of one facet; one resource as JSON or its harvested triples (Turtle, JSON-LD, N-Triples); counters and facet descriptions; labels for IRIs |
+| `GET /index/search/profile`, `POST …/reindex`, `GET …/stats` | admin | The search profile; re-project harvested metadata; rows and completeness per FDP |
 | `GET` / `POST /index/sparql` | anyone† | SPARQL 1.1 Protocol over all harvested metadata; without `query`, the service description |
 | `POST /index/sparql/validate`, `GET …/schema`, `GET …/suggest`, `POST …/labels` | anyone† | Editor support: validation with line and column, classes and properties with counts, value suggestions, labels |
 | `GET /index/sparql/examples`, `POST …/{id}/expand`, `POST …/{id}/run` | anyone† | The query library |
@@ -140,6 +143,9 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs |
 | `FDPINDEX_HEALTH_SWEEP_SECONDS`, `FDPINDEX_HEALTH_BATCH` | `60`, `100` | How often due liveness checks are started, and how many per sweep |
 | `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API |
+| `FDPINDEX_SEARCH_ENABLED` | `true` | The faceted search and its page (needs the `unaccent` and `pg_trgm` extensions, which migration 0003 creates) |
+| `FDPINDEX_SEARCH_RATE_PER_MINUTE` | `120` | Searches per minute per anonymous address |
+| `FDPINDEX_SEARCH_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `5`, `30` | Statement timeout per search |
 | `FDPINDEX_SPARQL_ENABLED` | `true` | The SPARQL endpoint and page |
 | `FDPINDEX_SPARQL_DIR` | `data/sparql` | Store and snapshots (a volume; rebuilt from PostgreSQL when empty) |
 | `FDPINDEX_SPARQL_WORKERS` | `2` | Query worker processes |

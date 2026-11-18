@@ -1,0 +1,164 @@
+/**
+ * The search API (`/index/search/*`). The server returns free-form JSON for
+ * these routes, so the shapes are declared here rather than generated.
+ */
+
+import { apiUrl, request } from "@/api/client";
+
+export type Kind = "fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other";
+export const KINDS: Kind[] = [
+  "dataset",
+  "series",
+  "catalog",
+  "service",
+  "fdp",
+  "distribution",
+  "other",
+];
+
+export interface ValueView {
+  value: string;
+  label: string;
+  lang?: string;
+}
+
+export interface FdpView {
+  uuid: string;
+  clientUrl: string;
+  title: string;
+  state: string;
+}
+
+export interface Hit {
+  id: string;
+  iri: string;
+  type: Kind;
+  typeIris: string[];
+  title: string;
+  titleLang: string | null;
+  titleFallback: boolean;
+  description: string | null;
+  score: number | null;
+  completeness: number;
+  fdp: FdpView;
+  catalog: { id: string; iri: string; title: string } | null;
+  issued: string | null;
+  modified: string | null;
+  landingPage: string | null;
+  sourceUrl: string;
+  facts: Record<string, number>;
+  values: Record<string, ValueView[]>;
+  distributions?: { id: string; iri: string; title: string; values: Record<string, ValueView[]> }[];
+}
+
+export interface Bucket {
+  value: string;
+  label: string;
+  count: number;
+  state?: string | null;
+}
+
+export interface FacetResult {
+  buckets: Bucket[];
+  more: boolean;
+}
+
+export interface SearchResult {
+  query: { q: string; types: Kind[]; sort: string; lang: string };
+  totalResults: number;
+  startIndex: number;
+  itemsPerPage: number;
+  page: number;
+  took: number;
+  hits: Hit[];
+  facets: Record<string, FacetResult>;
+}
+
+export interface FacetInfo {
+  name: string;
+  label: Record<string, string>;
+  help: Record<string, string>;
+  group: "main" | "more";
+  kind: string;
+}
+
+export interface Landing {
+  counters: Record<Kind, number>;
+  landing: Kind[];
+  fdps: { total: number; byState: Record<string, number> };
+  facets: FacetInfo[];
+  fields: Record<string, { label: Record<string, string>; kind: string }>;
+  cards: Partial<Record<Kind, string[]>>;
+  indexing: { pending: number };
+}
+
+export interface Brief {
+  id: string;
+  iri: string;
+  type: Kind;
+  title: string;
+}
+
+export interface ResourceDetail {
+  id: string;
+  iri: string;
+  type: Kind;
+  typeIris: string[];
+  title: string;
+  titleLang: string | null;
+  titles: Record<string, string>;
+  description: string | null;
+  descriptions: Record<string, string>;
+  completeness: number;
+  issued: string | null;
+  modified: string | null;
+  landingPage: string | null;
+  sourceUrl: string;
+  harvestedAt: string;
+  facts: Record<string, number | boolean>;
+  fdp: FdpView;
+  parents: Brief[];
+  children: Brief[];
+  childCount: number;
+  values: Record<string, ValueView[]>;
+}
+
+/** Fields labelled by the client's copy rather than by the profile. */
+export const LOCAL_FIELDS = new Set([
+  "issued",
+  "modified",
+  "landingPage",
+  "datasetCount",
+  "distributionCount",
+]);
+
+export const RDF_FORMATS = [
+  { key: "ttl", label: "Turtle", ext: "ttl", type: "text/turtle" },
+  { key: "jsonld", label: "JSON-LD", ext: "jsonld", type: "application/ld+json" },
+  { key: "nt", label: "N-Triples", ext: "nt", type: "application/n-triples" },
+] as const;
+
+export const searchApi = {
+  search: (params: URLSearchParams) => request<SearchResult>(`/index/search?${params}`),
+  facet: (field: string, params: URLSearchParams, contains: string) => {
+    const query = new URLSearchParams(params);
+    for (const key of ["page", "size", "sort", "facets", "facetSize"]) query.delete(key);
+    query.set("field", field);
+    if (contains) query.set("contains", contains);
+    return request<FacetResult>(`/index/search/facets?${query}`);
+  },
+  landing: () => request<Landing>("/index/search/landing"),
+  resource: (id: string, lang?: string) =>
+    request<ResourceDetail>(
+      `/index/search/resources/${encodeURIComponent(id)}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`,
+    ),
+  triples: (id: string, format: string) =>
+    request<string>(
+      `/index/search/resources/${encodeURIComponent(id)}?format=${encodeURIComponent(format)}`,
+      { accept: "*/*" },
+    ),
+  tripleUrl: (id: string, format: string) =>
+    apiUrl(
+      `/index/search/resources/${encodeURIComponent(id)}?format=${encodeURIComponent(format)}`,
+    ),
+};

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { api, type Permit } from "@/api";
 import { ApiError } from "@/api/client";
 import { session } from "@/auth/session";
-import { keys, useEntry, useInvalidateEntries } from "@/composables/queries";
+import { keys, useEntry, useInvalidateEntries, useServiceInfo } from "@/composables/queries";
 import { confirm, toast } from "@/composables/feedback";
 import StateBadge from "@/components/StateBadge.vue";
 import PermitBadge from "@/components/PermitBadge.vue";
@@ -20,6 +20,7 @@ const router = useRouter();
 const invalidate = useInvalidateEntries();
 
 const entry = useEntry(() => props.uuid);
+const info = useServiceInfo();
 const detail = computed(() => entry.data.value);
 const metadata = computed(() => detail.value?.currentMetadata?.metadata ?? {});
 const title = computed(
@@ -238,6 +239,13 @@ async function remove() {
             }}
           </p>
           <div class="row">
+            <router-link
+              v-if="info.data.value?.search && detail.permit === 'ACCEPTED'"
+              class="btn primary"
+              :to="{ name: 'search', query: { fdp: detail.uuid } }"
+            >
+              {{ t("search.searchFdp") }}
+            </router-link>
             <button class="btn" :aria-expanded="showPreview" @click="showPreview = !showPreview">
               {{ showPreview ? t("entry.hidePreview") : t("entry.preview") }}
             </button>

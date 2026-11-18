@@ -1,4 +1,4 @@
-# ADR-0001: The FDP Index as a standalone service, compatible on the wire
+# ADR-0001: The FDPneo Index as a standalone service, compatible on the wire
 
 - Status: accepted
 - Date: 2026-11-17
@@ -22,7 +22,7 @@ harvest of each accepted FDP.
 
 ## Decision
 
-1. **A standalone service** in its own repository, `fdpindex`, with a server
+1. **A standalone service** in its own repository, `fdpneo-index`, with a server
    (`server/`, Python, FastAPI) and an administration client (`client/`, Vue),
    on the same stack and conventions as FDPneo. It does not depend on FDPneo
    packages: it only speaks HTTP to FDPs.

@@ -8,6 +8,7 @@ import { cycleTheme, themeMode } from "@/composables/theme";
 import { apiUrl } from "@/api/client";
 import ToastHost from "@/components/ToastHost.vue";
 import ConfirmHost from "@/components/ConfirmHost.vue";
+import AppMark from "@/components/AppMark.vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -29,7 +30,7 @@ async function leave() {
   <header class="topbar">
     <div class="inner">
       <router-link class="brand" :to="{ name: 'directory' }">
-        <span class="mark" aria-hidden="true">◎</span>
+        <AppMark :size="34" />
         <span>
           <strong>{{ t("app.name") }}</strong>
           <span class="tagline">{{ t("app.tagline") }}</span>
@@ -121,16 +122,6 @@ async function leave() {
 }
 .brand:hover {
   text-decoration: none;
-}
-.brand .mark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--fair-radius-md);
-  background: var(--tool-accent);
-  color: var(--fair-text-on-accent);
-  font-size: 18px;
 }
 .brand strong {
   display: block;

@@ -239,7 +239,7 @@ def test_webhook_management(api: Api, network: FakeNetwork) -> None:
 
 def test_service_info_and_health(api: Api) -> None:
     info = api.client.get("/").json()
-    assert info["name"] == "FDP Index"
+    assert info["name"] == "FDPneo Index"
     assert info["auth"] == ["token"]
     assert info["oidc"] is None
     assert api.client.get("/index/config").json() == info

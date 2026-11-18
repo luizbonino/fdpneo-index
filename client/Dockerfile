@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# FDP Index client: the static app behind nginx, which also proxies the API
+# FDPneo Index client: the static app behind nginx, which also proxies the API
 # (including FDP pings on POST /) to the index server.
 
 FROM node:24-alpine AS build

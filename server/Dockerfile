@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# FDP Index server image: uv build into a self-contained venv, copied into a
+# FDPneo Index server image: uv build into a self-contained venv, copied into a
 # slim non-root runtime. `fdpindex serve` applies migrations, then serves.
 
 FROM python:3.15-slim AS builder

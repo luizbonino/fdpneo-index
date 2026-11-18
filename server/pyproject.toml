@@ -1,7 +1,7 @@
 [project]
-name = "fdpindex"
+name = "fdpneo-index"
 version = "0.1.0.dev0"
-description = "FDP Index — a directory of FAIR Data Points: ping intake, reachability, harvest and administration."
+description = "FDPneo Index — a directory of FAIR Data Points: ping intake, reachability, harvest and administration."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }

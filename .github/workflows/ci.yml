@@ -1,4 +1,4 @@
-# FDP Index CI: the same gates as locally. Prepared while the repository is
+# FDPneo Index CI: the same gates as locally. Prepared while the repository is
 # local only (TASKS 0.8); it runs once the repository is on GitHub.
 # Integration tests need Docker (testcontainers) and run on pushes to main only,
 # to keep Actions minutes down.

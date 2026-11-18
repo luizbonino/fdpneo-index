@@ -1,3 +1,3 @@
-# FDP Index server
+# FDPneo Index server
 
 See the repository README.

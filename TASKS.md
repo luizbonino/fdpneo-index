@@ -1,6 +1,6 @@
-# FDP Index — tasks
+# FDPneo Index — tasks
 
-The FDP Index as a standalone service, separated from the FAIR Data Point.
+The FDPneo Index as a standalone service, separated from the FAIR Data Point.
 Status marks: `[ ]` open · `[~]` in progress · `[x]` done.
 
 Done means: code merged on `main`, the quality gate is green (server: `ruff`,
@@ -71,5 +71,5 @@ registered FDPs itself. See [ADR-0004](docs/adr/0004-active-liveness-checks.md).
 ## Phase 5 — Separation from the FAIR Data Point
 
 - [ ] 5.1 FDPneo evaluation stack: optional `index` profile running fdpindex, FDPneo pings it
-- [ ] 5.2 fdpneo-docs: FDP Index pages (deploying, registering an FDP, administering)
+- [ ] 5.2 fdpneo-docs: FDPneo Index pages (deploying, registering an FDP, administering)
 - [ ] 5.3 Guidance for Java FDP deployments running `FDP_INDEX=true`: migrate with the importer, then switch the mode off

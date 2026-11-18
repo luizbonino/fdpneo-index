@@ -1,4 +1,4 @@
-# FDP Index: one origin for people and FDPs. The app is static; API paths
+# FDPneo Index: one origin for people and FDPs. The app is static; API paths
 # and pings (POST /) go to the index server at ${FDPINDEX_API_UPSTREAM}.
 
 server {

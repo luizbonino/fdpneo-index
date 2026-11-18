@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" role="img" aria-label="FDPneo Index">
+  <circle cx="27" cy="27" r="15" stroke="#eef2f7" stroke-width="3.2"/>
+  <line x1="38" y1="38" x2="51" y2="51" stroke="#eef2f7" stroke-width="4.4" stroke-linecap="round"/>
+  <circle cx="27" cy="27" r="6.6" fill="#7aa7f0"/>
+</svg>

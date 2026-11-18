@@ -1,4 +1,4 @@
-# FDP Index stack: PostgreSQL, the index server, and the client (nginx), which
+# FDPneo Index stack: PostgreSQL, the index server, and the client (nginx), which
 # serves the app and proxies the API on one origin, http://localhost:8090.
 #
 #   cp deploy/.env.example deploy/.env    # then set an admin token digest
@@ -27,7 +27,7 @@ services:
 
   server:
     build: ../server
-    image: ${SERVER_IMAGE:-fdpindex-server}:${SERVER_IMAGE_TAG:-dev}
+    image: ${SERVER_IMAGE:-fdpneo-index-server}:${SERVER_IMAGE_TAG:-dev}
     environment:
       FDPINDEX_DATABASE_URL: postgresql+asyncpg://fdpindex:${POSTGRES_PASSWORD}@postgres:5432/fdpindex
       FDPINDEX_ADMIN_TOKENS: ${FDPINDEX_ADMIN_TOKENS:-}
@@ -45,7 +45,7 @@ services:
 
   client:
     build: ../client
-    image: ${CLIENT_IMAGE:-fdpindex-client}:${CLIENT_IMAGE_TAG:-dev}
+    image: ${CLIENT_IMAGE:-fdpneo-index-client}:${CLIENT_IMAGE_TAG:-dev}
     environment:
       FDPINDEX_API_UPSTREAM: http://server:8000
       FDPINDEX_PUBLIC_ORIGIN: ${FDPINDEX_PUBLIC_ORIGIN:-}

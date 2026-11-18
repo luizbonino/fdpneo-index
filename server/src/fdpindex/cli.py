@@ -8,7 +8,7 @@ import typer
 from alembic import command
 from alembic.config import Config
 
-app = typer.Typer(help="FDP Index administration.", no_args_is_help=True)
+app = typer.Typer(help="FDPneo Index administration.", no_args_is_help=True)
 db_app = typer.Typer(help="Database.", no_args_is_help=True)
 token_app = typer.Typer(help="Static admin tokens (ADR-0003).", no_args_is_help=True)
 app.add_typer(db_app, name="db")

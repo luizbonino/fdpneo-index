@@ -1037,7 +1037,7 @@
   },
   "info": {
     "description": "A directory of FAIR Data Points: ping intake, reachability, harvest and administration.",
-    "title": "FDP Index",
+    "title": "FDPneo Index",
     "version": "0.1.0.dev0"
   },
   "openapi": "3.1.0",

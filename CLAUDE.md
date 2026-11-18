@@ -1,6 +1,6 @@
-# Claude Code context — fdpindex
+# Claude Code context — FDPneo Index (fdpindex)
 
-The FDP Index as a standalone service: a directory of FAIR Data Points with
+The FDPneo Index as a standalone service: a directory of FAIR Data Points with
 ping intake, metadata retrieval, reachability, harvest and administration.
 It sits beside `../server` (FDPneo server), `../client` (fdpneo-client) and
 `../mcp`, and does not import any of them.

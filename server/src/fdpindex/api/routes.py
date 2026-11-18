@@ -156,7 +156,7 @@ def _service_info(request: Request) -> ServiceInfo:
     if config.admin_tokens:
         auth.append("token")
     return ServiceInfo(
-        name="FDP Index",
+        name="FDPneo Index",
         version=__version__,
         ping=str(request.url_for("receive_ping")),
         oidc={"issuer": config.oidc_issuer, "clientId": config.oidc_client_id}

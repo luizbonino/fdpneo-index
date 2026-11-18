@@ -123,7 +123,7 @@ def create_app(
                 await engine.dispose()
 
     app = FastAPI(
-        title="FDP Index",
+        title="FDPneo Index",
         version=__version__,
         description="A directory of FAIR Data Points: ping intake, reachability, harvest and administration.",
         lifespan=lifespan,

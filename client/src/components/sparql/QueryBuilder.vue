@@ -76,7 +76,13 @@ function addCondition() {
   update({
     conditions: [
       ...model.value.conditions,
-      { property: `${DCAT}keyword`, operator: "contains", values: [""], kind: "literal" },
+      {
+        id: Math.random().toString(36).slice(2),
+        property: `${DCAT}keyword`,
+        operator: "contains",
+        values: [""],
+        kind: "literal",
+      },
     ],
   });
 }
@@ -138,7 +144,7 @@ const valueType = (operator: Operator) =>
       <p v-if="!model.conditions.length" class="small muted">
         {{ t("sparql.builder.noConditions") }}
       </p>
-      <div v-for="(c, index) in model.conditions" :key="index" class="condition">
+      <div v-for="(c, index) in model.conditions" :key="c.id ?? index" class="condition">
         <label class="field">
           <span class="small">{{ t("sparql.builder.on") }}</span>
           <select

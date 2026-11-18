@@ -5,7 +5,7 @@
  * the theme tokens; the canvas carries a text summary for screen readers, and
  * the table remains the accessible view.
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   ArcElement,
@@ -40,7 +40,15 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const kind = ref<string>(["bar", "barh", "pie", "line"].includes(props.type) ? props.type : "bar");
+const KINDS = ["bar", "barh", "pie", "line"];
+const kind = ref<string>(KINDS.includes(props.type) ? props.type : "bar");
+// A new question brings its own default chart.
+watch(
+  () => props.type,
+  (type) => {
+    kind.value = KINDS.includes(type) ? type : "bar";
+  },
+);
 
 function token(name: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;

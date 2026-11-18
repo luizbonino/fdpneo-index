@@ -17,9 +17,12 @@ import { runQuery, sparqlApi, type QueryOutcome } from "@/sparql/api";
 import {
   chartShape,
   curie,
+  isLinkable,
   shortIri,
+  toCsv,
   toMarkdown,
   toTable,
+  toTsv,
   type Cell,
   type Table,
 } from "@/sparql/results";
@@ -151,8 +154,19 @@ const formats = computed(() =>
 
 async function download(format: (typeof FORMATS)[number]) {
   try {
-    const result = await runQuery(props.query, format.accept);
-    const blob = new Blob([result.text], { type: result.mediaType || format.accept });
+    // CSV and TSV are built from the table, with cells a spreadsheet would run as
+    // formulas neutralised; the other formats are exactly what the API returns.
+    let text: string;
+    let type: string;
+    if (table.value && (format.key === "csv" || format.key === "tsv")) {
+      text = format.key === "csv" ? toCsv(table.value) : toTsv(table.value);
+      type = format.accept;
+    } else {
+      const result = await runQuery(props.query, format.accept);
+      text = result.text;
+      type = result.mediaType || format.accept;
+    }
+    const blob = new Blob([text], { type });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `query-results.${format.ext}`;
@@ -203,16 +217,16 @@ async function copyMarkdown() {
         <div
           v-if="outcome.kind === 'select'"
           class="seg"
-          role="tablist"
+          role="group"
           :aria-label="t('sparql.results.view')"
         >
-          <button role="tab" :aria-selected="view === 'table'" @click="view = 'table'">
+          <button :aria-pressed="view === 'table'" @click="view = 'table'">
             {{ t("sparql.results.table") }}
           </button>
-          <button v-if="shape" role="tab" :aria-selected="view === 'chart'" @click="view = 'chart'">
+          <button v-if="shape" :aria-pressed="view === 'chart'" @click="view = 'chart'">
             {{ t("sparql.results.chart") }}
           </button>
-          <button role="tab" :aria-selected="view === 'raw'" @click="view = 'raw'">
+          <button :aria-pressed="view === 'raw'" @click="view = 'raw'">
             {{ t("sparql.results.raw") }}
           </button>
         </div>
@@ -270,12 +284,14 @@ async function copyMarkdown() {
                   <template v-if="cell.term?.type === 'uri'">
                     <span class="iri">
                       <a
+                        v-if="isLinkable(cell.text)"
                         :href="cell.text"
                         target="_blank"
                         rel="noopener noreferrer"
                         :title="cell.text"
                         >{{ iriText(cell.text) }}</a
                       >
+                      <span v-else class="mono" :title="cell.text">{{ cell.text }}</span>
                       <button
                         class="describe"
                         :title="t('sparql.results.describe')"
@@ -342,7 +358,7 @@ async function copyMarkdown() {
   color: var(--fair-text);
   cursor: pointer;
 }
-.seg button[aria-selected="true"] {
+.seg button[aria-pressed="true"] {
   background: var(--tool-accent-tint);
   color: var(--tool-accent);
   font-weight: var(--fair-weight-semibold);

@@ -21,10 +21,20 @@ export interface HistoryItem {
 const KEY = "fdpindex.sparql.history";
 const MAX = 50;
 
+function isItem(value: unknown): value is HistoryItem {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.query === "string" &&
+    typeof item.at === "string" &&
+    (item.rows === null || typeof item.rows === "number")
+  );
+}
+
 function load(): HistoryItem[] {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as HistoryItem[]) : [];
+    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter(isItem).slice(0, 200) : [];
   } catch {
     return [];
   }

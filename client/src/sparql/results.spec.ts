@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { chartShape, curie, shortIri, toCsv, toMarkdown, toTable } from "./results";
+import {
+  chartShape,
+  curie,
+  isLinkable,
+  shortIri,
+  toCsv,
+  toMarkdown,
+  toTable,
+  toTsv,
+} from "./results";
 import type { SelectResults } from "./api";
 
 const INT = "http://www.w3.org/2001/XMLSchema#integer";
@@ -40,5 +49,29 @@ describe("results", () => {
       'theme,n\r\nhttp://www.w3.org/ns/dcat#Dataset,12\r\n"a, ""b""",3\r\n',
     );
     expect(toMarkdown(table).split("\n")[1]).toBe("| --- | --- |");
+  });
+});
+
+describe("untrusted values", () => {
+  it("links only http(s) IRIs", () => {
+    expect(isLinkable("https://fdp.example.org/x")).toBe(true);
+    expect(isLinkable("javascript:alert(1)")).toBe(false);
+    expect(isLinkable("data:text/html,<b>x</b>")).toBe(false);
+    expect(isLinkable("urn:fdpindex:entries")).toBe(false);
+  });
+
+  it("neutralises spreadsheet formulas in CSV and TSV, but not numbers", () => {
+    const table = toTable({
+      head: { vars: ["v"] },
+      results: {
+        bindings: [
+          { v: { type: "literal", value: '=HYPERLINK("http://evil","x")' } },
+          { v: { type: "literal", value: "-5", datatype: INT } },
+          { v: { type: "literal", value: "@SUM(A1)" } },
+        ],
+      },
+    });
+    expect(toCsv(table)).toBe(`v\r\n"'=HYPERLINK(""http://evil"",""x"")"\r\n-5\r\n'@SUM(A1)\r\n`);
+    expect(toTsv(table).split("\n")[1]).toBe(`'=HYPERLINK("http://evil","x")`);
   });
 });

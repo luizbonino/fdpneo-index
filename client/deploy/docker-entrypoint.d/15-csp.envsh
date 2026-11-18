@@ -1,0 +1,12 @@
+#!/bin/sh
+# The Content-Security-Policy for the app pages, exported for the nginx
+# template (an .envsh script is sourced, so the variable reaches 20-envsubst).
+#
+# connect-src: the app talks to its own origin; add the OIDC issuer (sign-in
+# and token refresh) and a separate API origin when configured.
+connect="'self'"
+[ -n "${FDPINDEX_OIDC_ISSUER:-}" ] && connect="$connect $(printf '%s' "$FDPINDEX_OIDC_ISSUER" | sed -E 's#^(https?://[^/]+).*#\1#')"
+[ -n "${FDPINDEX_PUBLIC_API_URL:-}" ] && connect="$connect $(printf '%s' "$FDPINDEX_PUBLIC_API_URL" | sed -E 's#^(https?://[^/]+).*#\1#')"
+[ -n "${FDPINDEX_CSP_CONNECT_EXTRA:-}" ] && connect="$connect $FDPINDEX_CSP_CONNECT_EXTRA"
+FDPINDEX_CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src $connect; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+export FDPINDEX_CSP

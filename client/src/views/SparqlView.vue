@@ -14,7 +14,7 @@ import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
 import { ApiError } from "@/api/client";
 import { runQuery, sparqlApi, type Example, type QueryOutcome } from "@/sparql/api";
-import { decodeModel, emptyModel, encodeModel, type BuilderModel } from "@/sparql/builder";
+import { decodeModel, emptyModel, encodeModel, isIri, type BuilderModel } from "@/sparql/builder";
 import {
   clearHistory,
   decodeQuery,
@@ -172,9 +172,9 @@ function openInEditor(query: string) {
 }
 
 function describe(iri: string) {
-  const query = `DESCRIBE <${iri}>`;
-  openInEditor(query);
-  void run(query);
+  if (!isIri(iri)) return;
+  openInEditor(`DESCRIBE <${iri}>`);
+  void runEditor();
 }
 
 async function share() {
@@ -203,9 +203,14 @@ function insertGraph(event: Event) {
 }
 
 function onTabKey(event: KeyboardEvent, index: number) {
-  const delta = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-  if (!delta) return;
-  const next = TABS[(index + delta + TABS.length) % TABS.length] ?? "library";
+  let target: number;
+  if (event.key === "ArrowRight") target = (index + 1) % TABS.length;
+  else if (event.key === "ArrowLeft") target = (index - 1 + TABS.length) % TABS.length;
+  else if (event.key === "Home") target = 0;
+  else if (event.key === "End") target = TABS.length - 1;
+  else return;
+  event.preventDefault();
+  const next = TABS[target] ?? "library";
   tab.value = next;
   void nextTick(() => document.getElementById(`tab-${next}`)?.focus());
 }

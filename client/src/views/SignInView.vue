@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { session, signInWithOidc, signInWithToken } from "@/auth/session";
+import { session, signInWithOidc, signInWithToken, safeReturnTo } from "@/auth/session";
 import { useServiceInfo } from "@/composables/queries";
 
 const { t } = useI18n();
@@ -15,8 +15,7 @@ const error = ref("");
 const busy = ref(false);
 
 function returnTo(): string {
-  const target = route.query.returnTo;
-  return typeof target === "string" && target.startsWith("/") ? target : "/";
+  return safeReturnTo(route.query.returnTo);
 }
 
 async function oidc() {

@@ -15,6 +15,8 @@ export type Operator =
   "is" | "oneOf" | "contains" | "exists" | "missing" | "before" | "after" | "greater" | "less";
 
 export interface Condition {
+  /** A stable key for the form row (not part of the query). */
+  id?: string | undefined;
   /** Optional first hop to a related resource, e.g. dcat:distribution; "^" marks an inverse hop. */
   via?: string | undefined;
   property: string;

@@ -26,6 +26,7 @@ export const KNOWN_PREFIXES: Record<string, string> = {
   time: "http://www.w3.org/2006/time#",
   "fdp-o": "https://w3id.org/fdp/fdp-o#",
   r3d: "http://www.re3data.org/schema/3-0#",
+  healthdcatap: "http://healthdataportal.eu/ns/health#",
   fdpindex: "urn:fdpindex:",
 };
 
@@ -34,6 +35,14 @@ const NUMERIC = new Set(
     (t) => `http://www.w3.org/2001/XMLSchema#${t}`,
   ),
 );
+
+/**
+ * Whether an IRI may be a link. Harvested metadata is untrusted: an FDP can
+ * publish `javascript:` or `data:` IRIs, which must never become clickable.
+ */
+export function isLinkable(iri: string): boolean {
+  return /^https?:\/\//i.test(iri);
+}
 
 /** `dcat:Dataset` when the namespace is known, else null. */
 export function curie(
@@ -129,14 +138,35 @@ export function chartShape(
   return label >= 0 ? { label, value } : null;
 }
 
+/**
+ * Text a spreadsheet would run as a formula (=, +, -, @, tab, carriage return
+ * first) gets a leading apostrophe; numbers stay numbers. Harvested literals
+ * are untrusted, and downloads are opened in Excel or LibreOffice.
+ */
+export function spreadsheetSafe(cell: Cell): string {
+  const numeric = cell.term?.type === "literal" && typeof cell.sortKey === "number";
+  return !numeric && /^[=+\-@\t\r]/.test(cell.text) ? `'${cell.text}` : cell.text;
+}
+
 function csvCell(text: string): string {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 export function toCsv(table: Table): string {
   const lines = [table.columns.join(",")];
-  for (const row of table.rows) lines.push(row.map((c) => csvCell(c.text)).join(","));
+  for (const row of table.rows) {
+    lines.push(row.map((c) => csvCell(spreadsheetSafe(c))).join(","));
+  }
   return `${lines.join("\r\n")}\r\n`;
+}
+
+export function toTsv(table: Table): string {
+  const clean = (text: string) => text.replace(/[\t\r\n]+/g, " ");
+  const lines = [table.columns.join("\t")];
+  for (const row of table.rows) {
+    lines.push(row.map((c) => clean(spreadsheetSafe(c))).join("\t"));
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 export function toMarkdown(table: Table, max = 200): string {

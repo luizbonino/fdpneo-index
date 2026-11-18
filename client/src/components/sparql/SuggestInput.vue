@@ -111,11 +111,15 @@ function onKey(event: KeyboardEvent) {
   }
 }
 
+let blurTimer: ReturnType<typeof setTimeout> | undefined;
 function onBlur() {
-  setTimeout(() => (open.value = false), 150);
+  blurTimer = setTimeout(() => (open.value = false), 150);
 }
 
-onBeforeUnmount(() => clearTimeout(timer));
+onBeforeUnmount(() => {
+  clearTimeout(timer);
+  clearTimeout(blurTimer);
+});
 </script>
 
 <template>
@@ -139,7 +143,14 @@ onBeforeUnmount(() => clearTimeout(timer));
       @keydown="onKey"
     />
     <ul v-show="open && (items.length || loading)" :id="`${id}-list`" class="list" role="listbox">
-      <li v-if="loading && !items.length" class="muted small empty">{{ t("common.loading") }}</li>
+      <li
+        v-if="loading && !items.length"
+        class="muted small empty"
+        role="option"
+        aria-disabled="true"
+      >
+        {{ t("common.loading") }}
+      </li>
       <li
         v-for="(item, index) in items"
         :id="`${id}-opt-${index}`"

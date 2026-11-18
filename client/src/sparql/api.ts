@@ -127,13 +127,6 @@ export async function runQuery(query: string, accept = RESULT_ACCEPT): Promise<Q
   return outcome;
 }
 
-/** A link that runs the query with the given format, for downloads and the raw endpoint. */
-export function queryUrl(query: string, format?: string): string {
-  const params = new URLSearchParams({ query });
-  if (format) params.set("format", format);
-  return apiUrl(`/index/sparql?${params.toString()}`);
-}
-
 export const sparqlApi = {
   validate: (query: string) =>
     request<Validation>("/index/sparql/validate", { method: "POST", body: { query } }),

@@ -151,7 +151,24 @@ export async function completeOidc(info: ServiceInfo): Promise<string> {
   state.name = user.profile.preferred_username ?? user.profile.sub;
   await checkAdmin();
   const target = (user.state as { returnTo?: string } | undefined)?.returnTo;
-  return target && target.startsWith("/") ? target : "/";
+  return safeReturnTo(target);
+}
+
+/**
+ * A path on this site to go back to after signing in, or "/".
+ *
+ * "//evil.example" and "/\\evil.example" start with a slash but are other sites
+ * to a browser; resolving against our origin and comparing catches every form.
+ */
+export function safeReturnTo(target: unknown): string {
+  if (typeof target !== "string" || !target.startsWith("/")) return "/";
+  try {
+    const url = new URL(target, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/";
+  }
 }
 
 export async function signOut(info: ServiceInfo | undefined): Promise<void> {

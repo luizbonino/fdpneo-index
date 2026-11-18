@@ -1,5 +1,8 @@
 # FDPneo Index: one origin for people and FDPs. The app is static; API paths
 # and pings (POST /) go to the index server at ${FDPINDEX_API_UPSTREAM}.
+#
+# Note: a location with its own add_header drops every add_header inherited
+# from the server block, so the app locations repeat the security headers.
 
 server {
     listen 80;
@@ -12,7 +15,11 @@ server {
     add_header X-Frame-Options "DENY" always;
 
     proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # The address that connected, never one the client claims: the server keys
+    # its per-address rate limits on this. Behind another reverse proxy, use
+    # nginx's realip module (set_real_ip_from <that proxy>) so $remote_addr is
+    # the client's, and keep this line.
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Host $host;
 
@@ -22,6 +29,10 @@ server {
             rewrite ^ /__ping last;
         }
         add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Content-Security-Policy "${FDPINDEX_CSP}" always;
         try_files /index.html =404;
     }
 
@@ -34,21 +45,28 @@ server {
         proxy_pass ${FDPINDEX_API_UPSTREAM};
     }
 
-    location ~ ^/(openapi\.json|docs|redoc|healthz|readyz)$ {
+    # /readyz stays internal: it is for the container health check, not the public.
+    location ~ ^/(openapi\.json|docs|redoc|healthz)$ {
         proxy_pass ${FDPINDEX_API_UPSTREAM};
     }
 
     location = /config.js {
         add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
     }
 
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
         try_files $uri =404;
     }
 
     location / {
         add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Content-Security-Policy "${FDPINDEX_CSP}" always;
         try_files $uri $uri/ /index.html;
     }
 }

@@ -324,10 +324,15 @@ onBeforeUnmount(() => view?.destroy());
 function addMissingPrefixes(): number {
   if (!view) return 0;
   const doc = view.state.doc.toString();
-  const stripped = doc.replace(/<[^<>\s]*>|"(?:[^"\\]|\\.)*"|#[^\n]*/g, " ");
+  // IRIs, strings and comments go first, so only a word character or a hyphen
+  // can precede a prefix that is not this one (paths like dcat:x/dct:y included).
+  const stripped = doc.replace(
+    /<[^<>\s]*>|"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|#[^\n]*/g,
+    " ",
+  );
   const missing = Object.keys(prefixes()).filter(
     (p) =>
-      new RegExp(`(?<![\\w:<#/-])${p.replace(/-/g, "\\-")}:`).test(stripped) &&
+      new RegExp(`(?<![\\w-])${p.replace(/-/g, "\\-")}:`).test(stripped) &&
       !new RegExp(`PREFIX\\s+${p.replace(/-/g, "\\-")}:`, "i").test(doc),
   );
   if (missing.length) {

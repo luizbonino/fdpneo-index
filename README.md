@@ -77,10 +77,51 @@ harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 | `GET` / `PUT` / `DELETE /index/settings` | admin | Settings; `DELETE` resets |
 | `POST /index/admin/trigger`, `/trigger-all` | admin | Retrieve (and harvest) now |
 | `/index/webhooks`, `POST /index/admin/ping-webhook` | admin | Manage and test webhooks |
+| `GET` / `POST /index/sparql` | anyone† | SPARQL 1.1 Protocol over all harvested metadata; without `query`, the service description |
+| `POST /index/sparql/validate`, `GET …/schema`, `GET …/suggest`, `POST …/labels` | anyone† | Editor support: validation with line and column, classes and properties with counts, value suggestions, labels |
+| `GET /index/sparql/examples`, `POST …/{id}/expand`, `POST …/{id}/run` | anyone† | The query library |
 | `GET /index/config`, `/healthz`, `/readyz` | anyone | Client configuration, probes |
 
-\* Anonymous callers see accepted entries only. The OpenAPI document is at
-`/openapi.json`, interactive documentation at `/docs`.
+\* Anonymous callers see accepted entries only. † Rate limited per address
+for anonymous callers; only accepted FDPs are in the SPARQL store. The
+OpenAPI document is at `/openapi.json`, interactive documentation at `/docs`.
+
+## SPARQL
+
+The web client's **SPARQL** page has three ways in:
+
+- **Questions**: ready-made queries with a form for their parameters. No
+  SPARQL is needed.
+- **Builder**: pick a type, add conditions (with suggestions from the data),
+  and choose a list or a count. The generated SPARQL updates live.
+- **Editor**: SPARQL with autocomplete of the classes, properties and
+  prefixes in the data, inline validation, and Ctrl/Cmd+Enter to run.
+
+Results show as a table with labelled links, as a chart when they have a
+category and a number, or raw. They can be downloaded as CSV, TSV, JSON or
+Turtle. Recent queries stay in the browser, and every query has a shareable
+link.
+
+Each accepted FDP's metadata is a named graph, named by its address. The
+default graph is the union of those graphs. The graph `urn:fdpindex:entries`
+describes the FDPs themselves:
+
+- `fdpindex:state` (`ACTIVE`, …)
+- `dct:title`
+- `r3d:country`
+- `fdpindex:lastRetrieval`
+- `fdpindex:harvestedNodes`
+
+```bash
+curl -H 'Accept: text/csv' --data-urlencode \
+  'query=SELECT ?fdp (COUNT(?d) AS ?n) WHERE { GRAPH ?fdp { ?d a dcat:Dataset } } GROUP BY ?fdp' \
+  http://localhost:8090/index/sparql
+```
+
+Common prefixes (`dcat:`, `dct:`, `foaf:`, `fdp-o:`, …) work without
+declarations. Limits apply: a time budget per query, a row cap, and a
+per-address rate limit. They are configurable, and administrators get more
+(see [ADR-0005](docs/adr/0005-search-and-sparql.md)).
 
 ## Configuration
 
@@ -97,6 +138,14 @@ harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 | `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs |
 | `FDPINDEX_HEALTH_SWEEP_SECONDS`, `FDPINDEX_HEALTH_BATCH` | `60`, `100` | How often due liveness checks are started, and how many per sweep |
 | `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API |
+| `FDPINDEX_SPARQL_ENABLED` | `true` | The SPARQL endpoint and page |
+| `FDPINDEX_SPARQL_DIR` | `data/sparql` | Store and snapshots (a volume; rebuilt from PostgreSQL when empty) |
+| `FDPINDEX_SPARQL_WORKERS` | `2` | Query worker processes |
+| `FDPINDEX_SPARQL_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `10`, `60` | Time budget per query |
+| `FDPINDEX_SPARQL_MAX_ROWS`, `…_MAX_BYTES`, `…_MAX_QUERY_CHARS` | `10000`, 10 MiB, `20000` | Result and query caps |
+| `FDPINDEX_SPARQL_RATE_PER_MINUTE` | `30` | Queries per minute per anonymous address |
+| `FDPINDEX_SPARQL_WORKER_MAX_MB` | `1024` | Memory ceiling per worker (Linux) |
+| `FDPINDEX_PUBLIC_URL` | — | Public base URL, for absolute IRIs in the VoID description |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted (needed for the per-IP rate limit) |
 
 Rate limits, durations, the deny list, auto-permit and the liveness checks

@@ -38,6 +38,9 @@ async function leave() {
       </router-link>
       <nav class="nav" aria-label="Main">
         <router-link :to="{ name: 'directory' }">{{ t("nav.directory") }}</router-link>
+        <router-link v-if="info.data.value?.sparql" :to="{ name: 'sparql' }">{{
+          t("nav.sparql")
+        }}</router-link>
         <router-link :to="{ name: 'register' }">{{ t("nav.register") }}</router-link>
         <template v-if="session.isAdmin">
           <router-link :to="{ name: 'approvals' }">

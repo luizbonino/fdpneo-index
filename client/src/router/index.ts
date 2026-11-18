@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
     props: true,
   },
   { path: "/register", name: "register", component: () => import("@/views/RegisterView.vue") },
+  { path: "/sparql", name: "sparql", component: () => import("@/views/SparqlView.vue") },
   {
     path: "/admin/approvals",
     name: "approvals",

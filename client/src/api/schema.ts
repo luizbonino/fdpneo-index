@@ -242,6 +242,170 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/sparql": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Sparql Get
+     * @description SPARQL 1.1 Protocol query by GET; without ``query``, the service description (Turtle).
+     */
+    get: operations["sparql_get_index_sparql_get"];
+    put?: never;
+    /**
+     * Sparql Post
+     * @description SPARQL 1.1 Protocol query by POST: a form with ``query`` or an ``application/sparql-query`` body.
+     */
+    post: operations["sparql_post_index_sparql_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Sparql Examples
+     * @description The query library: grouped example queries with typed parameters.
+     */
+    get: operations["sparql_examples_index_sparql_examples_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples/{example_id}/expand": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Example Expand
+     * @description The example's query with its parameters bound, ready to run or edit.
+     */
+    post: operations["sparql_example_expand_index_sparql_examples__example_id__expand_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples/{example_id}/run": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Example Run
+     * @description Run an example with parameters; results as for ``/index/sparql``.
+     */
+    post: operations["sparql_example_run_index_sparql_examples__example_id__run_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/labels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Labels
+     * @description Labels for up to 500 IRIs, from bundled vocabularies and the harvested data.
+     */
+    post: operations["sparql_labels_index_sparql_labels_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/schema": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Sparql Schema
+     * @description Classes and properties in the data (with counts), named graphs, and known prefixes.
+     */
+    get: operations["sparql_schema_index_sparql_schema_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/suggest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Sparql Suggest
+     * @description Values of ``predicate`` (or instances of ``type``) containing ``q``, with labels and counts.
+     */
+    get: operations["sparql_suggest_index_sparql_suggest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Validate
+     * @description Parse and gate a query without running it: ``ok``, or a message with line and column.
+     */
+    post: operations["sparql_validate_index_sparql_validate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/webhooks": {
     parameters: {
       query?: never;
@@ -283,6 +447,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** Chart */
+    Chart: {
+      /** Label */
+      label?: string | null;
+      /**
+       * Type
+       * @default none
+       * @enum {string}
+       */
+      type: "none" | "bar" | "barh" | "pie" | "line";
+      /** Value */
+      value?: string | null;
+    };
+    /** Choice */
+    Choice: {
+      /**
+       * Kind
+       * @default iri
+       * @enum {string}
+       */
+      kind: "iri" | "text";
+      /** Label */
+      label: string;
+      /** Value */
+      value: string;
+    };
     /** EntriesInfoView */
     EntriesInfoView: {
       /** Entriescount */
@@ -420,6 +610,29 @@ export interface components {
        */
       uuid: string;
     };
+    /** Example */
+    Example: {
+      chart?: components["schemas"]["Chart"];
+      /** Description */
+      description: string;
+      /** Group */
+      group: string;
+      /** Id */
+      id: string;
+      /** Parameters */
+      parameters?: components["schemas"]["Parameter"][];
+      /** Query */
+      query: string;
+      /** Title */
+      title: string;
+    };
+    /** ExampleRequest */
+    ExampleRequest: {
+      /** Parameters */
+      parameters?: {
+        [key: string]: string;
+      };
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -513,6 +726,44 @@ export interface components {
       ping: components["schemas"]["PingSettings-Output"];
       retrieval: components["schemas"]["RetrievalSettings-Output"];
     };
+    /** LabelsRequest */
+    LabelsRequest: {
+      /** Iris */
+      iris: string[];
+    };
+    /** Library */
+    Library: {
+      /** Examples */
+      examples: components["schemas"]["Example"][];
+      /** Groups */
+      groups: string[];
+    };
+    /** Parameter */
+    Parameter: {
+      /** Choices */
+      choices?: components["schemas"]["Choice"][];
+      /** Default */
+      default?: string | null;
+      /** Help */
+      help?: string | null;
+      /** Label */
+      label: string;
+      /** Name */
+      name: string;
+      /** Placeholder */
+      placeholder?: string | null;
+      /**
+       * Required
+       * @default false
+       */
+      required: boolean;
+      suggest?: components["schemas"]["Suggest"] | null;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "iri" | "text" | "date" | "integer" | "choice" | "fdp";
+    };
     /** PingRequest */
     PingRequest: {
       /** Clienturl */
@@ -589,13 +840,32 @@ export interface components {
       } | null;
       /** Ping */
       ping: string;
+      /** Sparql */
+      sparql?: {
+        [key: string]: unknown;
+      } | null;
       /** Version */
       version: string;
+    };
+    /**
+     * Suggest
+     * @description Where the UI gets suggestions: objects of a predicate, or instances of a class.
+     */
+    Suggest: {
+      /** Predicate */
+      predicate?: string | null;
+      /** Type */
+      type?: string | null;
     };
     /** TriggerRequest */
     TriggerRequest: {
       /** Clienturl */
       clientUrl: string;
+    };
+    /** ValidateRequest */
+    ValidateRequest: {
+      /** Query */
+      query: string;
     };
     /** ValidationError */
     ValidationError: {
@@ -1217,6 +1487,304 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+    };
+  };
+  sparql_get_index_sparql_get: {
+    parameters: {
+      query?: {
+        query?: string | null;
+        format?: string | null;
+        "default-graph-uri"?: string[] | null;
+        "named-graph-uri"?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_post_index_sparql_post: {
+    parameters: {
+      query?: {
+        format?: string | null;
+        "default-graph-uri"?: string[] | null;
+        "named-graph-uri"?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/sparql-query": string;
+        "application/x-www-form-urlencoded": {
+          query?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_examples_index_sparql_examples_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Library"];
+        };
+      };
+    };
+  };
+  sparql_example_expand_index_sparql_examples__example_id__expand_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        example_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExampleRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_example_run_index_sparql_examples__example_id__run_post: {
+    parameters: {
+      query?: {
+        format?: string | null;
+      };
+      header?: never;
+      path: {
+        example_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExampleRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_labels_index_sparql_labels_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LabelsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: {
+              [key: string]: string;
+            };
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_schema_index_sparql_schema_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  sparql_suggest_index_sparql_suggest_get: {
+    parameters: {
+      query?: {
+        q?: string;
+        predicate?: string | null;
+        type?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          }[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_validate_index_sparql_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ValidateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

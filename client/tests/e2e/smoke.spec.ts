@@ -48,3 +48,19 @@ test("an anonymous visitor is sent to sign in from admin pages", async ({ page }
   await page.goto("/admin/settings");
   await expect(page).toHaveURL(/\/sign-in\?returnTo=/);
 });
+
+test("a visitor runs a ready-made SPARQL question and a query from the editor", async ({
+  page,
+}) => {
+  await page.goto("/sparql");
+  await page.getByRole("button", { name: /Datasets per FDP/ }).click();
+  await page.getByRole("button", { name: "Run", exact: true }).first().click();
+  await expect(page.getByText(/rows in/)).toBeVisible();
+  await expect(page.locator(".results table")).toBeVisible();
+
+  await page.getByRole("tab", { name: "Editor" }).click();
+  await page.locator("#panel-editor").getByRole("button", { name: /^Run/ }).click();
+  await expect(page.getByText(/rows in/)).toBeVisible();
+  await page.getByRole("tab", { name: "History" }).click();
+  await expect(page.locator(".history li")).toHaveCount(2);
+});

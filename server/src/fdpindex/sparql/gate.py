@@ -91,7 +91,7 @@ def _has_limit(algebra: CompValue) -> bool:
     while isinstance(node, CompValue):
         if node.name == "Slice" and node.get("length") is not None:
             return True
-        if node.name in {"Project", "Distinct", "Reduced", "OrderBy", "ToMultiSet"}:
+        if node.name in {"Project", "Distinct", "Reduced", "OrderBy"}:
             node = node.get("p")
             continue
         return False

@@ -91,21 +91,30 @@ class SparqlSync:
 
     async def _run(self) -> None:
         while True:
-            timeout = None
+            # Wake on notifications, and at least every void_interval: then the entries
+            # graph is refreshed too, because ACTIVE turns INACTIVE by time alone
+            # (unchanged facts are not rewritten).
+            tick = max(1.0, self._void_interval)
             if self._void_dirty:
-                timeout = max(0.0, self._void_at + self._void_interval - time.monotonic())
-            with contextlib.suppress(TimeoutError):
-                await asyncio.wait_for(self._wake.wait(), timeout)
+                tick = max(0.0, min(tick, self._void_at + self._void_interval - time.monotonic()))
+            try:
+                await asyncio.wait_for(self._wake.wait(), tick)
+            except TimeoutError:
+                self._entries_dirty = True
             self._wake.clear()
             await asyncio.sleep(self._debounce)  # let a burst of notifications settle
             try:
                 await self.sync_once()
             except Exception:
                 log.exception("sparql_sync_failed")
+                # The pass may have consumed pending work before failing; a reconcile
+                # (cheap, by fingerprint) catches up with everything on the retry.
+                self._reconcile = True
+                self._entries_dirty = True
                 await asyncio.sleep(5)
                 self._wake.set()
                 continue
-            if not (self._entries or self._reconcile or self._entries_dirty or self._void_dirty):
+            if not (self._entries or self._reconcile or self._entries_dirty):
                 self.idle.set()
 
     async def sync_once(self, *, force_void: bool = False) -> None:
@@ -145,15 +154,16 @@ class SparqlSync:
             )
         urls = set(accepted.values())
         loaded = False
-        for stale in self._store.fdp_graphs() - urls:
+        for stale in await asyncio.to_thread(self._store.fdp_graphs) - urls:
             await asyncio.to_thread(self._store.drop_graph, stale)
             log.info("sparql_graph_dropped", client_url=stale)
             loaded = True
+        fingerprints = await asyncio.to_thread(self._store.fingerprints)
         for entry_id in accepted:
-            loaded |= await self._sync_entry(entry_id)
+            loaded |= await self._sync_entry(entry_id, fingerprints)
         return loaded
 
-    async def _sync_entry(self, entry_id: UUID) -> bool:
+    async def _sync_entry(self, entry_id: UUID, fingerprints: dict[str, str] | None = None) -> bool:
         async with self._session_factory() as session:
             entry = await session.get(IndexEntry, entry_id)
             if entry is None:
@@ -170,12 +180,14 @@ class SparqlSync:
             ).all()
             nodes = [(str(ntriples), str(content_hash)) for ntriples, content_hash in rows]
         if not accepted or not nodes:
-            if client_url in self._store.fdp_graphs():
+            if client_url in await asyncio.to_thread(self._store.fdp_graphs):
                 await asyncio.to_thread(self._store.drop_graph, client_url)
                 return True
             return False
         wanted = fingerprint(h for _, h in nodes)
-        if self._store.fingerprints().get(client_url) == wanted:
+        if fingerprints is None:
+            fingerprints = await asyncio.to_thread(self._store.fingerprints)
+        if fingerprints.get(client_url) == wanted:
             return False
         triples = await asyncio.to_thread(
             self._store.replace_graph, client_url, (n for n, _ in nodes), wanted

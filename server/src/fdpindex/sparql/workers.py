@@ -19,8 +19,10 @@ import asyncio
 import contextlib
 import multiprocessing
 import os
+import sys
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
@@ -67,7 +69,6 @@ class Request:
     snapshot: str
     max_rows: int
     max_bytes: int
-    union: bool
     default_graphs: tuple[str, ...]
     named_graphs: tuple[str, ...]
 
@@ -120,6 +121,10 @@ def worker_main(conn: Connection, prefixes: dict[str, str], max_mb: int) -> None
             conn.send(("ok", body, rows, truncated, time.perf_counter() - started))
         except _TooLarge as err:
             conn.send(("error", str(err), 413))
+        except OSError as err:
+            # Storage errors carry file paths: keep them in the server log only.
+            print(f"sparql worker storage error: {err}", file=sys.stderr, flush=True)
+            conn.send(("error", "The query could not be run (storage error); try again.", 503))
         except Exception as err:  # SyntaxError, evaluation errors: the message is useful
             conn.send(("error", str(err), 400))
 
@@ -131,13 +136,16 @@ class _TooLarge(Exception):
 def _execute(
     ox: Any, store: Any, request: Request, prefixes: dict[str, str]
 ) -> tuple[bytes, int, bool]:
-    kwargs: dict[str, Any] = {"prefixes": prefixes}
-    if request.default_graphs:
-        kwargs["default_graph"] = [ox.NamedNode(g) for g in request.default_graphs]
-    else:
-        kwargs["use_default_graph_as_union"] = request.union
+    kwargs: dict[str, Any] = {
+        "prefixes": prefixes,
+        "default_graph": [ox.NamedNode(g) for g in request.default_graphs],
+    }
     if request.named_graphs:
         kwargs["named_graphs"] = [ox.NamedNode(g) for g in request.named_graphs]
+    from fdpindex.sparql.prefixes import mentions_service
+
+    if mentions_service(request.text):
+        raise ValueError("SERVICE is not supported: the index does not query other endpoints.")
     result = store.query(request.text, **kwargs)
     if isinstance(result, ox.QueryBoolean):
         return _boolean(bool(result), request.format), 1, False
@@ -274,6 +282,8 @@ def _xml_term(ox: Any, term: Any) -> str:
     if isinstance(term, ox.Literal):
         if term.language:
             return f'<literal xml:lang="{escape(term.language)}">{escape(term.value)}</literal>'
+        if term.datatype.value == "http://www.w3.org/2001/XMLSchema#string":
+            return f"<literal>{escape(term.value)}</literal>"
         return f'<literal datatype="{escape(term.datatype.value)}">{escape(term.value)}</literal>'
     return f"<literal>{escape(str(term))}</literal>"
 
@@ -326,6 +336,10 @@ class WorkerPool:
         self._idle: asyncio.Queue[_Worker] = asyncio.Queue()
         self._all: list[_Worker] = []
         self._waiting = 0
+        self._closed = False
+        # Anonymous queries may use all workers but one, which stays free for
+        # administrators and the service's own lookups (labels, suggestions, schema).
+        self._public = asyncio.Semaphore(max(1, size - 1))
 
     def _spawn(self) -> _Worker:
         worker = _Worker(self._ctx, self._prefixes, self._max_mb)
@@ -341,48 +355,99 @@ class WorkerPool:
         query: CheckedQuery,
         *,
         fmt: str,
-        snapshot: str,
+        snapshot: Callable[[], str],
         timeout: float,
         max_rows: int,
         max_bytes: int,
-        union: bool = True,
-        default_graphs: tuple[str, ...] = (),
-        named_graphs: tuple[str, ...] = (),
+        default_graphs: Callable[[], tuple[str, ...]],
+        named_graphs: Callable[[], tuple[str, ...]],
+        queue_wait: float = 30.0,
+        privileged: bool = False,
     ) -> QueryResult:
+        """Run ``query`` on an idle worker.
+
+        The snapshot and graph lists are taken once a worker is free, so a request
+        that waited in the queue reads the newest snapshot, never one that may have
+        been removed meanwhile. A worker is always returned or replaced, also when
+        the awaiting task is cancelled.
+        """
         if self._waiting >= self._max_queue:
             raise QueryFailed("The SPARQL service is busy; try again shortly.", status=503)
-        self._waiting += 1
-        try:
-            worker = await self._idle.get()
-        finally:
-            self._waiting -= 1
-        request = Request(
-            text=query.text,
-            form=query.form,
-            format=fmt,
-            snapshot=snapshot,
-            max_rows=max_rows,
-            max_bytes=max_bytes,
-            union=union,
-            default_graphs=default_graphs,
-            named_graphs=named_graphs,
-        )
-        answer = await asyncio.to_thread(worker.call, request, timeout)
-        if answer is None:
-            dead = not worker.process.is_alive()
-            await asyncio.to_thread(worker.kill)
-            self._all.remove(worker)
-            self._idle.put_nowait(await asyncio.to_thread(self._spawn))
-            if dead:
+        async with contextlib.AsyncExitStack() as stack:
+            self._waiting += 1
+            try:
+                async with asyncio.timeout(queue_wait):
+                    if not privileged:
+                        await stack.enter_async_context(self._public)
+                    worker = await self._idle.get()
+            except TimeoutError as err:
                 raise QueryFailed(
-                    "The query used too much memory; narrow it or add a LIMIT.", status=413
-                )
-            raise QueryFailed(
-                f"The query took longer than {timeout:g} seconds and was stopped. "
-                "Narrow it, or add a LIMIT.",
-                status=408,
+                    "The SPARQL service is busy; try again shortly.", status=503
+                ) from err
+            finally:
+                self._waiting -= 1
+            return await self._execute(
+                worker,
+                query,
+                fmt=fmt,
+                snapshot=snapshot,
+                timeout=timeout,
+                max_rows=max_rows,
+                max_bytes=max_bytes,
+                default_graphs=default_graphs,
+                named_graphs=named_graphs,
             )
-        self._idle.put_nowait(worker)
+
+    async def _execute(
+        self,
+        worker: _Worker,
+        query: CheckedQuery,
+        *,
+        fmt: str,
+        snapshot: Callable[[], str],
+        timeout: float,
+        max_rows: int,
+        max_bytes: int,
+        default_graphs: Callable[[], tuple[str, ...]],
+        named_graphs: Callable[[], tuple[str, ...]],
+    ) -> QueryResult:
+        healthy = False
+        try:
+            if not worker.process.is_alive():
+                # Died while idle (the memory watchdog after a large result): not this
+                # query's fault, so replace it and carry on with a fresh one.
+                await self._replace(worker)
+                worker = await self._idle.get()
+            request = Request(
+                text=query.text,
+                form=query.form,
+                format=fmt,
+                snapshot=snapshot(),
+                max_rows=max_rows,
+                max_bytes=max_bytes,
+                default_graphs=default_graphs(),
+                named_graphs=named_graphs(),
+            )
+            answer = await asyncio.to_thread(worker.call, request, timeout)
+            if answer is None:
+                dead = not worker.process.is_alive()
+                if dead:
+                    raise QueryFailed(
+                        "The query used too much memory; narrow it or add a LIMIT.", status=413
+                    )
+                raise QueryFailed(
+                    f"The query took longer than {timeout:g} seconds and was stopped. "
+                    "Narrow it, or add a LIMIT.",
+                    status=408,
+                )
+            healthy = True
+        finally:
+            if healthy:
+                self._idle.put_nowait(worker)
+            else:
+                # Timed out, died, or the caller was cancelled mid-query: the worker may
+                # still be busy, so it is killed and replaced, never reused.
+                await asyncio.shield(self._replace(worker))
         if answer[0] == "error":
             raise QueryFailed(str(answer[1]), status=int(answer[2]))
         _, body, rows, truncated, seconds = answer
@@ -390,7 +455,15 @@ class WorkerPool:
             body=body, media_type=MEDIA_TYPES[fmt], rows=rows, truncated=truncated, seconds=seconds
         )
 
+    async def _replace(self, worker: _Worker) -> None:
+        await asyncio.to_thread(worker.kill)
+        if worker in self._all:
+            self._all.remove(worker)
+        if not self._closed:
+            self._idle.put_nowait(await asyncio.to_thread(self._spawn))
+
     async def close(self) -> None:
+        self._closed = True
         for worker in list(self._all):
             await asyncio.to_thread(worker.kill)
         self._all.clear()

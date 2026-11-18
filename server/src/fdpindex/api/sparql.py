@@ -18,6 +18,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
+from fdpindex.api.routes import public_url
 from fdpindex.auth import Principal, current_principal
 from fdpindex.errors import IndexServiceError
 from fdpindex.sparql.examples import Library
@@ -53,11 +54,14 @@ def _sparql(request: Request) -> SparqlService:
 Sparql = Annotated[SparqlService, Depends(_sparql)]
 
 
-def _limit(service: SparqlService, request: Request, caller: Principal, cost: int = 1) -> None:
+def _limit(
+    service: SparqlService, request: Request, caller: Principal, *, validate: bool = False
+) -> None:
     if caller.is_admin:
         return
     key = request.client.host if request.client else "unknown"
-    if not service.rate.allow(key, cost):
+    limiter = service.validate_rate if validate else service.rate
+    if not limiter.allow(key):
         raise SparqlError(
             "Too many SPARQL requests; wait a minute and try again.",
             429,
@@ -87,7 +91,8 @@ async def _run(
 ) -> Response:
     _limit(service, request, caller)
     try:
-        result = await service.query(
+        result = await service.query_for(
+            None if caller.is_admin else (request.client.host if request.client else "unknown"),
             query,
             fmt=fmt,
             accept=request.headers.get("accept"),
@@ -115,9 +120,11 @@ async def sparql_get(
     named_graph_uri: Annotated[list[str] | None, Query(alias="named-graph-uri")] = None,
 ) -> Response:
     """SPARQL 1.1 Protocol query by GET; without ``query``, the service description (Turtle)."""
-    if not query:
+    if query is not None and not query.strip():
+        raise SparqlError("The query is empty.", 400)
+    if query is None:
         return Response(
-            service.service_description(str(request.url_for("sparql_get"))),
+            service.service_description(public_url(request, "sparql_get")),
             media_type="text/turtle; charset=utf-8",
         )
     return await _run(
@@ -159,6 +166,7 @@ async def sparql_post(
     elif content_type in {"application/x-www-form-urlencoded", "multipart/form-data"}:
         form = await request.form()
         query = str(form.get("query") or "")
+        format = format or (str(form.get("format")) if form.get("format") else None)
         default_graph_uri = default_graph_uri or [str(v) for v in form.getlist("default-graph-uri")]
         named_graph_uri = named_graph_uri or [str(v) for v in form.getlist("named-graph-uri")]
     else:
@@ -177,13 +185,16 @@ async def sparql_post(
 
 
 class ValidateRequest(BaseModel):
-    query: str = Field(max_length=200_000)
+    query: str = Field(max_length=50_000)
 
 
 @router.post("/index/sparql/validate")
-async def sparql_validate(body: ValidateRequest, service: Sparql) -> dict[str, Any]:
+async def sparql_validate(
+    body: ValidateRequest, request: Request, service: Sparql, caller: Caller
+) -> dict[str, Any]:
     """Parse and gate a query without running it: ``ok``, or a message with line and column."""
-    return service.validate(body.query)
+    _limit(service, request, caller, validate=True)
+    return await service.validate(body.query)
 
 
 @router.get("/index/sparql/schema")
@@ -227,6 +238,8 @@ async def sparql_labels(
     _limit(service, request, caller)
     try:
         return {"labels": await service.labels(body.iris)}
+    except QueryRejected as err:
+        raise SparqlError(err.message, 400) from err
     except QueryFailed as err:
         raise SparqlError(err.message, err.status) from err
 

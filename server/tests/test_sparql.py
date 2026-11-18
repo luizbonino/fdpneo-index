@@ -151,6 +151,32 @@ def test_parameter_validation() -> None:
     assert "?_since {" not in expand(_example("recently-modified"), {})
 
 
+def test_with_prefixes_sees_prefixes_inside_property_paths() -> None:
+    sequence = with_prefixes("SELECT * WHERE { ?d dcat:distribution/dct:license ?l }")
+    assert "PREFIX dct:" in sequence and "PREFIX dcat:" in sequence
+    inverse = with_prefixes("SELECT * WHERE { ?d ^dcat:dataset|^foaf:x ?c }")
+    assert "PREFIX dcat:" in inverse and "PREFIX foaf:" in inverse
+    check_query("SELECT * WHERE { ?d dcat:distribution/dct:license ?l }", max_chars=1000)
+
+
+@pytest.mark.parametrize(
+    ("query", "uses"),
+    [
+        ("SELECT * { SERVICE <http://x> { ?s ?p ?o } }", True),
+        ("select * { service silent <http://x> {} }", True),
+        ("SELECT * { \\u0053ERVICE <http://x> {} }", True),
+        ("SELECT ?service { ?service a dcat:DataService }", False),
+        ("SELECT * { ?s ex:service ?o }", False),
+        ('SELECT * { ?s ?p \'service\' . ?s ?p """a SERVICE b""" }', False),
+        ("SELECT * { ?s ?p <http://x/service> } # SERVICE", False),
+    ],
+)
+def test_the_workers_own_service_check(query: str, uses: bool) -> None:
+    from fdpindex.sparql.prefixes import mentions_service
+
+    assert mentions_service(query) is uses
+
+
 def test_with_prefixes_declares_only_what_is_used() -> None:
     query = with_prefixes('SELECT * WHERE { ?d a dcat:Dataset ; dct:title "x:y" } # foaf:name')
     assert "PREFIX dcat:" in query and "PREFIX dct:" in query
@@ -191,7 +217,7 @@ async def sparql(tmp_path: Path) -> AsyncIterator[SparqlService]:
         max_query_chars=20_000,
         per_minute=0,
     )
-    service = SparqlService(store, pool, sync=None, limits=limits)  # pyright: ignore[reportArgumentType]
+    service = SparqlService(store, pool, sync=None, limits=limits)
     try:
         yield service
     finally:
@@ -288,6 +314,46 @@ async def test_a_slow_query_is_killed_and_the_pool_recovers(sparql: SparqlServic
     assert caught.value.status == 408
     result = await sparql.query("ASK { ?s ?p ?o }")
     assert json.loads(result.body)["boolean"] is True
+
+
+async def test_a_cancelled_query_does_not_lose_its_worker(sparql: SparqlService) -> None:
+    slow = "SELECT (COUNT(*) AS ?n) WHERE { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l . ?m ?n2 ?o }"
+    for _ in range(2):  # more than the pool's single worker
+        task = asyncio.create_task(sparql.query(slow, timeout=30))
+        await asyncio.sleep(0.5)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    result = await asyncio.wait_for(sparql.query("ASK { ?s ?p ?o }"), 20)
+    assert json.loads(result.body)["boolean"] is True
+
+
+async def test_one_query_at_a_time_per_anonymous_address(sparql: SparqlService) -> None:
+    slow = "SELECT (COUNT(*) AS ?n) WHERE { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l . ?m ?n2 ?o }"
+    first = asyncio.create_task(sparql.query_for("203.0.113.1", slow, timeout=1))
+    await asyncio.sleep(0.2)
+    with pytest.raises(QueryFailed) as caught:
+        await sparql.query_for("203.0.113.1", "ASK { ?s ?p ?o }")
+    assert caught.value.status == 429
+    with pytest.raises(QueryFailed):
+        await first  # times out
+    ok = await sparql.query_for("203.0.113.1", "ASK { ?s ?p ?o }")
+    assert json.loads(ok.body)["boolean"] is True
+
+
+async def test_labels_for_many_long_iris(sparql: SparqlService) -> None:
+    iris = [f"https://fdp.alpha.example/{'x' * 80}/{i}" for i in range(400)]
+    labels = await sparql.labels([*iris, "https://fdp.alpha.example/dataset/d1"])
+    assert labels == {"https://fdp.alpha.example/dataset/d1": "Breast cancer registry"}
+
+
+async def test_unknown_dataset_graphs_are_refused(sparql: SparqlService) -> None:
+    with pytest.raises(QueryRejected, match="Unknown graph"):
+        await sparql.query("ASK { ?s ?p ?o }", default_graph_uri=["urn:fdpindex:sync"])
+    one = await sparql.query(
+        "SELECT * WHERE { ?d a dcat:Dataset }", default_graph_uri=["https://fdp.beta.example/"]
+    )
+    assert one.rows == 1
 
 
 async def test_workers_see_new_data_after_a_change(sparql: SparqlService) -> None:
@@ -463,6 +529,43 @@ def test_protocol_post_forms_and_errors(api: Api) -> None:
     assert service.status_code == 400 and "SERVICE" in service.json()["message"]
     wrong_type = api.client.post("/index/sparql", json={"query": body}, headers=ADMIN)
     assert wrong_type.status_code == 415
+
+
+def test_protocol_details(api: Api) -> None:
+    api.client.post("/", json={"clientUrl": FDP})
+    api.settle()
+    form = api.client.post(
+        "/index/sparql", data={"query": "ASK { ?s ?p ?o }", "format": "xml"}, headers=ADMIN
+    )
+    assert form.headers["content-type"] == "application/sparql-results+xml"
+    assert api.client.get("/index/sparql", params={"query": " "}).status_code == 400
+    ask_csv = api.client.get(
+        "/index/sparql", params={"query": "ASK { ?s ?p ?o }", "format": "csv"}, headers=ADMIN
+    )
+    assert ask_csv.status_code == 406
+    xml = api.client.get(
+        "/index/sparql",
+        params={"query": "SELECT ?t WHERE { ?d dct:title ?t } LIMIT 1", "format": "xml"},
+        headers=ADMIN,
+    )
+    assert "<literal>" in xml.text and "XMLSchema#string" not in xml.text
+
+
+def test_advertised_urls_ignore_the_host_header(api: Api) -> None:
+    api.app.state.config.public_url = "https://index.example.org"
+    description = api.client.get("/index/sparql", headers={"Host": "attacker.example"})
+    assert "attacker.example" not in description.text
+    assert "<https://index.example.org/index/sparql>" in description.text
+    info = api.client.get("/index/config", headers={"Host": "attacker.example"}).json()
+    assert info["ping"] == "https://index.example.org/"
+
+
+def test_large_request_bodies_are_refused(api: Api) -> None:
+    big = "x" * (2 * 1024 * 1024)
+    response = api.client.post(
+        "/index/sparql", content=big, headers={"Content-Type": "application/sparql-query"}
+    )
+    assert response.status_code == 413
 
 
 def test_service_description_validate_and_config(api: Api) -> None:

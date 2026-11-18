@@ -12,15 +12,19 @@ fragments are dropped, and at most ``max_nodes`` nodes are visited.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlsplit
 
 import structlog
-from rdflib import Graph, URIRef
+from rdflib import BNode, Graph, URIRef
+from rdflib.compare import to_canonical_graph
 from rdflib.namespace import DCAT, DCTERMS, RDF
+from rdflib.term import Node
 
 from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, FDP_LEGACY, FDP_O, LDP, R3D, RdfParseError, parse_rdf
@@ -83,29 +87,73 @@ def children_of(graph: Graph, node: str) -> list[str]:
     return list(dict.fromkeys(found))
 
 
-def serialise(graph: Graph) -> HarvestedGraph:
-    lines = sorted(line for line in graph.serialize(format="nt").splitlines() if line.strip())
+def serialise(graph: Graph, node_iri: str) -> HarvestedGraph:
+    """Sorted N-Triples with stable blank-node labels, so unchanged metadata hashes the same.
+
+    rdflib labels blank nodes afresh on every parse; canonicalising them makes
+    the hash (and the change sets of ADR-0005) depend on content only. Labels
+    are then scoped by the node's IRI, because an FDP's nodes are later loaded
+    as one document, where equal labels would merge distinct blank nodes.
+    """
+    scope = hashlib.sha256(node_iri.encode()).hexdigest()[:12]
+    scoped = Graph()
+    for triple in to_canonical_graph(graph):
+        scoped.add(tuple(_scoped(term, scope) for term in triple))  # pyright: ignore[reportArgumentType]
+    lines = sorted(line for line in scoped.serialize(format="nt").splitlines() if line.strip())
     text = "\n".join(lines) + ("\n" if lines else "")
     return HarvestedGraph(
-        node_iri="", ntriples=text, content_hash=hashlib.sha256(text.encode()).hexdigest()
+        node_iri=node_iri, ntriples=text, content_hash=hashlib.sha256(text.encode()).hexdigest()
     )
 
 
+def _scoped(term: Node, scope: str) -> Node:
+    return BNode(f"n{scope}x{term}") if isinstance(term, BNode) else term
+
+
+def _parse_and_serialise(
+    body: str, content_type: str, node: str
+) -> tuple[HarvestedGraph, list[str]]:
+    graph = parse_rdf(body, content_type, node)
+    return serialise(graph, node), children_of(graph, node)
+
+
 async def harvest(
-    outbound: OutboundClient, client_url: str, *, timeout_seconds: float, max_nodes: int
+    outbound: OutboundClient,
+    client_url: str,
+    *,
+    timeout_seconds: float,
+    max_nodes: int,
+    max_bytes: int = 50 * 1024 * 1024,
+    max_seconds: float = 900.0,
 ) -> HarvestResult:
+    """Walk an FDP's metadata tree.
+
+    Bounded so that one FDP cannot hold the index (security review, 2026-11-18):
+    at most ``max_nodes`` nodes and ``max_bytes`` of N-Triples in total, at most
+    ``max_seconds`` overall, and each node fetch within ``timeout_seconds``.
+    Parsing runs in a thread: a large document takes seconds of pure CPU.
+    """
     result = HarvestResult()
     origin = _origin(client_url)
     queue: deque[str] = deque([_normalise(client_url)])
     seen: set[str] = {_normalise(client_url)}
+    deadline = time.monotonic() + max_seconds
+    total_bytes = 0
     while queue:
         if len(result.nodes) + len(result.failed) >= max_nodes:
+            result.limit_reached = True
+            break
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or total_bytes >= max_bytes:
             result.limit_reached = True
             break
         node = queue.popleft()
         try:
             response = await outbound.request(
-                "GET", node, timeout_seconds=timeout_seconds, headers={"Accept": ACCEPT}
+                "GET",
+                node,
+                timeout_seconds=min(timeout_seconds, remaining),
+                headers={"Accept": ACCEPT},
             )
         except OutboundError as err:
             result.failed[node] = err.message
@@ -117,14 +165,15 @@ async def harvest(
             result.failed[node] = "response too large"
             continue
         try:
-            graph = parse_rdf(response.body, response.content_type, node)
+            harvested, children = await asyncio.to_thread(
+                _parse_and_serialise, response.body, response.content_type, node
+            )
         except RdfParseError as err:
             result.failed[node] = f"cannot parse: {err}"
             continue
-        harvested = serialise(graph)
-        harvested.node_iri = node
+        total_bytes += len(harvested.ntriples)
         result.nodes.append(harvested)
-        for child in children_of(graph, node):
+        for child in children:
             child = _normalise(child)
             if child in seen:
                 continue

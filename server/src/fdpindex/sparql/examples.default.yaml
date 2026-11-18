@@ -263,8 +263,9 @@ examples:
         # @parameters
         GRAPH fdpindex:entries {
           ?fdp fdpindex:state ?_state .
-          OPTIONAL { ?fdp dct:title ?name }
+          OPTIONAL { ?fdp dct:title ?title }
         }
+        BIND(COALESCE(?title, STR(?fdp)) AS ?name)
         OPTIONAL { GRAPH ?fdp { ?dataset a dcat:Dataset } }
       }
       GROUP BY ?fdp ?name

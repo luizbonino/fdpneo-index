@@ -245,3 +245,21 @@ def test_service_info_and_health(api: Api) -> None:
     assert api.client.get("/index/config").json() == info
     assert api.client.get("/healthz").json() == {"status": "ok"}
     assert api.client.get("/readyz").json()["status"] == "ok"
+
+
+def test_search_treats_wildcards_literally(api: Api) -> None:
+    api.ping()
+    assert api.client.get("/index/entries", params={"q": "example"}).json()["totalElements"] == 1
+    for wildcard in ("%", "_", "exa_ple"):
+        page = api.client.get("/index/entries", params={"q": wildcard}).json()
+        assert page["totalElements"] == 0, wildcard
+
+
+def test_admin_names_stay_out_of_public_event_summaries(api: Api) -> None:
+    api.ping()
+    api.client.post("/index/admin/trigger", json={"clientUrl": FDP}, headers=ADMIN)
+    api.drain()
+    uuid = api.client.get("/index/entries").json()["content"][0]["uuid"]
+    events = api.client.get(f"/index/entries/{uuid}").json()["events"]
+    outcomes = [e["outcome"] for e in events if e["type"] == "AdminTrigger"]
+    assert outcomes == ["Triggered by an administrator"]

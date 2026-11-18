@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     outbound_max_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     outbound_max_redirects: int = Field(default=5, ge=0)
     harvest_max_nodes: int = Field(default=2000, gt=0)
+    # Bounds per harvest, so one FDP cannot hold the job pool or fill the database.
+    harvest_max_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
+    harvest_max_seconds: float = Field(default=900, gt=0)
+    harvest_node_timeout_seconds: float = Field(default=20, gt=0)
     user_agent: str = "fdpneo-index (+https://github.com/luizbonino/fdpneo-index)"
 
     # --- background work -------------------------------------------------------

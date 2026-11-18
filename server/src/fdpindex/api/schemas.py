@@ -267,8 +267,8 @@ def event_outcome(event: Event) -> str | None:
                 return f"{trigger.get('matchedEvent')} → HTTP {code}"
             return exchange.get("error") or trigger.get("matchedEvent")
         case "AdminTrigger":
-            trigger = payload.get("adminTrigger") or {}
-            return f"Triggered by {trigger.get('tokenName') or 'admin'}"
+            # Not the administrator's name: outcomes are shown to anonymous callers too.
+            return "Triggered by an administrator"
         case "HealthCheck":
             check = payload.get("healthCheck") or {}
             if check.get("error"):

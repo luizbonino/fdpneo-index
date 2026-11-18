@@ -57,13 +57,47 @@ def with_prefixes(query: str) -> str:
         prefix
         for prefix in PREFIXES
         if prefix not in declared
-        and re.search(rf"(?<![\w:<#/-]){re.escape(prefix)}:", _without_iris_and_strings(query))
+        # IRIs, strings and comments are stripped first, so only a word character or
+        # a hyphen (as in fdp-o:) can precede a prefix that is not this one.
+        and re.search(rf"(?<![\w-]){re.escape(prefix)}:", _without_iris_and_strings(query))
     ]
     header = "".join(f"PREFIX {p}: <{PREFIXES[p]}>\n" for p in used)
     return header + query
 
 
+_NOISE = (
+    r"<[^<>\s]*>"  # IRIs
+    r'|"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\''  # long strings
+    r'|"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\''  # strings
+    r"|#[^\n]*"  # comments
+)
+
+
 def _without_iris_and_strings(query: str) -> str:
     import re
 
-    return re.sub(r'<[^<>\s]*>|"(?:[^"\\]|\\.)*"|#[^\n]*', " ", query)
+    return re.sub(_NOISE, " ", query)
+
+
+def _unescape_codepoints(query: str) -> str:
+    """SPARQL applies ``\\uXXXX`` / ``\\UXXXXXXXX`` escapes to the whole query text."""
+    import re
+
+    return re.sub(
+        r"\\u([0-9A-Fa-f]{4})|\\U([0-9A-Fa-f]{8})",
+        lambda m: chr(int(m.group(1) or m.group(2), 16)),
+        query,
+    )
+
+
+def mentions_service(query: str) -> bool:
+    """Whether the query uses the SERVICE keyword (outside IRIs, strings and comments).
+
+    A second, independent check in the worker, right before execution: the
+    rdflib gate is the first. pyoxigraph would otherwise fetch the endpoint,
+    bypassing every outbound rule (security review, 2026-11-18).
+    """
+    import re
+
+    text = _without_iris_and_strings(_unescape_codepoints(query))
+    return re.search(r"(?<![\w:?$-])service(?![\w:-])", text, re.IGNORECASE) is not None

@@ -94,6 +94,7 @@ class SparqlStore:
         self._keep_seconds = keep_seconds
         self._published: list[tuple[float, Path]] = []
         self._published_graphs: tuple[str, ...] = ()
+        self._entries: list[EntryFacts] | None = None
         self.publish()
 
     @property
@@ -133,7 +134,7 @@ class SparqlStore:
             return target
 
     def _changed(self) -> None:
-        self._store.flush()
+        # No flush here: publish() flushes once per pass, before the checkpoint.
         self._generation += 1
 
     # --- per-FDP graphs ---------------------------------------------------------
@@ -149,11 +150,13 @@ class SparqlStore:
     def replace_graph(self, client_url: str, ntriples: Iterable[str], fingerprint: str) -> int:
         """Replace the FDP's graph with ``ntriples`` (one document per node); return triples."""
         graph = ox.NamedNode(client_url)
-        data = "\n".join(ntriples).encode()
         with self._lock:
             if self._store.contains_named_graph(graph):
                 self._store.clear_graph(graph)
-            self._store.load(data, format=ox.RdfFormat.N_TRIPLES, to_graph=graph)
+            # Node by node, so an entry's harvest is never held in memory twice. Blank
+            # node labels are scoped per node by the harvester, so documents cannot merge.
+            for document in ntriples:
+                self._store.load(document.encode(), format=ox.RdfFormat.N_TRIPLES, to_graph=graph)
             self._set_fingerprint(graph, fingerprint)
             self._changed()
         return sum(1 for _ in self._store.quads_for_pattern(None, None, None, graph))
@@ -181,9 +184,13 @@ class SparqlStore:
 
     # --- service graphs ---------------------------------------------------------
 
-    def write_entries(self, entries: Iterable[EntryFacts]) -> None:
+    def write_entries(self, entries: Iterable[EntryFacts]) -> bool:
+        """Rewrite the entries graph; skipped (False) when nothing changed since the last write."""
+        facts = list(entries)
+        if facts == self._entries:
+            return False
         quads: list[ox.Quad] = []
-        for entry in entries:
+        for entry in facts:
             subject = ox.NamedNode(entry.client_url)
 
             def add(
@@ -215,6 +222,8 @@ class SparqlStore:
             self._store.clear_graph(ENTRIES_GRAPH)
             self._store.extend(quads)
             self._changed()
+        self._entries = facts
+        return True
 
     def write_examples(self, quads: Iterable[ox.Quad]) -> None:
         with self._lock:

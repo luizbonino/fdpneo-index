@@ -10,10 +10,12 @@ operational ``/healthz``, ``/readyz``.
 
 from __future__ import annotations
 
+import asyncio
 import math
 from typing import Annotated
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -39,11 +41,13 @@ from fdpindex.api.schemas import (
     instant,
 )
 from fdpindex.auth import Principal, current_principal, require_admin
-from fdpindex.errors import BadRequest, NotFound
+from fdpindex.errors import BadRequest, NotFound, RateLimited
 from fdpindex.models import EntryPermit
 from fdpindex.service import IndexService, api_state
 from fdpindex.settings import IndexSettings, IndexSettingsView, SettingsService
 from fdpindex.webhooks import WebhookService
+
+log = structlog.get_logger(__name__)
 
 MAX_PAGE_SIZE = 2000  # Spring Data's default cap
 
@@ -75,6 +79,15 @@ def _settings(request: Request) -> SettingsService:
 
 def _webhooks(request: Request) -> WebhookService:
     return request.app.state.webhooks
+
+
+def public_url(request: Request, route: str) -> str:
+    """An absolute URL of a route: from FDPINDEX_PUBLIC_URL when set, not from the Host header."""
+    base: str | None = request.app.state.config.public_url
+    path = request.app.url_path_for(route)
+    if base:
+        return base.rstrip("/") + str(path)
+    return str(request.url_for(route))
 
 
 def _remote(request: Request) -> str | None:
@@ -158,13 +171,13 @@ def _service_info(request: Request) -> ServiceInfo:
     return ServiceInfo(
         name="FDPneo Index",
         version=__version__,
-        ping=str(request.url_for("receive_ping")),
+        ping=public_url(request, "receive_ping"),
         oidc={"issuer": config.oidc_issuer, "clientId": config.oidc_client_id}
         if config.oidc_issuer
         else None,
         auth=auth,  # pyright: ignore[reportArgumentType]
         sparql={
-            "endpoint": str(request.url_for("sparql_get")),
+            "endpoint": public_url(request, "sparql_get"),
             "timeoutSeconds": config.sparql_timeout_seconds,
             "maxRows": config.sparql_max_rows,
             "perMinute": config.sparql_rate_per_minute,
@@ -291,14 +304,25 @@ async def delete_entry(entry_id: UUID, index: Index) -> Response:
 async def entry_data(
     entry_id: UUID, request: Request, index: Index, caller: Caller, format: str | None = None
 ) -> Response:
-    """The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML."""
+    """The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
+
+    N-Triples are served as stored; other formats are rendered in a thread (a
+    large harvest takes seconds), and anonymous callers are rate limited.
+    """
     await _visible(index, caller, entry_id)
+    if not caller.is_admin and not request.app.state.data_rate.allow(_remote(request) or "?"):
+        raise RateLimited("Too many downloads; wait a minute and try again.")
     media = _negotiate(format, request.headers.get("accept", ""))
+    if media == "application/n-triples":
+        return Response(content=await index.harvested_ntriples(entry_id), media_type=media)
     graph = await index.harvested_graph(entry_id)
-    for prefix, namespace in PREFIXES.items():
-        graph.bind(prefix, namespace, override=False)
-    body = graph.serialize(format=RDF_TYPES[media])
-    return Response(content=body, media_type=media)
+
+    def render() -> str:
+        for prefix, namespace in PREFIXES.items():
+            graph.bind(prefix, namespace, override=False)
+        return graph.serialize(format=RDF_TYPES[media])
+
+    return Response(content=await asyncio.to_thread(render), media_type=media)
 
 
 def _negotiate(explicit: str | None, accept: str) -> str:
@@ -496,6 +520,8 @@ async def readyz(request: Request) -> JSONResponse:
     try:
         async with request.app.state.session_factory() as session:
             await session.execute(text("SELECT 1"))
-    except Exception as err:
-        return JSONResponse({"status": "unavailable", "detail": str(err)}, status_code=503)
+    except Exception:
+        # The detail (hosts, database names) goes to the log, not to the caller.
+        log.exception("readiness_check_failed")
+        return JSONResponse({"status": "unavailable"}, status_code=503)
     return JSONResponse({"status": "ok", "version": __version__})

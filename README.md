@@ -135,6 +135,8 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_OUTBOUND_ALLOW_PRIVATE` | `false` | Allow fetching private / loopback addresses (local stacks only) |
 | `FDPINDEX_OUTBOUND_MAX_BYTES` | `5242880` | Largest response read |
 | `FDPINDEX_HARVEST_MAX_NODES` | `2000` | Most nodes harvested per FDP |
+| `FDPINDEX_HARVEST_MAX_BYTES`, `FDPINDEX_HARVEST_MAX_SECONDS` | 50 MiB, `900` | Most N-Triples and time per harvest |
+| `FDPINDEX_HARVEST_NODE_TIMEOUT_SECONDS` | `20` | Time budget per harvested node (the root retrieval uses the retrieval timeout) |
 | `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs |
 | `FDPINDEX_HEALTH_SWEEP_SECONDS`, `FDPINDEX_HEALTH_BATCH` | `60`, `100` | How often due liveness checks are started, and how many per sweep |
 | `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API |
@@ -146,7 +148,7 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_SPARQL_RATE_PER_MINUTE` | `30` | Queries per minute per anonymous address |
 | `FDPINDEX_SPARQL_WORKER_MAX_MB` | `1024` | Memory ceiling per worker (Linux) |
 | `FDPINDEX_PUBLIC_URL` | — | Public base URL, for absolute IRIs in the VoID description |
-| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted (needed for the per-IP rate limit) |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted. The per-address rate limits rely on it: the proxy must overwrite the header with the address that connected (the bundled nginx does), never append to what the client sent |
 
 Rate limits, durations, the deny list, auto-permit and the liveness checks
 (interval, failure threshold, which permits) are index settings, changed at

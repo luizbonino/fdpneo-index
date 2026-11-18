@@ -150,6 +150,9 @@ class IndexService:
         *,
         body_limit: int,
         harvest_max_nodes: int,
+        harvest_max_bytes: int = 50 * 1024 * 1024,
+        harvest_max_seconds: float = 900.0,
+        harvest_node_timeout: float = 20.0,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
@@ -158,6 +161,9 @@ class IndexService:
         self._webhooks = webhooks
         self._body_limit = body_limit
         self._harvest_max_nodes = harvest_max_nodes
+        self._harvest_max_bytes = harvest_max_bytes
+        self._harvest_max_seconds = harvest_max_seconds
+        self._harvest_node_timeout = harvest_node_timeout
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_again: set[UUID] = set()
         self._listeners: list[Callable[[IndexChange], None]] = []
@@ -421,7 +427,9 @@ class IndexService:
         if response.truncated:
             return Retrieval(EntryState.INVALID, "Response too large", None, recorded)
         try:
-            graph = parse_rdf(response.body, response.content_type, client_url)
+            graph = await asyncio.to_thread(
+                parse_rdf, response.body, response.content_type, client_url
+            )
         except RdfParseError:
             return Retrieval(EntryState.INVALID, "Cannot parse metadata", None, recorded)
         repository = extract_repository_metadata(graph, client_url)
@@ -607,8 +615,12 @@ class IndexService:
         result = await harvest(
             self._outbound,
             client_url,
-            timeout_seconds=settings.retrieval.timeout.total_seconds(),
+            timeout_seconds=min(
+                settings.retrieval.timeout.total_seconds(), self._harvest_node_timeout
+            ),
             max_nodes=self._harvest_max_nodes,
+            max_bytes=self._harvest_max_bytes,
+            max_seconds=self._harvest_max_seconds,
         )
         if not result.nodes:
             log.warning("harvest_found_nothing", client_url=client_url, failed=result.failed)
@@ -673,18 +685,28 @@ class IndexService:
             await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
         self._notify(IndexChange("removed", entry_id))
 
-    async def harvested_graph(self, entry_id: UUID) -> Graph:
+    async def harvested_ntriples(self, entry_id: UUID) -> str:
+        """The entry's harvested nodes as one N-Triples document, as stored."""
         async with self._session_factory() as session:
             entry = await session.get(IndexEntry, entry_id)
             if entry is None:
                 raise NotFound("Index entry not found")
             rows = await session.execute(
-                select(HarvestedNode.ntriples).where(HarvestedNode.entry_uuid == entry_id)
+                select(HarvestedNode.ntriples)
+                .where(HarvestedNode.entry_uuid == entry_id)
+                .order_by(HarvestedNode.node_iri)
             )
+            return "".join(str(ntriples) for (ntriples,) in rows)
+
+    async def harvested_graph(self, entry_id: UUID) -> Graph:
+        text = await self.harvested_ntriples(entry_id)
+
+        def parse() -> Graph:
             graph = Graph()
-            for (ntriples,) in rows:
-                graph.parse(data=ntriples, format="nt")
-        return graph
+            graph.parse(data=text, format="nt")
+            return graph
+
+        return await asyncio.to_thread(parse)
 
     async def harvest_summary(self, entry_id: UUID) -> tuple[int, datetime | None]:
         async with self._session_factory() as session:
@@ -765,10 +787,15 @@ class IndexService:
             conditions.append(state_condition)
         if query.strip():
             # A small directory: a substring match on the URL and the title is enough.
-            needle = f"%{query.strip().lower()}%"
+            text = (
+                query.strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            )
+            needle = f"%{text}%"
             conditions.append(
-                func.lower(IndexEntry.client_url).like(needle)
-                | func.lower(IndexEntry.repository_metadata["title"].as_string()).like(needle)
+                func.lower(IndexEntry.client_url).like(needle, escape="\\")
+                | func.lower(IndexEntry.repository_metadata["title"].as_string()).like(
+                    needle, escape="\\"
+                )
             )
         order = _order_by(sort or [])
         async with self._session_factory() as session:

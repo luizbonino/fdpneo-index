@@ -15,6 +15,7 @@ import httpx
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fdpindex import __version__
 from fdpindex.api.routes import router
@@ -30,7 +31,7 @@ from fdpindex.outbound import OutboundClient, system_resolver
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
 from fdpindex.sparql.prefixes import PREFIXES
-from fdpindex.sparql.service import Limits, SparqlService
+from fdpindex.sparql.service import Limits, RateLimiter, SparqlService
 from fdpindex.sparql.store import SparqlStore
 from fdpindex.sparql.sync import SparqlSync
 from fdpindex.sparql.workers import WorkerPool
@@ -42,6 +43,60 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 log = structlog.get_logger(__name__)
+
+MAX_BODY_BYTES = 1024 * 1024  # pings, settings, queries: all far smaller
+
+
+class BodyLimit:
+    """Refuse request bodies over ``max_bytes`` (413), declared or streamed.
+
+    nginx caps bodies in the Compose stack; this protects a server run without it.
+    """
+
+    def __init__(self, app: ASGIApp, *, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = dict(scope.get("headers") or []).get(b"content-length")
+        if declared is not None and declared.isdigit() and int(declared) > self.max_bytes:
+            await _too_large(send)
+            return
+        seen = 0
+
+        async def limited() -> Message:
+            nonlocal seen
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.max_bytes:
+                    raise _BodyTooLarge
+            return message
+
+        try:
+            await self.app(scope, limited, send)
+        except _BodyTooLarge:
+            await _too_large(send)
+
+
+class _BodyTooLarge(Exception):  # noqa: N818 - control flow
+    pass
+
+
+async def _too_large(send: Send) -> None:
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 413,
+            "headers": [(b"content-type", b"application/json")],
+        }
+    )
+    await send(
+        {"type": "http.response.body", "body": b'{"status":413,"message":"Request body too large"}'}
+    )
 
 
 def create_app(
@@ -91,6 +146,9 @@ def create_app(
             webhooks,
             body_limit=config.event_body_max_chars,
             harvest_max_nodes=config.harvest_max_nodes,
+            harvest_max_bytes=config.harvest_max_bytes,
+            harvest_max_seconds=config.harvest_max_seconds,
+            harvest_node_timeout=config.harvest_node_timeout_seconds,
         )
         verifier = (
             OidcVerifier(config.oidc_issuer, config.oidc_audience, http)
@@ -103,6 +161,12 @@ def create_app(
                 "no_administrators_configured",
                 hint="set FDPINDEX_OIDC_ISSUER or FDPINDEX_ADMIN_TOKENS",
             )
+        if config.oidc_issuer and not config.oidc_audience:
+            log.warning(
+                "oidc_audience_not_set",
+                hint="set FDPINDEX_OIDC_AUDIENCE: without it, a token the issuer gave to any "
+                "client of the realm is accepted",
+            )
 
         app.state.config = config
         app.state.session_factory = factory
@@ -111,6 +175,7 @@ def create_app(
         app.state.webhooks = webhooks
         app.state.index = index
         app.state.authenticator = authenticator
+        app.state.data_rate = RateLimiter(30)  # anonymous harvested-data downloads per minute
         sparql = await _start_sparql(config, factory, settings_service, index)
         app.state.sparql = sparql
         if resume_on_startup:
@@ -127,7 +192,8 @@ def create_app(
             await scheduler.stop()
             await jobs.close()
             if sparql is not None:
-                await sparql.sync.stop()
+                if sparql.sync is not None:
+                    await sparql.sync.stop()
                 await sparql.pool.close()
                 sparql.store.close()
             await http.aclose()
@@ -148,6 +214,7 @@ def create_app(
             allow_headers=["Authorization", "Content-Type"],
         )
     register_exception_handlers(app)
+    app.add_middleware(BodyLimit, max_bytes=MAX_BODY_BYTES)
     app.include_router(router)
     app.include_router(sparql_router)
     return app

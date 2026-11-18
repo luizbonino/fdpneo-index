@@ -427,3 +427,22 @@ async def test_harvest_reports_what_changed_by_node(
     changes.clear()
     await services.index.delete_entry(outcome.entry_id)
     assert [c.kind for c in changes] == ["removed"]
+
+
+async def test_unchanged_blank_nodes_do_not_count_as_changes(
+    services: Services, network: FakeNetwork
+) -> None:
+    network.serve(
+        f"{FDP}/dataset/d1",
+        DATASET_TTL.replace(
+            'dct:title "Dataset one" ;',
+            'dct:title "Dataset one" ; dcat:contactPoint [ dct:title "Helpdesk" ] ;',
+        ),
+    )
+    changes: list[IndexChange] = []
+    services.index.add_listener(changes.append)
+    outcome = await ping(services)
+    changes.clear()
+    await services.index.harvest_entry(outcome.entry_id)
+    again = next(c for c in changes if c.kind == "harvested").changes
+    assert again is not None and again.empty

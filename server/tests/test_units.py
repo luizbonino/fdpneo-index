@@ -241,3 +241,69 @@ async def test_harvest_records_failed_nodes(network: FakeNetwork) -> None:
         _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
     )
     assert result.failed == {f"{FDP}/dataset/d1": "HTTP 404"}
+
+
+async def test_connections_are_pinned_to_the_vetted_address() -> None:
+    """DNS rebinding: the index connects to the address it checked, not a fresh lookup."""
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, text="ok")
+
+    answers = iter([["93.184.216.34"], ["10.0.0.5"]])  # a second lookup would rebind
+
+    async def rebinding(host: str, port: int) -> list[str]:
+        return next(answers)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        client = OutboundClient(
+            http,
+            allow_private=False,
+            max_bytes=1000,
+            max_redirects=0,
+            user_agent="test",
+            resolver=rebinding,
+        )
+        response = await client.request(
+            "GET", "https://fdp.example.org:8443/x?y=1", timeout_seconds=5
+        )
+    assert response.status == 200 and response.url == "https://fdp.example.org:8443/x?y=1"
+    [request] = seen
+    assert request.url.host == "93.184.216.34" and request.url.port == 8443
+    assert request.url.raw_path == b"/x?y=1"
+    assert request.headers["host"] == "fdp.example.org:8443"
+    assert request.extensions["sni_hostname"] == "fdp.example.org"
+
+
+@pytest.mark.parametrize("address", ["100.64.0.1", "100.100.100.200", "192.0.0.8"])
+async def test_shared_address_space_is_blocked(address: str) -> None:
+    async def resolver(host: str, port: int) -> list[str]:
+        return [address]
+
+    async with httpx.AsyncClient() as http:
+        client = OutboundClient(
+            http,
+            allow_private=False,
+            max_bytes=10,
+            max_redirects=0,
+            user_agent="t",
+            resolver=resolver,
+        )
+        with pytest.raises(OutboundError) as caught:
+            await client.check_url("http://cloud.example/latest/meta-data")
+    assert caught.value.kind == "blocked"
+
+
+async def test_a_harvest_stops_at_its_byte_budget(network: FakeNetwork) -> None:
+    async with httpx.AsyncClient(transport=httpx.MockTransport(network.handler)) as http:
+        client = OutboundClient(
+            http,
+            allow_private=False,
+            max_bytes=1_000_000,
+            max_redirects=0,
+            user_agent="t",
+            resolver=public_resolver,
+        )
+        result = await harvest(client, FDP, timeout_seconds=5, max_nodes=100, max_bytes=10)
+    assert result.limit_reached and len(result.nodes) == 1

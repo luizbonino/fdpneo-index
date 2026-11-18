@@ -1161,7 +1161,7 @@
       "ValidateRequest": {
         "properties": {
           "query": {
-            "maxLength": 200000,
+            "maxLength": 50000,
             "title": "Query",
             "type": "string"
           }
@@ -1849,7 +1849,7 @@
     },
     "/index/entries/{entry_id}/data": {
       "get": {
-        "description": "The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.",
+        "description": "The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.\n\nN-Triples are served as stored; other formats are rendered in a thread (a\nlarge harvest takes seconds), and anonymous callers are rate limited.",
         "operationId": "entry_data_index_entries__entry_id__data_get",
         "parameters": [
           {

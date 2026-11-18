@@ -19,8 +19,8 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
    or removed, so derived stores update incrementally.
 2. **SPARQL runs on an embedded pyoxigraph store derived from PostgreSQL.**
    - It has one named graph per accepted FDP, named by its client URL.
-   - `<urn:fdpindex:entries>` describes the FDPs themselves: state, title and
-     country.
+   - `<urn:fdpindex:entries>` describes the FDPs themselves: state, title,
+     country, publisher, last retrieval and number of harvested nodes.
    - `<urn:fdpindex:void>` holds VoID partitions with counts.
    - A background loop syncs the store per FDP by fingerprint. A fresh volume
      catches up at start-up. The store is never backed up.
@@ -40,8 +40,16 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
      newest one. Each checkpoint is a consistent view of a whole pass. Old
      checkpoints are removed after a grace period longer than any query
      budget.
-   - Limits: a wall-clock budget (10 s anonymous, 60 s for administrators), a
-     row cap, a byte cap, a memory ceiling, and a per-address rate limit.
+   - Limits:
+     - a wall-clock budget (10 s anonymous, 60 s for administrators);
+     - a row cap, a byte cap and a memory ceiling;
+     - a per-address rate limit, and one query at a time per anonymous
+       address;
+     - anonymous queries never take the last free worker, which stays for
+       administrators and the service's own lookups.
+   - A second, independent `SERVICE` check runs in the worker right before
+     execution. pyoxigraph would otherwise fetch the endpoint itself,
+     bypassing the outbound rules of ADR-0002.
 4. **Parameters in the query library are bound with a `VALUES` block** in the
    outermost group, never pasted into the text. The expanded query is plain
    SPARQL that runs in any endpoint.

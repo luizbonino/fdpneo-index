@@ -9,9 +9,11 @@ Metadata retrieval, harvesting and webhook delivery all go through
 * follows redirects itself, re-checking every hop, up to a limit;
 * stops reading a response body after a size limit.
 
-DNS is resolved separately from the connection, so a host that changes its
-answer between the two (DNS rebinding) is not fully covered; the check still
-stops the plain case of a ping naming an internal address.
+The connection is pinned to the address that was checked: the request goes
+to that IP, with the original host in ``Host`` and as the TLS server name
+(SNI and certificate check), so a host that changes its DNS answer between
+check and connection (DNS rebinding) cannot redirect it to an internal
+address.
 """
 
 from __future__ import annotations
@@ -65,6 +67,15 @@ async def system_resolver(host: str, port: int) -> list[str]:
     return sorted({str(info[4][0]) for info in infos})
 
 
+# Not "private" by Python's definition, but never a public FAIR Data Point:
+# shared address space (carrier-grade NAT, overlays, Alibaba Cloud's metadata
+# service at 100.100.100.200) and the IETF protocol assignments.
+_EXTRA_BLOCKED = (
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("192.0.0.0/24"),
+)
+
+
 def _blocked_address(address: str) -> bool:
     ip = ipaddress.ip_address(address.split("%", 1)[0])
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
@@ -76,6 +87,7 @@ def _blocked_address(address: str) -> bool:
         or ip.is_multicast
         or ip.is_reserved
         or ip.is_unspecified
+        or any(ip in network for network in _EXTRA_BLOCKED)
     )
 
 
@@ -104,8 +116,12 @@ class OutboundClient:
         self._user_agent = user_agent
         self._resolver = resolver
 
-    async def check_url(self, url: str) -> None:
-        """Raise :class:`OutboundError` (``blocked``) when ``url`` may not be requested."""
+    async def check_url(self, url: str) -> str | None:
+        """Raise :class:`OutboundError` (``blocked``) when ``url`` may not be requested.
+
+        Returns the vetted address to connect to, or ``None`` when no pinning is
+        needed (private targets allowed, or the host is already an IP literal).
+        """
         parts = urlsplit(url)
         if parts.scheme not in {"http", "https"}:
             raise OutboundError("blocked", f"unsupported URL scheme: {parts.scheme or '(none)'}")
@@ -113,14 +129,16 @@ class OutboundClient:
         if not host:
             raise OutboundError("blocked", "URL has no host")
         if self._allow_private:
-            return
+            return None
         try:
             port = parts.port or (443 if parts.scheme == "https" else 80)
         except ValueError as err:
             raise OutboundError("blocked", f"invalid port: {err}") from err
+        literal = False
         try:
             ipaddress.ip_address(host)
             addresses = [host]
+            literal = True
         except ValueError:
             try:
                 addresses = await self._resolver(host, port)
@@ -133,6 +151,7 @@ class OutboundClient:
                 raise OutboundError(
                     "blocked", f"{host} resolves to a non-public address ({address})"
                 )
+        return None if literal else addresses[0]
 
     async def request(
         self,
@@ -146,10 +165,12 @@ class OutboundClient:
         request_headers = {"User-Agent": self._user_agent, **(headers or {})}
         current, current_method, body = url, method, content
         for _hop in range(self._max_redirects + 1):
-            await self.check_url(current)
+            pinned = await self.check_url(current)
             try:
                 async with asyncio.timeout(timeout_seconds):
-                    response = await self._send(current_method, current, request_headers, body)
+                    response = await self._send(
+                        current_method, current, request_headers, body, pinned
+                    )
             except TimeoutError as err:
                 raise OutboundError("timeout", "Timeout") from err
             except httpx.TimeoutException as err:
@@ -167,9 +188,25 @@ class OutboundClient:
         raise OutboundError("failed", f"more than {self._max_redirects} redirects")
 
     async def _send(
-        self, method: str, url: str, headers: Mapping[str, str], content: str | None
+        self,
+        method: str,
+        url: str,
+        headers: Mapping[str, str],
+        content: str | None,
+        pinned: str | None,
     ) -> OutboundResponse:
-        async with self._http.stream(method, url, headers=dict(headers), content=content) as resp:
+        target = httpx.URL(url)
+        send_headers = dict(headers)
+        extensions: dict[str, str] = {}
+        if pinned is not None:
+            # Connect to the checked address; keep the name for Host, SNI and TLS checks.
+            send_headers["Host"] = target.netloc.decode("ascii")
+            if target.scheme == "https":
+                extensions["sni_hostname"] = target.host
+            target = target.copy_with(host=pinned)
+        async with self._http.stream(
+            method, target, headers=send_headers, content=content, extensions=extensions
+        ) as resp:
             chunks: list[bytes] = []
             size = 0
             truncated = False
@@ -184,7 +221,7 @@ class OutboundClient:
             encoding = resp.charset_encoding or "utf-8"
             return OutboundResponse(
                 status=resp.status_code,
-                url=str(resp.url),
+                url=url,
                 headers=_headers(resp.headers),
                 body=raw.decode(encoding, errors="replace"),
                 truncated=truncated,

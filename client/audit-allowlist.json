@@ -1,0 +1,11 @@
+{
+  "$comment": "Advisories accepted after review. Each entry needs a reason and a review date; the audit gate fails again once the date has passed, so the decision is revisited. scripts/audit.mjs reads this file.",
+  "advisories": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "reason": "ReDoS on crafted glob patterns, no patched release yet. picomatch runs only at build time (vite, vitest, vue-router's build plugins) on globs from our own config; it is not in the shipped bundle and never sees user input.",
+      "reviewBy": "2027-01-31"
+    }
+  ]
+}

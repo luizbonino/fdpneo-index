@@ -31,8 +31,15 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
    - Every query passes a structural gate (rdflib). Only SELECT, ASK,
      CONSTRUCT and DESCRIBE are accepted; `SERVICE` is rejected, and update
      forms do not parse.
-   - Queries execute in killable worker processes against a read-only
-     snapshot, because pyoxigraph cannot cancel a query.
+   - Queries execute in killable worker processes, because pyoxigraph cannot
+     cancel a query.
+   - Workers never open the store being written. Opening it read-only while
+     another process writes is undefined behaviour: in testing, a reader hit
+     files that compaction had just deleted. After each sync pass the writer
+     publishes a hard-linked checkpoint (`Store.backup`), and workers read the
+     newest one. Each checkpoint is a consistent view of a whole pass. Old
+     checkpoints are removed after a grace period longer than any query
+     budget.
    - Limits: a wall-clock budget (10 s anonymous, 60 s for administrators), a
      row cap, a byte cap, a memory ceiling, and a per-address rate limit.
 4. **Parameters in the query library are bound with a `VALUES` block** in the
@@ -47,8 +54,9 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
 ## Consequences
 
 - The server needs a writable directory for the store (`FDPINDEX_SPARQL_DIR`,
-  a volume in Compose). Only one process may open it for writing, so run one
-  server process per volume.
+  a volume in Compose). It holds `store/` and `snapshots/`, which must be on
+  the same file system so that checkpoints are hard links. Only one process
+  may open the store for writing, so run one server process per volume.
 - Memory rises with the corpus: RocksDB caches, plus the workers' ceilings.
 - The SPARQL view lags PostgreSQL by the sync debounce (about a second), and
   the VoID counts lag by up to a minute.

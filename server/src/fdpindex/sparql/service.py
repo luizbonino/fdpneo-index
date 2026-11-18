@@ -17,7 +17,6 @@ are in the store, so anonymous callers see what the directory shows them.
 
 from __future__ import annotations
 
-import re
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -25,6 +24,7 @@ from typing import TYPE_CHECKING, Any
 
 from fdpindex.sparql.examples import Example, Library, default_library, expand
 from fdpindex.sparql.gate import CheckedQuery, QueryRejected, check_query, iri_term, string_term
+from fdpindex.sparql.labels import KNOWN_LABELS, humanize
 from fdpindex.sparql.prefixes import PREFIXES, compact, with_prefixes
 from fdpindex.sparql.store import ENTRIES_GRAPH, EXAMPLES_GRAPH, VOID_GRAPH
 from fdpindex.sparql.workers import GRAPH_FORMATS, MEDIA_TYPES, SOLUTION_FORMATS, QueryFailed
@@ -107,13 +107,6 @@ def negotiate(form: str, fmt: str | None, accept: str | None) -> str:
     return "turtle" if form in {"CONSTRUCT", "DESCRIBE"} else "json"
 
 
-def humanize(iri: str) -> str:
-    """``landingPage`` → ``landing page``: a fallback label from an IRI's local name."""
-    local = re.split(r"[#/:]", iri.rstrip("/#"))[-1] or iri
-    words = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|[_-]+", " ", local).strip()
-    return words[:1].upper() + words[1:].lower() if words else iri
-
-
 class SparqlService:
     def __init__(
         self,
@@ -134,7 +127,7 @@ class SparqlService:
     # --- graphs -----------------------------------------------------------------
 
     def default_graphs(self) -> tuple[str, ...]:
-        return (*sorted(self.store.fdp_graphs()), ENTRIES_GRAPH.value)
+        return (*self.store.snapshot_graphs, ENTRIES_GRAPH.value)
 
     def named_graphs(self) -> tuple[str, ...]:
         return (*self.default_graphs(), VOID_GRAPH.value, EXAMPLES_GRAPH.value)
@@ -163,7 +156,7 @@ class SparqlService:
         return await self.pool.run(
             checked,
             fmt=chosen,
-            generation=self.store.generation,
+            snapshot=str(self.store.snapshot),
             timeout=timeout or (self.limits.admin_timeout if admin else self.limits.timeout),
             max_rows=min(max_rows or self.limits.max_rows, self.limits.max_rows),
             max_bytes=self.limits.max_bytes,
@@ -254,6 +247,44 @@ class SparqlService:
             for r in rows
         ]
 
+    async def labels(self, iris: list[str]) -> dict[str, str]:
+        """Labels for IRIs: bundled vocabulary labels, else labels found in the data.
+
+        Prefers ``skos:prefLabel`` over ``rdfs:label``, ``dct:title`` and
+        ``foaf:name``, and English or untagged literals over other languages.
+        IRIs without a label are left out; the client shortens those itself.
+        """
+        found: dict[str, str] = {}
+        wanted: list[str] = []
+        for iri in dict.fromkeys(iris[:500]):
+            if iri in KNOWN_LABELS:
+                found[iri] = KNOWN_LABELS[iri]
+            else:
+                try:
+                    iri_term(iri)
+                except QueryRejected:
+                    continue
+                wanted.append(iri)
+        if not wanted:
+            return found
+        values = " ".join(iri_term(i) for i in wanted)
+        predicates = " ".join(iri_term(p) for p in LABEL_PREDICATES)
+        rows = await self._select(
+            f"""SELECT ?s ?p ?l WHERE {{ VALUES ?s {{ {values} }} VALUES ?p {{ {predicates} }}
+                 ?s ?p ?l FILTER(isLiteral(?l)) }} LIMIT 5000""",
+            timeout=5,
+        )
+        best: dict[str, tuple[int, int, str]] = {}
+        for row in rows:
+            rank = LABEL_PREDICATES.index(row["p"]) if row["p"] in LABEL_PREDICATES else 9
+            lang = row.get("_lang", "")
+            lang_rank = 0 if lang in {"", "en"} or lang.startswith("en-") else 1
+            candidate = (lang_rank, rank, row["l"])
+            if row["s"] not in best or candidate < best[row["s"]]:
+                best[row["s"]] = candidate
+        found.update({iri: label for iri, (_, _, label) in best.items()})
+        return found
+
     async def _select(self, query: str, *, timeout: float) -> list[dict[str, Any]]:
         import json
 
@@ -263,6 +294,9 @@ class SparqlService:
         for binding in data["results"]["bindings"]:
             row: dict[str, Any] = {name: term["value"] for name, term in binding.items()}
             row["_kinds"] = {name: term["type"] for name, term in binding.items()}
+            row["_lang"] = next(
+                (t.get("xml:lang", "") for t in binding.values() if "xml:lang" in t), ""
+            )
             rows.append(row)
         return rows
 

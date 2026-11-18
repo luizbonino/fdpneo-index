@@ -215,6 +215,22 @@ async def sparql_suggest(
         raise SparqlError(err.message, err.status) from err
 
 
+class LabelsRequest(BaseModel):
+    iris: list[str] = Field(max_length=500)
+
+
+@router.post("/index/sparql/labels")
+async def sparql_labels(
+    body: LabelsRequest, request: Request, service: Sparql, caller: Caller
+) -> dict[str, dict[str, str]]:
+    """Labels for up to 500 IRIs, from bundled vocabularies and the harvested data."""
+    _limit(service, request, caller)
+    try:
+        return {"labels": await service.labels(body.iris)}
+    except QueryFailed as err:
+        raise SparqlError(err.message, err.status) from err
+
+
 @router.get("/index/sparql/examples")
 async def sparql_examples(service: Sparql) -> Library:
     """The query library: grouped example queries with typed parameters."""

@@ -762,6 +762,23 @@
         "title": "IndexSettingsView",
         "type": "object"
       },
+      "LabelsRequest": {
+        "properties": {
+          "iris": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Iris",
+            "type": "array"
+          }
+        },
+        "required": [
+          "iris"
+        ],
+        "title": "LabelsRequest",
+        "type": "object"
+      },
       "Library": {
         "additionalProperties": false,
         "properties": {
@@ -2426,6 +2443,55 @@
           }
         },
         "summary": "Sparql Example Run",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/labels": {
+      "post": {
+        "description": "Labels for up to 500 IRIs, from bundled vocabularies and the harvested data.",
+        "operationId": "sparql_labels_index_sparql_labels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Sparql Labels Index Sparql Labels Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Labels",
         "tags": [
           "SPARQL"
         ]

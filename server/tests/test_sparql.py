@@ -76,6 +76,22 @@ def test_gate_reports_the_position_of_a_syntax_error() -> None:
     assert caught.value.line == 2
 
 
+def test_labels() -> None:
+    from fdpindex.sparql.labels import humanize
+
+    assert humanize("http://www.w3.org/ns/dcat#landingPage") == "Landing page"
+    assert (
+        humanize("https://example.org/org/overijssel-medical-research")
+        == "Overijssel medical research"
+    )
+    assert humanize("http://localhost:8000/fdp-api/licenses/cc-by-4.0") == "cc-by-4.0"
+    assert (
+        humanize("http://publications.europa.eu/resource/authority/data-theme/ENVI")
+        == "Environment"
+    )
+    assert humanize("http://example.org/codes/XYZ") == "XYZ"
+
+
 def test_negotiation() -> None:
     assert negotiate("SELECT", None, "text/csv, */*") == "csv"
     assert negotiate("SELECT", None, None) == "json"
@@ -150,7 +166,7 @@ def test_with_prefixes_declares_only_what_is_used() -> None:
 
 @pytest.fixture
 async def sparql(tmp_path: Path) -> AsyncIterator[SparqlService]:
-    store = SparqlStore(tmp_path / "store")
+    store = SparqlStore(tmp_path / "sparql")
     for url, docs in corpus().items():
         store.replace_graph(url, docs, fingerprint(docs))
     store.write_entries(
@@ -164,7 +180,8 @@ async def sparql(tmp_path: Path) -> AsyncIterator[SparqlService]:
         ]
     )
     store.write_void("urn:fdpindex:sparql")
-    pool = WorkerPool(tmp_path / "store", size=1, prefixes=PREFIXES, max_mb=0)
+    store.publish()
+    pool = WorkerPool(size=1, prefixes=PREFIXES, max_mb=0)
     await pool.start()
     limits = Limits(
         timeout=5,
@@ -277,7 +294,25 @@ async def test_workers_see_new_data_after_a_change(sparql: SparqlService) -> Non
     query = "SELECT * WHERE { ?s a dcat:Dataset }"
     assert (await sparql.query(query)).rows == 3
     await asyncio.to_thread(sparql.store.drop_graph, "https://fdp.beta.example/")
+    assert (await sparql.query(query)).rows == 3  # not published yet
+    await asyncio.to_thread(sparql.store.publish)
     assert (await sparql.query(query)).rows == 2
+
+
+def test_old_snapshots_are_removed_after_the_grace_period(tmp_path: Path) -> None:
+    store = SparqlStore(tmp_path / "sparql", keep_seconds=0)
+    first = store.snapshot
+    assert store.publish() == first  # nothing changed: no new snapshot
+    docs = corpus()["https://fdp.beta.example/"]
+    store.replace_graph("https://fdp.beta.example/", docs, fingerprint(docs))
+    second = store.publish()
+    assert second != first and second.exists() and not first.exists()
+    store.close()
+    reopened = SparqlStore(tmp_path / "sparql")
+    assert [p.name for p in (tmp_path / "sparql" / "snapshots").iterdir()] == [
+        reopened.snapshot.name
+    ]
+    reopened.close()
 
 
 async def test_schema_and_suggestions(sparql: SparqlService) -> None:
@@ -296,11 +331,35 @@ async def test_schema_and_suggestions(sparql: SparqlService) -> None:
     themes = await sparql.suggest(
         predicate="http://www.w3.org/ns/dcat#theme", type_iri=None, text=""
     )
-    assert themes[0]["kind"] == "uri" and themes[0]["label"] == "Heal"
+    assert themes[0]["kind"] == "uri" and themes[0]["label"] == "Health"
     datasets = await sparql.suggest(
         predicate=None, type_iri="http://www.w3.org/ns/dcat#Dataset", text="genome"
     )
     assert [d["label"] for d in datasets] == ["Genome cohort"]
+
+
+async def test_labels_from_vocabularies_and_data(sparql: SparqlService) -> None:
+    labels = await sparql.labels(
+        [
+            "http://publications.europa.eu/resource/authority/data-theme/HEAL",
+            "https://fdp.alpha.example/dataset/d1",
+            "https://fdp.beta.example/api",
+            "https://nowhere.example/x",
+            "not an iri",
+        ]
+    )
+    assert labels == {
+        "http://publications.europa.eu/resource/authority/data-theme/HEAL": "Health",
+        "https://fdp.alpha.example/dataset/d1": "Breast cancer registry",
+        "https://fdp.beta.example/api": "Beta Beacon",
+    }
+
+
+async def test_void_counts_only_fdp_metadata(sparql: SparqlService) -> None:
+    await asyncio.to_thread(sparql.store.write_void, "urn:fdpindex:sparql")  # a second pass
+    classes, properties = sparql.store.void_partitions()
+    assert not any(iri.startswith("http://rdfs.org/ns/void#") for iri, _ in classes + properties)
+    assert dict(classes)["http://www.w3.org/ns/dcat#Dataset"] == 3
 
 
 # --- store sync and the HTTP API ----------------------------------------------------
@@ -378,6 +437,7 @@ def test_rejecting_an_entry_removes_its_graph(api: Api) -> None:
     response = api.client.get(
         "/index/sparql", params={"query": "ASK { ?d a dcat:Dataset }"}, headers=ADMIN
     )
+    assert response.status_code == 200, response.text
     assert json.loads(response.content)["boolean"] is False
 
 

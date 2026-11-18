@@ -161,9 +161,12 @@ async def _start_sparql(
 ) -> SparqlService | None:
     if not config.sparql_enabled:
         return None
-    store = SparqlStore(config.sparql_dir)
-    pool = WorkerPool(
+    store = SparqlStore(
         config.sparql_dir,
+        keep_seconds=2 * max(config.sparql_timeout_seconds, config.sparql_admin_timeout_seconds)
+        + 60,
+    )
+    pool = WorkerPool(
         size=config.sparql_workers,
         prefixes=PREFIXES,
         max_mb=config.sparql_worker_max_mb,

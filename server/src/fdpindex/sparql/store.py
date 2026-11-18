@@ -16,16 +16,24 @@ from the design's ``search_sparql_sync`` table): the store is a per-replica
 cache, and keeping its sync state inside it means a wiped or fresh volume
 resyncs everything by itself, with no table keyed by replica.
 
-Only this process writes. Query workers open the directory read-only; a
-read-only handle is a snapshot, so the store bumps ``generation`` after each
-change and workers reopen when it moved (confirmed on pyoxigraph 0.5.13).
+Only this process writes, to ``<dir>/store``. Opening that directory
+read-only while it is written is undefined behaviour (pyoxigraph's own
+warning; in tests a reader hit SST files that compaction had just deleted),
+so query workers never touch it. After each sync pass the writer
+``publish``es a checkpoint, ``<dir>/snapshots/<generation>``, made with
+hard links (cheap on one file system), and workers query the newest one.
+Each published snapshot is a consistent view of a whole sync pass. Old
+snapshots are removed once no query can still be reading them: they are kept
+for ``keep_seconds`` (longer than the longest query budget).
 All methods are blocking: call them from a thread.
 """
 
 from __future__ import annotations
 
 import hashlib
+import shutil
 import threading
+import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -73,16 +81,56 @@ class EntryFacts:
 
 
 class SparqlStore:
-    def __init__(self, path: Path) -> None:
-        path.mkdir(parents=True, exist_ok=True)
+    def __init__(self, path: Path, *, keep_seconds: float = 300.0) -> None:
         self.path = path
-        self._store = ox.Store(str(path))
+        self._snapshots = path / "snapshots"
+        (path / "store").mkdir(parents=True, exist_ok=True)
+        # No worker runs yet: snapshots from an earlier run are stale.
+        shutil.rmtree(self._snapshots, ignore_errors=True)
+        self._snapshots.mkdir(parents=True)
+        self._store = ox.Store(str(path / "store"))
         self._lock = threading.Lock()
         self._generation = 0
+        self._keep_seconds = keep_seconds
+        self._published: list[tuple[float, Path]] = []
+        self._published_graphs: tuple[str, ...] = ()
+        self.publish()
 
     @property
     def generation(self) -> int:
         return self._generation
+
+    @property
+    def snapshot(self) -> Path:
+        """The newest published snapshot: what queries read."""
+        return self._published[-1][1]
+
+    @property
+    def snapshot_graphs(self) -> tuple[str, ...]:
+        """The FDP graphs in the newest snapshot (so the default graph matches what is read)."""
+        return self._published_graphs
+
+    def publish(self) -> Path:
+        """Checkpoint the store for readers, if it changed since the last checkpoint."""
+        with self._lock:
+            target = self._snapshots / f"{self._generation:010d}"
+            if self._published and self._published[-1][1] == target:
+                return target
+            self._store.flush()
+            self._store.backup(str(target))
+            self._published_graphs = tuple(sorted(self.fdp_graphs()))
+            now = time.monotonic()
+            self._published.append((now, target))
+            keep: list[tuple[float, Path]] = []
+            for created, snapshot in self._published[:-1]:
+                # A snapshot stops being "newest" when the next one appears; queries that
+                # started on it finish within their budget, well inside keep_seconds.
+                if now - created > self._keep_seconds:
+                    shutil.rmtree(snapshot, ignore_errors=True)
+                else:
+                    keep.append((created, snapshot))
+            self._published = [*keep, self._published[-1]]
+            return target
 
     def _changed(self) -> None:
         self._store.flush()
@@ -177,13 +225,17 @@ class SparqlStore:
     def write_void(self, endpoint: str) -> None:
         """Regenerate the VoID description from the store itself (whole-store partitions)."""
         dataset = ox.NamedNode(NS_INDEX + "dataset")
+        # Count the FDP graphs and the entries graph only, never the service graphs
+        # (an earlier VoID description would otherwise count itself).
+        graphs: list[ox.NamedNode | ox.BlankNode | ox.DefaultGraph] = [
+            ox.NamedNode(g) for g in sorted(self.fdp_graphs())
+        ]
+        graphs.append(ENTRIES_GRAPH)
         classes = self._store.query(
-            "SELECT ?c (COUNT(*) AS ?n) WHERE { ?s a ?c } GROUP BY ?c",
-            use_default_graph_as_union=True,
+            "SELECT ?c (COUNT(*) AS ?n) WHERE { ?s a ?c } GROUP BY ?c", default_graph=graphs
         )
         properties = self._store.query(
-            "SELECT ?p (COUNT(*) AS ?n) WHERE { ?s ?p ?o } GROUP BY ?p",
-            use_default_graph_as_union=True,
+            "SELECT ?p (COUNT(*) AS ?n) WHERE { ?s ?p ?o } GROUP BY ?p", default_graph=graphs
         )
         quads = [
             ox.Quad(dataset, RDF_TYPE, ox.NamedNode(VOID + "Dataset"), VOID_GRAPH),

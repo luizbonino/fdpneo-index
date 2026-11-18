@@ -68,21 +68,23 @@ examples:
   - id: datasets-by-publisher
     group: Find data
     title: Datasets by publisher
-    description: Datasets whose publisher's name contains some text.
+    description: Datasets whose publisher's name (or address, when it has no name) contains some text.
     parameters:
       - name: publisher
         type: text
-        label: Publisher name
+        label: Publisher
         required: true
         placeholder: e.g. university
+        suggest: { predicate: "http://purl.org/dc/terms/publisher" }
     query: |
       SELECT ?dataset (SAMPLE(?t) AS ?title) (SAMPLE(?name) AS ?publisher) ?fdp
       WHERE {
         # @parameters
         GRAPH ?fdp {
           ?dataset a dcat:Dataset ; dct:publisher ?agent .
-          ?agent foaf:name|rdfs:label|vcard:fn ?name .
+          OPTIONAL { ?agent foaf:name|rdfs:label|vcard:fn ?n }
           OPTIONAL { ?dataset dct:title ?t }
+          BIND(COALESCE(?n, STR(?agent)) AS ?name)
         }
         FILTER(CONTAINS(LCASE(STR(?name)), LCASE(?_publisher)))
       }
@@ -113,25 +115,28 @@ examples:
 
   - id: recently-modified
     group: Find data
-    title: Recently modified metadata
-    description: Catalogs, datasets, distributions and data services by modification date, newest first.
+    title: Newest metadata
+    description: Catalogs, datasets, distributions and data services by their modification date (or, without one, their publication date), newest first.
     parameters:
       - name: since
         type: date
-        label: Modified since
+        label: Changed since
     query: |
-      SELECT ?resource ?type (SAMPLE(?t) AS ?title) (MAX(?m) AS ?modified) ?fdp
+      SELECT ?resource ?type (SAMPLE(?t) AS ?title) (MAX(?d) AS ?date) ?fdp
       WHERE {
         # @parameters
         GRAPH ?fdp {
           VALUES ?type { dcat:Catalog dcat:Dataset dcat:Distribution dcat:DataService }
-          ?resource a ?type ; dct:modified|fdp-o:metadataModified ?m .
+          ?resource a ?type .
+          OPTIONAL { ?resource dct:modified|fdp-o:metadataModified ?modified }
+          OPTIONAL { ?resource dct:issued|fdp-o:metadataIssued ?issued }
           OPTIONAL { ?resource dct:title ?t }
+          BIND(COALESCE(?modified, ?issued) AS ?d)
         }
-        FILTER(!BOUND(?_since) || STR(?m) >= STR(?_since))
+        FILTER(BOUND(?d) && (!BOUND(?_since) || STR(?d) >= STR(?_since)))
       }
       GROUP BY ?resource ?type ?fdp
-      ORDER BY DESC(?modified)
+      ORDER BY DESC(?date)
       LIMIT 200
 
   - id: distributions-by-format

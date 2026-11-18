@@ -129,6 +129,8 @@ class SparqlSync:
             self._void_dirty = False
             self._void_at = time.monotonic()
             await asyncio.to_thread(self._store.write_void, self._endpoint)
+        # One snapshot per pass: queries see a whole pass or none of it.
+        await asyncio.to_thread(self._store.publish)
 
     async def _reconcile_all(self) -> bool:
         async with self._session_factory() as session:

@@ -8,8 +8,9 @@ cap rows while iterating (evaluation is lazy, so a capped query stops early
 unless it sorts), cap the serialised bytes, and on Linux exit when their
 resident memory passes a ceiling.
 
-A read-only handle is a snapshot: each request carries the store's
-generation and a worker reopens the store when it moved.
+Workers read published snapshots of the store, never the store being
+written (see ``store.py``): each request names the snapshot to read, and a
+worker reopens when it changed.
 """
 
 from __future__ import annotations
@@ -63,7 +64,7 @@ class Request:
     text: str
     form: str
     format: str
-    generation: int
+    snapshot: str
     max_rows: int
     max_bytes: int
     union: bool
@@ -98,21 +99,22 @@ def _watch_memory(limit_mb: int) -> None:
         time.sleep(0.2)
 
 
-def worker_main(conn: Connection, path: str, prefixes: dict[str, str], max_mb: int) -> None:
+def worker_main(conn: Connection, prefixes: dict[str, str], max_mb: int) -> None:
     import pyoxigraph as ox
 
     threading.Thread(target=_watch_memory, args=(max_mb,), daemon=True).start()
     store: Any = None
-    generation = -1
+    snapshot = ""
     while True:
         try:
             request: Request = conn.recv()
         except EOFError:
             return
         try:
-            if request.generation != generation or store is None:
-                store = ox.Store.read_only(path)
-                generation = request.generation
+            if request.snapshot != snapshot or store is None:
+                store = None  # release the previous snapshot first
+                store = ox.Store.read_only(request.snapshot)
+                snapshot = request.snapshot
             started = time.perf_counter()
             body, rows, truncated = _execute(ox, store, request, prefixes)
             conn.send(("ok", body, rows, truncated, time.perf_counter() - started))
@@ -280,11 +282,11 @@ def _xml_term(ox: Any, term: Any) -> str:
 
 
 class _Worker:
-    def __init__(self, ctx: Any, path: str, prefixes: dict[str, str], max_mb: int) -> None:
+    def __init__(self, ctx: Any, prefixes: dict[str, str], max_mb: int) -> None:
         parent, child = ctx.Pipe()
         self.conn: Connection = parent
         self.process: BaseProcess = ctx.Process(
-            target=worker_main, args=(child, path, prefixes, max_mb), daemon=True
+            target=worker_main, args=(child, prefixes, max_mb), daemon=True
         )
         self.process.start()
         child.close()
@@ -310,14 +312,12 @@ class _Worker:
 class WorkerPool:
     def __init__(
         self,
-        path: Path,
         *,
         size: int,
         prefixes: dict[str, str],
         max_mb: int,
         max_queue: int = 10,
     ) -> None:
-        self._path = str(path)
         self._size = size
         self._prefixes = prefixes
         self._max_mb = max_mb
@@ -328,7 +328,7 @@ class WorkerPool:
         self._waiting = 0
 
     def _spawn(self) -> _Worker:
-        worker = _Worker(self._ctx, self._path, self._prefixes, self._max_mb)
+        worker = _Worker(self._ctx, self._prefixes, self._max_mb)
         self._all.append(worker)
         return worker
 
@@ -341,7 +341,7 @@ class WorkerPool:
         query: CheckedQuery,
         *,
         fmt: str,
-        generation: int,
+        snapshot: str,
         timeout: float,
         max_rows: int,
         max_bytes: int,
@@ -360,7 +360,7 @@ class WorkerPool:
             text=query.text,
             form=query.form,
             format=fmt,
-            generation=generation,
+            snapshot=snapshot,
             max_rows=max_rows,
             max_bytes=max_bytes,
             union=union,

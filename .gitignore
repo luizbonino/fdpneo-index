@@ -23,6 +23,7 @@ client/playwright-report/
 !.env.example
 *.fdpbk
 /backups/
+server/data/
 
 # Editors / OS
 .DS_Store

@@ -22,7 +22,7 @@ import hashlib
 import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import UUID, uuid4
 
 import structlog
@@ -40,6 +40,8 @@ from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
     from sqlalchemy.orm import InstrumentedAttribute
 
@@ -61,6 +63,33 @@ def api_state(entry: IndexEntry, valid_threshold: datetime) -> str:
         retrieved = entry.last_retrieval_at
         return "ACTIVE" if retrieved is not None and retrieved > valid_threshold else "INACTIVE"
     return entry.state.value.upper()
+
+
+@dataclass(frozen=True)
+class HarvestChanges:
+    """What a harvest changed in ``harvested_node``, by node IRI (search design §6.5)."""
+
+    added: frozenset[str] = frozenset()
+    changed: frozenset[str] = frozenset()
+    removed: frozenset[str] = frozenset()
+
+    @property
+    def empty(self) -> bool:
+        return not (self.added or self.changed or self.removed)
+
+
+@dataclass(frozen=True)
+class IndexChange:
+    """A notification for derived stores (the SPARQL store, the search projection).
+
+    ``kind`` is ``harvested`` (an entry's nodes changed), ``removed`` (an entry's
+    harvested data is gone: rejected or deleted) or ``entries`` (entry fields such
+    as state or title changed). Listeners must be cheap: record and return.
+    """
+
+    kind: Literal["harvested", "removed", "entries"]
+    entry_id: UUID | None = None
+    changes: HarvestChanges | None = None
 
 
 @dataclass
@@ -131,6 +160,17 @@ class IndexService:
         self._harvest_max_nodes = harvest_max_nodes
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_again: set[UUID] = set()
+        self._listeners: list[Callable[[IndexChange], None]] = []
+
+    def add_listener(self, listener: Callable[[IndexChange], None]) -> None:
+        self._listeners.append(listener)
+
+    def _notify(self, change: IndexChange) -> None:
+        for listener in self._listeners:
+            try:
+                listener(change)
+            except Exception:  # a derived store must never break the index
+                log.exception("index_listener_failed", kind=change.kind)
 
     # --- ping intake --------------------------------------------------------
 
@@ -457,6 +497,8 @@ class IndexService:
         # when the state changed, so an outage does not send a message per check.
         if result is not None and (not scheduled or state_changed):
             self._webhooks.schedule_trigger(retrieval_id)
+        if result is not None:
+            self._notify(IndexChange("entries"))
         if harvest_entry is not None:
             self.schedule_harvest(harvest_entry)
 
@@ -576,21 +618,60 @@ class IndexService:
             entry = await session.get(IndexEntry, entry_id)
             if entry is None or entry.permit is not EntryPermit.ACCEPTED:
                 return
-            await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
-            for node in result.nodes:
-                session.add(
-                    HarvestedNode(
-                        entry_uuid=entry_id,
-                        node_iri=node.node_iri,
-                        ntriples=node.ntriples,
-                        content_hash=node.content_hash,
-                        harvested_at=now,
+            # Upsert by node IRI, so unchanged nodes keep their rows and derived
+            # stores learn exactly what changed.
+            existing = {
+                node.node_iri: node
+                for node in (
+                    await session.scalars(
+                        select(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id)
                     )
                 )
+            }
+            fresh = {node.node_iri: node for node in result.nodes}
+            added: set[str] = set()
+            changed: set[str] = set()
+            for iri, node in fresh.items():
+                row = existing.get(iri)
+                if row is None:
+                    added.add(iri)
+                    session.add(
+                        HarvestedNode(
+                            entry_uuid=entry_id,
+                            node_iri=iri,
+                            ntriples=node.ntriples,
+                            content_hash=node.content_hash,
+                            harvested_at=now,
+                        )
+                    )
+                    continue
+                row.harvested_at = now
+                if row.content_hash != node.content_hash:
+                    changed.add(iri)
+                    row.ntriples = node.ntriples
+                    row.content_hash = node.content_hash
+            removed = set(existing) - set(fresh)
+            if removed:
+                await session.execute(
+                    delete(HarvestedNode).where(
+                        HarvestedNode.entry_uuid == entry_id, HarvestedNode.node_iri.in_(removed)
+                    )
+                )
+        changes = HarvestChanges(frozenset(added), frozenset(changed), frozenset(removed))
+        log.info(
+            "harvested",
+            client_url=client_url,
+            nodes=len(fresh),
+            added=len(added),
+            changed=len(changed),
+            removed=len(removed),
+        )
+        self._notify(IndexChange("harvested", entry_id, changes))
 
     async def delete_harvested(self, entry_id: UUID) -> None:
         async with self._session_factory() as session, session.begin():
             await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
+        self._notify(IndexChange("removed", entry_id))
 
     async def harvested_graph(self, entry_id: UUID) -> Graph:
         async with self._session_factory() as session:
@@ -782,6 +863,7 @@ class IndexService:
             await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
             await session.execute(delete(Event).where(Event.related_to == entry_id))
             await session.delete(entry)
+        self._notify(IndexChange("removed", entry_id))
 
 
 def _order_by(sort: list[str]) -> list[Any]:

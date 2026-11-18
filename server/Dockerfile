@@ -25,6 +25,8 @@ RUN groupadd --system fdpindex \
     && useradd --system --gid fdpindex --home-dir /app --no-create-home fdpindex
 WORKDIR /app
 COPY --from=builder --chown=fdpindex:fdpindex /app /app
+# The SPARQL store (a cache derived from PostgreSQL); mount a volume here.
+RUN mkdir -p /app/data/sparql && chown -R fdpindex:fdpindex /app/data
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1

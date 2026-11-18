@@ -163,6 +163,14 @@ def _service_info(request: Request) -> ServiceInfo:
         if config.oidc_issuer
         else None,
         auth=auth,  # pyright: ignore[reportArgumentType]
+        sparql={
+            "endpoint": str(request.url_for("sparql_get")),
+            "timeoutSeconds": config.sparql_timeout_seconds,
+            "maxRows": config.sparql_max_rows,
+            "perMinute": config.sparql_rate_per_minute,
+        }
+        if getattr(request.app.state, "sparql", None) is not None
+        else None,
     )
 
 

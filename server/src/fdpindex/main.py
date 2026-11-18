@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fdpindex import __version__
 from fdpindex.api.routes import router
+from fdpindex.api.sparql import router as sparql_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.config import Settings, get_settings
 from fdpindex.db import create_schema, make_engine, make_session_factory
@@ -28,6 +29,11 @@ from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
+from fdpindex.sparql.prefixes import PREFIXES
+from fdpindex.sparql.service import Limits, SparqlService
+from fdpindex.sparql.store import SparqlStore
+from fdpindex.sparql.sync import SparqlSync
+from fdpindex.sparql.workers import WorkerPool
 from fdpindex.webhooks import WebhookService
 
 if TYPE_CHECKING:
@@ -105,6 +111,8 @@ def create_app(
         app.state.webhooks = webhooks
         app.state.index = index
         app.state.authenticator = authenticator
+        sparql = await _start_sparql(config, factory, settings_service, index)
+        app.state.sparql = sparql
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
@@ -118,6 +126,10 @@ def create_app(
         finally:
             await scheduler.stop()
             await jobs.close()
+            if sparql is not None:
+                await sparql.sync.stop()
+                await sparql.pool.close()
+                sparql.store.close()
             await http.aclose()
             if engine is not None:
                 await engine.dispose()
@@ -137,7 +149,54 @@ def create_app(
         )
     register_exception_handlers(app)
     app.include_router(router)
+    app.include_router(sparql_router)
     return app
+
+
+async def _start_sparql(
+    config: Settings,
+    factory: async_sessionmaker[AsyncSession],
+    settings_service: SettingsService,
+    index: IndexService,
+) -> SparqlService | None:
+    if not config.sparql_enabled:
+        return None
+    store = SparqlStore(config.sparql_dir)
+    pool = WorkerPool(
+        config.sparql_dir,
+        size=config.sparql_workers,
+        prefixes=PREFIXES,
+        max_mb=config.sparql_worker_max_mb,
+    )
+    await pool.start()
+    endpoint = (
+        f"{config.public_url.rstrip('/')}/index/sparql"
+        if config.public_url
+        else "urn:fdpindex:sparql"
+    )
+    sync = SparqlSync(
+        store,
+        factory,
+        settings_service,
+        endpoint=endpoint,
+        void_interval=config.sparql_void_interval_seconds,
+    )
+    index.add_listener(sync.notify)
+    sync.start()
+    log.info("sparql_started", directory=str(config.sparql_dir), workers=config.sparql_workers)
+    return SparqlService(
+        store,
+        pool,
+        sync,
+        Limits(
+            timeout=config.sparql_timeout_seconds,
+            admin_timeout=config.sparql_admin_timeout_seconds,
+            max_rows=config.sparql_max_rows,
+            max_bytes=config.sparql_max_bytes,
+            max_query_chars=config.sparql_max_query_chars,
+            per_minute=config.sparql_rate_per_minute,
+        ),
+    )
 
 
 def app() -> FastAPI:  # pragma: no cover - uvicorn factory entry point

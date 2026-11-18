@@ -243,6 +243,8 @@ class ServiceInfo(_Api):
     ping: str
     oidc: dict[str, str | None] | None
     auth: list[Literal["oidc", "token"]]
+    # addition: whether the SPARQL endpoint and page exist, and their limits
+    sparql: dict[str, Any] | None = None
 
 
 def event_outcome(event: Event) -> str | None:

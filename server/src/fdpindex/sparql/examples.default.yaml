@@ -1,0 +1,401 @@
+# The bundled SPARQL query library (search design §2.2.4).
+#
+# Parameters appear in the query as ?_name and are bound with a VALUES block
+# at the "# @parameters" line. An empty optional parameter stays unbound and
+# matches anything. Known prefixes (dcat:, dct:, foaf:, fdp-o:, fdpindex: …)
+# need no PREFIX line; the expanded query gets them. Each FDP's harvested
+# metadata is a named graph named by the FDP's address; the graph
+# <urn:fdpindex:entries> describes the FDPs themselves (state, country,
+# title). Without GRAPH, a pattern matches across all FDPs.
+#
+# SPARQL evaluates inner groups first: a FILTER that tests a parameter must
+# sit in the outermost WHERE group (where the VALUES block is), not inside
+# GRAPH { } or OPTIONAL { }. Triple patterns may use parameters anywhere.
+
+groups:
+  - Find data
+  - Compare FDPs
+  - Metadata quality
+
+examples:
+  - id: datasets-by-words
+    group: Find data
+    title: Datasets that mention…
+    description: Datasets whose title, description or keywords contain some text.
+    parameters:
+      - name: text
+        type: text
+        label: Text
+        required: true
+        placeholder: e.g. cancer
+    query: |
+      SELECT ?dataset (SAMPLE(?t) AS ?title) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?dataset a dcat:Dataset .
+          ?dataset dct:title|dct:description|dcat:keyword ?text .
+          OPTIONAL { ?dataset dct:title ?t }
+        }
+        FILTER(CONTAINS(LCASE(STR(?text)), LCASE(?_text)))
+      }
+      GROUP BY ?dataset ?fdp
+      ORDER BY ?title
+      LIMIT 500
+
+  - id: datasets-by-theme
+    group: Find data
+    title: Datasets by theme
+    description: Datasets tagged with a theme (dcat:theme), with the FDP they come from.
+    parameters:
+      - name: theme
+        type: iri
+        label: Theme
+        required: true
+        suggest: { predicate: "http://www.w3.org/ns/dcat#theme" }
+    query: |
+      SELECT ?dataset (SAMPLE(?t) AS ?title) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?dataset a dcat:Dataset ; dcat:theme ?_theme .
+          OPTIONAL { ?dataset dct:title ?t }
+        }
+      }
+      GROUP BY ?dataset ?fdp
+      ORDER BY ?title
+
+  - id: datasets-by-publisher
+    group: Find data
+    title: Datasets by publisher
+    description: Datasets whose publisher's name contains some text.
+    parameters:
+      - name: publisher
+        type: text
+        label: Publisher name
+        required: true
+        placeholder: e.g. university
+    query: |
+      SELECT ?dataset (SAMPLE(?t) AS ?title) (SAMPLE(?name) AS ?publisher) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?dataset a dcat:Dataset ; dct:publisher ?agent .
+          ?agent foaf:name|rdfs:label|vcard:fn ?name .
+          OPTIONAL { ?dataset dct:title ?t }
+        }
+        FILTER(CONTAINS(LCASE(STR(?name)), LCASE(?_publisher)))
+      }
+      GROUP BY ?dataset ?fdp
+      ORDER BY ?publisher ?title
+
+  - id: datasets-by-licence
+    group: Find data
+    title: Datasets by licence
+    description: Datasets released under a licence (dct:license), directly or through a distribution.
+    parameters:
+      - name: licence
+        type: iri
+        label: Licence
+        required: true
+        suggest: { predicate: "http://purl.org/dc/terms/license" }
+    query: |
+      SELECT DISTINCT ?dataset ?title ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?dataset a dcat:Dataset .
+          { ?dataset dct:license ?_licence } UNION { ?dataset dcat:distribution/dct:license ?_licence }
+          OPTIONAL { ?dataset dct:title ?title }
+        }
+      }
+      ORDER BY ?title
+
+  - id: recently-modified
+    group: Find data
+    title: Recently modified metadata
+    description: Catalogs, datasets, distributions and data services by modification date, newest first.
+    parameters:
+      - name: since
+        type: date
+        label: Modified since
+    query: |
+      SELECT ?resource ?type (SAMPLE(?t) AS ?title) (MAX(?m) AS ?modified) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          VALUES ?type { dcat:Catalog dcat:Dataset dcat:Distribution dcat:DataService }
+          ?resource a ?type ; dct:modified|fdp-o:metadataModified ?m .
+          OPTIONAL { ?resource dct:title ?t }
+        }
+        FILTER(!BOUND(?_since) || STR(?m) >= STR(?_since))
+      }
+      GROUP BY ?resource ?type ?fdp
+      ORDER BY DESC(?modified)
+      LIMIT 200
+
+  - id: distributions-by-format
+    group: Find data
+    title: Distributions by format
+    description: Distributions whose media type or format contains some text, with their dataset.
+    parameters:
+      - name: format
+        type: text
+        label: Format or media type
+        required: true
+        placeholder: e.g. csv
+    query: |
+      SELECT ?distribution ?format ?dataset (SAMPLE(?t) AS ?datasetTitle) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?distribution a dcat:Distribution ; dcat:mediaType|dct:format ?format .
+          OPTIONAL { ?dataset dcat:distribution ?distribution . OPTIONAL { ?dataset dct:title ?t } }
+        }
+        FILTER(CONTAINS(LCASE(STR(?format)), LCASE(?_format)))
+      }
+      GROUP BY ?distribution ?format ?dataset ?fdp
+      LIMIT 500
+
+  - id: temporal-overlap
+    group: Find data
+    title: Datasets covering a period
+    description: Datasets whose temporal coverage (dct:temporal) overlaps the given period.
+    parameters:
+      - name: from
+        type: date
+        label: From
+        required: true
+      - name: to
+        type: date
+        label: To
+        required: true
+    query: |
+      SELECT ?dataset (SAMPLE(?t) AS ?title) ?start ?end ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?dataset a dcat:Dataset ; dct:temporal ?period .
+          ?period dcat:startDate|schema:startDate ?start ; dcat:endDate|schema:endDate ?end .
+          OPTIONAL { ?dataset dct:title ?t }
+        }
+        FILTER(STR(?start) <= STR(?_to) && STR(?end) >= STR(?_from))
+      }
+      GROUP BY ?dataset ?start ?end ?fdp
+      ORDER BY ?start
+
+  - id: data-services
+    group: Find data
+    title: Data services and what they serve
+    description: Data services (APIs, endpoints) with their endpoint and the datasets they serve.
+    query: |
+      SELECT ?service (SAMPLE(?t) AS ?title) ?endpoint ?dataset ?fdp
+      WHERE {
+        GRAPH ?fdp {
+          ?service a dcat:DataService .
+          OPTIONAL { ?service dct:title ?t }
+          OPTIONAL { ?service dcat:endpointURL ?endpoint }
+          OPTIONAL { ?service dcat:servesDataset ?dataset }
+        }
+      }
+      GROUP BY ?service ?endpoint ?dataset ?fdp
+      LIMIT 500
+
+  - id: conforms-to
+    group: Find data
+    title: Resources following a schema
+    description: Catalogs, datasets and distributions that declare a schema or profile (dct:conformsTo).
+    parameters:
+      - name: schema
+        type: iri
+        label: Schema or profile
+        required: true
+        suggest: { predicate: "http://purl.org/dc/terms/conformsTo" }
+    query: |
+      SELECT ?resource ?type (SAMPLE(?t) AS ?title) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?resource dct:conformsTo ?_schema ; a ?type .
+          OPTIONAL { ?resource dct:title ?t }
+        }
+        FILTER(?type IN (dcat:Catalog, dcat:Dataset, dcat:Distribution, dcat:DataService))
+      }
+      GROUP BY ?resource ?type ?fdp
+
+  - id: describe-resource
+    group: Find data
+    title: Everything about one resource
+    description: All statements about a resource (DESCRIBE), as a graph.
+    parameters:
+      - name: resource
+        type: iri
+        label: Resource IRI
+        required: true
+        placeholder: https://…
+    query: |
+      DESCRIBE ?_resource
+      WHERE {
+        # @parameters
+      }
+
+  - id: datasets-per-fdp
+    group: Compare FDPs
+    title: Datasets per FDP
+    description: How many datasets each FDP publishes, optionally only FDPs in one state.
+    parameters:
+      - name: state
+        type: choice
+        label: FDP state
+        choices:
+          - { value: ACTIVE, label: Active, kind: text }
+          - { value: UNREACHABLE, label: Unreachable, kind: text }
+          - { value: INVALID, label: Invalid metadata, kind: text }
+          - { value: INACTIVE, label: Not seen recently, kind: text }
+    query: |
+      SELECT ?fdp ?name (COUNT(DISTINCT ?dataset) AS ?datasets)
+      WHERE {
+        # @parameters
+        GRAPH fdpindex:entries {
+          ?fdp fdpindex:state ?_state .
+          OPTIONAL { ?fdp dct:title ?name }
+        }
+        OPTIONAL { GRAPH ?fdp { ?dataset a dcat:Dataset } }
+      }
+      GROUP BY ?fdp ?name
+      ORDER BY DESC(?datasets)
+    chart: { type: barh, label: name, value: datasets }
+
+  - id: catalogs-with-counts
+    group: Compare FDPs
+    title: Catalogs and their datasets
+    description: Every catalog with the number of datasets it lists, optionally in one FDP.
+    parameters:
+      - name: fdp
+        type: fdp
+        label: FDP
+    query: |
+      SELECT ?catalog (SAMPLE(?t) AS ?title) (?_fdp AS ?fdp) (COUNT(DISTINCT ?dataset) AS ?datasets)
+      WHERE {
+        # @parameters
+        GRAPH ?_fdp {
+          ?catalog a dcat:Catalog .
+          OPTIONAL { ?catalog dct:title ?t }
+          OPTIONAL { ?catalog dcat:dataset ?dataset }
+        }
+      }
+      GROUP BY ?catalog ?_fdp
+      ORDER BY DESC(?datasets)
+    chart: { type: barh, label: title, value: datasets }
+
+  - id: fdps-by-country
+    group: Compare FDPs
+    title: FDPs by country
+    description: The number of listed FDPs per country, as declared in their metadata.
+    query: |
+      SELECT ?country (COUNT(?fdp) AS ?fdps)
+      WHERE {
+        GRAPH fdpindex:entries {
+          ?fdp a fdp-o:FAIRDataPoint .
+          OPTIONAL { ?fdp r3d:country ?c }
+        }
+        BIND(COALESCE(STR(?c), "(not declared)") AS ?country)
+      }
+      GROUP BY ?country
+      ORDER BY DESC(?fdps)
+    chart: { type: pie, label: country, value: fdps }
+
+  - id: themes-overview
+    group: Compare FDPs
+    title: Most used themes
+    description: Themes (dcat:theme) by the number of datasets that use them, across all FDPs.
+    query: |
+      SELECT ?theme (COUNT(DISTINCT ?dataset) AS ?datasets)
+      WHERE { ?dataset a dcat:Dataset ; dcat:theme ?theme . }
+      GROUP BY ?theme
+      ORDER BY DESC(?datasets)
+      LIMIT 30
+    chart: { type: barh, label: theme, value: datasets }
+
+  - id: keyword-cooccurrence
+    group: Compare FDPs
+    title: Keywords used together with…
+    description: Keywords that appear on the same datasets as a given keyword.
+    parameters:
+      - name: keyword
+        type: text
+        label: Keyword
+        required: true
+        suggest: { predicate: "http://www.w3.org/ns/dcat#keyword" }
+    query: |
+      SELECT ?other (COUNT(DISTINCT ?dataset) AS ?datasets)
+      WHERE {
+        # @parameters
+        ?dataset dcat:keyword ?keyword , ?other .
+        FILTER(LCASE(STR(?keyword)) = LCASE(?_keyword) && LCASE(STR(?other)) != LCASE(?_keyword))
+      }
+      GROUP BY ?other
+      ORDER BY DESC(?datasets)
+      LIMIT 50
+    chart: { type: barh, label: other, value: datasets }
+
+  - id: missing-property
+    group: Metadata quality
+    title: Resources missing a property
+    description: Resources of a type that do not state a given property, per FDP.
+    parameters:
+      - name: type
+        type: choice
+        label: Resource type
+        required: true
+        default: "http://www.w3.org/ns/dcat#Dataset"
+        choices:
+          - { value: "http://www.w3.org/ns/dcat#Dataset", label: Dataset }
+          - { value: "http://www.w3.org/ns/dcat#Catalog", label: Catalog }
+          - { value: "http://www.w3.org/ns/dcat#Distribution", label: Distribution }
+          - { value: "http://www.w3.org/ns/dcat#DataService", label: Data service }
+      - name: property
+        type: choice
+        label: Missing property
+        required: true
+        default: "http://purl.org/dc/terms/license"
+        choices:
+          - { value: "http://purl.org/dc/terms/license", label: Licence }
+          - { value: "http://purl.org/dc/terms/description", label: Description }
+          - { value: "http://www.w3.org/ns/dcat#keyword", label: Keywords }
+          - { value: "http://www.w3.org/ns/dcat#theme", label: Theme }
+          - { value: "http://www.w3.org/ns/dcat#contactPoint", label: Contact point }
+          - { value: "http://purl.org/dc/terms/publisher", label: Publisher }
+          - { value: "http://www.w3.org/ns/dcat#mediaType", label: Media type }
+    query: |
+      SELECT ?resource (SAMPLE(?t) AS ?title) ?fdp
+      WHERE {
+        # @parameters
+        GRAPH ?fdp {
+          ?resource a ?_type .
+          OPTIONAL { ?resource dct:title ?t }
+        }
+        FILTER NOT EXISTS { GRAPH ?fdp { ?resource ?_property ?value } }
+      }
+      GROUP BY ?resource ?fdp
+      ORDER BY ?fdp ?title
+      LIMIT 1000
+
+  - id: predicate-usage
+    group: Metadata quality
+    title: Which properties are used
+    description: Properties by how often they are used, across all FDPs or in one.
+    parameters:
+      - name: fdp
+        type: fdp
+        label: FDP
+    query: |
+      SELECT ?property (COUNT(*) AS ?uses) (COUNT(DISTINCT ?subject) AS ?resources)
+      WHERE {
+        # @parameters
+        GRAPH ?_fdp { ?subject ?property ?object }
+        FILTER(!STRSTARTS(STR(?_fdp), "urn:fdpindex:"))
+      }
+      GROUP BY ?property
+      ORDER BY DESC(?uses)
+    chart: { type: barh, label: property, value: uses }

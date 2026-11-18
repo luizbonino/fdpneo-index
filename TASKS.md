@@ -74,57 +74,75 @@ registered FDPs itself. See [ADR-0004](docs/adr/0004-active-liveness-checks.md).
 - [ ] 5.2 fdpneo-docs: FDPneo Index pages (deploying, registering an FDP, administering)
 - [ ] 5.3 Guidance for Java FDP deployments running `FDP_INDEX=true`: migrate with the importer, then switch the mode off
 
-## Phases 6–9 — Search over harvested metadata
+## Phases 6–10 — Search and SPARQL over harvested metadata
 
-Design: [docs/design/search.md](docs/design/search.md) (proposed; becomes ADR-0005).
+Design: [docs/design/search.md](docs/design/search.md). Order of work: 6.1,
+6.5, then the SPARQL server (7.1–7.6) and UI (7.8–7.10), then the rest of
+Phase 6, then 7.7 and 7.11–7.14.
+
 ### Phase 6 — Search over harvested metadata: foundation
 
-- [ ] 6.1 ADR-0005: search as a projection in PostgreSQL (amends ADR-0002), the profile, SPARQL deferred and opt-in, the compatibility rule for new paths
+- [x] 6.1 ADR-0005: search as a projection in PostgreSQL (amends ADR-0002), the profile, SPARQL over an embedded derived store with process isolation (amends ADR-0001's "no SPARQL in this service"), the compatibility rule for new paths
 - [ ] 6.2 Migration `0003_search`: `search_resource`, `search_value`, `search_label`, `search_facet_cache`, `unaccent` + `pg_trgm`, the `fdpindex_*` text search configurations; SQLite variants for unit tests
-- [ ] 6.3 Profile model (Pydantic) and bundled default `profile.default.yaml` covering §3.3; `profile_hash`; unit tests for CURIE expansion and validation
+- [ ] 6.3 Profile model (Pydantic) and bundled default `profile.default.yaml` covering §3.3, with `help`, `cards`, `landing` and the `number`/`boolean` kinds; `profile_hash`; unit tests for CURIE expansion and validation
 - [ ] 6.4 Projection (`search/project.py`): kind detection, fields, paths up to depth 2, multilingual titles/descriptions, dates, identifiers, `completeness`, `public_id`; pure function with fixture graphs from a Java FDP and from FDPneo (DCAT 2 and DCAT 3)
-- [ ] 6.5 Incremental harvest storage: upsert `harvested_node` by `(entry_uuid, node_iri)` with change sets; projection job for changed/new/removed nodes; deletion on reject/delete; `search_reindex` event for resumable full re-projection
+- [x] 6.5 Incremental harvest storage: upsert `harvested_node` by `(entry_uuid, node_iri)` with change sets; projection job for changed/new/removed nodes; deletion on reject/delete; `search_reindex` event for resumable full re-projection — *done: upsert with change sets, listeners, deletion; the search projection job comes with 6.4*
 - [ ] 6.6 Text search write path: weighted `tsv_lang` / `tsv_simple` per §3.6, language → configuration map; integration tests for stemming and unaccent
 - [ ] 6.7 Roll-up pass: distribution formats, media types, licences onto datasets; dataset counts onto catalogs
 - [ ] 6.8 Labels: harvested labels during projection; bundled vocabulary pack (EU authority tables, SPDX, IANA, DCAT terms) and `fdpindex vocab update`; `GET /index/search/labels`
 - [ ] 6.9 Search repository: filters (named fields, dates, fdp, fdpState), text condition, ranking per §4, sorting, offset paging, facet counts with the facet cache, `statement_timeout`; unit tests on SQLite, ranking and FTS tests on PostgreSQL
-- [ ] 6.10 `GET` / `POST /index/search` (JSON), `GET /index/search/resources/{id}`, `GET /index/search/facets`; parameter validation and caps; anonymous visibility; OpenAPI snapshot and contract tests
+- [ ] 6.10 `GET` / `POST /index/search` (JSON), `GET /index/search/resources/{id}` (JSON, Turtle, JSON-LD, N-Triples), `GET /index/search/facets`, `GET /index/search/landing`; parameter validation and caps; anonymous visibility; OpenAPI snapshot and contract tests
 - [ ] 6.11 Rate limit for anonymous search and suggest (in-memory token bucket, trusted proxy IP as for pings)
 - [ ] 6.12 Admin: `GET`/`PUT`/`DELETE /index/search/profile`, `POST /index/search/reindex`, `GET /index/search/stats` (rows, lag, completeness per FDP)
-- [ ] 6.13 Client: `/search` route, `SearchView.vue`, `SearchBox.vue`, `FacetGroup.vue`, `ResourceCard.vue`, URL state, type tabs, mobile bottom sheet, states; `useSearch()` composable; unit tests; "Search this FDP's metadata" on the entry page
-- [ ] 6.14 Client: resource detail page `/search/r/{id}` with language switch, labels and IRIs, parent chain, distributions, raw triples
+- [ ] 6.13 Client: `/search` route, `SearchView.vue`, `SearchBox.vue`, `FacetGroup.vue` (with ⓘ help, Clear, Show more, numeric and boolean groups), `ResourceCard.vue` (key-fields footer), landing strip with counters and the hierarchy explainer, URL state, type tabs, mobile bottom sheet, states; `useSearch()` composable; unit tests; "Search this FDP's metadata" on the entry page
+- [ ] 6.14 Client: resource detail page `/search/r/{id}` as a label/value table with language switch, labelled IRIs, parent chain, distributions, raw triples, Turtle / JSON-LD / N-Triples download buttons
 - [ ] 6.15 Performance check on a synthetic corpus (1 000 entries × 2 000 nodes, generated from the fixture graphs): `EXPLAIN ANALYZE` of the main query shapes, documented numbers and the `maintenance_work_mem` advice in the operator documentation
 - [ ] 6.16 Operator documentation: extensions, profile, reindex, limits; README API table extended
 
-### Phase 7 — Richer discovery
+### Phase 7 — SPARQL API and UI
 
-- [ ] 7.1 Snippets with `ts_headline` (`highlight=true`), server-side escaping, client rendering from tokens
-- [ ] 7.2 Autocomplete `GET /index/search/suggest` (prefix on `search_value`, trigram on titles) and the combobox in the client
-- [ ] 7.3 Temporal coverage: `dct:temporal` with `dcat:`, `schema:` and `time:` forms, literal ranges; `temporalFrom`/`temporalTo`; range inputs in the client
-- [ ] 7.4 Spatial facet from `dct:spatial` IRIs with labels (EU country/place/continent, GeoNames via the bundled pack)
-- [ ] 7.5 Remote label resolution through `OutboundClient` with a host allow-list, off by default, background with cached misses
-- [ ] 7.6 Multilingual display: `lang` / `Accept-Language` pick for titles, descriptions and labels; language switch in the client; index default language in settings
-- [ ] 7.7 Cross-FDP duplicates: `dedup_key` (DOI, identifiers, `owl:sameAs`, landing page), `duplicates` on hits, `collapse=true`, "also in n other FDPs" on cards
-- [ ] 7.8 Client polish: active-filter chips, "show more" facet dialog, copy link, empty and busy states, keyboard and screen-reader pass
+- [x] 7.1 `search/sparql_store.py`: pyoxigraph store on `FDPINDEX_SPARQL_DIR`, named graph per entry, replace-graph from `harvested_node`, read-only open for workers (confirm `Store.read_only` / `Store.secondary` semantics on the pinned version), `search_sparql_sync` fingerprints, resync at start-up, `fdpindex sparql rebuild`; integration test on the real wheel — *done except `fdpindex sparql rebuild` (a wiped volume already resyncs at start-up)*
+- [x] 7.2 Sync from the projection job: fingerprint compare after each harvest, drop on reject/delete, the `<urn:fdpindex:entries>` service graph, the `<urn:fdpindex:void>` partitions regenerated per sync
+- [x] 7.3 Query workers: subprocess pool, one query at a time, wall-clock kill and respawn, RSS watchdog, queue depth and `503`; structural gate (rdflib parse; SELECT/ASK/CONSTRUCT/DESCRIBE only; no `SERVICE`/`LOAD`); auto-`LIMIT`; row, byte and triple caps; unit tests with a slow-query stub, integration test with a real cross product
+- [x] 7.4 `GET`/`POST /index/sparql` (SPARQL 1.1 Protocol, content negotiation for results and graphs, service description, CORS), `POST /index/sparql/validate`, per-IP rate limit, logging; `/index/config` advertises `sparql: {enabled, limits}`; OpenAPI and contract tests
+- [x] 7.5 `GET /index/sparql/schema`: classes, predicates, counts, labels, prefixes, named graphs from VoID + `search_label`, cached per sync — *labels are humanised local names until `search_label` exists (6.8)*
+- [x] 7.6 Query library: bundled `examples.default.yaml` (the fifteen queries of §2.2.4), typed parameters, safe substitution (`VALUES`), `GET /index/sparql/examples`, `POST …/{id}/run`, admin `PUT`/`DELETE`; also published as `sh:SPARQLExecutable` in `<urn:fdpindex:examples>` — *done except admin `PUT`/`DELETE` and the `sh:SPARQLExecutable` graph*
+- [ ] 7.7 `GET /index/search/sparql`: faceted-search parameters → SPARQL (named fields, dates, FDP, approximate full text), with `approximation` notes; tests per field kind
+- [ ] 7.8 Client: `/sparql` route and `SparqlView.vue` with the shared `SparqlResults.vue` (table, labelled IRI links to `/search/r/{id}`, literal badges, sort, paging, raw view, CSV/TSV/JSON/Turtle download, copy as Markdown); labels batched from `/index/search/labels`
+- [ ] 7.9 Client: query library tab, parameter forms per type (IRI autocomplete with labels, FDP select, date, number, text), "Show query", "Open in editor", example run URLs
+- [ ] 7.10 Client: editor tab on CodeMirror 6 (`SparqlEditor.vue`): SPARQL highlighting, prefix insertion and popover, autocomplete from `/index/sparql/schema` and `/index/search/suggest`, inline validation via `/index/sparql/validate`, `Ctrl+Enter`, named-graph panel, light/dark from tokens, keyboard and screen-reader check
+- [ ] 7.11 Client: builder tab (`QueryBuilder.vue` and friends): type → conditions (property picker with labels/counts, operators, value autocomplete, one nesting level) → columns/aggregates → live SPARQL preview; TypeScript generator with unit tests against golden queries; builder state in the URL; "Edit as SPARQL", "Open in search"
+- [ ] 7.12 Charts in results (Chart.js 4 + `vue-chartjs`, lazy-loaded): bar, horizontal bar, pie/donut, line; chart defaults per example query; `aria-label` summaries
+- [ ] 7.13 History (localStorage, pin/clear) and sharing: URL-embedded queries, `POST /index/sparql/share` for long ones, `/sparql?example=…&param=…` deep links; "Show as SPARQL" on the search page, "Query this in SPARQL" on resource pages, "Open in YASGUI" escape hatch
+- [ ] 7.14 Documentation: SPARQL page in the operator docs (store directory, workers, limits, rebuild), a user guide with the example queries, `curl` samples; README API table
 
-### Phase 8 — Expert and machine access
+### Phase 8 — Richer discovery
 
-- [ ] 8.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery`
-- [ ] 8.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats`
-- [ ] 8.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client
-- [ ] 8.4 Keyset `cursor` paging for non-relevance sorts
-- [ ] 8.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation
-- [ ] 8.6 `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test
-- [ ] 8.7 `GET /index/search/opensearch.xml`; `totalResults`/`startIndex`/`itemsPerPage` in responses; `<link rel="search">` in the client's `index.html`
-- [ ] 8.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks)
-- [ ] 8.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests
+- [ ] 8.1 Snippets with `ts_headline` (`highlight=true`), server-side escaping, client rendering from tokens
+- [ ] 8.2 Autocomplete `GET /index/search/suggest` (prefix on `search_value`, trigram on titles) and the combobox in the client
+- [ ] 8.3 Temporal coverage: `dct:temporal` with `dcat:`, `schema:` and `time:` forms, literal ranges; `temporalFrom`/`temporalTo`; range inputs in the client
+- [ ] 8.4 Spatial facet from `dct:spatial` IRIs with labels (EU country/place/continent, GeoNames via the bundled pack)
+- [ ] 8.5 Numeric-range and boolean facet kinds end to end (`value_num`, buckets, yes/no groups), with a bundled HealthDCAT-AP extension profile as the worked example
+- [ ] 8.6 Remote label resolution through `OutboundClient` with a host allow-list, off by default, background with cached misses
+- [ ] 8.7 Multilingual display: `lang` / `Accept-Language` pick for titles, descriptions and labels; language switch in the client; index default language in settings
+- [ ] 8.8 Cross-FDP duplicates: `dedup_key` (DOI, identifiers, `owl:sameAs`, landing page), `duplicates` on hits, `collapse=true`, "also in n other FDPs" on cards
+- [ ] 8.9 Client polish: active-filter chips, "show more" facet dialog, "more facets", copy link, empty and busy states, keyboard and screen-reader pass
 
-### Phase 9 — Optional engines (each behind a flag, each its own ADR addendum)
+### Phase 9 — Expert and machine access
 
-- [ ] 9.1 pyoxigraph derived store: build from `harvested_node` (named graph per entry), incremental update from the projection job, rebuild command
-- [ ] 9.2 `GET`/`POST /index/sparql` (SPARQL 1.1 Protocol, read only): structural gate (no `SERVICE`, query forms only), process-isolated execution with wall-clock timeout, result and byte caps, rate limit; off by default
-- [ ] 9.3 SPARQL in the client: a minimal query page with examples (only when enabled, from `/index/config`)
-- [ ] 9.4 Semantic search evaluation: `search_embedding` table, `Embedder` protocol with a local ONNX model, hybrid ranking by reciprocal rank fusion; go/no-go documented with measurements on the real corpus
-- [ ] 9.5 "Did you mean" from trigram similarity on zero-hit queries
-- [ ] 9.6 Saved queries for administrators and featured searches on the search page
+- [ ] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery`
+- [ ] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats`
+- [ ] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker
+- [ ] 9.4 Keyset `cursor` paging for non-relevance sorts
+- [ ] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation
+- [ ] 9.6 `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test
+- [ ] 9.7 `GET /index/search/opensearch.xml`; `totalResults`/`startIndex`/`itemsPerPage` in responses; `<link rel="search">` in the client's `index.html`
+- [ ] 9.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks)
+- [ ] 9.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests
 
+### Phase 10 — Optional engines and extras (each behind a flag)
+
+- [ ] 10.1 Semantic search evaluation: `search_embedding` table, `Embedder` protocol with a local ONNX model, hybrid ranking by reciprocal rank fusion; go/no-go documented with measurements on the real corpus
+- [ ] 10.2 "Did you mean" from trigram similarity on zero-hit queries
+- [ ] 10.3 Saved queries for administrators and featured searches on the search page
+- [ ] 10.4 Lezer grammar for SPARQL (structural autocomplete, bracket-aware folding) replacing the stream mode, if the editor's autocomplete proves too shallow

@@ -31,25 +31,22 @@ dependencies = [
   "starlette>=1.3.1",
   "python-multipart>=0.0.31",
   "httpx>=0.27",
-
   # RDF. Keep rdflib >= 7: it neutralizes RDF/XML external-entity expansion on
   # untrusted input, and everything the index parses comes from the network.
   "rdflib>=7.0",
-
   # Identity: OIDC bearer tokens (ADR-0003). Floors as in fdpneo-server.
   "pyjwt[crypto]>=2.15.0",
   "cryptography>=50.0.0",
-
   # Storage
   "sqlalchemy[asyncio]>=2.0",
   "asyncpg>=0.29",
   "alembic>=1.13",
-
   # Observability
   "structlog>=24.2",
-
   # CLI
   "typer>=0.12",
+  "pyoxigraph>=0.5.13,<0.6",
+  "pyyaml>=6.0.2",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +58,7 @@ dev = [
   "pyright>=1.1.380",
   "respx>=0.21",
   "aiosqlite>=0.20",  # in-memory async DB for unit tests that exercise SQL
+  "types-pyyaml>=6.0.12.20261113",
 ]
 
 [project.scripts]
@@ -110,6 +108,8 @@ ignore = [
 "src/fdpindex/api/*.py" = ["B008"]  # FastAPI Depends() in argument defaults is the idiomatic pattern
 "src/fdpindex/auth.py" = ["B008"]
 "src/fdpindex/errors.py" = ["N818"]  # HTTP-style names (NotFound, Forbidden, …) are intentional
+"src/fdpindex/sparql/*.py" = ["N818", "ASYNC109"]  # outcome-style error names; worker calls take explicit time budgets
+"src/fdpindex/api/sparql.py" = ["N818", "B008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["fdpindex"]

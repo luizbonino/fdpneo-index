@@ -1,6 +1,75 @@
 {
   "components": {
     "schemas": {
+      "Chart": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "type": {
+            "default": "none",
+            "enum": [
+              "none",
+              "bar",
+              "barh",
+              "pie",
+              "line"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "Chart",
+        "type": "object"
+      },
+      "Choice": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "default": "iri",
+            "enum": [
+              "iri",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "Choice",
+        "type": "object"
+      },
       "EntriesInfoView": {
         "properties": {
           "entriesCount": {
@@ -423,6 +492,64 @@
         "title": "EventView",
         "type": "object"
       },
+      "Example": {
+        "additionalProperties": false,
+        "properties": {
+          "chart": {
+            "$ref": "#/components/schemas/Chart"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[a-z0-9-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/Parameter"
+            },
+            "title": "Parameters",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "title",
+          "description",
+          "query"
+        ],
+        "title": "Example",
+        "type": "object"
+      },
+      "ExampleRequest": {
+        "properties": {
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "title": "ExampleRequest",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -635,6 +762,119 @@
         "title": "IndexSettingsView",
         "type": "object"
       },
+      "Library": {
+        "additionalProperties": false,
+        "properties": {
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/Example"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "examples"
+        ],
+        "title": "Library",
+        "type": "object"
+      },
+      "Parameter": {
+        "additionalProperties": false,
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/Choice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "help": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Help"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "pattern": "^[A-Za-z][A-Za-z0-9]*$",
+            "title": "Name",
+            "type": "string"
+          },
+          "placeholder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placeholder"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "suggest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Suggest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "enum": [
+              "iri",
+              "text",
+              "date",
+              "integer",
+              "choice",
+              "fdp"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "label"
+        ],
+        "title": "Parameter",
+        "type": "object"
+      },
       "PingRequest": {
         "properties": {
           "clientUrl": {
@@ -831,6 +1071,18 @@
             "title": "Ping",
             "type": "string"
           },
+          "sparql": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sparql"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -846,6 +1098,36 @@
         "title": "ServiceInfo",
         "type": "object"
       },
+      "Suggest": {
+        "additionalProperties": false,
+        "description": "Where the UI gets suggestions: objects of a predicate, or instances of a class.",
+        "properties": {
+          "predicate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predicate"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "title": "Suggest",
+        "type": "object"
+      },
       "TriggerRequest": {
         "properties": {
           "clientUrl": {
@@ -857,6 +1139,20 @@
           "clientUrl"
         ],
         "title": "TriggerRequest",
+        "type": "object"
+      },
+      "ValidateRequest": {
+        "properties": {
+          "query": {
+            "maxLength": 200000,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "ValidateRequest",
         "type": "object"
       },
       "ValidationError": {
@@ -1781,6 +2077,519 @@
         "summary": "Update Settings",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/sparql": {
+      "get": {
+        "description": "SPARQL 1.1 Protocol query by GET; without ``query``, the service description (Turtle).",
+        "operationId": "sparql_get_index_sparql_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "in": "query",
+            "name": "default-graph-uri",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Default-Graph-Uri"
+            }
+          },
+          {
+            "in": "query",
+            "name": "named-graph-uri",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Named-Graph-Uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Get",
+        "tags": [
+          "SPARQL"
+        ]
+      },
+      "post": {
+        "description": "SPARQL 1.1 Protocol query by POST: a form with ``query`` or an ``application/sparql-query`` body.",
+        "operationId": "sparql_post_index_sparql_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "in": "query",
+            "name": "default-graph-uri",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Default-Graph-Uri"
+            }
+          },
+          {
+            "in": "query",
+            "name": "named-graph-uri",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Named-Graph-Uri"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/sparql-query": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Post",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/examples": {
+      "get": {
+        "description": "The query library: grouped example queries with typed parameters.",
+        "operationId": "sparql_examples_index_sparql_examples_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Library"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sparql Examples",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/examples/{example_id}/expand": {
+      "post": {
+        "description": "The example's query with its parameters bound, ready to run or edit.",
+        "operationId": "sparql_example_expand_index_sparql_examples__example_id__expand_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Sparql Example Expand Index Sparql Examples  Example Id  Expand Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Example Expand",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/examples/{example_id}/run": {
+      "post": {
+        "description": "Run an example with parameters; results as for ``/index/sparql``.",
+        "operationId": "sparql_example_run_index_sparql_examples__example_id__run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Example Run",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/schema": {
+      "get": {
+        "description": "Classes and properties in the data (with counts), named graphs, and known prefixes.",
+        "operationId": "sparql_schema_index_sparql_schema_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Sparql Schema Index Sparql Schema Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sparql Schema",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/suggest": {
+      "get": {
+        "description": "Values of ``predicate`` (or instances of ``type``) containing ``q``, with labels and counts.",
+        "operationId": "sparql_suggest_index_sparql_suggest_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 100,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "predicate",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Predicate"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Sparql Suggest Index Sparql Suggest Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Suggest",
+        "tags": [
+          "SPARQL"
+        ]
+      }
+    },
+    "/index/sparql/validate": {
+      "post": {
+        "description": "Parse and gate a query without running it: ``ok``, or a message with line and column.",
+        "operationId": "sparql_validate_index_sparql_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Sparql Validate Index Sparql Validate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sparql Validate",
+        "tags": [
+          "SPARQL"
         ]
       }
     },

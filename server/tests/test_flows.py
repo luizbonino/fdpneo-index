@@ -23,10 +23,10 @@ from fdpindex.models import (
     IndexEntry,
     WebhookEvent,
 )
-from fdpindex.service import api_state
+from fdpindex.service import IndexChange, api_state
 from fdpindex.settings import IndexSettings
 from fdpindex.webhooks import SECRET_PLACEHOLDER, build_delivery
-from tests.conftest import FDP, FakeNetwork, Services, ping
+from tests.conftest import CATALOG_TTL, DATASET_TTL, FDP, FakeNetwork, Services, ping
 
 pytestmark = pytest.mark.unit
 
@@ -393,3 +393,37 @@ async def test_webhook_ping_goes_to_that_webhook(services: Services, network: Fa
     await services.jobs.drain()
     assert [json.loads(c.content)["event"] for c in network.webhook_calls] == ["WebhookPing"]
     assert json.loads(network.webhook_calls[0].content)["clientUrl"] is None
+
+
+async def test_harvest_reports_what_changed_by_node(
+    services: Services, network: FakeNetwork
+) -> None:
+    changes: list[IndexChange] = []
+    services.index.add_listener(changes.append)
+    outcome = await ping(services)
+    harvested = [c for c in changes if c.kind == "harvested"]
+    assert harvested[-1].entry_id == outcome.entry_id
+    first = harvested[-1].changes
+    assert first is not None and len(first.added) == 3 and not first.changed and not first.removed
+
+    # The dataset changes, the catalog stops listing nothing new; harvest again.
+    network.serve(f"{FDP}/dataset/d1", DATASET_TTL.replace("Dataset one", "Dataset one, revised"))
+    changes.clear()
+    await services.index.harvest_entry(outcome.entry_id)
+    second = next(c for c in changes if c.kind == "harvested").changes
+    assert second is not None
+    assert second.changed == frozenset({f"{FDP}/dataset/d1"})
+    assert not second.added and not second.removed
+
+    # The catalog drops the dataset: its node is removed, the rest stay.
+    network.serve(f"{FDP}/catalog/c1", CATALOG_TTL.replace(f"<{FDP}/dataset/d1>, ", ""))
+    changes.clear()
+    await services.index.harvest_entry(outcome.entry_id)
+    third = next(c for c in changes if c.kind == "harvested").changes
+    assert third is not None and third.removed == frozenset({f"{FDP}/dataset/d1"})
+    nodes, _ = await services.index.harvest_summary(outcome.entry_id)
+    assert nodes == 2
+
+    changes.clear()
+    await services.index.delete_entry(outcome.entry_id)
+    assert [c.kind for c in changes] == ["removed"]

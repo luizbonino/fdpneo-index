@@ -9,6 +9,7 @@ is, who may administer, and how far outbound requests may reach.
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
@@ -41,7 +42,7 @@ class Settings(BaseSettings):
     outbound_max_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     outbound_max_redirects: int = Field(default=5, ge=0)
     harvest_max_nodes: int = Field(default=2000, gt=0)
-    user_agent: str = "fdpindex (+https://github.com/FAIRDataTeam/fdpindex)"
+    user_agent: str = "fdpneo-index (+https://github.com/luizbonino/fdpneo-index)"
 
     # --- background work -------------------------------------------------------
     worker_concurrency: int = Field(default=4, gt=0)
@@ -51,6 +52,21 @@ class Settings(BaseSettings):
     health_batch: int = Field(default=100, gt=0)
     # Recorded HTTP bodies are cut at this size so the event log stays bounded.
     event_body_max_chars: int = Field(default=65536, ge=0)
+    # SPARQL over the harvested metadata (search design §2.2): an embedded store
+    # derived from PostgreSQL, queried in killable worker processes.
+    sparql_enabled: bool = True
+    sparql_dir: Path = Path("data/sparql")
+    sparql_workers: int = Field(default=2, gt=0)
+    sparql_timeout_seconds: float = Field(default=10, gt=0)
+    sparql_admin_timeout_seconds: float = Field(default=60, gt=0)
+    sparql_max_rows: int = Field(default=10_000, gt=0)
+    sparql_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    sparql_max_query_chars: int = Field(default=20_000, gt=0)
+    sparql_rate_per_minute: int = Field(default=30, ge=0)
+    sparql_worker_max_mb: int = Field(default=1024, ge=0)
+    sparql_void_interval_seconds: float = Field(default=60, ge=0)
+    # Public base URL (https://index.example.org), for absolute IRIs in the VoID description.
+    public_url: str | None = None
 
     # --- web -----------------------------------------------------------------
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)

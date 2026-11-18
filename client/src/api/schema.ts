@@ -361,6 +361,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/search/sparql": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A faceted search as SPARQL
+     * @description The SPARQL equivalent of `GET /index/search` with the same parameters.
+     *
+     *     Returns `query` (with `PREFIX` lines), `prefixes` and `approximation`:
+     *     the parts SPARQL can only approximate (`fulltext`, `ranking`, `dates`,
+     *     `harvested`, `type`), also explained in comments at the top of the query.
+     */
+    get: operations["search_sparql_index_search_sparql_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/search/stats": {
     parameters: {
       query?: never;
@@ -1794,6 +1818,39 @@ export interface operations {
           "application/n-triples": unknown;
           "application/rdf+xml": unknown;
           "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  search_sparql_index_search_sparql_get: {
+    parameters: {
+      query?: {
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Validation Error */

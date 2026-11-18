@@ -3,6 +3,7 @@
 * ``GET /index/search``: faceted search; every facet field of the profile is
   a repeatable filter parameter (``theme=…&theme=…``, ``!value`` negates).
 * ``GET /index/search/facets``: one facet's buckets, for "show more".
+* ``GET /index/search/sparql``: the same search as a SPARQL query.
 * ``GET /index/search/resources/{id}``: one resource in full, or its
   harvested triples as Turtle, JSON-LD or N-Triples.
 * ``GET /index/search/landing``: counters, facet descriptions, card fields.
@@ -186,6 +187,21 @@ async def facet(
     _limit(request, caller)
     params = _params(request, service, _language(request, lang))
     return await service.facet(params, field, contains=contains, size=size, admin=caller.is_admin)
+
+
+@router.get("/index/search/sparql", summary="A faceted search as SPARQL")
+async def search_sparql(
+    request: Request, service: Search, caller: Caller, lang: str | None = None
+) -> dict[str, Any]:
+    """The SPARQL equivalent of `GET /index/search` with the same parameters.
+
+    Returns `query` (with `PREFIX` lines), `prefixes` and `approximation`:
+    the parts SPARQL can only approximate (`fulltext`, `ranking`, `dates`,
+    `harvested`, `type`), also explained in comments at the top of the query.
+    """
+    _limit(request, caller)
+    params = _params(request, service, _language(request, lang))
+    return await service.sparql(params, admin=caller.is_admin)
 
 
 @router.get(

@@ -69,6 +69,11 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
      prefix match ranks at half a whole-word match.
    - There is no facet cache yet (task 6.15 decides), and no
      administrator-editable profile yet.
+   - "Show as SPARQL" (`GET /index/search/sparql`) matches each filter
+     value in every raw form that normalises to it, and mirrors the kind
+     precedence. The response lists what SPARQL can only approximate (full
+     text, relevance, day-precision dates, harvest time), and the query
+     explains the same in comments.
 6. **Only new paths are added**: `/index/sparql*` and `/index/search*`.
    The reference `/index/*` contract is unchanged.
 

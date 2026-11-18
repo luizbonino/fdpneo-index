@@ -480,6 +480,10 @@ export const en = {
     },
     copyLink: "Copy link",
     linkCopied: "Link to this search copied",
+    showSparql: "Show as SPARQL",
+    showSparqlHelp:
+      "Open this search as a SPARQL query in the editor, to refine it or reuse it elsewhere",
+    sparqlFailed: "Could not translate this search to SPARQL",
     busy: "The search is busy right now. Try again in a moment.",
     noResults: "No results",
     noResultsHint: "Try fewer or other words, or remove a filter.",

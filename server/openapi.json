@@ -2434,6 +2434,58 @@
         ]
       }
     },
+    "/index/search/sparql": {
+      "get": {
+        "description": "The SPARQL equivalent of `GET /index/search` with the same parameters.\n\nReturns `query` (with `PREFIX` lines), `prefixes` and `approximation`:\nthe parts SPARQL can only approximate (`fulltext`, `ranking`, `dates`,\n`harvested`, `type`), also explained in comments at the top of the query.",
+        "operationId": "search_sparql_index_search_sparql_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Search Sparql Index Search Sparql Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A faceted search as SPARQL",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/index/search/stats": {
       "get": {
         "operationId": "stats_index_search_stats_get",

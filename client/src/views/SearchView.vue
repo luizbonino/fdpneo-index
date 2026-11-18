@@ -35,9 +35,12 @@ import FacetGroup from "@/components/search/FacetGroup.vue";
 import FacetDialog from "@/components/search/FacetDialog.vue";
 import ResourceCard from "@/components/search/ResourceCard.vue";
 import HelpTip from "@/components/HelpTip.vue";
+import { useServiceInfo } from "@/composables/queries";
+import { encodeQuery } from "@/sparql/history";
 
 const route = useRoute();
 const router = useRouter();
+const info = useServiceInfo();
 const { t } = useI18n();
 
 const landing = useQuery({
@@ -185,6 +188,21 @@ async function copyLink() {
     toast(t("search.linkCopied"));
   } catch {
     toast(location.href);
+  }
+}
+
+/** The same search as a SPARQL query, opened in the editor. */
+const sparqlBusy = ref(false);
+async function showSparql() {
+  sparqlBusy.value = true;
+  try {
+    const { query } = await searchApi.sparql(params.value);
+    const q = await encodeQuery(query);
+    await router.push({ name: "sparql", query: { tab: "editor", q } });
+  } catch (err) {
+    toast(err instanceof ApiError ? err.message : t("search.sparqlFailed"));
+  } finally {
+    sparqlBusy.value = false;
   }
 }
 
@@ -402,6 +420,16 @@ const counters = computed(() => {
             </label>
             <button type="button" class="btn ghost sm" @click="copyLink">
               {{ t("search.copyLink") }}
+            </button>
+            <button
+              v-if="info.data.value?.sparql"
+              type="button"
+              class="btn ghost sm"
+              :disabled="sparqlBusy"
+              :title="t('search.showSparqlHelp')"
+              @click="showSparql"
+            >
+              {{ t("search.showSparql") }}
             </button>
           </div>
         </div>

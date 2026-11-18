@@ -60,6 +60,7 @@ from fdpindex.models import (
 )
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
 from fdpindex.search.project import SIMPLE_CONFIG, bucket_label, pick_language, ts_config
+from fdpindex.search.to_sparql import to_sparql
 from fdpindex.search.vocab import bundled_label
 from fdpindex.service import api_state
 from fdpindex.sparql.labels import humanize
@@ -466,6 +467,20 @@ class SearchService:
             return result
 
         return await self._run(admin, work)
+
+    async def sparql(self, params: SearchParams, *, admin: bool = False) -> dict[str, Any]:
+        """The search as a SPARQL query over the store (``search.to_sparql``)."""
+        params.facets = []
+        params.validate(self.profile)
+        graphs: dict[UUID, str] = {}
+        if params.fdps:
+            async with self._session_factory() as session:
+                query = select(E.uuid, E.client_url).where(E.uuid.in_(params.fdps))
+                if not admin:
+                    # Anonymous callers learn the address of accepted FDPs only.
+                    query = query.where(E.permit == EntryPermit.ACCEPTED)
+                graphs = {uuid: str(url) for uuid, url in (await session.execute(query)).all()}
+        return to_sparql(params, self.profile, graphs, default_types=DEFAULT_TYPES)
 
     async def _facet(
         self,

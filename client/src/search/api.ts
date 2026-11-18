@@ -92,6 +92,13 @@ export interface Landing {
   indexing: { pending: number };
 }
 
+/** `GET /index/search/sparql`: the search as SPARQL, with what it approximates. */
+export interface SearchSparql {
+  query: string;
+  prefixes: Record<string, string>;
+  approximation: string[];
+}
+
 export interface Brief {
   id: string;
   iri: string;
@@ -147,6 +154,7 @@ export const searchApi = {
     if (contains) query.set("contains", contains);
     return request<FacetResult>(`/index/search/facets?${query}`);
   },
+  sparql: (params: URLSearchParams) => request<SearchSparql>(`/index/search/sparql?${params}`),
   landing: () => request<Landing>("/index/search/landing"),
   resource: (id: string, lang?: string) =>
     request<ResourceDetail>(

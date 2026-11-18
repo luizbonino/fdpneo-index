@@ -18,7 +18,7 @@ from sqlalchemy import func, select, update
 from fdpindex.auth import token_digest
 from fdpindex.config import Settings
 from fdpindex.main import create_app
-from fdpindex.models import EntryPermit, SearchLabel, SearchResource, SearchValue
+from fdpindex.models import EntryPermit, IndexEntry, SearchLabel, SearchResource, SearchValue
 from fdpindex.search.indexer import SearchIndexer
 from fdpindex.search.profile import Profile, default_profile, load_profile
 from fdpindex.search.project import (
@@ -421,6 +421,137 @@ def test_parameter_validation(params: SearchParams) -> None:
         params.validate(default_profile())
 
 
+# --- the search as SPARQL ---------------------------------------------------------------
+
+
+def _sparql(query: str) -> list[str]:
+    """``?resource`` of each row, over the fixture FDPs laid out as ``sparql.store`` does.
+
+    pyoxigraph's result objects must be dropped on the thread that made them,
+    so only strings leave this function.
+    """
+    import pyoxigraph as ox
+
+    store = ox.Store()
+    for fdp in (ALPHA, BETA):
+        graph = ox.NamedNode(fdp)
+        for _, ntriples in nodes(fdp):
+            for triple in ox.parse(ntriples.encode(), ox.RdfFormat.N_TRIPLES):
+                store.add(ox.Quad(triple.subject, triple.predicate, triple.object, graph))
+        state = ox.Quad(
+            ox.NamedNode(fdp),
+            ox.NamedNode("urn:fdpindex:state"),
+            ox.Literal("ACTIVE"),
+            ox.NamedNode("urn:fdpindex:entries"),
+        )
+        store.add(state)
+    solutions: Any = store.query(query)
+    resources = [str(row["resource"].value) for row in solutions]
+    del solutions, store
+    return resources
+
+
+def _equivalents() -> list[tuple[str, dict[str, Any]]]:
+    heal = f"{EU}data-theme/HEAL"
+    return [
+        ("all", {}),
+        ("one type", {"types": ["dataset"]}),
+        ("services", {"types": ["service"]}),
+        ("fdps", {"types": ["fdp"]}),
+        ("distributions", {"types": ["distribution"]}),
+        ("iri", {"filters": {"theme": [heal]}}),
+        (
+            "two fields",
+            {"filters": {"theme": [heal], "accessRights": [f"{EU}access-right/RESTRICTED"]}},
+        ),
+        ("negated literal", {"types": ["dataset"], "filters": {"keyword": ["!cancer"]}}),
+        ("rolled up", {"filters": {"format": [f"{EU}file-type/CSV"]}}),
+        (
+            "rolled up, both kinds",
+            {"types": ["dataset", "distribution"], "filters": {"format": [f"{EU}file-type/CSV"]}},
+        ),
+        (
+            "normalised strings",
+            {
+                "types": ["dataset", "distribution"],
+                "filters": {"license": ["http://creativecommons.org/licenses/by/4.0/"]},
+            },
+        ),
+        ("agent iri", {"filters": {"publisher": ["https://ror.org/alpha"]}}),
+        ("agent name", {"filters": {"publisher": ["Beta Institute"]}}),
+        ("number bucket", {"filters": {"records": ["1000..10000"]}}),
+        ("language", {"filters": {"language": [f"{EU}language/ENG"]}}),
+        ("words", {"q": "cancer registry"}),
+        ("excluded word", {"q": "cancer -lungs", "types": ["dataset"]}),
+        ("phrase", {"q": '"function tests"'}),
+        ("dates", {"ranges": {"modified": (parse_datetime("2026-01-01"), None)}}),
+        ("active FDPs", {"fdp_state": "ACTIVE", "types": ["dataset"]}),
+    ]
+
+
+@pytest.mark.parametrize(("case", "kwargs"), _equivalents(), ids=[c for c, _ in _equivalents()])
+async def test_the_search_as_sparql_finds_the_same_resources(
+    search: SearchService, case: str, kwargs: dict[str, Any]
+) -> None:
+    from fdpindex.sparql.gate import check_query
+
+    found = await search.search(SearchParams(size=100, facets=[], **kwargs))
+    expected = {h["iri"] for h in found["hits"]}
+    assert expected or case == "language", case
+    translated = await search.sparql(SearchParams(**kwargs))
+    check_query(translated["query"], max_chars=20_000)
+    assert set(_sparql(translated["query"])) == expected
+
+
+async def test_the_search_as_sparql_names_fdps_and_approximations(
+    search: SearchService, services: Services
+) -> None:
+    beta = await _entry(services, f"{BETA}/dataset/g")
+    translated = await search.sparql(SearchParams(fdps=[beta], q="genome", sort="title"))
+    assert f"VALUES ?fdp {{ <{BETA}> }}" in translated["query"]
+    assert translated["approximation"] == ["fulltext"]
+    assert "# Where SPARQL cannot do the same" in translated["query"]
+    assert _sparql(translated["query"]) == [f"{BETA}/dataset/g"]
+    # "or" (which only the PostgreSQL search parses; SQLite matches words).
+    either = await search.sparql(SearchParams(q="genome or breast", types=["dataset"]))
+    assert set(_sparql(either["query"])) == {f"{BETA}/dataset/g", f"{ALPHA}/dataset/d1"}
+    ranged = await search.sparql(
+        SearchParams(q="x", ranges={"harvested": (parse_datetime("2026-01-01"), None)})
+    )
+    assert ranged["approximation"] == ["fulltext", "ranking", "harvested"]
+    # Anonymous callers do not learn the address of an FDP that is not accepted.
+    async with services.session_factory() as session, session.begin():
+        await session.execute(
+            update(IndexEntry).where(IndexEntry.uuid == beta).values(permit=EntryPermit.PENDING)
+        )
+    hidden = await search.sparql(SearchParams(fdps=[beta]))
+    assert BETA not in hidden["query"]
+    assert "VALUES ?fdp {  }" in hidden["query"]
+    assert BETA in (await search.sparql(SearchParams(fdps=[beta]), admin=True))["query"]
+
+
+def test_sparql_values_cannot_inject() -> None:
+    from fdpindex.search.query import DEFAULT_TYPES
+    from fdpindex.search.to_sparql import raw_forms, to_sparql
+
+    profile = default_profile()
+    params = SearchParams(q='x" } DROP ALL #', filters={"keyword": ['a") } INSERT { ?s ?p ?o']})
+    params.validate(profile)
+    query = to_sparql(params, profile, {}, default_types=DEFAULT_TYPES)["query"]
+    # Words become separate string literals; the gate sees one SELECT with no update.
+    assert '"drop"' in query and '"}"' in query
+    assert '"a\\") } insert { ?s ?p ?o"' in query
+    from fdpindex.sparql.gate import check_query
+
+    check_query(query, max_chars=20_000)
+    forms = raw_forms(f"{EU}file-type/CSV", profile.normalise["format"])
+    assert {"csv", "text/csv", f"{EU}file-type/csv".lower()} <= forms
+    assert raw_forms("text/csv", profile.normalise["mediaType"]) >= {
+        "text/csv",
+        "https://www.iana.org/assignments/media-types/text/csv",
+    }
+
+
 # --- HTTP --------------------------------------------------------------------------------
 
 
@@ -560,3 +691,15 @@ def test_search_can_be_switched_off(network: FakeNetwork) -> None:
     with TestClient(app) as client:
         assert client.get("/index/search").status_code == 404
         assert client.get("/index/config").json()["search"] is None
+
+
+def test_the_search_as_sparql_over_http(api: Api) -> None:
+    response = api.client.get(
+        "/index/search/sparql", params=[("q", "cancer"), ("theme", f"{EU}data-theme/HEAL")]
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["approximation"] == ["fulltext", "ranking"]
+    assert body["prefixes"]["dcat"] == "http://www.w3.org/ns/dcat#"
+    assert "SELECT ?resource" in body["query"]
+    assert api.client.get("/index/search/sparql", params={"nope": "x"}).status_code == 400

@@ -1,0 +1,300 @@
+# The default search profile (search design §3.3–3.4): which predicates feed
+# which search field, which fields are facets, and what the client shows.
+#
+# Paths are CURIEs joined by "/" (at most two steps: dct:publisher/foaf:name).
+# Field kinds:
+#   text     per-language literals (title, description), kept in every language
+#   iri      IRIs; literals are kept too, after normalisation
+#   literal  literal values (keywords, identifiers)
+#   agent    an IRI, or for a blank node its name (publishers, creators)
+#   datetime the first parseable date or date-time
+#   number   numeric literals, counted in the buckets given
+#   boolean  true/false literals, or presence with presence: true
+# Text weights: A (title) > B (keywords, labels, names) > C (description) > D (rest).
+version: 1
+
+prefixes:
+  dcat: "http://www.w3.org/ns/dcat#"
+  dct: "http://purl.org/dc/terms/"
+  fdp-o: "https://w3id.org/fdp/fdp-o#"
+  fdp-legacy: "https://w3id.org/fdp/o#"
+  r3d: "http://www.re3data.org/schema/3-0#"
+  foaf: "http://xmlns.com/foaf/0.1/"
+  vcard: "http://www.w3.org/2006/vcard/ns#"
+  adms: "http://www.w3.org/ns/adms#"
+  skos: "http://www.w3.org/2004/02/skos/core#"
+  schema: "http://schema.org/"
+  odrl: "http://www.w3.org/ns/odrl/2/"
+  owl: "http://www.w3.org/2002/07/owl#"
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#"
+  healthdcatap: "http://healthdataportal.eu/ns/health#"
+
+types:
+  # First match wins, in this order (§3.2).
+  fdp: [fdp-o:FAIRDataPoint, fdp-o:MetadataService, r3d:Repository, fdp-legacy:FAIRDataPoint, fdp-legacy:MetadataService]
+  distribution: [dcat:Distribution]
+  service: [dcat:DataService]
+  series: [dcat:DatasetSeries]
+  dataset: [dcat:Dataset, fdp-o:Metadata]
+  catalog: [dcat:Catalog]
+
+fields:
+  title:
+    kind: text
+    paths: [dct:title, rdfs:label, skos:prefLabel, foaf:name, schema:name]
+    weight: A
+  description:
+    kind: text
+    paths: [dct:description, rdfs:comment, dct:abstract]
+    weight: C
+  keyword:
+    kind: literal
+    paths: [dcat:keyword, dct:subject]
+    facet: main
+    weight: B
+    label: {en: Keyword}
+    help: {en: "Free words the data provider attached to the record."}
+  theme:
+    kind: iri
+    paths: [dcat:theme, dct:subject]
+    literals: false  # literal dct:subject values are keywords
+    facet: main
+    weight: B
+    label: {en: Theme}
+    help: {en: "Subject categories the data provider assigned, usually from the EU data-theme vocabulary."}
+  publisher:
+    kind: agent
+    paths: [dct:publisher]
+    facet: main
+    weight: B
+    label: {en: Publisher}
+    help: {en: "The organisation or person responsible for making the resource available."}
+  publisherName:
+    kind: literal
+    paths: [dct:publisher/foaf:name, dct:publisher/schema:name, dct:publisher/vcard:fn]
+    weight: B
+  creator:
+    kind: agent
+    paths: [dct:creator]
+    weight: D
+    label: {en: Creator}
+  contactName:
+    kind: literal
+    paths: [dcat:contactPoint/vcard:fn, dcat:contactPoint/foaf:name]
+    weight: D
+    label: {en: Contact}
+  contactEmail:
+    kind: iri
+    paths: [dcat:contactPoint/vcard:hasEmail, dcat:contactPoint/foaf:mbox]
+    label: {en: Contact e-mail}
+  format:
+    kind: iri
+    paths: [dct:format]
+    facet: main
+    rollup: true
+    normalise: format
+    label: {en: Format}
+    help: {en: "File formats of the distributions. A dataset shows the formats of all its distributions."}
+  mediaType:
+    kind: iri
+    paths: [dcat:mediaType]
+    facet: more
+    rollup: true
+    normalise: mediaType
+    label: {en: Media type}
+    help: {en: "IANA media types (such as text/csv) of the distributions."}
+  license:
+    kind: iri
+    paths: [dct:license, odrl:hasPolicy]
+    facet: main
+    rollup: true
+    normalise: license
+    label: {en: Licence}
+    help: {en: "The licence under which the data may be used. A dataset shows the licences of its distributions too."}
+  accessRights:
+    kind: iri
+    paths: [dct:accessRights]
+    facet: main
+    rollup: true
+    normalise: accessRights
+    label: {en: Access rights}
+    help: {en: "Whether the data is public, restricted or not public."}
+  language:
+    kind: iri
+    paths: [dct:language]
+    facet: more
+    normalise: language
+    label: {en: Language}
+    help: {en: "The language of the data or of its documentation."}
+  conformsTo:
+    kind: iri
+    paths: [dct:conformsTo]
+    facet: more
+    label: {en: Conforms to}
+    help: {en: "Standards, schemas or metadata profiles the record says it follows."}
+  spatial:
+    kind: iri
+    paths: [dct:spatial]
+    facet: more
+    label: {en: Spatial coverage}
+    help: {en: "Places the data covers, when given as IRIs (countries, regions, cities)."}
+  country:
+    kind: iri
+    paths: [r3d:country]
+    facet: more
+    normalise: country
+    label: {en: FDP country}
+    help: {en: "The country a FAIR Data Point declares for itself."}
+  identifier:
+    kind: literal
+    paths: [dct:identifier, adms:identifier/skos:notation, fdp-o:metadataIdentifier]
+    weight: D
+    label: {en: Identifier}
+  version:
+    kind: literal
+    paths: [dcat:version, dct:hasVersion, owl:versionInfo]
+    weight: D
+    label: {en: Version}
+  landingPage:
+    kind: iri
+    paths: [dcat:landingPage, foaf:homepage, foaf:page]
+    label: {en: Landing page}
+  accessUrl:
+    kind: iri
+    paths: [dcat:accessURL]
+    label: {en: Access URL}
+  downloadUrl:
+    kind: iri
+    paths: [dcat:downloadURL]
+    label: {en: Download URL}
+  endpointUrl:
+    kind: iri
+    paths: [dcat:endpointURL, dcat:endpointDescription]
+    label: {en: Endpoint}
+  servesDataset:
+    kind: iri
+    paths: [dcat:servesDataset]
+    label: {en: Serves dataset}
+  inSeries:
+    kind: iri
+    paths: [dcat:inSeries]
+    label: {en: In series}
+  issued:
+    kind: datetime
+    paths: [dct:issued, fdp-o:metadataIssued, dct:created]
+    label: {en: Issued}
+  modified:
+    kind: datetime
+    paths: [dct:modified, fdp-o:metadataModified]
+    label: {en: Modified}
+  records:
+    kind: number
+    paths: [healthdcatap:numberOfRecords]
+    facet: more
+    buckets: [100, 1000, 10000, 100000]
+    label: {en: Number of records}
+    help: {en: "As reported by the data provider; absent for most datasets."}
+
+cards:
+  # The "key fields" in the footer of a result card, per kind (§6).
+  dataset: [publisher, format, license]
+  series: [publisher]
+  catalog: [publisher, datasetCount]
+  service: [publisher, endpointUrl]
+  fdp: [country, datasetCount]
+  distribution: [format, license]
+
+landing:
+  counters: [fdp, catalog, dataset, distribution, service]
+
+normalise:
+  # Folded case-insensitively: a key that matches a literal (or an IRI) becomes the value.
+  format:
+    csv: "http://publications.europa.eu/resource/authority/file-type/CSV"
+    tsv: "http://publications.europa.eu/resource/authority/file-type/TSV"
+    json: "http://publications.europa.eu/resource/authority/file-type/JSON"
+    json-ld: "http://publications.europa.eu/resource/authority/file-type/JSON_LD"
+    jsonld: "http://publications.europa.eu/resource/authority/file-type/JSON_LD"
+    xml: "http://publications.europa.eu/resource/authority/file-type/XML"
+    rdf: "http://publications.europa.eu/resource/authority/file-type/RDF"
+    rdf/xml: "http://publications.europa.eu/resource/authority/file-type/RDF_XML"
+    turtle: "http://publications.europa.eu/resource/authority/file-type/RDF_TURTLE"
+    ttl: "http://publications.europa.eu/resource/authority/file-type/RDF_TURTLE"
+    n-triples: "http://publications.europa.eu/resource/authority/file-type/RDF_N_TRIPLES"
+    pdf: "http://publications.europa.eu/resource/authority/file-type/PDF"
+    xlsx: "http://publications.europa.eu/resource/authority/file-type/XLSX"
+    xls: "http://publications.europa.eu/resource/authority/file-type/XLS"
+    zip: "http://publications.europa.eu/resource/authority/file-type/ZIP"
+    html: "http://publications.europa.eu/resource/authority/file-type/HTML"
+    txt: "http://publications.europa.eu/resource/authority/file-type/TXT"
+    parquet: "http://publications.europa.eu/resource/authority/file-type/PARQUET"
+    sparql: "http://publications.europa.eu/resource/authority/file-type/SPARQLQ"
+    text/csv: "http://publications.europa.eu/resource/authority/file-type/CSV"
+    application/json: "http://publications.europa.eu/resource/authority/file-type/JSON"
+    application/ld+json: "http://publications.europa.eu/resource/authority/file-type/JSON_LD"
+    text/turtle: "http://publications.europa.eu/resource/authority/file-type/RDF_TURTLE"
+    application/pdf: "http://publications.europa.eu/resource/authority/file-type/PDF"
+  mediaType:
+    # Prefixes ending in "/" are stripped: IANA IRIs become the bare type.
+    "http://www.iana.org/assignments/media-types/": ""
+    "https://www.iana.org/assignments/media-types/": ""
+  license:
+    cc-by-4.0: "http://creativecommons.org/licenses/by/4.0/"
+    cc by 4.0: "http://creativecommons.org/licenses/by/4.0/"
+    https://creativecommons.org/licenses/by/4.0/: "http://creativecommons.org/licenses/by/4.0/"
+    cc-by-sa-4.0: "http://creativecommons.org/licenses/by-sa/4.0/"
+    https://creativecommons.org/licenses/by-sa/4.0/: "http://creativecommons.org/licenses/by-sa/4.0/"
+    cc-by-nc-4.0: "http://creativecommons.org/licenses/by-nc/4.0/"
+    https://creativecommons.org/licenses/by-nc/4.0/: "http://creativecommons.org/licenses/by-nc/4.0/"
+    cc0-1.0: "http://creativecommons.org/publicdomain/zero/1.0/"
+    cc0: "http://creativecommons.org/publicdomain/zero/1.0/"
+    https://creativecommons.org/publicdomain/zero/1.0/: "http://creativecommons.org/publicdomain/zero/1.0/"
+    mit: "https://spdx.org/licenses/MIT"
+    apache-2.0: "https://spdx.org/licenses/Apache-2.0"
+  accessRights:
+    public: "http://publications.europa.eu/resource/authority/access-right/PUBLIC"
+    restricted: "http://publications.europa.eu/resource/authority/access-right/RESTRICTED"
+    non_public: "http://publications.europa.eu/resource/authority/access-right/NON_PUBLIC"
+    non-public: "http://publications.europa.eu/resource/authority/access-right/NON_PUBLIC"
+  language:
+    en: "http://publications.europa.eu/resource/authority/language/ENG"
+    eng: "http://publications.europa.eu/resource/authority/language/ENG"
+    http://lexvo.org/id/iso639-3/eng: "http://publications.europa.eu/resource/authority/language/ENG"
+    http://id.loc.gov/vocabulary/iso639-1/en: "http://publications.europa.eu/resource/authority/language/ENG"
+    nl: "http://publications.europa.eu/resource/authority/language/NLD"
+    nld: "http://publications.europa.eu/resource/authority/language/NLD"
+    http://lexvo.org/id/iso639-3/nld: "http://publications.europa.eu/resource/authority/language/NLD"
+    de: "http://publications.europa.eu/resource/authority/language/DEU"
+    deu: "http://publications.europa.eu/resource/authority/language/DEU"
+    http://lexvo.org/id/iso639-3/deu: "http://publications.europa.eu/resource/authority/language/DEU"
+    fr: "http://publications.europa.eu/resource/authority/language/FRA"
+    fra: "http://publications.europa.eu/resource/authority/language/FRA"
+    http://lexvo.org/id/iso639-3/fra: "http://publications.europa.eu/resource/authority/language/FRA"
+    es: "http://publications.europa.eu/resource/authority/language/SPA"
+    spa: "http://publications.europa.eu/resource/authority/language/SPA"
+    it: "http://publications.europa.eu/resource/authority/language/ITA"
+    ita: "http://publications.europa.eu/resource/authority/language/ITA"
+    pt: "http://publications.europa.eu/resource/authority/language/POR"
+    por: "http://publications.europa.eu/resource/authority/language/POR"
+  country:
+    nl: "http://publications.europa.eu/resource/authority/country/NLD"
+    http://lexvo.org/id/iso3166/nl: "http://publications.europa.eu/resource/authority/country/NLD"
+    de: "http://publications.europa.eu/resource/authority/country/DEU"
+    http://lexvo.org/id/iso3166/de: "http://publications.europa.eu/resource/authority/country/DEU"
+    ch: "http://publications.europa.eu/resource/authority/country/CHE"
+    http://lexvo.org/id/iso3166/ch: "http://publications.europa.eu/resource/authority/country/CHE"
+    be: "http://publications.europa.eu/resource/authority/country/BEL"
+    http://lexvo.org/id/iso3166/be: "http://publications.europa.eu/resource/authority/country/BEL"
+    fr: "http://publications.europa.eu/resource/authority/country/FRA"
+    http://lexvo.org/id/iso3166/fr: "http://publications.europa.eu/resource/authority/country/FRA"
+    gb: "http://publications.europa.eu/resource/authority/country/GBR"
+    http://lexvo.org/id/iso3166/gb: "http://publications.europa.eu/resource/authority/country/GBR"
+    pt: "http://publications.europa.eu/resource/authority/country/PRT"
+    http://lexvo.org/id/iso3166/pt: "http://publications.europa.eu/resource/authority/country/PRT"
+    es: "http://publications.europa.eu/resource/authority/country/ESP"
+    http://lexvo.org/id/iso3166/es: "http://publications.europa.eu/resource/authority/country/ESP"
+    it: "http://publications.europa.eu/resource/authority/country/ITA"
+    http://lexvo.org/id/iso3166/it: "http://publications.europa.eu/resource/authority/country/ITA"
+    us: "http://publications.europa.eu/resource/authority/country/USA"
+    http://lexvo.org/id/iso3166/us: "http://publications.europa.eu/resource/authority/country/USA"

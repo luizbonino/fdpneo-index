@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator, Iterator
+from typing import Any
 
 import httpx
 import pytest
@@ -182,3 +183,105 @@ async def test_concurrent_sweeps_claim_each_due_entry_once(
             select(func.count()).select_from(Event).where(Event.type == EventType.HEALTH_CHECK)
         )
     assert checks == 6
+
+
+# --- search (ADR-0005): vectors, stemming, accents, ranking -------------------------------
+
+
+async def _search_index(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> Any:
+    from fdpindex.search.indexer import SearchIndexer
+    from fdpindex.search.profile import default_profile
+    from fdpindex.search.query import SearchService
+    from tests.fixtures.search_corpus import ALPHA, BETA, serve
+
+    service, jobs, network, extra = index
+    factory, _ = extra  # type: ignore[misc]
+    serve(network)
+    indexer = SearchIndexer(factory, default_profile(), debounce=0)  # type: ignore[arg-type]
+    service.add_listener(indexer.notify)
+    for url in (ALPHA, BETA):
+        outcome = await service.accept_ping(
+            url, remote_addr="203.0.113.60", method="POST", path="/", headers={}, body="{}"
+        )
+        service.after_trigger(outcome.event_id)
+    await jobs.drain()
+    await indexer.sync_once()
+    return SearchService(factory, service._settings, indexer)  # type: ignore[arg-type]
+
+
+async def test_search_stems_folds_accents_and_ranks(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    from fdpindex.search.query import SearchParams
+
+    search = await _search_index(index)
+
+    async def titles(**kwargs: Any) -> list[str]:
+        result = await search.search(SearchParams(facets=[], **kwargs))
+        return [hit["title"] for hit in result["hits"]]
+
+    # Stemming: "registries" finds "registry"; accents fold both ways.
+    assert await titles(q="registries") == ["Breast cancer registry"]
+    assert await titles(q="cafe") == ["Genome cohort"]
+    assert await titles(q="Gezondheidscatalogus") == ["Alpha health catalog"]
+    # websearch syntax: phrases, or, exclusion.
+    assert await titles(q='"lung function"') == ["Lung function tests"]
+    # (the English stemmer makes "genome" and "genomics" one word)
+    assert set(await titles(q="genome or lungs")) == {
+        "Genome cohort",
+        "Genomics catalogue",
+        "Lung function tests",
+    }
+    assert await titles(q="cancer -lungs") == ["Breast cancer registry"]
+    # A title match outranks keyword and description matches.
+    ranked = await search.search(SearchParams(q="cancer", facets=[]))
+    assert ranked["hits"][0]["title"] == "Breast cancer registry"
+    assert ranked["hits"][0]["score"] == 1.0
+    assert all(0 < hit["score"] <= 1 for hit in ranked["hits"])
+    # Theme labels and publisher names are searchable.
+    assert set(await titles(q="health", types=["dataset"])) == {
+        "Breast cancer registry",
+        "Lung function tests",
+    }
+    assert await titles(q="pulmonology") == ["Lung function tests"]
+    # Input that is not valid tsquery syntax never fails.
+    assert isinstance(await titles(q="(( & | !! :*"), list)
+    # Facets and filters run on PostgreSQL too.
+    result = await search.search(
+        SearchParams(filters={"keyword": ["cancer"]}, facets=["theme", "fdp", "type"])
+    )
+    assert result["totalResults"] == 2
+    assert result["facets"]["fdp"]["buckets"][0]["count"] == 2
+    detail = await search.resource(result["hits"][0]["id"])
+    assert detail["parents"][0]["type"] == "fdp"
+
+
+async def test_search_rows_follow_the_entry(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    from fdpindex.models import SearchResource, SearchValue
+
+    search = await _search_index(index)
+    service, _jobs, _network, extra = index
+    factory, _ = extra  # type: ignore[misc]
+    async with factory() as session:  # type: ignore[operator]
+        entry = await session.scalar(
+            select(SearchResource.entry_uuid).where(
+                SearchResource.iri == "https://fdp.alpha.example"
+            )
+        )
+    await service.delete_entry(entry)
+    await search.indexer.sync_once()
+    async with factory() as session:  # type: ignore[operator]
+        resources = await session.scalar(select(func.count()).select_from(SearchResource))
+        values = await session.scalar(select(func.count()).select_from(SearchValue))
+        tsv = await session.scalar(
+            select(func.count())
+            .select_from(SearchResource)
+            .where(SearchResource.tsv_lang.is_(None))
+        )
+    assert resources == 5
+    assert values and values > 0
+    assert tsv == 0

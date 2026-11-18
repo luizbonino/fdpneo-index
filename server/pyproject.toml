@@ -110,6 +110,8 @@ ignore = [
 "src/fdpindex/errors.py" = ["N818"]  # HTTP-style names (NotFound, Forbidden, …) are intentional
 "src/fdpindex/sparql/*.py" = ["N818", "ASYNC109"]  # outcome-style error names; worker calls take explicit time budgets
 "src/fdpindex/api/sparql.py" = ["N818", "B008"]
+"src/fdpindex/api/search.py" = ["N818", "B008"]
+"src/fdpindex/search/*.py" = ["N818"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["fdpindex"]

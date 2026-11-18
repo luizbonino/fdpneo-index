@@ -1,0 +1,562 @@
+"""Faceted search: profile, projection, indexer, queries and the HTTP API (on SQLite).
+
+Ranking, stemming and accent folding need PostgreSQL and are tested in
+``tests/integration/test_search_postgres.py``.
+"""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator, Iterator
+from typing import Any
+
+import httpx
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import func, select, update
+
+from fdpindex.auth import token_digest
+from fdpindex.config import Settings
+from fdpindex.main import create_app
+from fdpindex.models import EntryPermit, SearchLabel, SearchResource, SearchValue
+from fdpindex.search.indexer import SearchIndexer
+from fdpindex.search.profile import Profile, default_profile, load_profile
+from fdpindex.search.project import (
+    bucket_label,
+    canonical_iri,
+    normalise,
+    parse_datetime,
+    pick_language,
+    project_entry,
+    public_id,
+)
+from fdpindex.search.query import SearchParams, SearchService
+from tests.conftest import FakeNetwork, Services, ping, public_resolver
+from tests.fixtures.search_corpus import ALPHA, BETA, EU, nodes, serve
+
+pytestmark = pytest.mark.unit
+
+TOKEN = "fdpi_test-admin-token"
+ADMIN = {"Authorization": f"Bearer {TOKEN}"}
+
+
+# --- profile -------------------------------------------------------------------
+
+
+def test_default_profile_is_valid_and_hashed() -> None:
+    profile = default_profile()
+    assert {"theme", "keyword", "publisher", "format", "license", "accessRights"} <= set(
+        profile.facets
+    )
+    assert profile.expand("dcat:theme") == "http://www.w3.org/ns/dcat#theme"
+    assert profile.path_iris("dct:publisher/foaf:name") == (
+        "http://purl.org/dc/terms/publisher",
+        "http://xmlns.com/foaf/0.1/name",
+    )
+    assert len(profile.hash) == 64
+    assert profile.hash == default_profile().hash
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ("fields:\n  title: {kind: iri, paths: [dct:title]}", "text field 'title'"),
+        ("fields:\n  x: {kind: iri, paths: [nope:x]}", "unknown prefix"),
+        ("fields:\n  x: {kind: iri, paths: [dct:a/dct:b/dct:c]}", "longer than two steps"),
+        ("fields:\n  x: {kind: number, paths: [dct:x]}", "needs buckets"),
+        ("fields:\n  x: {kind: iri, paths: [dct:x], normalise: missing}", "no normalise map"),
+        ("cards:\n  dataset: [nothing]", "unknown field"),
+    ],
+)
+def test_profile_validation(change: str, message: str) -> None:
+    base = default_profile().model_dump(mode="json")
+    import yaml
+
+    patch = yaml.safe_load(change)
+    for key, value in patch.items():
+        if key == "fields":
+            base["fields"].update(value)
+        else:
+            base[key] = value
+    with pytest.raises(ValueError, match=message):
+        Profile.model_validate(base)
+
+
+def test_a_changed_profile_has_another_hash() -> None:
+    data = default_profile().model_dump(mode="json")
+    data["fields"]["keyword"]["facet"] = None
+    import yaml
+
+    assert load_profile(yaml.safe_dump(data)).hash != default_profile().hash
+
+
+# --- small functions -------------------------------------------------------------------
+
+
+def test_helpers() -> None:
+    assert normalise("CC-BY-4.0", {"cc-by-4.0": "http://cc/by"}) == "http://cc/by"
+    iana = {"https://www.iana.org/assignments/media-types/": ""}
+    assert normalise("https://www.iana.org/assignments/media-types/text/csv", iana) == "text/csv"
+    assert normalise("something else", iana) == "something else"
+    assert canonical_iri("https://publications.europa.eu/x") == "http://publications.europa.eu/x"
+    assert canonical_iri("https://example.org/x") == "https://example.org/x"
+    assert parse_datetime("2020") is not None
+    assert parse_datetime("2020-05").month == 5  # type: ignore[union-attr]
+    assert parse_datetime("2020-05-03T10:00:00Z").hour == 10  # type: ignore[union-attr]
+    assert parse_datetime("yesterday") is None
+    assert parse_datetime("0001-01-01") is None
+    assert pick_language({"nl": "Hallo", "": "Hi"}, "en") == ("", "Hi")
+    assert pick_language({"nl": "Hallo", "en": "Hello"}, "nl-BE") == ("nl", "Hallo")
+    assert pick_language({"de": "Hallo"}, "en") == ("de", "Hallo")
+    assert bucket_label("..100") == "under 100"
+    assert bucket_label("1000..10000") == "1,000 to 10,000"
+    assert bucket_label("100000..") == "100,000 or more"
+    assert len(public_id("u", "https://x")) == 22
+    assert public_id("u", "https://x") == public_id("u", "https://x")
+
+
+# --- projection -------------------------------------------------------------------------
+
+
+def _alpha() -> dict[str, Any]:
+    projection = project_entry("alpha", nodes(ALPHA), default_profile())
+    return {row.iri: row for row in projection.resources} | {"_labels": projection.labels}
+
+
+def test_kinds_parents_and_counts() -> None:
+    rows = _alpha()
+    assert rows[ALPHA].kind == "fdp"
+    assert rows[f"{ALPHA}/catalog/c1"].kind == "catalog"
+    assert rows[f"{ALPHA}/catalog/c1"].parent_iri == ALPHA
+    d1 = rows[f"{ALPHA}/dataset/d1"]
+    assert (d1.kind, d1.parent_iri, d1.catalog_iri) == (
+        "dataset",
+        f"{ALPHA}/catalog/c1",
+        f"{ALPHA}/catalog/c1",
+    )
+    x1 = rows[f"{ALPHA}/distribution/x1"]
+    assert (x1.kind, x1.dataset_iri) == ("distribution", d1.iri)
+    assert d1.facts["distributionCount"] == 2
+    assert rows[f"{ALPHA}/catalog/c1"].facts["datasetCount"] == 2
+    assert rows[ALPHA].facts["datasetCount"] == 2
+
+
+def test_values_are_normalised_and_rolled_up() -> None:
+    d1 = _alpha()[f"{ALPHA}/dataset/d1"]
+    values = {(v.field, v.value) for v in d1.values}
+    assert ("keyword", "cancer") in values  # case folded
+    assert ("theme", f"{EU}data-theme/HEAL") in values
+    assert ("license", "http://creativecommons.org/licenses/by/4.0/") in values  # from "CC-BY-4.0"
+    assert ("accessRights", f"{EU}access-right/PUBLIC") in values  # https folded
+    assert ("language", f"{EU}language/ENG") in values  # from "en"
+    assert ("publisher", "https://ror.org/alpha") in values
+    assert ("contactName", "Data desk") in values
+    assert ("records", "1000..10000") in values
+    # Rolled up from the distributions:
+    assert ("mediaType", "text/csv") in values
+    assert ("format", f"{EU}file-type/CSV") in values
+    assert ("format", f"{EU}file-type/PARQUET") in values
+    assert d1.issued is not None and d1.issued.year == 2020
+    assert d1.modified is not None and d1.modified.month == 11
+
+
+def test_titles_texts_and_completeness() -> None:
+    rows = _alpha()
+    catalog = rows[f"{ALPHA}/catalog/c1"]
+    assert catalog.titles == {"en": "Alpha health catalog", "nl": "Alpha gezondheidscatalogus"}
+    assert catalog.title == "Alpha health catalog"
+    d1 = rows[f"{ALPHA}/dataset/d1"]
+    weights = {(weight, text) for _, weight, text in d1.segments}
+    assert ("A", "Breast cancer registry") in weights
+    assert ("C", "Biopsies recorded nationwide since 2010.") in weights
+    assert ("B", "Health") in weights  # the theme's bundled label
+    assert ("B", "Alpha University") in weights  # the publisher's harvested name
+    assert d1.completeness > rows[f"{ALPHA}/dataset/d2"].completeness
+    labels = {(label.iri, label.label) for label in rows["_labels"]}
+    assert ("https://ror.org/alpha", "Alpha University") in labels
+
+
+def test_java_fdp_shapes() -> None:
+    projection = project_entry("beta", nodes(BETA), default_profile())
+    rows = {row.iri: row for row in projection.resources}
+    assert rows[BETA].kind == "fdp"
+    assert ("version", "1.17.2") in {(v.field, v.value) for v in rows[BETA].values}
+    g = rows[f"{BETA}/dataset/g"]
+    assert g.parent_iri == f"{BETA}/catalog/k"
+    assert ("license", "http://creativecommons.org/licenses/by/4.0/") in {
+        (v.field, v.value) for v in g.values
+    }
+    assert ("format", "VCF") in {(v.field, v.value) for v in g.values}
+    vcf = rows[f"{BETA}/distribution/vcf"]
+    assert vcf.title == "vcf" and vcf.facts["titleFallback"] is True
+    assert rows[f"{BETA}/api"].kind == "service"
+    assert rows[f"{BETA}/api"].parent_iri == f"{BETA}/catalog/k"
+
+
+def test_ldp_containers_and_blank_node_hashes_are_stable() -> None:
+    root = """
+<https://fdp.example/> a <https://w3id.org/fdp/fdp-o#MetadataService> ;
+  <http://purl.org/dc/terms/title> "Root" .
+<https://fdp.example/catalogs> a <http://www.w3.org/ns/ldp#DirectContainer> ;
+  <http://www.w3.org/ns/ldp#contains> <https://fdp.example/catalog/1> .
+"""
+    catalog = """
+<https://fdp.example/catalog/1> a <http://www.w3.org/ns/dcat#Catalog> ;
+  <http://purl.org/dc/terms/title> "One" .
+"""
+    from rdflib import Graph
+
+    def nt(text: str) -> str:
+        return Graph().parse(data=text, format="turtle").serialize(format="nt")
+
+    pages = [("https://fdp.example/", nt(root)), ("https://fdp.example/catalog/1", nt(catalog))]
+    first = project_entry("e", pages, default_profile())
+    second = project_entry("e", list(reversed(pages)), default_profile())
+    rows = {r.iri: r for r in first.resources}
+    assert rows["https://fdp.example/catalog/1"].parent_iri == "https://fdp.example/"
+    assert [r.row_hash for r in sorted(first.resources, key=lambda r: r.iri)] == [
+        r.row_hash for r in sorted(second.resources, key=lambda r: r.iri)
+    ]
+
+
+def test_a_node_without_its_subject_is_skipped() -> None:
+    page = '<https://other.example/x> <http://purl.org/dc/terms/title> "X" .\n<https://other.example/y> <http://purl.org/dc/terms/title> "Y" .\n'
+    assert project_entry("e", [("https://fdp.example/n", page)], default_profile()).resources == []
+
+
+# --- indexer and queries on SQLite ---------------------------------------------------------
+
+
+@pytest.fixture
+async def search(services: Services, network: FakeNetwork) -> AsyncIterator[SearchService]:
+    serve(network)
+    indexer = SearchIndexer(services.session_factory, default_profile(), debounce=0)
+    services.index.add_listener(indexer.notify)
+    for url in (ALPHA, BETA):
+        await ping(services, url)
+    await indexer.sync_once()
+    yield SearchService(services.session_factory, services.settings, indexer)
+
+
+async def _count(services: Services, model: Any) -> int:
+    async with services.session_factory() as session:
+        return int(await session.scalar(select(func.count()).select_from(model)) or 0)
+
+
+async def _entry(services: Services, iri: str) -> Any:
+    async with services.session_factory() as session:
+        entry = await session.scalar(
+            select(SearchResource.entry_uuid).where(SearchResource.iri == iri)
+        )
+    assert entry is not None
+    return entry
+
+
+async def test_everything_harvested_is_indexed(search: SearchService, services: Services) -> None:
+    assert await _count(services, SearchResource) == 11
+    result = await search.search(SearchParams())
+    # Distributions are not listed by default.
+    assert result["totalResults"] == 8
+    types = {b["value"]: b["count"] for b in result["facets"]["type"]["buckets"]}
+    assert types == {"dataset": 3, "catalog": 2, "fdp": 2, "service": 1, "distribution": 3}
+    # Newest first without a query.
+    assert result["hits"][0]["title"] == "Breast cancer registry"
+
+
+async def test_filters_and_disjunctive_facets(search: SearchService) -> None:
+    heal = f"{EU}data-theme/HEAL"
+    result = await search.search(SearchParams(filters={"theme": [heal]}))
+    assert {h["title"] for h in result["hits"]} == {"Breast cancer registry", "Lung function tests"}
+    themes = {b["value"]: b for b in result["facets"]["theme"]["buckets"]}
+    assert themes[heal]["label"] == "Health"
+    assert themes[f"{EU}data-theme/TECH"]["count"] == 1
+    # The theme facet ignores its own filter; others count within it.
+    keywords = {b["value"]: b["count"] for b in result["facets"]["keyword"]["buckets"]}
+    assert keywords == {"cancer": 2, "registry": 1, "lungs": 1}
+    both = await search.search(
+        SearchParams(filters={"theme": [heal], "accessRights": [f"{EU}access-right/RESTRICTED"]})
+    )
+    assert [h["title"] for h in both["hits"]] == ["Lung function tests"]
+    negated = await search.search(SearchParams(types=["dataset"], filters={"keyword": ["!cancer"]}))
+    assert [h["title"] for h in negated["hits"]] == ["Genome cohort"]
+
+
+async def test_text_types_fdp_dates_and_paging(search: SearchService) -> None:
+    words = await search.search(SearchParams(q="cancer registry"))
+    assert [h["title"] for h in words["hits"]] == ["Breast cancer registry"]
+    excluded = await search.search(SearchParams(q="cancer -lungs", types=["dataset"]))
+    assert [h["title"] for h in excluded["hits"]] == ["Breast cancer registry"]
+    services = await search.search(SearchParams(types=["service"]))
+    assert [h["title"] for h in services["hits"]] == ["Beta Beacon"]
+    fdp_uuid = next(
+        b["value"] for b in services["facets"]["fdp"]["buckets"] if b["label"] == "Beta FDP"
+    )
+    beta = await search.search(SearchParams(fdps=[__import__("uuid").UUID(fdp_uuid)]))
+    assert {h["fdp"]["title"] for h in beta["hits"]} == {"Beta FDP"}
+    recent = await search.search(
+        SearchParams(ranges={"modified": (parse_datetime("2026-01-01"), None)})
+    )
+    assert [h["title"] for h in recent["hits"]] == ["Breast cancer registry"]
+    first = await search.search(SearchParams(size=3, sort="title,asc"))
+    second = await search.search(SearchParams(size=3, page=1, sort="title,asc"))
+    titles = [h["title"] for h in first["hits"] + second["hits"]]
+    assert titles == sorted(titles, key=str.lower)
+    assert len(set(titles)) == 6
+
+
+async def test_hits_carry_values_labels_and_distributions(search: SearchService) -> None:
+    result = await search.search(SearchParams(q="breast"))
+    hit = result["hits"][0]
+    assert hit["fdp"]["title"] == "Alpha FDP"
+    assert hit["catalog"]["title"] == "Alpha health catalog"
+    assert hit["values"]["publisher"] == [
+        {"value": "https://ror.org/alpha", "label": "Alpha University"}
+    ]
+    assert {v["label"] for v in hit["values"]["format"]} == {"CSV", "Parquet"}
+    assert hit["values"]["records"][0]["label"] == "1,000 to 10,000"
+    assert [d["title"] for d in hit["distributions"]] == ["CSV export", "Parquet export"]
+    assert hit["facts"]["distributionCount"] == 2
+
+
+async def test_selected_values_stay_in_their_facet(search: SearchService) -> None:
+    result = await search.search(
+        SearchParams(filters={"keyword": ["genomics"]}, facet_size=1, facets=["keyword"])
+    )
+    values = [b["value"] for b in result["facets"]["keyword"]["buckets"]]
+    assert "genomics" in values and result["facets"]["keyword"]["more"] is True
+
+
+async def test_one_facet_in_full(search: SearchService) -> None:
+    result = await search.facet(SearchParams(), "theme", contains="sci")
+    assert [b["label"] for b in result["buckets"]] == ["Science and technology"]
+
+
+async def test_resource_detail(search: SearchService) -> None:
+    hit = (await search.search(SearchParams(q="breast")))["hits"][0]
+    detail = await search.resource(hit["id"])
+    assert [p["title"] for p in detail["parents"]] == ["Alpha FDP", "Alpha health catalog"]
+    assert [c["title"] for c in detail["children"]] == ["CSV export", "Parquet export"]
+    assert detail["values"]["contactEmail"][0]["value"] == "mailto:desk@alpha.example"
+    graph = await search.resource_graph(hit["id"])
+    assert len(graph) > 10
+    catalog = await search.resource(hit["catalog"]["id"], lang="nl")
+    assert catalog["title"] == "Alpha gezondheidscatalogus"
+
+
+async def test_landing_and_labels(search: SearchService) -> None:
+    landing = await search.landing()
+    assert landing["counters"]["dataset"] == 3
+    assert landing["fdps"]["total"] == 2
+    assert landing["indexing"] == {"pending": 0}
+    assert any(f["name"] == "theme" and f["help"]["en"] for f in landing["facets"])
+    labels = await search.labels([f"{EU}data-theme/HEAL", "https://ror.org/alpha"], "en")
+    assert labels == {f"{EU}data-theme/HEAL": "Health", "https://ror.org/alpha": "Alpha University"}
+
+
+async def test_unchanged_harvests_write_nothing_and_rejection_clears(
+    search: SearchService, services: Services
+) -> None:
+    indexer = search.indexer
+    generation = indexer.generation
+    alpha = await _entry(services, ALPHA)
+    await services.index.harvest_entry(alpha)
+    await indexer.sync_once()
+    assert indexer.generation == generation  # nothing changed at the source
+    await services.index.update_permit(alpha, EntryPermit.REJECTED, actor="test", remote_addr=None)
+    await indexer.sync_once()
+    assert await _count(services, SearchResource) == 5
+    async with services.session_factory() as session:
+        orphans = await session.scalar(
+            select(func.count())
+            .select_from(SearchValue)
+            .where(~SearchValue.resource_id.in_(select(SearchResource.id)))
+        )
+        labels = await session.scalar(
+            select(func.count()).select_from(SearchLabel).where(SearchLabel.entry_uuid == alpha)
+        )
+    assert (orphans, labels) == (0, 0)
+    assert (await search.search(SearchParams(q="breast")))["totalResults"] == 0
+
+
+async def test_a_changed_node_updates_its_rows(
+    search: SearchService, services: Services, network: FakeNetwork
+) -> None:
+    from tests.fixtures.search_corpus import PAGES, PREFIXES
+
+    page = PAGES[f"{BETA}/dataset/g"].replace("Genome cohort", "Exome cohort")
+    network.serve(f"{BETA}/dataset/g", PREFIXES + page)
+    await services.index.harvest_entry(await _entry(services, BETA))
+    await search.indexer.sync_once()
+    titles = {h["title"] for h in (await search.search(SearchParams(q="cohort")))["hits"]}
+    assert titles == {"Exome cohort"}
+
+
+async def test_reindex_forces_a_projection(search: SearchService) -> None:
+    generation = search.indexer.generation
+    async with search._session_factory() as session:  # pyright: ignore[reportPrivateUsage]
+        await session.execute(update(SearchResource).values(row_hash="stale"))
+        await session.commit()
+    search.indexer.reindex()
+    await search.indexer.sync_once()
+    assert search.indexer.generation > generation
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        SearchParams(types=["nope"]),  # pyright: ignore[reportArgumentType]
+        SearchParams(filters={"nope": ["x"]}),
+        SearchParams(size=0),
+        SearchParams(size=100, page=100),
+        SearchParams(sort="random"),
+        SearchParams(fdp_state="UNREACHABLE"),
+        SearchParams(q="x" * 513),
+        SearchParams(facets=["nope"]),
+    ],
+)
+def test_parameter_validation(params: SearchParams) -> None:
+    from fdpindex.errors import BadRequest
+
+    with pytest.raises(BadRequest):
+        params.validate(default_profile())
+
+
+# --- HTTP --------------------------------------------------------------------------------
+
+
+class Api:
+    def __init__(self, client: TestClient, app: FastAPI) -> None:
+        self.client = client
+        self.app = app
+        portal = client.portal
+        assert portal is not None
+        # Tests drive the indexer themselves: the loop shares SQLite's single connection.
+        portal.call(app.state.search.indexer.stop)
+
+    def settle(self) -> None:
+        portal = self.client.portal
+        assert portal is not None
+        portal.call(self.app.state.jobs.drain)
+        portal.call(self.app.state.search.indexer.sync_once)
+
+
+@pytest.fixture
+def api(network: FakeNetwork) -> Iterator[Api]:
+    serve(network)
+    config = Settings(
+        database_url="sqlite+aiosqlite://",
+        admin_tokens=[token_digest(TOKEN)],
+        worker_concurrency=1,
+        search_enabled=True,
+        search_rate_per_minute=20,
+    )
+    app = create_app(
+        config,
+        transport=httpx.MockTransport(network.handler),
+        resolver=public_resolver,
+        create_tables=True,
+        configure_logs=False,
+        run_scheduler=False,
+    )
+    with TestClient(app) as client:
+        api = Api(client, app)
+        for url in (ALPHA, BETA):
+            client.post("/", json={"clientUrl": url})
+            api.settle()  # one at a time: in-memory SQLite has a single shared connection
+        yield api
+
+
+def test_search_over_http(api: Api) -> None:
+    response = api.client.get(
+        "/index/search",
+        params=[("q", "cancer"), ("theme", f"{EU}data-theme/HEAL"), ("facets", "theme,fdp")],
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["totalResults"] == 2
+    assert set(body["facets"]) == {"theme", "fdp"}
+    assert api.client.get("/index/search", params={"facets": "none"}).json()["facets"] == {}
+    assert (
+        api.client.get("/index/search", params={"modifiedFrom": "2026-01-01"}).json()[
+            "totalResults"
+        ]
+        == 1
+    )
+    assert (
+        api.client.get("/index/search", params={"type": "dataset,service"}).json()["totalResults"]
+        == 4
+    )
+    info = api.client.get("/index/config").json()
+    assert info["search"]["endpoint"].endswith("/index/search")
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"unknown": "x"},
+        {"theme2": "x"},
+        {"fdp": "not-a-uuid"},
+        {"modifiedFrom": "soon"},
+        {"page": "one"},
+        {"size": "1000"},
+    ],
+)
+def test_bad_parameters_are_400(api: Api, params: dict[str, str]) -> None:
+    response = api.client.get("/index/search", params=params)
+    assert response.status_code == 400
+    assert response.json()["code"] == "index.bad_request"
+
+
+def test_resource_formats(api: Api) -> None:
+    hit = api.client.get("/index/search", params={"q": "genome"}).json()["hits"][0]
+    detail = api.client.get(f"/index/search/resources/{hit['id']}")
+    assert detail.status_code == 200 and detail.json()["title"] == "Genome cohort"
+    turtle = api.client.get(f"/index/search/resources/{hit['id']}", params={"format": "ttl"})
+    assert turtle.headers["content-type"].startswith("text/turtle")
+    assert "Genome cohort" in turtle.text
+    jsonld = api.client.get(
+        f"/index/search/resources/{hit['id']}", headers={"Accept": "application/ld+json"}
+    )
+    assert jsonld.headers["content-type"].startswith("application/ld+json")
+    assert api.client.get("/index/search/resources/" + "A" * 22).status_code == 404
+    assert api.client.get("/index/search/resources/short").status_code == 400
+
+
+def test_landing_labels_and_facets_over_http(api: Api) -> None:
+    landing = api.client.get("/index/search/landing").json()
+    assert landing["counters"]["fdp"] == 2
+    labels = api.client.get("/index/search/labels", params=[("iri", f"{EU}data-theme/HEAL")]).json()
+    assert labels == {f"{EU}data-theme/HEAL": "Health"}
+    facet = api.client.get("/index/search/facets", params={"field": "keyword"}).json()
+    assert {b["value"] for b in facet["buckets"]} >= {"cancer", "genomics"}
+
+
+def test_admin_routes(api: Api) -> None:
+    assert api.client.get("/index/search/stats").status_code == 401
+    assert api.client.post("/index/search/reindex").status_code == 401
+    stats = api.client.get("/index/search/stats", headers=ADMIN).json()
+    assert {e["resources"] for e in stats["entries"]} == {6, 5}
+    assert api.client.get("/index/search/profile", headers=ADMIN).json()["hash"]
+    assert api.client.post("/index/search/reindex", headers=ADMIN).status_code == 202
+
+
+def test_anonymous_searches_are_rate_limited(api: Api) -> None:
+    statuses = [
+        api.client.get("/index/search", params={"facets": "none"}).status_code for _ in range(25)
+    ]
+    assert statuses.count(429) >= 5
+    assert api.client.get("/index/search", headers=ADMIN).status_code == 200
+
+
+def test_search_can_be_switched_off(network: FakeNetwork) -> None:
+    app = create_app(
+        Settings(database_url="sqlite+aiosqlite://", search_enabled=False),
+        transport=httpx.MockTransport(network.handler),
+        resolver=public_resolver,
+        create_tables=True,
+        configure_logs=False,
+        run_scheduler=False,
+    )
+    with TestClient(app) as client:
+        assert client.get("/index/search").status_code == 404
+        assert client.get("/index/config").json()["search"] is None

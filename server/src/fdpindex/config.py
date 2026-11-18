@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     sparql_rate_per_minute: int = Field(default=30, ge=0)
     sparql_worker_max_mb: int = Field(default=1024, ge=0)
     sparql_void_interval_seconds: float = Field(default=60, ge=0)
+    # Faceted search over the harvested metadata (search design §3 to §5): a projection
+    # into PostgreSQL tables, kept in step with harvests.
+    search_enabled: bool = True
+    search_rate_per_minute: int = Field(default=120, ge=0)
+    search_timeout_seconds: float = Field(default=5, gt=0)
+    search_admin_timeout_seconds: float = Field(default=30, gt=0)
     # Public base URL (https://index.example.org), for absolute IRIs in the VoID description.
     public_url: str | None = None
 

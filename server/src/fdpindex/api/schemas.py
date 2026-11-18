@@ -245,6 +245,8 @@ class ServiceInfo(_Api):
     auth: list[Literal["oidc", "token"]]
     # addition: whether the SPARQL endpoint and page exist, and their limits
     sparql: dict[str, Any] | None = None
+    # addition: the faceted search (search design §5)
+    search: dict[str, Any] | None = None
 
 
 def event_outcome(event: Event) -> str | None:

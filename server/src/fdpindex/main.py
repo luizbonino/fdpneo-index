@@ -19,6 +19,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fdpindex import __version__
 from fdpindex.api.routes import router
+from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.config import Settings, get_settings
@@ -28,6 +29,9 @@ from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
+from fdpindex.search.indexer import SearchIndexer
+from fdpindex.search.profile import default_profile
+from fdpindex.search.query import SearchService
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
 from fdpindex.sparql.prefixes import PREFIXES
@@ -178,6 +182,9 @@ def create_app(
         app.state.data_rate = RateLimiter(30)  # anonymous harvested-data downloads per minute
         sparql = await _start_sparql(config, factory, settings_service, index)
         app.state.sparql = sparql
+        search = _start_search(config, factory, settings_service, index)
+        app.state.search = search
+        app.state.search_rate = RateLimiter(config.search_rate_per_minute)
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
@@ -191,6 +198,8 @@ def create_app(
         finally:
             await scheduler.stop()
             await jobs.close()
+            if search is not None:
+                await search.indexer.stop()
             if sparql is not None:
                 if sparql.sync is not None:
                     await sparql.sync.stop()
@@ -217,7 +226,29 @@ def create_app(
     app.add_middleware(BodyLimit, max_bytes=MAX_BODY_BYTES)
     app.include_router(router)
     app.include_router(sparql_router)
+    app.include_router(search_router)
     return app
+
+
+def _start_search(
+    config: Settings,
+    factory: async_sessionmaker[AsyncSession],
+    settings_service: SettingsService,
+    index: IndexService,
+) -> SearchService | None:
+    if not config.search_enabled:
+        return None
+    indexer = SearchIndexer(factory, default_profile())
+    index.add_listener(indexer.notify)
+    indexer.start()
+    log.info("search_started", profile=indexer.profile.hash[:12])
+    return SearchService(
+        factory,
+        settings_service,
+        indexer,
+        timeout_seconds=config.search_timeout_seconds,
+        admin_timeout_seconds=config.search_admin_timeout_seconds,
+    )
 
 
 async def _start_sparql(

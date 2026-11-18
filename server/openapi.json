@@ -973,6 +973,25 @@
         "title": "PingSettings",
         "type": "object"
       },
+      "ReindexRequest": {
+        "properties": {
+          "entry": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One entry; all when absent",
+            "title": "Entry"
+          }
+        },
+        "title": "ReindexRequest",
+        "type": "object"
+      },
       "RepositoryMetadataView": {
         "properties": {
           "metadata": {
@@ -1087,6 +1106,18 @@
           "ping": {
             "title": "Ping",
             "type": "string"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
           },
           "sparql": {
             "anyOf": [
@@ -2015,6 +2046,414 @@
         "summary": "Get Event",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/search": {
+      "get": {
+        "description": "Faceted search over every accepted FDP's harvested DCAT metadata.\n\nFilters: every facet field (`theme`, `keyword`, `publisher`, `format`,\n`license`, `accessRights`, \u2026) is a repeatable parameter; values within a\nfield are ORed, fields are ANDed, `!value` excludes. Also `type`, `fdp`,\n`issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,\n`harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,\n`facets` (comma-separated, or `none`) and `facetSize`.",
+        "operationId": "search_index_search_get",
+        "parameters": [
+          {
+            "description": "Words, \"phrases\", or, -word",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "description": "Words, \"phrases\", or, -word",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Search Index Search Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search the harvested metadata",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/facets": {
+      "get": {
+        "operationId": "facet_index_search_facets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "field",
+            "required": true,
+            "schema": {
+              "title": "Field",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contains",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Contains",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Facet Index Search Facets Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "All buckets of one facet",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/labels": {
+      "get": {
+        "operationId": "labels_index_search_labels_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "iri",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Iri",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Labels Index Search Labels Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Labels for IRIs",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/landing": {
+      "get": {
+        "operationId": "landing_index_search_landing_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Landing Index Search Landing Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Counters and facet descriptions",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/profile": {
+      "get": {
+        "operationId": "profile_index_search_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Profile Index Search Profile Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The search profile",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/reindex": {
+      "post": {
+        "operationId": "reindex_index_search_reindex_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReindexRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reindex Index Search Reindex Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Re-project harvested metadata",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/resources/{public_id}": {
+      "get": {
+        "description": "The resource with every value and its parents and children, as JSON.\n\nWith `format` (`ttl`, `jsonld`, `nt`, `rdf`) or an RDF `Accept` header, the\ntriples harvested for it, as the FDP published them.",
+        "operationId": "resource_index_search_resources__public_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "public_id",
+            "required": true,
+            "schema": {
+              "title": "Public Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/ld+json": {},
+              "application/n-triples": {},
+              "application/rdf+xml": {},
+              "text/turtle": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One resource",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/stats": {
+      "get": {
+        "operationId": "stats_index_search_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Stats Index Search Stats Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Projection statistics",
+        "tags": [
+          "Search"
         ]
       }
     },

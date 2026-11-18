@@ -15,6 +15,9 @@ for _key in [k for k in os.environ if k.startswith("FDPINDEX_")]:
     del os.environ[_key]
 # The SPARQL store and its worker processes only where a test asks for them.
 os.environ["FDPINDEX_SPARQL_ENABLED"] = "false"
+# The search indexer runs a background loop; on the shared in-memory SQLite connection
+# it would interleave with the test's own transactions. Search tests enable it.
+os.environ["FDPINDEX_SEARCH_ENABLED"] = "false"
 
 from fdpindex.config import Settings  # noqa: E402
 from fdpindex.db import create_schema, make_engine, make_session_factory  # noqa: E402

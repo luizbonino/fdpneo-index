@@ -184,6 +184,12 @@ def _service_info(request: Request) -> ServiceInfo:
         }
         if getattr(request.app.state, "sparql", None) is not None
         else None,
+        search={
+            "endpoint": public_url(request, "search"),
+            "perMinute": config.search_rate_per_minute,
+        }
+        if getattr(request.app.state, "search", None) is not None
+        else None,
     )
 
 

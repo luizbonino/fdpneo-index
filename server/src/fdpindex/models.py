@@ -1,4 +1,4 @@
-"""Persistent model: entries, events, settings, webhooks, harvested nodes.
+"""Persistent model: entries, events, settings, webhooks, harvested nodes, search rows.
 
 Names and values follow the reference implementation's tables
 (``index_entry``, ``index_event``, ``index_settings``, ``index_webhook``), so
@@ -13,8 +13,10 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Enum as SAEnum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -22,6 +24,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from fdpindex.db import AwareDateTime, Base, JsonType, utcnow
@@ -178,3 +181,105 @@ class HarvestedNode(Base):
     __table_args__ = (
         UniqueConstraint("entry_uuid", "node_iri", name="uq_harvested_node_entry_iri"),
     )
+
+
+# --- search projection (search design §3.1, ADR-0005) ------------------------------
+
+# Full-text vectors exist in PostgreSQL only; unit tests on SQLite match on search_text.
+TsVector = TSVECTOR().with_variant(Text(), "sqlite")
+BigId = BigInteger().with_variant(Integer(), "sqlite")
+
+
+class SearchResource(Base):
+    """One DCAT resource of an accepted entry, projected from ``harvested_node``."""
+
+    __tablename__ = "search_resource"
+
+    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True)
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), nullable=False
+    )
+    iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    node_iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    public_id: Mapped[str] = mapped_column(String(22), nullable=False, unique=True)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    type_iris: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    parent_iri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    catalog_iri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    dataset_iri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    titles: Mapped[dict[str, str]] = mapped_column(JsonType, nullable=False, default=dict)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    descriptions: Mapped[dict[str, str]] = mapped_column(JsonType, nullable=False, default=dict)
+    landing_page: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    issued: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    modified: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    completeness: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    # Counts and flags computed over the entry: datasetCount, distributionCount, titleFallback.
+    facts: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False, default=dict)
+    # [[text search configuration, weight, text], ...]; the vectors are built from it.
+    text_segments: Mapped[list[list[str]]] = mapped_column(JsonType, nullable=False, default=list)
+    search_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tsv_lang: Mapped[str | None] = mapped_column(TsVector, nullable=True)
+    tsv_simple: Mapped[str | None] = mapped_column(TsVector, nullable=True)
+    row_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    harvested_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("entry_uuid", "iri", name="uq_search_resource_entry_iri"),
+        Index("ix_search_resource_kind_modified", "kind", "modified"),
+        Index("ix_search_resource_entry_kind", "entry_uuid", "kind"),
+        Index("ix_search_resource_parent", "entry_uuid", "parent_iri"),
+        Index("ix_search_resource_tsv_lang", "tsv_lang", postgresql_using="gin"),
+        Index("ix_search_resource_tsv_simple", "tsv_simple", postgresql_using="gin"),
+        Index(
+            "ix_search_resource_title_trgm",
+            "title",
+            postgresql_using="gin",
+            postgresql_ops={"title": "gin_trgm_ops"},
+        ),
+    )
+
+
+class SearchValue(Base):
+    """A filterable value of a resource: facets, filters and facet counts run on these."""
+
+    __tablename__ = "search_value"
+
+    resource_id: Mapped[int] = mapped_column(
+        BigId, ForeignKey("search_resource.id", ondelete="CASCADE"), primary_key=True
+    )
+    field: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(512), primary_key=True)
+    lang: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+    __table_args__ = (Index("ix_search_value_field_value", "field", "value", "resource_id"),)
+
+
+class SearchLabel(Base):
+    """A label an entry's metadata gives an IRI (``source='harvested'`` in the design)."""
+
+    __tablename__ = "search_label"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    iri: Mapped[str] = mapped_column(String(2048), primary_key=True)
+    lang: Mapped[str] = mapped_column(String(32), primary_key=True, default="")
+    label: Mapped[str] = mapped_column(Text, nullable=False)
+
+    __table_args__ = (Index("ix_search_label_iri", "iri"),)
+
+
+class SearchEntryState(Base):
+    """What the projection last saw of an entry: compared to find work after a restart."""
+
+    __tablename__ = "search_entry_state"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    profile_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    resources: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    projected_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)

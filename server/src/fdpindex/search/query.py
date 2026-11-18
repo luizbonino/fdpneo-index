@@ -16,6 +16,7 @@ Deviations from the design: no ``search_facet_cache`` (facet counts are a
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from collections import defaultdict
 from collections.abc import Awaitable, Callable, Sequence
@@ -278,10 +279,29 @@ class SearchService:
         q_simple = func.websearch_to_tsquery(cast(literal(SIMPLE_CONFIG), REGCONFIG), params.q)
         return q_lang, q_simple
 
+    def _prefix(self, params: SearchParams) -> Any | None:
+        """``word:* & word:*`` for plain input, so "demo" finds "demonstration".
+
+        Only for queries without phrase, ``or`` or exclusion syntax; the words are
+        reduced to letters and digits, so the ``to_tsquery`` input is always valid.
+        """
+        if '"' in params.q or re.search(r"(^|\s)-|(^|\s)or(\s|$)", params.q, re.IGNORECASE):
+            return None
+        words = [w for w in re.findall(r"\w+", params.q.lower()) if len(w) >= 2][:8]
+        if not words:
+            return None
+        return func.to_tsquery(
+            cast(literal(SIMPLE_CONFIG), REGCONFIG), " & ".join(f"{w}:*" for w in words)
+        )
+
     def _text(self, params: SearchParams, *, postgres: bool) -> ColumnElement[bool]:
         if postgres:
             q_lang, q_simple = self._queries(params)
-            return or_(R.tsv_lang.op("@@")(q_lang), R.tsv_simple.op("@@")(q_simple))
+            matches = [R.tsv_lang.op("@@")(q_lang), R.tsv_simple.op("@@")(q_simple)]
+            prefix = self._prefix(params)
+            if prefix is not None:
+                matches.append(R.tsv_simple.op("@@")(prefix))
+            return or_(*matches)
         conditions: list[ColumnElement[bool]] = []
         for word in params.q.lower().replace('"', " ").split():
             if word == "or":
@@ -296,10 +316,15 @@ class SearchService:
     def _score(self, params: SearchParams, threshold: datetime) -> ColumnElement[float]:
         q_lang, q_simple = self._queries(params)
         weights = cast(literal(RANK_WEIGHTS), ARRAY(REAL))
-        text_rank = func.greatest(
+        ranks = [
             func.ts_rank_cd(weights, R.tsv_lang, q_lang, 33),
             0.9 * func.ts_rank_cd(weights, R.tsv_simple, q_simple, 33),
-        )
+        ]
+        prefix = self._prefix(params)
+        if prefix is not None:
+            # Partial words count, but less than whole ones.
+            ranks.append(0.5 * func.ts_rank_cd(weights, R.tsv_simple, prefix, 33))
+        text_rank = func.greatest(*ranks)
         bonus = case(
             (func.lower(func.unaccent(R.title)) == func.lower(func.unaccent(params.q)), 0.3),
             (func.similarity(R.title, params.q) > 0.6, 0.15),

@@ -246,8 +246,13 @@ async def test_search_stems_folds_accents_and_ranks(
         "Lung function tests",
     }
     assert await titles(q="pulmonology") == ["Lung function tests"]
+    # Partial words match (prefix), below whole words.
+    assert await titles(q="regist") == ["Breast cancer registry"]
+    assert set(await titles(q="pulmo lab")) == {"Lung function tests"}
+    assert await titles(q="genom", types=["dataset"]) == ["Genome cohort"]
     # Input that is not valid tsquery syntax never fails.
-    assert isinstance(await titles(q="(( & | !! :*"), list)
+    for odd in ("(( & | !! :*", "a:* & b", "'quote", "x\\y", "-", "or"):
+        assert isinstance(await titles(q=odd), list)
     # Facets and filters run on PostgreSQL too.
     result = await search.search(
         SearchParams(filters={"keyword": ["cancer"]}, facets=["theme", "fdp", "type"])

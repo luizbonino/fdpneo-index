@@ -295,6 +295,11 @@ export interface paths {
      *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
      *     each hit has `highlight`: its title and description as text segments with
      *     the matching words marked (`{"text", "match"}`), never HTML.
+     *
+     *     With `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file
+     *     format filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of
+     *     the hits. Paging links are in the `Link`
+     *     header: `first`, `prev` and `next`, or the next cursor.
      */
     get: operations["search_index_search_get"];
     put?: never;
@@ -2218,6 +2223,7 @@ export interface operations {
         /** @description Words, "phrases", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:"a name", -keyword:x */
         q?: string;
         lang?: string | null;
+        output?: string | null;
       };
       header?: never;
       path?: never;
@@ -2231,9 +2237,11 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            [key: string]: unknown;
-          };
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
         };
       };
       /** @description Validation Error */
@@ -2249,7 +2257,9 @@ export interface operations {
   };
   search_structured_index_search_post: {
     parameters: {
-      query?: never;
+      query?: {
+        output?: string | null;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -2266,9 +2276,11 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            [key: string]: unknown;
-          };
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
         };
       };
       /** @description Validation Error */

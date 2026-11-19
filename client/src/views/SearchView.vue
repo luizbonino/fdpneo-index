@@ -21,6 +21,7 @@ import { toast } from "@/composables/feedback";
 import {
   LOCAL_FIELDS,
   PROPERTY_FACET,
+  RDF_FORMATS,
   isPropertyFacet,
   propertyLabel,
   searchApi,
@@ -362,6 +363,20 @@ async function copyLink() {
 
 /** The same search as a SPARQL query, opened in the editor. */
 const sparqlBusy = ref(false);
+async function downloadResults(format: (typeof RDF_FORMATS)[number]) {
+  try {
+    const text = await searchApi.results(params.value, format.key);
+    const url = URL.createObjectURL(new Blob([text], { type: format.type }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `search-results.${format.ext}`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    toast((err as Error).message, "error");
+  }
+}
+
 async function showSparql() {
   sparqlBusy.value = true;
   try {
@@ -682,6 +697,22 @@ const counters = computed(() => {
             <button type="button" class="btn ghost sm" @click="copyLink">
               {{ t("search.copyLink") }}
             </button>
+            <details class="download">
+              <summary class="btn ghost sm" :title="t('search.downloadHelp')">
+                {{ t("search.download") }}
+              </summary>
+              <div class="download-menu">
+                <button
+                  v-for="format in RDF_FORMATS"
+                  :key="format.key"
+                  type="button"
+                  class="btn ghost sm"
+                  @click="downloadResults(format)"
+                >
+                  {{ format.label }}
+                </button>
+              </div>
+            </details>
             <button
               v-if="info.data.value?.sparql"
               type="button"
@@ -1064,5 +1095,27 @@ const counters = computed(() => {
     border-radius: var(--fair-radius-lg) var(--fair-radius-lg) 0 0;
     box-shadow: var(--fair-shadow-4);
   }
+}
+.download {
+  position: relative;
+}
+.download summary {
+  list-style: none;
+}
+.download summary::-webkit-details-marker {
+  display: none;
+}
+.download-menu {
+  position: absolute;
+  z-index: 10;
+  right: 0;
+  top: calc(100% + 4px);
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  background: var(--fair-surface);
+  border: 1px solid var(--fair-border);
+  border-radius: var(--fair-radius-md, 8px);
+  box-shadow: var(--fair-shadow-4);
 }
 </style>

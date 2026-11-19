@@ -328,6 +328,13 @@ export const searchApi = {
     request<ResourceDetail>(
       `/index/search/resources/${encodeURIComponent(id)}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`,
     ),
+  /** The current page of results as RDF: a dcat:Catalog of the hits (TASKS 9.5). */
+  results: (params: URLSearchParams, output: string) => {
+    const query = new URLSearchParams(params);
+    query.set("output", output);
+    query.set("facets", "none");
+    return request<string>(`/index/search?${query}`, { accept: "*/*" });
+  },
   triples: (id: string, format: string) =>
     request<string>(
       `/index/search/resources/${encodeURIComponent(id)}?format=${encodeURIComponent(format)}`,

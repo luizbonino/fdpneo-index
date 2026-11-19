@@ -638,6 +638,8 @@ export const en = {
       title: "Title (A–Z)",
     },
     copyLink: "Copy link",
+    download: "Download",
+    downloadHelp: "This page of results as RDF: a DCAT catalog of the hits",
     linkCopied: "Link to this search copied",
     rankedNewest:
       "A very broad search: results are ranked among the {n} most recently updated matches. Add words or filters to rank them all.",

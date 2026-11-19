@@ -1548,3 +1548,53 @@ def test_cursor_over_http(api: Api) -> None:
         seen += [h["id"] for h in body["hits"]]
         cursor = body["nextCursor"]
     assert len(seen) == len(set(seen)) == 8
+
+
+# --- results as RDF, and paging links (TASKS 9.5) --------------------------------------
+
+
+def test_results_as_a_dcat_catalog(api: Api) -> None:
+    from rdflib import Graph, Literal, Namespace, URIRef
+    from rdflib.namespace import DCAT, DCTERMS, RDF
+
+    os_ = Namespace("http://a9.com/-/spec/opensearch/1.1/")
+    turtle = api.client.get("/index/search", params={"type": "dataset", "output": "ttl"})
+    assert turtle.status_code == 200 and turtle.headers["content-type"].startswith("text/turtle")
+    graph = Graph().parse(data=turtle.text, format="turtle")
+    search = next(graph.subjects(RDF.type, DCAT.Catalog))
+    assert graph.value(search, os_.totalResults) == Literal(3)
+    datasets = set(graph.objects(search, DCAT.dataset))
+    d1 = URIRef(f"{ALPHA}/dataset/d1")
+    assert d1 in datasets and len(datasets) == 3
+    assert (d1, DCAT.theme, URIRef(f"{EU}data-theme/HEAL")) in graph
+    assert (d1, DCTERMS.title, Literal("Breast cancer registry", lang="en")) in graph
+    period = graph.value(d1, DCTERMS.temporal)
+    assert str(graph.value(period, DCAT.startDate)) == "2010-01-01"
+    assert str(graph.value(d1, URIRef("http://xmlns.com/foaf/0.1/page"))).startswith("http")
+    # JSON-LD by Accept, and from POST too.
+    jsonld = api.client.get(
+        "/index/search", params={"type": "dataset"}, headers={"Accept": "application/ld+json"}
+    )
+    assert jsonld.headers["content-type"].startswith("application/ld+json")
+    nodes = jsonld.json()
+    nodes = nodes.get("@graph", nodes) if isinstance(nodes, dict) else nodes
+    assert any(str(DCAT.Catalog) in n.get("@type", []) for n in nodes)
+    assert any(n.get("@id") == str(d1) for n in nodes)
+    posted = api.client.post(
+        "/index/search", json={"types": ["dataset"]}, headers={"Accept": "text/turtle"}
+    )
+    assert posted.headers["content-type"].startswith("text/turtle")
+    assert api.client.get("/index/search", params={"output": "pdf"}).status_code == 400
+    # `format` stays the file-format filter.
+    csv = api.client.get("/index/search", params={"format": f"{EU}file-type/CSV"}).json()
+    assert csv["totalResults"] >= 1
+
+
+def test_paging_links(api: Api) -> None:
+    first = api.client.get("/index/search", params={"size": "3"})
+    links = first.headers["link"]
+    assert 'rel="first"' in links and 'rel="next"' in links and 'rel="prev"' not in links
+    last = api.client.get("/index/search", params={"size": "3", "page": "2"})
+    assert 'rel="prev"' in last.headers["link"] and 'rel="next"' not in last.headers["link"]
+    walked = api.client.get("/index/search", params={"size": "3", "cursor": "*", "sort": "title"})
+    assert "cursor=" in walked.headers["link"] and 'rel="next"' in walked.headers["link"]

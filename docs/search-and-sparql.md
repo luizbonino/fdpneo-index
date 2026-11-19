@@ -129,6 +129,14 @@ profile, for example `{"capture": {"paths": ["dcat:contactPoint/vcard:hasEmail"]
 as an overlay. A bad filter answers 400 and names it (`filters.2.op`).
 Visitors may filter on the properties open to them, as on the search page.
 
+Results come as RDF too: `output=jsonld`, `ttl`, `nt` or `rdf` (or an RDF
+`Accept` header) answers a `dcat:Catalog` of the hits, with the
+OpenSearch counts, each hit's title, dates, values, temporal coverage, its
+FDP (`prov:hadPrimarySource`) and its page here (`foaf:page`). The
+parameter is `output`, not `format`, because `format` is the file-format
+filter. Paging links are in the `Link` header (`first`, `prev`, `next`).
+The search page's **Download** offers the current page in these formats.
+
 To fetch every result of a search (offset paging stops at 10 000), ask
 with `cursor=*` and a sort of `modified`, `issued`, `title` or `harvested`,
 then pass each response's `nextCursor` until it is `null`:

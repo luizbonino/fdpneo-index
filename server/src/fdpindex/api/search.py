@@ -38,7 +38,14 @@ from fdpindex.search.period import parse_day
 from fdpindex.search.profile import KINDS, Kind
 from fdpindex.search.profile_store import ProfileError, examples
 from fdpindex.search.project import parse_datetime
-from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService, ValueTest
+from fdpindex.search.query import (
+    DEFAULT_TYPES,
+    MAX_WINDOW,
+    SearchParams,
+    SearchService,
+    ValueTest,
+)
+from fdpindex.search.results_rdf import results_graph
 from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
 
 router = APIRouter(tags=["Search"])
@@ -49,6 +56,7 @@ RESERVED = {
     "q",
     "collapse",
     "cursor",
+    "output",
     "type",
     "fdp",
     "fdpState",
@@ -220,7 +228,11 @@ def _int(value: str | None, default: int, name: str) -> int:
         raise BadRequest(f"{name}: not a number") from err
 
 
-@router.get("/index/search", summary="Search the harvested metadata")
+@router.get(
+    "/index/search",
+    summary="Search the harvested metadata",
+    responses={200: {"content": {"application/json": {}, **{m: {} for m in RDF_TYPES}}}},
+)
 async def search(
     request: Request,
     service: Search,
@@ -233,7 +245,8 @@ async def search(
         ),
     ] = "",
     lang: str | None = None,
-) -> dict[str, Any]:
+    output: str | None = None,
+) -> Response:
     """Faceted search over every accepted FDP's harvested DCAT metadata.
 
     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
@@ -254,11 +267,64 @@ async def search(
     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
     each hit has `highlight`: its title and description as text segments with
     the matching words marked (`{"text", "match"}`), never HTML.
+
+    With `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file
+    format filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of
+    the hits. Paging links are in the `Link`
+    header: `first`, `prev` and `next`, or the next cursor.
     """
     del q
     _limit(request, caller)
     params = _params(request, service, _language(request, lang))
-    return await service.search(params, admin=caller.is_admin)
+    result = await service.search(params, admin=caller.is_admin)
+    return await _answer(request, service, result, params, output, links=True)
+
+
+async def _answer(
+    request: Request,
+    service: SearchService,
+    result: dict[str, Any],
+    params: SearchParams,
+    format: str | None,
+    *,
+    links: bool,
+) -> Response:
+    """JSON, or RDF when asked (TASKS 9.5); with paging links for a GET."""
+    headers = {"Link": _links(request, result, params)} if links else {}
+    if not headers.get("Link"):
+        headers = {}
+    accept = request.headers.get("accept", "")
+    wants_rdf = format not in (None, "", "json") or (
+        not format and any(m in accept for m in RDF_TYPES) and "application/json" not in accept
+    )
+    if not wants_rdf:
+        return Response(content=_json(result), media_type="application/json", headers=headers)
+    media = _negotiate(format, accept)
+    graph = results_graph(result, str(request.url), str(request.base_url), service.profile)
+
+    def render() -> str:
+        for prefix, namespace in PREFIXES.items():
+            graph.bind(prefix, namespace, override=False)
+        return graph.serialize(format=RDF_TYPES[media])
+
+    return Response(content=await asyncio.to_thread(render), media_type=media, headers=headers)
+
+
+def _links(request: Request, result: dict[str, Any], params: SearchParams) -> str:
+    """``Link`` header values for paging: first, prev, next (or the next cursor)."""
+    url = request.url
+    found: list[str] = []
+    if params.cursor is not None:
+        if result.get("nextCursor"):
+            found.append(f'<{url.include_query_params(cursor=result["nextCursor"])}>; rel="next"')
+        return ", ".join(found)
+    reachable = min(int(result["totalResults"]), MAX_WINDOW)
+    found.append(f'<{url.include_query_params(page=0)}>; rel="first"')
+    if params.page > 0:
+        found.append(f'<{url.include_query_params(page=params.page - 1)}>; rel="prev"')
+    if (params.page + 1) * params.size < reachable:
+        found.append(f'<{url.include_query_params(page=params.page + 1)}>; rel="next"')
+    return ", ".join(found)
 
 
 class FilterRequest(BaseModel):
@@ -393,10 +459,18 @@ def _bounds(item: FilterRequest, values: list[str], where: str) -> tuple[str | N
     return (values[0], None) if item.op == "gte" else (None, values[0])
 
 
-@router.post("/index/search", summary="Search with structured filters")
+@router.post(
+    "/index/search",
+    summary="Search with structured filters",
+    responses={200: {"content": {"application/json": {}, **{m: {} for m in RDF_TYPES}}}},
+)
 async def search_structured(
-    request: Request, service: Search, caller: Caller, body: SearchRequest
-) -> dict[str, Any]:
+    request: Request,
+    service: Search,
+    caller: Caller,
+    body: SearchRequest,
+    output: str | None = None,
+) -> Response:
     """The search of `GET /index/search` with a JSON body, for expert and machine use.
 
     `filters` is a list of `{"field" | "path", "op", "value" | "values" | "from"/"to"}`:
@@ -407,7 +481,8 @@ async def search_structured(
     """
     _limit(request, caller)
     params = _structured(body, service, _language(request, body.lang))
-    return await service.search(params, admin=caller.is_admin)
+    result = await service.search(params, admin=caller.is_admin)
+    return await _answer(request, service, result, params, output, links=False)
 
 
 @router.get("/index/search/facets", summary="All buckets of one facet")

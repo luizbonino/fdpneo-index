@@ -13,6 +13,27 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 `IndexPing`, component `FairDataPoints`). Decisions are recorded in
 [`docs/adr/`](docs/adr/).
 
+## Summary
+
+60 of 92 tasks are done and 5 are in progress (19 November 2026). "Done"
+counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
+task are listed in the last column.
+
+| Phase | What it delivers | Done | Partly | Open | Status | Still open |
+|---|---|---|---|---|---|---|
+| 0 Foundations | Repository, ADRs 1–4, tooling, CI | 8/8 | – | – | ✅ Done | – |
+| 1 Server: port of the reference index | Ping intake, retrieval, harvest, entries and admin API, webhooks, auth, outbound safety | 13/13 | – | – | ✅ Done | – |
+| 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
+| 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 2/5 | 2 | 1 | 🟡 Mostly done | Keycloak Compose profile (3.2), backup docs (3.3), release process (3.5) |
+| 4 Active liveness checks | Scheduled checks, health events, settings, UI | 5/6 | – | 1 | 🟡 Mostly done | Policy for long-unreachable entries (4.6) |
+| 5 Separation from the FAIR Data Point | FDPneo integration, docs, migration guidance for Java FDPs | 0/3 | – | 3 | ⬜ Not started | All three; waiting for a decision |
+| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
+| 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
+| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, polish | 0/9 | 1 | 8 | 🔹 Started | All but 8.9 (only its keyboard and screen-reader pass is left) |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | – | 8 | 🔹 Started | All but 9.9 (done with 6.15) |
+| 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
+| **Total** | | **60/92** | **5** | **27** | | |
+
 ## Phase 0 — Foundations
 
 - [x] 0.1 Repository skeleton: `server/`, `client/`, `deploy/`, `docs/adr/`, licence, DCO, README, CLAUDE.md
@@ -89,14 +110,14 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 6.5 Incremental harvest storage: upsert `harvested_node` by `(entry_uuid, node_iri)` with change sets; projection job for changed/new/removed nodes; deletion on reject/delete; `search_reindex` event for resumable full re-projection — *done: upsert with change sets, listeners, deletion; the search projection job comes with 6.4*
 - [x] 6.6 Text search write path: weighted `tsv_lang` / `tsv_simple` per §3.6, language → configuration map; integration tests for stemming and unaccent — *done; plus prefix matching of plain words*
 - [x] 6.7 Roll-up pass: distribution formats, media types, licences onto datasets; dataset counts onto catalogs
-- [ ] 6.8 Labels: harvested labels during projection; bundled vocabulary pack (EU authority tables, SPDX, IANA, DCAT terms) and `fdpindex vocab update`; `GET /index/search/labels` — *harvested labels, a small bundled pack (themes, file types, access rights, languages, countries, frequencies, licences) and the endpoint are done; `fdpindex vocab update` is not*
+- [~] 6.8 Labels: harvested labels during projection; bundled vocabulary pack (EU authority tables, SPDX, IANA, DCAT terms) and `fdpindex vocab update`; `GET /index/search/labels` — *harvested labels, a small bundled pack (themes, file types, access rights, languages, countries, frequencies, licences) and the endpoint are done; `fdpindex vocab update` is not*
 - [x] 6.9 Search repository: filters (named fields, dates, fdp, fdpState), text condition, ranking per §4, sorting, offset paging, facet counts with the facet cache, `statement_timeout`; unit tests on SQLite, ranking and FTS tests on PostgreSQL — *done except the facet cache*
 - [x] 6.10 `GET` / `POST /index/search` (JSON), `GET /index/search/resources/{id}` (JSON, Turtle, JSON-LD, N-Triples), `GET /index/search/facets`, `GET /index/search/landing`; parameter validation and caps; anonymous visibility; OpenAPI snapshot and contract tests — *done except `POST /index/search` (it carries the path filters of 9.2)*
 - [x] 6.11 Rate limit for anonymous search and suggest (in-memory token bucket, trusted proxy IP as for pings)
-- [ ] 6.12 Admin: `GET`/`PUT`/`DELETE /index/search/profile`, `POST /index/search/reindex`, `GET /index/search/stats` (rows, lag, completeness per FDP) — *`GET` profile, reindex and stats done; `PUT`/`DELETE` profile pending*
+- [~] 6.12 Admin: `GET`/`PUT`/`DELETE /index/search/profile`, `POST /index/search/reindex`, `GET /index/search/stats` (rows, lag, completeness per FDP) — *`GET` profile, reindex and stats done; `PUT`/`DELETE` profile pending*
 - [x] 6.13 Client: `/search` route, `SearchView.vue`, `SearchBox.vue`, `FacetGroup.vue` (with ⓘ help, Clear, Show more, numeric and boolean groups), `ResourceCard.vue` (key-fields footer), landing strip with counters and the hierarchy explainer, URL state, type tabs, mobile bottom sheet, states; `useSearch()` composable; unit tests; "Search this FDP's metadata" on the entry page — *done; suggestions in the search box come with 8.2*
 - [x] 6.14 Client: resource detail page `/search/r/{id}` as a label/value table with language switch, labelled IRIs, parent chain, distributions, raw triples, Turtle / JSON-LD / N-Triples download buttons
-- [ ] 6.15 Performance check on a synthetic corpus (1 000 entries × 2 000 nodes, generated from the fixture graphs): `EXPLAIN ANALYZE` of the main query shapes, documented numbers and the `maintenance_work_mem` advice in the operator documentation
+- [x] 6.15 Performance check on a synthetic corpus (1 000 entries × 2 000 nodes, generated from the fixture graphs): `EXPLAIN ANALYZE` of the main query shapes, documented numbers and the `maintenance_work_mem` advice in the operator documentation — *done: `server/bench/search_bench.py`, results and advice in [docs/search-performance.md](docs/search-performance.md); fixes in migration 0004 and `search/query.py` (facets from `search_value` alone, matched-id facets with sampling above 50 000, bounded ranking, sort indexes, an in-process facet cache, `random_page_cost` per search). Open: first queries on a cold cache with phrases or very common words take several seconds*
 - [ ] 6.16 Operator documentation: extensions, profile, reindex, limits; README API table extended
 
 ### Phase 7 — SPARQL API and UI
@@ -126,7 +147,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 8.6 Remote label resolution through `OutboundClient` with a host allow-list, off by default, background with cached misses
 - [ ] 8.7 Multilingual display: `lang` / `Accept-Language` pick for titles, descriptions and labels; language switch in the client; index default language in settings
 - [ ] 8.8 Cross-FDP duplicates: `dedup_key` (DOI, identifiers, `owl:sameAs`, landing page), `duplicates` on hits, `collapse=true`, "also in n other FDPs" on cards
-- [ ] 8.9 Client polish: active-filter chips, "show more" facet dialog, "more facets", copy link, empty and busy states, keyboard and screen-reader pass
+- [~] 8.9 Client polish: active-filter chips, "show more" facet dialog, "more facets", copy link, empty and busy states, keyboard and screen-reader pass — *done with 6.13 except the keyboard and screen-reader pass*
 
 ### Phase 9 — Expert and machine access
 
@@ -138,7 +159,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 9.6 `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test
 - [ ] 9.7 `GET /index/search/opensearch.xml`; `totalResults`/`startIndex`/`itemsPerPage` in responses; `<link rel="search">` in the client's `index.html`
 - [ ] 9.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks)
-- [ ] 9.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests
+- [x] 9.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests — *done with 6.15: sampled counts above 50 000 matches, marked `approximate`; an in-process facet cache*
 
 ### Phase 10 — Optional engines and extras (each behind a flag)
 

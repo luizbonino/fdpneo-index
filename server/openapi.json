@@ -1586,6 +1586,108 @@
         "title": "RetrievalSettings",
         "type": "object"
       },
+      "SavedSearch": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "createdBy": {
+            "title": "Createdby",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "featured": {
+            "default": false,
+            "title": "Featured",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "query": {
+            "description": "The search page's query string, such as q=registry&theme=\u2026",
+            "maxLength": 2000,
+            "title": "Query",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "query",
+          "id",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "SavedSearch",
+        "type": "object"
+      },
+      "SavedSearchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "featured": {
+            "default": false,
+            "title": "Featured",
+            "type": "boolean"
+          },
+          "query": {
+            "description": "The search page's query string, such as q=registry&theme=\u2026",
+            "maxLength": 2000,
+            "title": "Query",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "query"
+        ],
+        "title": "SavedSearchRequest",
+        "type": "object"
+      },
       "SearchRequest": {
         "additionalProperties": false,
         "description": "The body of `POST /index/search`: the same search as `GET`, with typed filters.",
@@ -3491,6 +3593,157 @@
           }
         },
         "summary": "One resource",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/saved": {
+      "get": {
+        "description": "The index's saved searches (TASKS 10.3); featured ones are on the search page.",
+        "operationId": "saved_searches_index_search_saved_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedSearch"
+                  },
+                  "title": "Response Saved Searches Index Search Saved Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Saved searches",
+        "tags": [
+          "Search"
+        ]
+      },
+      "post": {
+        "description": "`query` is the search page's query string (`q=registry&theme=\u2026`); `featured`\nlists it on the search page for everyone.",
+        "operationId": "save_search_index_search_saved_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearch"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save a search",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/saved/{search_id}": {
+      "delete": {
+        "operationId": "delete_saved_search_index_search_saved__search_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete a saved search",
+        "tags": [
+          "Search"
+        ]
+      },
+      "put": {
+        "operationId": "update_saved_search_index_search_saved__search_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearch"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change a saved search",
         "tags": [
           "Search"
         ]

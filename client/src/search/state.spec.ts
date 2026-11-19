@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { routeQuery } from "./api";
 import {
   PERIOD_BOUND,
   addFacet,
@@ -134,5 +135,16 @@ describe("search URL state", () => {
     expect(removeFacet(state, type)).toMatchObject({ added: [language], filters: {}, page: 1 });
     // A property facet the index offers by default is not an added one.
     expect(fromQuery({ facet: language }, [...FACETS, language]).added).toEqual([]);
+  });
+});
+
+describe("saved searches", () => {
+  it("turn a saved query string into a route query", () => {
+    expect(routeQuery("q=registry&theme=a&theme=b&type=dataset")).toEqual({
+      q: "registry",
+      theme: ["a", "b"],
+      type: "dataset",
+    });
+    expect(routeQuery("")).toEqual({});
   });
 });

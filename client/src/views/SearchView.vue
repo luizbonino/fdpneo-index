@@ -22,6 +22,7 @@ import {
   LOCAL_FIELDS,
   PROPERTY_FACET,
   RDF_FORMATS,
+  routeQuery,
   isPropertyFacet,
   propertyLabel,
   searchApi,
@@ -55,6 +56,7 @@ import AddFacetDialog from "@/components/search/AddFacetDialog.vue";
 import SuggestBox from "@/components/search/SuggestBox.vue";
 import FacetTreeDialog from "@/components/search/FacetTreeDialog.vue";
 import ResourceCard from "@/components/search/ResourceCard.vue";
+import SaveSearchDialog from "@/components/search/SaveSearchDialog.vue";
 import HelpTip from "@/components/HelpTip.vue";
 import { useServiceInfo } from "@/composables/queries";
 import { encodeQuery } from "@/sparql/history";
@@ -374,6 +376,10 @@ async function copyLink() {
 
 /** The same search as a SPARQL query, opened in the editor. */
 const sparqlBusy = ref(false);
+// Administrators save the search as it stands: the page's query string (TASKS 10.3).
+const savingSearch = ref(false);
+const currentQuery = computed(() => route.fullPath.split("?")[1] ?? "");
+
 async function downloadResults(format: (typeof RDF_FORMATS)[number]) {
   try {
     const text = await searchApi.results(params.value, format.key);
@@ -462,6 +468,23 @@ const counters = computed(() => {
         <h2>{{ t("search.hierarchyTitle") }}</h2>
         <p>{{ t("search.hierarchy") }}</p>
       </div>
+      <nav
+        v-if="landing.data.value.featured?.length"
+        class="featured"
+        :aria-label="t('saved.featuredHeading')"
+      >
+        <h2>{{ t("saved.featuredHeading") }}</h2>
+        <ul>
+          <li v-for="item in landing.data.value.featured" :key="item.id">
+            <router-link
+              :to="{ name: 'search', query: routeQuery(item.query) }"
+              :title="item.description ?? undefined"
+            >
+              {{ item.title }}
+            </router-link>
+          </li>
+        </ul>
+      </nav>
     </section>
 
     <p v-if="landing.data.value?.indexing.pending" class="notice warn">
@@ -726,6 +749,14 @@ const counters = computed(() => {
             <button type="button" class="btn ghost sm" @click="copyLink">
               {{ t("search.copyLink") }}
             </button>
+            <button
+              v-if="session.isAdmin"
+              type="button"
+              class="btn ghost sm"
+              @click="savingSearch = true"
+            >
+              {{ t("saved.button") }}
+            </button>
             <details class="download">
               <summary class="btn ghost sm" :title="t('search.downloadHelp')">
                 {{ t("search.download") }}
@@ -840,6 +871,12 @@ const counters = computed(() => {
       :selected="selected(treeFilter)"
       @toggle="(value) => go(toggle(state, treeFilter, value))"
       @close="treeFacet = null"
+    />
+    <SaveSearchDialog
+      v-if="savingSearch"
+      :query="currentQuery"
+      :suggestion="state.q"
+      @close="savingSearch = false"
     />
     <AddFacetDialog
       v-if="adding"
@@ -1173,5 +1210,30 @@ const counters = computed(() => {
   border: 1px solid var(--fair-border);
   border-radius: var(--fair-radius-md, 8px);
   box-shadow: var(--fair-shadow-4);
+}
+.featured {
+  grid-column: 1 / -1;
+}
+.featured h2 {
+  font-size: var(--fair-text-sm);
+  margin: 0 0 var(--fair-space-2);
+}
+.featured ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fair-space-2);
+}
+.featured a {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--fair-border);
+  border-radius: var(--fair-radius-pill);
+  text-decoration: none;
+}
+.featured a:hover {
+  border-color: var(--tool-accent);
 }
 </style>

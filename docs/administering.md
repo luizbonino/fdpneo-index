@@ -89,6 +89,11 @@ address** shows which pattern matches.
 
 These are stored as `/index/search/settings` and need no re-indexing.
 
+**Save search** on the search page (administrators) keeps the search as
+it stands under a title; **Feature it** lists it on the search page for
+everyone, before they type anything. **Settings → Saved searches** lists
+them to open, rename, feature or delete.
+
 **Settings → Search profile (advanced)** changes which predicates feed
 which fields, and can define new ones; a new field with `facet` is a new
 filter. It re-indexes every FDP in the background. **Load the HealthDCAT-AP

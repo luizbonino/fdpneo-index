@@ -514,6 +514,49 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/search/saved": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Saved searches
+     * @description The index's saved searches (TASKS 10.3); featured ones are on the search page.
+     */
+    get: operations["saved_searches_index_search_saved_get"];
+    put?: never;
+    /**
+     * Save a search
+     * @description `query` is the search page's query string (`q=registry&theme=…`); `featured`
+     *     lists it on the search page for everyone.
+     */
+    post: operations["save_search_index_search_saved_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/saved/{search_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Change a saved search */
+    put: operations["update_saved_search_index_search_saved__search_id__put"];
+    post?: never;
+    /** Delete a saved search */
+    delete: operations["delete_saved_search_index_search_saved__search_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/search/settings": {
     parameters: {
       query?: never;
@@ -1473,6 +1516,54 @@ export interface components {
       rateLimitWait: string;
       /** Timeout */
       timeout: string;
+    };
+    /** SavedSearch */
+    SavedSearch: {
+      /**
+       * Createdat
+       * Format: date-time
+       */
+      createdAt: string;
+      /** Createdby */
+      createdBy: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Featured
+       * @default false
+       */
+      featured: boolean;
+      /** Id */
+      id: string;
+      /**
+       * Query
+       * @description The search page's query string, such as q=registry&theme=…
+       */
+      query: string;
+      /** Title */
+      title: string;
+      /**
+       * Updatedat
+       * Format: date-time
+       */
+      updatedAt: string;
+    };
+    /** SavedSearchRequest */
+    SavedSearchRequest: {
+      /** Description */
+      description?: string | null;
+      /**
+       * Featured
+       * @default false
+       */
+      featured: boolean;
+      /**
+       * Query
+       * @description The search page's query string, such as q=registry&theme=…
+       */
+      query: string;
+      /** Title */
+      title: string;
     };
     /**
      * SearchRequest
@@ -2627,6 +2718,123 @@ export interface operations {
           "application/rdf+xml": unknown;
           "text/turtle": unknown;
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  saved_searches_index_search_saved_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"][];
+        };
+      };
+    };
+  };
+  save_search_index_search_saved_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_saved_search_index_search_saved__search_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_saved_search_index_search_saved__search_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

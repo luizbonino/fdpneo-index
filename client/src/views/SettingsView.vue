@@ -15,6 +15,7 @@ import { confirm, toast } from "@/composables/feedback";
 import DurationInput from "@/components/DurationInput.vue";
 import FacetSettings from "@/components/search/FacetSettings.vue";
 import ProfileEditor from "@/components/search/ProfileEditor.vue";
+import SavedSearches from "@/components/search/SavedSearches.vue";
 
 const { t } = useI18n();
 const client = useQueryClient();
@@ -335,6 +336,7 @@ function fieldError(path: string): string | undefined {
 
     <FacetSettings class="facet-settings" />
     <ProfileEditor class="facet-settings" />
+    <SavedSearches class="facet-settings" />
   </div>
 </template>
 

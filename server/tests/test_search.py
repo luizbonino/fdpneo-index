@@ -1687,3 +1687,44 @@ def test_links_use_the_public_url(api: Api) -> None:
     turtle = api.client.get("/index/search", params={"size": "3", "output": "ttl"}).text
     assert "<https://index.example.org/index/search?" in turtle
     assert "https://index.example.org/search/r/" in turtle
+
+
+# --- saved and featured searches (TASKS 10.3) ------------------------------------------
+
+
+def test_saved_and_featured_searches(api: Api) -> None:
+    assert api.client.get("/index/search/saved").status_code == 401
+    body = {"title": "Cancer registries", "query": "?q=registry&type=dataset"}
+    assert api.client.post("/index/search/saved", json=body).status_code == 401
+    created = api.client.post("/index/search/saved", json=body, headers=ADMIN)
+    assert created.status_code == 201, created.text
+    saved = created.json()
+    assert (saved["query"], saved["featured"]) == ("q=registry&type=dataset", False)
+    assert saved["createdBy"] and saved["createdAt"]
+    assert [s["id"] for s in api.client.get("/index/search/saved", headers=ADMIN).json()] == [
+        saved["id"]
+    ]
+    assert api.client.get("/index/search/landing").json()["featured"] == []
+    featured = api.client.put(
+        f"/index/search/saved/{saved['id']}",
+        json={**body, "title": "  Registries  of cancer ", "featured": True},
+        headers=ADMIN,
+    )
+    assert featured.json()["title"] == "Registries of cancer"
+    landing = api.client.get("/index/search/landing").json()["featured"]
+    assert landing == [
+        {
+            "id": saved["id"],
+            "title": "Registries of cancer",
+            "description": None,
+            "query": "q=registry&type=dataset",
+        }
+    ]
+    for bad in ("https://evil.example/?q=x", "q=a\nb", "a=1&&b"):
+        response = api.client.post(
+            "/index/search/saved", json={"title": "x", "query": bad}, headers=ADMIN
+        )
+        assert response.status_code == 400, bad
+    assert api.client.delete(f"/index/search/saved/{saved['id']}", headers=ADMIN).status_code == 204
+    assert api.client.delete(f"/index/search/saved/{saved['id']}", headers=ADMIN).status_code == 404
+    assert api.client.get("/index/search/landing").json()["featured"] == []

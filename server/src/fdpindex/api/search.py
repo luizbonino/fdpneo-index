@@ -49,6 +49,7 @@ from fdpindex.search.query import (
     ValueTest,
 )
 from fdpindex.search.results_rdf import results_graph
+from fdpindex.search.saved import SavedSearch, SavedSearchRequest
 from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
 
 router = APIRouter(tags=["Search"])
@@ -768,6 +769,50 @@ async def put_search_settings(service: Search, body: SearchSettings) -> SearchSe
 )
 async def delete_search_settings(service: Search) -> SearchSettingsView:
     return await service.search_settings.reset()
+
+
+@router.get(
+    "/index/search/saved",
+    summary="Saved searches",
+    dependencies=[Depends(require_admin)],
+)
+async def saved_searches(service: Search) -> list[SavedSearch]:
+    """The index's saved searches (TASKS 10.3); featured ones are on the search page."""
+    return await service.saved.all()
+
+
+@router.post(
+    "/index/search/saved",
+    status_code=201,
+    summary="Save a search",
+    dependencies=[Depends(require_admin)],
+)
+async def save_search(service: Search, caller: Caller, body: SavedSearchRequest) -> SavedSearch:
+    """`query` is the search page's query string (`q=registry&theme=…`); `featured`
+    lists it on the search page for everyone."""
+    return await service.saved.add(body, caller.name)
+
+
+@router.put(
+    "/index/search/saved/{search_id}",
+    summary="Change a saved search",
+    dependencies=[Depends(require_admin)],
+)
+async def update_saved_search(
+    service: Search, search_id: str, body: SavedSearchRequest
+) -> SavedSearch:
+    return await service.saved.update(search_id, body)
+
+
+@router.delete(
+    "/index/search/saved/{search_id}",
+    status_code=204,
+    summary="Delete a saved search",
+    dependencies=[Depends(require_admin)],
+)
+async def delete_saved_search(service: Search, search_id: str) -> Response:
+    await service.saved.delete(search_id)
+    return Response(status_code=204)
 
 
 class ReindexRequest(BaseModel):

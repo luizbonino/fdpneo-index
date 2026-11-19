@@ -216,7 +216,42 @@ export interface Landing {
   defaultLanguage: string;
   fields: Record<string, { label: Record<string, string>; kind: string }>;
   cards: Partial<Record<Kind, string[]>>;
+  /** Searches the administrators feature on the search page (TASKS 10.3). */
+  featured?: FeaturedSearch[];
   indexing: { pending: number };
+}
+
+export interface FeaturedSearch {
+  id: string;
+  title: string;
+  description: string | null;
+  /** The search page's query string. */
+  query: string;
+}
+
+export interface SavedSearch extends FeaturedSearch {
+  featured: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedSearchRequest {
+  title: string;
+  query: string;
+  description?: string | null;
+  featured: boolean;
+}
+
+/** A saved query string as a route query (repeated parameters as arrays). */
+export function routeQuery(queryString: string): Record<string, string | string[]> {
+  const out: Record<string, string | string[]> = {};
+  for (const [key, value] of new URLSearchParams(queryString)) {
+    const current = out[key];
+    out[key] =
+      current === undefined ? value : [...(Array.isArray(current) ? current : [current]), value];
+  }
+  return out;
 }
 
 /** `GET /index/search/sparql`: the search as SPARQL, with what it approximates. */
@@ -324,6 +359,13 @@ export const searchApi = {
   saveProfile: (overlay: Record<string, unknown>) =>
     request<ProfileView>("/index/search/profile", { method: "PUT", body: overlay }),
   resetProfile: () => request<ProfileView>("/index/search/profile", { method: "DELETE" }),
+  savedSearches: () => request<SavedSearch[]>("/index/search/saved"),
+  saveSearch: (body: SavedSearchRequest) =>
+    request<SavedSearch>("/index/search/saved", { method: "POST", body }),
+  updateSavedSearch: (id: string, body: SavedSearchRequest) =>
+    request<SavedSearch>(`/index/search/saved/${encodeURIComponent(id)}`, { method: "PUT", body }),
+  deleteSavedSearch: (id: string) =>
+    request<void>(`/index/search/saved/${encodeURIComponent(id)}`, { method: "DELETE" }),
   profileExample: (name: string) =>
     request<{ name: string; title: string; yaml: string; overlay: Record<string, unknown> }>(
       `/index/search/profile/examples/${encodeURIComponent(name)}`,

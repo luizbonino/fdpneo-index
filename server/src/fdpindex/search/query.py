@@ -102,6 +102,7 @@ from fdpindex.search.project import (
     property_field,
     ts_config,
 )
+from fdpindex.search.saved import SavedSearches
 from fdpindex.search.settings import (
     PROPERTY_FACET,
     SearchSettings,
@@ -405,13 +406,14 @@ class SearchService:
         self._settings = settings
         self.indexer = indexer
         self.profiles = ProfileStore(session_factory)
+        self.saved = SavedSearches(session_factory)
         self.search_settings = search_settings or SearchSettingsService(
             session_factory, lambda: indexer.profile
         )
         self._properties: dict[tuple[Any, ...], tuple[float, int, list[dict[str, Any]]]] = {}
         self._timeout = timeout_seconds
         self._admin_timeout = admin_timeout_seconds
-        self._landing: tuple[tuple[int, int, str], float, dict[str, Any]] | None = None
+        self._landing: tuple[tuple[int, int, str, int], float, dict[str, Any]] | None = None
         self._facet_cache_seconds = facet_cache_seconds
         self._sample_above = sample_above
         self._sample_size = sample_size
@@ -1702,7 +1704,12 @@ class SearchService:
     async def landing(self) -> dict[str, Any]:
         """Counters per kind and FDP state, the facet descriptions and card fields (cached)."""
         cached = self._landing
-        version = (self.indexer.generation, self.search_settings.version, self.profile.hash)
+        version = (
+            self.indexer.generation,
+            self.search_settings.version,
+            self.profile.hash,
+            self.saved.version,
+        )
         if cached is not None and cached[0] == version and time.monotonic() - cached[1] < 60:
             return cached[2]
         settings = await self.search_settings.get()
@@ -1748,6 +1755,8 @@ class SearchService:
                 if name not in COLUMN_FIELDS
             },
             "cards": self.profile.cards,
+            # Searches administrators feature on the search page (TASKS 10.3).
+            "featured": await self.saved.featured(),
             "indexing": {"pending": pending},
         }
         self._landing = (version, time.monotonic(), result)

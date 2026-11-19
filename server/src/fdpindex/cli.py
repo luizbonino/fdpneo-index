@@ -15,6 +15,10 @@ app.add_typer(db_app, name="db")
 app.add_typer(token_app, name="token")
 vocab_app = typer.Typer(help="The bundled vocabulary pack (labels).", no_args_is_help=True)
 app.add_typer(vocab_app, name="vocab")
+embeddings_app = typer.Typer(
+    help="Semantic search (off by default): the local sentence model.", no_args_is_help=True
+)
+app.add_typer(embeddings_app, name="embeddings")
 
 
 def alembic_config(database_url: str | None = None) -> Config:
@@ -176,3 +180,35 @@ def vocab_update(
             typer.echo(f"{len(report.failed)} requests failed", err=True)
 
     asyncio.run(run())
+
+
+@embeddings_app.command("download")
+def embeddings_download(
+    target: str = typer.Argument(
+        ..., help="Directory for the model (FDPINDEX_EMBEDDINGS_MODEL_DIR)"
+    ),
+) -> None:
+    """Fetch the pinned sentence model (Apache 2.0) for semantic search (TASKS 10.1)."""
+    from pathlib import Path
+
+    import httpx
+
+    from fdpindex.config import get_settings
+    from fdpindex.search.semantic import MODEL_REPO, download
+
+    settings = get_settings()
+
+    def fetch(url: str) -> bytes:
+        response = httpx.get(
+            url,
+            follow_redirects=True,
+            timeout=300,
+            headers={"User-Agent": settings.user_agent},
+        )
+        response.raise_for_status()
+        return response.content
+
+    digests = download(Path(target), fetch=fetch)
+    typer.echo(f"{MODEL_REPO} in {target}:")
+    for name, digest in digests.items():
+        typer.echo(f"  {name}  sha256:{digest[:16]}…")

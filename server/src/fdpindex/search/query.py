@@ -61,6 +61,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, REGCONFIG
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import column, table
+from sqlalchemy.types import Float, UserDefinedType
 
 from fdpindex.db import utcnow
 from fdpindex.errors import BadRequest, IndexServiceError, NotFound
@@ -103,6 +105,7 @@ from fdpindex.search.project import (
     ts_config,
 )
 from fdpindex.search.saved import SavedSearches
+from fdpindex.search.semantic import SemanticIndex
 from fdpindex.search.settings import (
     PROPERTY_FACET,
     SearchSettings,
@@ -220,6 +223,20 @@ KIND_BOOST = {
 RANK_WEIGHTS = "{0.1, 0.2, 0.4, 1.0}"  # D, C, B, A
 DISTRIBUTIONS_PER_HIT = 5
 MAX_DUPLICATES = 10
+HYBRID_CANDIDATES = 200
+RRF_K = 60
+
+
+class _Vector(UserDefinedType[str]):
+    """pgvector's type, for casting the query's vector (TASKS 10.1)."""
+
+    cache_ok = True
+
+    def get_col_spec(self, **_kw: Any) -> str:
+        return "vector"
+
+
+EMBEDDING = table("search_embedding", column("resource_id"), column("embedding"))
 DID_YOU_MEAN_RATIO = 0.75
 DID_YOU_MEAN_TITLES = 200
 _WORD = re.compile(r"[^\W\d_][\w'-]{2,}", re.UNICODE)
@@ -263,6 +280,9 @@ class SearchParams:
     collapse: bool = False
     # Resources whose box intersects this one (TASKS 9.8): min lon, min lat, max lon, max lat.
     bbox: tuple[float, float, float, float] | None = None
+    # Semantic ranking (TASKS 10.1): "" follows the index (hybrid when it is on),
+    # "off", "hybrid" (fused with the full text) or "only" (meaning alone).
+    semantic: str = ""
     # q as given, before field prefixes were taken out (for "did you mean").
     raw_q: str = ""
     # Keyset paging (TASKS 9.4): "*" for the first page, then each nextCursor.
@@ -320,6 +340,8 @@ class SearchParams:
             raise BadRequest(f"At most {MAX_FACETS} facets")
         if not 1 <= self.size <= MAX_SIZE:
             raise BadRequest(f"size must be between 1 and {MAX_SIZE}")
+        if self.semantic not in {"", "off", "hybrid", "only"}:
+            raise BadRequest("semantic is off, hybrid or only")
         if self.cursor is not None:
             if self.page:
                 raise BadRequest("Use cursor or page, not both")
@@ -407,6 +429,7 @@ class SearchService:
         self.indexer = indexer
         self.profiles = ProfileStore(session_factory)
         self.saved = SavedSearches(session_factory)
+        self.semantic: SemanticIndex | None = None
         self.search_settings = search_settings or SearchSettingsService(
             session_factory, lambda: indexer.profile
         )
@@ -842,7 +865,14 @@ class SearchService:
                     .limit(RANK_CANDIDATES)
                 )
                 query = query.where(R.id.in_(candidates))
-            rows = (await session.execute(query)).all()
+            mode = self._semantic_mode(params, postgres=postgres)
+            semantic_view: dict[str, Any] | None = None
+            if mode is not None:
+                rows, total, semantic_view = await self._hybrid(
+                    session, params, threshold, conditions, score, total, mode
+                )
+            else:
+                rows = (await session.execute(query)).all()
             suggestion = (
                 await self._did_you_mean(session, params, threshold, postgres=postgres)
                 if not rows and params.q and params.cursor is None and params.page == 0
@@ -902,6 +932,7 @@ class SearchService:
                 "totalResults": total if collapsed_total is None else collapsed_total,
                 **({"resources": total} if collapsed_total is not None else {}),
                 **({"didYouMean": suggestion} if suggestion else {}),
+                **({"semantic": semantic_view} if semantic_view else {}),
                 "startIndex": params.page * params.size,
                 "nextCursor": (
                     cursors.encode(params.sort, rows[-1][-1], rows[-1][0].id)
@@ -1434,6 +1465,101 @@ class SearchService:
                 ]
             hits.append(hit)
         return hits
+
+    def _semantic_mode(self, params: SearchParams, *, postgres: bool) -> str | None:
+        """``hybrid`` or ``only`` when this search is ranked by meaning too, else None."""
+        if self.semantic is None or not postgres or not params.q or params.cursor is not None:
+            return None
+        if params.sort.partition(",")[0] not in {"", "relevance"}:
+            return None
+        if (params.page + 1) * params.size > HYBRID_CANDIDATES:
+            return None
+        mode = params.semantic or "hybrid"
+        return None if mode == "off" else mode
+
+    async def _hybrid(
+        self,
+        session: AsyncSession,
+        params: SearchParams,
+        threshold: datetime,
+        conditions: list[ColumnElement[bool]],
+        score: Any,
+        total: int,
+        mode: str,
+    ) -> tuple[list[Any], int, dict[str, Any]]:
+        """Full-text and nearest-meaning results fused by reciprocal rank (TASKS 10.1).
+
+        Both lists have at most HYBRID_CANDIDATES entries and the same filters; a
+        meaning-only hit must be within the index's distance limit (cosine). Facets still
+        count the full-text matches. The distance limit is the index's setting.
+        """
+        assert self.semantic is not None
+        lexical: list[int] = []
+        if mode == "hybrid" and score is not None:
+            lexical = list(
+                await session.scalars(
+                    select(R.id)
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*conditions)
+                    .order_by(score.desc(), R.id)
+                    .limit(HYBRID_CANDIDATES)
+                )
+            )
+        unworded = copy.copy(params)
+        unworded.q = ""
+        unworded.texts = []
+        filters = self._conditions(unworded, threshold, postgres=True)
+        vector = await self.semantic.query_vector(params.q)
+        await session.execute(text("SET LOCAL hnsw.ef_search = 200"))
+        await session.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
+        distance = EMBEDDING.c.embedding.op("<=>", return_type=Float())(
+            cast(bindparam("qv", vector, type_=String()), _Vector())
+        )
+        near = [
+            (int(rid), float(d))
+            for rid, d in (
+                await session.execute(
+                    select(R.id, distance.label("distance"))
+                    .join(E, E.uuid == R.entry_uuid)
+                    .join(EMBEDDING, EMBEDDING.c.resource_id == R.id)
+                    .where(*filters)
+                    .order_by(distance)
+                    .limit(HYBRID_CANDIDATES)
+                )
+            ).all()
+            if d <= self.semantic.max_distance
+        ]
+        fused: dict[int, float] = defaultdict(float)
+        for rank, rid in enumerate(lexical):
+            fused[rid] += 1.0 / (RRF_K + rank + 1)
+        for rank, (rid, _) in enumerate(near):
+            fused[rid] += 1.0 / (RRF_K + rank + 1)
+        order = sorted(fused, key=lambda rid: (-fused[rid], rid))
+        known = set(lexical)
+        added = [rid for rid, _ in near if rid not in known]
+        if mode == "hybrid" and added:
+            # Hits that the words do not find at all (not just beyond the first 200).
+            matched = set(
+                await session.scalars(
+                    select(R.id).join(E, E.uuid == R.entry_uuid).where(R.id.in_(added), *conditions)
+                )
+            )
+            extra = len([rid for rid in added if rid not in matched])
+        else:
+            extra = len(added)
+        new_total = total + extra if mode == "hybrid" else len(near)
+        page = order[params.page * params.size : (params.page + 1) * params.size]
+        rows_by_id = {
+            r.id: (r, e)
+            for r, e in (
+                await session.execute(
+                    select(R, E).join(E, E.uuid == R.entry_uuid).where(R.id.in_(page))
+                )
+            ).all()
+        }
+        rows = [(*rows_by_id[rid], fused[rid]) for rid in page if rid in rows_by_id]
+        view = {"mode": mode, "nearest": len(near), "added": extra}
+        return rows, new_total, view
 
     async def _did_you_mean(
         self, session: AsyncSession, params: SearchParams, threshold: datetime, *, postgres: bool

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator, Iterator
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 import pytest
@@ -28,7 +28,8 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture(scope="module")
 def database_url() -> Iterator[str]:
-    with PostgresContainer("postgres:18-alpine", driver="asyncpg") as container:
+    # PostgreSQL 18 with pgvector, for the semantic search test (TASKS 10.1).
+    with PostgresContainer("pgvector/pgvector:0.8.6-pg18", driver="asyncpg") as container:
         url = container.get_connection_url()
         config = alembic_config(url)
         config.attributes["configure_logger"] = False
@@ -393,3 +394,76 @@ async def test_search_rows_follow_the_entry(
     assert resources == 5
     assert values and values > 0
     assert tsv == 0
+
+
+class _TopicEmbedder:
+    """A stand-in for the sentence model: one direction per topic word."""
+
+    name = "topics"
+    dimensions = 384
+    TOPICS: ClassVar[dict[str, int]] = {
+        "cancer": 0,
+        "tumour": 0,
+        "tumor": 0,
+        "oncology": 0,
+        "lung": 1,
+        "lungs": 1,
+        "breathing": 1,
+        "pulmonary": 1,
+        "genome": 2,
+        "genomics": 2,
+        "dna": 2,
+        "sequencing": 2,
+    }
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        import re
+
+        out: list[list[float]] = []
+        for text in texts:
+            vector = [0.0] * self.dimensions
+            for word in re.findall(r"\w+", text.lower()):
+                if word in self.TOPICS:
+                    vector[self.TOPICS[word]] += 1.0
+            norm = sum(v * v for v in vector) ** 0.5
+            if norm == 0:
+                vector[-1], norm = 1.0, 1.0
+            out.append([v / norm for v in vector])
+        return out
+
+
+async def test_semantic_search_finds_meaning_the_words_miss(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    from fdpindex.search.query import SearchParams
+    from fdpindex.search.semantic import SemanticIndex
+
+    search = await _search_index(index)
+    factory, _ = index[3]  # type: ignore[misc]
+    semantic = SemanticIndex(factory, _TopicEmbedder())  # type: ignore[arg-type]
+    await semantic.ensure_schema()
+    await semantic.ensure_schema()  # idempotent
+    report = await semantic.sync()
+    assert report.embedded >= 8
+    assert (await semantic.sync()).embedded == 0  # nothing changed
+    search.semantic = semantic
+
+    async def run(q: str, mode: str) -> dict[str, Any]:
+        return await search.search(SearchParams(q=q, types=["dataset"], semantic=mode, facets=[]))
+
+    # "tumour" is in no record: the words find nothing, the meaning finds the cancer data.
+    assert (await run("tumour", "off"))["totalResults"] == 0
+    hybrid = await run("tumour", "hybrid")
+    assert hybrid["semantic"]["added"] >= 1
+    assert {h["title"] for h in hybrid["hits"]} >= {"Breast cancer registry"}
+    assert hybrid["totalResults"] == len(hybrid["hits"])
+    only = await run("tumour", "only")
+    assert "Breast cancer registry" in {h["title"] for h in only["hits"]}
+    # Words that match keep their hits, fused with the nearest meaning.
+    words = await run("genome", "hybrid")
+    assert words["hits"][0]["title"] == "Genome cohort"
+    # Filters hold for the meaning too.
+    beta_only = await search.search(
+        SearchParams(q="tumour", types=["catalog"], semantic="only", facets=[])
+    )
+    assert all(h["type"] == "catalog" for h in beta_only["hits"])

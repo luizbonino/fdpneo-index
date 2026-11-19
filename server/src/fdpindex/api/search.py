@@ -58,6 +58,7 @@ Caller = Annotated[Principal, Depends(current_principal)]
 
 RESERVED = {
     "q",
+    "semantic",
     "bbox",
     "collapse",
     "cursor",
@@ -206,6 +207,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         highlight=query.get("highlight", "").lower() in {"true", "1", "yes"},
         collapse=query.get("collapse", "").lower() in {"true", "1", "yes"},
         cursor=query.get("cursor") or None,
+        semantic=query.get("semantic", ""),
         bbox=_bbox("bbox", query.get("bbox")),
     )
     if facets is not None:
@@ -276,6 +278,9 @@ async def search(
     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
     dates; a resource matches when its temporal coverage overlaps the period),
     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+    `semantic=off|hybrid|only` where the index has semantic search on (by
+    default hybrid: full text and meaning fused; the response says so in
+    `semantic`),
     `cursor=*` for keyset paging through every result (then each response's
     `nextCursor`; with `sort=modified|issued|title|harvested`),
     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
@@ -407,6 +412,7 @@ class SearchRequest(BaseModel):
     highlight: bool = False
     collapse: bool = False
     cursor: str | None = Field(default=None, max_length=1000)
+    semantic: Literal["", "off", "hybrid", "only"] = ""
 
 
 def _structured(body: SearchRequest, service: SearchService, lang: str) -> SearchParams:
@@ -426,6 +432,7 @@ def _structured(body: SearchRequest, service: SearchService, lang: str) -> Searc
         highlight=body.highlight,
         collapse=body.collapse,
         cursor=body.cursor,
+        semantic=body.semantic,
     )
     for index, item in enumerate(body.filters):
         where = f"filters[{index}]"

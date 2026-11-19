@@ -1782,6 +1782,17 @@
             "title": "Q",
             "type": "string"
           },
+          "semantic": {
+            "default": "",
+            "enum": [
+              "",
+              "off",
+              "hybrid",
+              "only"
+            ],
+            "title": "Semantic",
+            "type": "string"
+          },
           "size": {
             "default": 20,
             "title": "Size",
@@ -2956,7 +2967,7 @@
     },
     "/index/search": {
       "get": {
-        "description": "Faceted search over every accepted FDP's harvested DCAT metadata.\n\nFilters: every facet field (`theme`, `keyword`, `publisher`, `format`,\n`license`, `accessRights`, \u2026) is a repeatable parameter; values within a\nfield are ORed, fields are ANDed, `!value` excludes. Any property found in\nthe harvested metadata is a facet and filter too, named `prop:<IRI>`\n(see `/index/search/properties`). Also `type`, `fdp`,\n`issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,\n`harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or\ndates; a resource matches when its temporal coverage overlaps the period),\n`<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),\n`cursor=*` for keyset paging through every result (then each response's\n`nextCursor`; with `sort=modified|issued|title|harvested`),\n`collapse=true` (one hit per group of copies across FDPs; `totalResults`\ncounts groups, `resources` the resources), every hit lists its copies in\nother FDPs (`duplicates`, `duplicateCount`),\n`fdpState=ACTIVE`, `sort`, `page`, `size`,\n`facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,\neach hit has `highlight`: its title and description as text segments with\nthe matching words marked (`{\"text\", \"match\"}`), never HTML.\n\nWith `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file\nformat filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of\nthe hits. Paging links are in the `Link`\nheader: `first`, `prev` and `next`, or the next cursor.",
+        "description": "Faceted search over every accepted FDP's harvested DCAT metadata.\n\nFilters: every facet field (`theme`, `keyword`, `publisher`, `format`,\n`license`, `accessRights`, \u2026) is a repeatable parameter; values within a\nfield are ORed, fields are ANDed, `!value` excludes. Any property found in\nthe harvested metadata is a facet and filter too, named `prop:<IRI>`\n(see `/index/search/properties`). Also `type`, `fdp`,\n`issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,\n`harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or\ndates; a resource matches when its temporal coverage overlaps the period),\n`<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),\n`semantic=off|hybrid|only` where the index has semantic search on (by\ndefault hybrid: full text and meaning fused; the response says so in\n`semantic`),\n`cursor=*` for keyset paging through every result (then each response's\n`nextCursor`; with `sort=modified|issued|title|harvested`),\n`collapse=true` (one hit per group of copies across FDPs; `totalResults`\ncounts groups, `resources` the resources), every hit lists its copies in\nother FDPs (`duplicates`, `duplicateCount`),\n`fdpState=ACTIVE`, `sort`, `page`, `size`,\n`facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,\neach hit has `highlight`: its title and description as text segments with\nthe matching words marked (`{\"text\", \"match\"}`), never HTML.\n\nWith `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file\nformat filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of\nthe hits. Paging links are in the `Link`\nheader: `first`, `prev` and `next`, or the next cursor.",
         "operationId": "search_index_search_get",
         "parameters": [
           {

@@ -2,8 +2,14 @@
 #
 # FDPneo Index server image: uv build into a self-contained venv, copied into a
 # slim non-root runtime. `fdpindex serve` applies migrations, then serves.
+#
+# Semantic search (TASKS 10.1) needs the "semantic" extra, whose ONNX Runtime has
+# no Python 3.15 wheels yet:
+#   docker build --build-arg PYTHON_VERSION=3.14 --build-arg EXTRAS=semantic .
 
-FROM python:3.15-slim AS builder
+ARG PYTHON_VERSION=3.15
+FROM python:${PYTHON_VERSION}-slim AS builder
+ARG EXTRAS=""
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -14,12 +20,12 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --frozen --no-install-project --no-dev ${EXTRAS:+--extra $EXTRAS}
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --frozen --no-dev ${EXTRAS:+--extra $EXTRAS}
 
-FROM python:3.15-slim AS runtime
+FROM python:${PYTHON_VERSION}-slim AS runtime
 
 RUN groupadd --system fdpindex \
     && useradd --system --gid fdpindex --home-dir /app --no-create-home fdpindex

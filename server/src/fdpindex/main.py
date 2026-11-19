@@ -33,6 +33,7 @@ from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
 from fdpindex.search.profile_store import ProfileStore
 from fdpindex.search.query import SearchService
+from fdpindex.search.semantic import SemanticIndex
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
 from fdpindex.sparql.prefixes import PREFIXES
@@ -207,6 +208,8 @@ def create_app(
             await scheduler.stop()
             await jobs.close()
             if search is not None:
+                if search.semantic is not None:
+                    await search.semantic.stop()
                 if search.indexer.resolver is not None:
                     await search.indexer.resolver.stop()
                 await search.indexer.stop()
@@ -283,13 +286,41 @@ async def _start_search(
         resolver.start()
         indexer.resolver = resolver
         log.info("concept_labels_started", hosts=len(config.labels_hosts))
-    return SearchService(
+    service = SearchService(
         factory,
         settings_service,
         indexer,
         timeout_seconds=config.search_timeout_seconds,
         admin_timeout_seconds=config.search_admin_timeout_seconds,
     )
+    if config.search_embeddings == "local":
+        service.semantic = await _start_semantic(config, factory)
+    return service
+
+
+async def _start_semantic(
+    config: Settings, factory: async_sessionmaker[AsyncSession]
+) -> SemanticIndex | None:
+    """The semantic index (TASKS 10.1), or None with the reason logged."""
+    if config.embeddings_model_dir is None:
+        log.error("semantic_search_off", reason="FDPINDEX_EMBEDDINGS_MODEL_DIR is not set")
+        return None
+    try:
+        from fdpindex.search.semantic import OnnxEmbedder
+
+        embedder = OnnxEmbedder(config.embeddings_model_dir, threads=config.embeddings_threads)
+    except (ImportError, OSError, ValueError) as err:
+        log.error("semantic_search_off", reason=f"model or extra missing: {err}")
+        return None
+    semantic = SemanticIndex(factory, embedder, max_distance=config.embeddings_max_distance)
+    try:
+        await semantic.ensure_schema()
+    except Exception as err:
+        log.error("semantic_search_off", reason=f"pgvector unavailable: {err}"[:300])
+        return None
+    semantic.start()
+    log.info("semantic_search_started", model=embedder.name)
+    return semantic
 
 
 async def _start_sparql(

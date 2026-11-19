@@ -156,6 +156,10 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_SEARCH_RATE_PER_MINUTE` | `120` | Searches per minute per anonymous address |
 | `FDPINDEX_SEARCH_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `5`, `30` | Statement timeout per search |
 | `FDPINDEX_VOCAB_FILE` | the bundled `search/vocab.json` | Another label pack, written by `fdpindex vocab update --output …`: labels of EU authority table codes, SPDX licences and DCAT/DC/FOAF/ADMS terms, in several languages, and the GeoNames, lexvo and ISO 3166 names of each country |
+| `FDPINDEX_SEARCH_EMBEDDINGS` | `off` | `local` turns on semantic search (hybrid ranking by meaning and words). Needs the `semantic` extra, pgvector and a model; see [docs/semantic-search.md](docs/semantic-search.md) |
+| `FDPINDEX_EMBEDDINGS_MODEL_DIR` | — | Where `fdpindex embeddings download` put the model |
+| `FDPINDEX_EMBEDDINGS_THREADS` | all cores | Threads for the model |
+| `FDPINDEX_EMBEDDINGS_MAX_DISTANCE` | `0.6` | How close (cosine distance) a hit found by meaning alone must be |
 | `FDPINDEX_LABELS_RESOLVE` | `false` | Fetch labels, synonyms and broader concepts of concept IRIs (subjects, themes, publishers …) from their vocabularies, for facets and search (ADR-0006) |
 | `FDPINDEX_LABELS_HOSTS` | Wikidata, ROR, OBO, EDAM, MeSH, EU Publications Office, ORCID, NERC, Library of Congress, GeoNames | Vocabulary hosts that may be asked (comma-separated); checked on every redirect |
 | `FDPINDEX_LABELS_LANGUAGES` | `en,nl,de,fr,es,it,pt,sv,da,fi` | Languages of labels kept |

@@ -31,10 +31,10 @@ task are listed in the last column.
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
-| 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 3/4 | – | 1 | 🔹 Started | Semantic search (10.1) |
+| 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | 1 | 7 | 🔹 Started | Design note (11.1) awaiting review; all of 11.2 to 11.8 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **102/115** | **1** | **12** | | |
+| **Total** | | **103/115** | **1** | **11** | | |
 
 ## Phase 0 — Foundations
 
@@ -185,7 +185,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 
 ### Phase 10 — Optional engines and extras (each behind a flag)
 
-- [ ] 10.1 Semantic search evaluation: `search_embedding` table, `Embedder` protocol with a local ONNX model, hybrid ranking by reciprocal rank fusion; go/no-go documented with measurements on the real corpus
+- [x] 10.1 Semantic search evaluation: `search_embedding` table, `Embedder` protocol with a local ONNX model, hybrid ranking by reciprocal rank fusion; go/no-go documented with measurements on the real corpus — *done: built behind `FDPINDEX_SEARCH_EMBEDDINGS=local` (the `semantic` extra, pgvector, a pinned multilingual MiniLM int8 model), evaluated in `docs/semantic-search.md`: on 27 judged queries hybrid P@10 1.00 against 0.48 for full text, +40 ms per query, ~87 resources/s to embed. Go, off by default; measured on the synthetic corpus, so each deployment re-runs `bench/semantic_eval.py` on its own metadata first*
 - [x] 10.2 "Did you mean" from trigram similarity on zero-hit queries — *done: on a search with words and no hits, words of titles (trigram `<%` on PostgreSQL, threshold 0.4 for that query) and keywords close to each word; offered as `didYouMean` only if the corrected search finds something; field prefixes kept; a link on the no-results state*
 - [x] 10.3 Saved queries for administrators and featured searches on the search page — *done: `/index/search/saved` (admin; the search page's query string under a title, who saved it, featured or not; at most 200), featured searches in the landing data and as links on the search page; "Save search" on the search page and "Saved searches" in Settings. Shared by all administrators rather than per administrator*
 - [x] 10.4 Lezer grammar for SPARQL (structural autocomplete, bracket-aware folding) replacing the stream mode, if the editor's autocomplete proves too shallow — *done at the user's request: a Lezer grammar of SPARQL 1.1 Query, complete for SELECT and ASK (CONSTRUCT and DESCRIBE too), case-insensitive keywords; highlighting, folding and indentation from the tree, syntax errors marked before the server's check; completion by position (prefixes after PREFIX, properties as predicates, classes after `a`, functions and variables in expressions, solution modifiers after the group); every bundled library query parses; the legacy stream mode is gone*

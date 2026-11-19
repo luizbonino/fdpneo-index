@@ -61,6 +61,13 @@ dev = [
   "types-pyyaml>=6.0.12.20261113",
 ]
 
+# Semantic search (TASKS 10.1): a local ONNX sentence model; off unless installed and
+# FDPINDEX_SEARCH_EMBEDDINGS=local, and PostgreSQL has the pgvector extension.
+semantic = [
+  "onnxruntime>=1.31.1",
+  "tokenizers>=0.23.3",
+]
+
 [project.scripts]
 fdpindex = "fdpindex.cli:app"
 

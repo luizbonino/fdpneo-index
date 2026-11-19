@@ -286,6 +286,9 @@ export interface paths {
      *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
      *     dates; a resource matches when its temporal coverage overlaps the period),
      *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+     *     `semantic=off|hybrid|only` where the index has semantic search on (by
+     *     default hybrid: full text and meaning fused; the response says so in
+     *     `semantic`),
      *     `cursor=*` for keyset paging through every result (then each response's
      *     `nextCursor`; with `sort=modified|issued|title|harvested`),
      *     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
@@ -1607,6 +1610,12 @@ export interface components {
        * @default
        */
       q: string;
+      /**
+       * Semantic
+       * @default
+       * @enum {string}
+       */
+      semantic: "" | "off" | "hybrid" | "only";
       /**
        * Size
        * @default 20

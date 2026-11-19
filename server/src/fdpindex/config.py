@@ -91,6 +91,13 @@ class Settings(BaseSettings):
     # into PostgreSQL tables, kept in step with harvests.
     search_enabled: bool = True
     search_rate_per_minute: int = Field(default=120, ge=0)
+    # Semantic search (TASKS 10.1): "local" runs the sentence model in this process;
+    # needs the "semantic" extra, pgvector and a model (fdpindex embeddings download).
+    search_embeddings: Literal["off", "local"] = "off"
+    embeddings_model_dir: Path | None = None
+    embeddings_threads: int = Field(default=0, ge=0)
+    # A hit found by meaning alone must be this close (cosine distance; TASKS 10.1).
+    embeddings_max_distance: float = Field(default=0.6, gt=0, le=2)
     search_timeout_seconds: float = Field(default=5, gt=0)
     search_admin_timeout_seconds: float = Field(default=30, gt=0)
     # Concept labels from vocabularies (TASKS 8.6, ADR-0006): off by default, because it

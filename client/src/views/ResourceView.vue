@@ -15,7 +15,7 @@ import { LOCAL_FIELDS, RDF_FORMATS, searchApi, type ValueView } from "@/search/a
 import { encodeQuery } from "@/sparql/history";
 import { isLinkable } from "@/sparql/results";
 import StateBadge from "@/components/StateBadge.vue";
-import { absoluteTime, relativeTime } from "@/utils/format";
+import { absoluteTime, formatPeriod, relativeTime } from "@/utils/format";
 
 const props = defineProps<{ id: string }>();
 const { t } = useI18n();
@@ -250,6 +250,10 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
               <template v-if="r.modified">
                 <dt>{{ t("search.fields.modified") }}</dt>
                 <dd :title="absoluteTime(r.modified)">{{ relativeTime(r.modified) }}</dd>
+              </template>
+              <template v-if="r.temporal">
+                <dt>{{ t("search.fields.temporal") }}</dt>
+                <dd>{{ formatPeriod(r.temporal, t) }}</dd>
               </template>
               <dt>{{ t("resource.harvested") }}</dt>
               <dd :title="absoluteTime(r.harvestedAt)">{{ relativeTime(r.harvestedAt) }}</dd>

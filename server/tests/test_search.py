@@ -7,6 +7,7 @@ Ranking, stemming and accent folding need PostgreSQL and are tested in
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from datetime import date
 from typing import Any
 
 import httpx
@@ -69,6 +70,7 @@ def test_default_profile_is_valid_and_hashed() -> None:
         ("cards:\n  dataset: [nothing]", "unknown field"),
         ("fields:\n  x: {kind: literal, paths: [dct:x], exclude: ['dct:']}", "namespaces apply"),
         ("fields:\n  x: {kind: iri, paths: [dct:x], namespaces: ['nope:']}", "unknown prefix"),
+        ("fields:\n  x: {kind: period, paths: [dct:x]}", "only temporal is a period"),
     ],
 )
 def test_profile_validation(change: str, message: str) -> None:
@@ -249,6 +251,21 @@ def test_ldp_containers_and_blank_node_hashes_are_stable() -> None:
     ]
 
 
+def test_temporal_coverage_in_every_form() -> None:
+    rows = _alpha()
+    d1, d2 = rows[f"{ALPHA}/dataset/d1"], rows[f"{ALPHA}/dataset/d2"]
+    assert (d1.temporal_start, d1.temporal_end) == (date(2010, 1, 1), date(2015, 12, 31))
+    # schema:startDate, a year, no end: open-ended from the first day of that year.
+    assert (d2.temporal_start, d2.temporal_end) == (date(2018, 1, 1), None)
+    beta = {r.iri: r for r in project_entry("beta", nodes(BETA), default_profile()).resources}
+    g = beta[f"{BETA}/dataset/g"]
+    # OWL-Time instants; an end year is its last day.
+    assert (g.temporal_start, g.temporal_end) == (date(2020, 1, 1), date(2022, 12, 31))
+    assert rows[f"{ALPHA}/catalog/c1"].temporal_start is None
+    # The hash of a row without coverage is what it was before coverage existed.
+    assert "temporal" not in str(rows[f"{ALPHA}/catalog/c1"].row_hash)
+
+
 def test_a_node_without_its_subject_is_skipped() -> None:
     page = '<https://other.example/x> <http://purl.org/dc/terms/title> "X" .\n<https://other.example/y> <http://purl.org/dc/terms/title> "Y" .\n'
     assert project_entry("e", [("https://fdp.example/n", page)], default_profile()).resources == []
@@ -334,6 +351,26 @@ async def test_text_types_fdp_dates_and_paging(search: SearchService) -> None:
     titles = [h["title"] for h in first["hits"] + second["hits"]]
     assert titles == sorted(titles, key=str.lower)
     assert len(set(titles)) == 6
+
+
+async def test_temporal_coverage_overlaps(search: SearchService) -> None:
+    async def titles(low: date | None, high: date | None) -> set[str]:
+        result = await search.search(SearchParams(temporal=(low, high), facets=[]))
+        return {h["title"] for h in result["hits"]}
+
+    assert await titles(date(2012, 1, 1), date(2013, 12, 31)) == {"Breast cancer registry"}
+    # An open end reaches every later period.
+    assert await titles(date(2030, 1, 1), None) == {"Lung function tests"}
+    assert await titles(date(2022, 6, 1), date(2022, 6, 30)) == {
+        "Lung function tests",
+        "Genome cohort",
+    }
+    assert await titles(None, date(2009, 12, 31)) == set()
+    # Only resources with a coverage match.
+    assert len(await titles(None, None)) == 3
+    result = await search.search(SearchParams(q="genome", temporal=(date(2021, 1, 1), None)))
+    assert result["hits"][0]["temporal"] == {"start": "2020-01-01", "end": "2022-12-31"}
+    assert result["query"]["temporal"] == {"start": "2021-01-01", "end": None}
 
 
 async def test_hits_carry_values_labels_and_distributions(search: SearchService) -> None:
@@ -560,6 +597,9 @@ def _equivalents() -> list[tuple[str, dict[str, Any]]]:
         ("excluded word", {"q": "cancer -lungs", "types": ["dataset"]}),
         ("phrase", {"q": '"function tests"'}),
         ("dates", {"ranges": {"modified": (parse_datetime("2026-01-01"), None)}}),
+        ("temporal", {"temporal": (date(2012, 1, 1), date(2013, 12, 31))}),
+        # An end year ("2022") still reaches a period starting inside that year.
+        ("temporal open", {"temporal": (date(2022, 6, 1), None)}),
         ("active FDPs", {"fdp_state": "ACTIVE", "types": ["dataset"]}),
     ]
 
@@ -692,6 +732,11 @@ def test_search_over_http(api: Api) -> None:
         api.client.get("/index/search", params={"type": "dataset,service"}).json()["totalResults"]
         == 4
     )
+    temporal = api.client.get(
+        "/index/search", params={"temporalFrom": "2012", "temporalTo": "2013-06"}
+    ).json()
+    assert [h["title"] for h in temporal["hits"]] == ["Breast cancer registry"]
+    assert temporal["query"]["temporal"] == {"start": "2012-01-01", "end": "2013-06-30"}
     info = api.client.get("/index/config").json()
     assert info["search"]["endpoint"].endswith("/index/search")
 
@@ -703,6 +748,8 @@ def test_search_over_http(api: Api) -> None:
         {"theme2": "x"},
         {"fdp": "not-a-uuid"},
         {"modifiedFrom": "soon"},
+        {"temporalFrom": "soon"},
+        {"temporalTo": "2010-13"},
         {"page": "one"},
         {"size": "1000"},
     ],

@@ -20,6 +20,9 @@ The first release will contain:
   languages, facets including Theme and Subject, filters on any property,
   default facets set by administrators, "Show as SPARQL", measured at
   1 000 FDPs (ADR-0005, docs/search-performance.md).
+- **Temporal coverage**: `dct:temporal` in its DCAT, schema.org, OWL-Time
+  and literal forms, searched by overlap (`temporalFrom`/`temporalTo`, a
+  year, month or day) and shown on results.
 - **Concept labels** from Wikidata, ROR, OLS and RDF vocabularies, off by
   default (ADR-0006).
 - **SPARQL** endpoint and page: editor, builder, example library, charts.

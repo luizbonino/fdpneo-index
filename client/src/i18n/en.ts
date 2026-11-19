@@ -593,6 +593,19 @@ export const en = {
     dates: "Dates",
     from: "from",
     to: "to",
+    temporal: {
+      legend: "Period covered",
+      help: "Data whose temporal coverage overlaps these years. A year (2010), a month (2010-05) or a date (2010-05-31).",
+      from: "From year",
+      to: "To year",
+      invalid: "Use a year (2010), a month (2010-05) or a date (2010-05-31).",
+      chip: "Covers {period}",
+    },
+    period: {
+      range: "{from} – {to}",
+      since: "since {from}",
+      until: "until {to}",
+    },
     results: "No results | 1 result | {n} results",
     took: "in {ms} ms",
     sort: "Sort",
@@ -635,6 +648,7 @@ export const en = {
     fields: {
       issued: "Issued",
       modified: "Modified",
+      temporal: "Period covered",
       landingPage: "Landing page",
       datasetCount: "Datasets",
       distributionCount: "Distributions",

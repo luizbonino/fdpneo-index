@@ -35,6 +35,11 @@ export interface Segment {
   match: boolean;
 }
 
+export interface Period {
+  start: string | null;
+  end: string | null;
+}
+
 export interface Hit {
   id: string;
   iri: string;
@@ -50,6 +55,8 @@ export interface Hit {
   catalog: { id: string; iri: string; title: string } | null;
   issued: string | null;
   modified: string | null;
+  /** Temporal coverage (TASKS 8.3): first and last day, either may be open. */
+  temporal: Period | null;
   landingPage: string | null;
   sourceUrl: string;
   facts: Record<string, number>;
@@ -217,6 +224,7 @@ export interface ResourceDetail {
   completeness: number;
   issued: string | null;
   modified: string | null;
+  temporal: Period | null;
   landingPage: string | null;
   sourceUrl: string;
   harvestedAt: string;
@@ -232,6 +240,7 @@ export interface ResourceDetail {
 export const LOCAL_FIELDS = new Set([
   "issued",
   "modified",
+  "temporal",
   "landingPage",
   "datasetCount",
   "distributionCount",

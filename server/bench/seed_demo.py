@@ -48,6 +48,8 @@ R3D = Namespace("http://www.re3data.org/schema/3-0#")
 VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 HEALTH = Namespace("http://healthdataportal.eu/ns/health#")
 LDP = Namespace("http://www.w3.org/ns/ldp#")
+SCHEMA = Namespace("http://schema.org/")
+TIME = Namespace("http://www.w3.org/2006/time#")
 DCAT3 = Namespace("http://www.w3.org/ns/dcat#")  # rdflib's DCAT lacks dcat:version
 
 COUNTRIES = {
@@ -624,6 +626,7 @@ class FdpBuilder:
                     Literal(modified.isoformat(timespec="seconds"), datatype=XSD.dateTime),
                 )
             )
+        self._temporal(g, node, iri, start, end)
         g.add(
             (
                 node,
@@ -667,6 +670,36 @@ class FdpBuilder:
             self._distribution(
                 f"{iri.replace('/dataset/', '/distribution/')}-{x + 1}", node, fmt, licence, access
             )
+
+    @staticmethod
+    def _temporal(g: Graph, node: URIRef, iri: str, start: int, end: int) -> None:
+        """The years the title names, as ``dct:temporal`` in the forms FDPs use (TASKS 8.3).
+
+        A generator of its own, so the rest of the corpus stays as it was.
+        """
+        rng = random.Random(f"{iri}#temporal")
+        form = rng.random()
+        if form < 0.05:
+            return
+        if form < 0.15:
+            g.add((node, DCTERMS.temporal, Literal(f"{start}/{end}")))
+            return
+        period = BNode()
+        g.add((node, DCTERMS.temporal, period))
+        if form < 0.7:
+            g.add((period, RDF.type, DCTERMS.PeriodOfTime))
+            g.add((period, DCAT.startDate, Literal(f"{start}-01-01", datatype=XSD.date)))
+            if rng.random() < 0.9:  # some are still running
+                g.add((period, DCAT.endDate, Literal(f"{end}-12-31", datatype=XSD.date)))
+        elif form < 0.85:
+            g.add((period, SCHEMA.startDate, Literal(str(start), datatype=XSD.gYear)))
+            g.add((period, SCHEMA.endDate, Literal(str(end), datatype=XSD.gYear)))
+        else:
+            beginning, ending = BNode(), BNode()
+            g.add((period, TIME.hasBeginning, beginning))
+            g.add((beginning, TIME.inXSDDate, Literal(f"{start}-01-01", datatype=XSD.date)))
+            g.add((period, TIME.hasEnd, ending))
+            g.add((ending, TIME.inXSDDate, Literal(f"{end}-12-31", datatype=XSD.date)))
 
     def _distribution(self, iri: str, dataset: URIRef, fmt: str, licence: str, access: str) -> None:
         rng = self.rng

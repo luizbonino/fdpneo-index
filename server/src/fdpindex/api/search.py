@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.errors import BadRequest, IndexServiceError, RateLimited
+from fdpindex.search.period import parse_day
 from fdpindex.search.profile import KINDS, Kind
 from fdpindex.search.profile_store import ProfileError
 from fdpindex.search.project import parse_datetime
@@ -108,6 +109,16 @@ def _date(name: str, value: str | None, *, end: bool = False) -> datetime | None
     return parsed
 
 
+def _day(name: str, value: str | None, *, end: bool = False) -> date | None:
+    """A year, month or day for ``temporalFrom``/``temporalTo``: its first or last day."""
+    if not value:
+        return None
+    parsed = parse_day(value, end=end)
+    if parsed is None:
+        raise BadRequest(f"{name}: not a year (2010), month (2010-05) or date (2010-05-31)")
+    return parsed
+
+
 def _params(request: Request, service: SearchService, lang: str) -> SearchParams:
     query = request.query_params
     filters = {
@@ -126,7 +137,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         for key in query
         if key not in RESERVED
         and key not in filters
-        and not any(key in (f"{r}From", f"{r}To") for r in RANGES)
+        and not any(key in (f"{r}From", f"{r}To") for r in (*RANGES, "temporal"))
     ]
     if unknown:
         raise BadRequest(f"Unknown parameter: {', '.join(sorted(unknown))}")
@@ -142,6 +153,14 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         for name in RANGES
         if query.get(f"{name}From") or query.get(f"{name}To")
     }
+    temporal = (
+        (
+            _day("temporalFrom", query.get("temporalFrom")),
+            _day("temporalTo", query.get("temporalTo"), end=True),
+        )
+        if query.get("temporalFrom") or query.get("temporalTo")
+        else None
+    )
     facets = query.get("facets")
     params = SearchParams(
         q=query.get("q", ""),
@@ -149,6 +168,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         fdps=fdps,
         filters=filters,
         ranges=ranges,
+        temporal=temporal,
         fdp_state=query.get("fdpState") or None,
         lang=lang,
         sort=query.get("sort", ""),
@@ -187,7 +207,9 @@ async def search(
     the harvested metadata is a facet and filter too, named `prop:<IRI>`
     (see `/index/search/properties`). Also `type`, `fdp`,
     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
-    `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
+    `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
+    dates; a resource matches when its temporal coverage overlaps the period),
+    `fdpState=ACTIVE`, `sort`, `page`, `size`,
     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
     each hit has `highlight`: its title and description as text segments with
     the matching words marked (`{"text", "match"}`), never HTML.

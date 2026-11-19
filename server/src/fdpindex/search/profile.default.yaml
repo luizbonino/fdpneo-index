@@ -204,6 +204,15 @@ fields:
     kind: datetime
     paths: [dct:modified, fdp-o:metadataModified]
     label: {en: Modified}
+  temporal:
+    kind: period
+    paths: [dct:temporal]
+    label: {en: Temporal coverage}
+    help:
+      en: >-
+        The period the data covers. Read from dcat:startDate and dcat:endDate,
+        schema:startDate and schema:endDate, time:hasBeginning and time:hasEnd,
+        or a literal such as "2010/2020".
   records:
     kind: number
     paths: [healthdcatap:numberOfRecords]

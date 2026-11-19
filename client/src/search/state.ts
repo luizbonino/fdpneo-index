@@ -18,6 +18,10 @@ export type TypeTab = "" | Kind;
 export const SORTS = ["", "relevance", "modified", "issued", "title"] as const;
 export const PAGE_SIZE = 20;
 export const DATE_FIELDS = ["issued", "modified"] as const;
+/** Ranges in the URL as `<name>From`/`<name>To`: the dates, and temporal coverage (TASKS 8.3). */
+export const RANGE_FIELDS = [...DATE_FIELDS, "temporal"] as const;
+/** What `temporalFrom`/`temporalTo` accept: a year, a month or a day. */
+export const PERIOD_BOUND = /^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$/;
 
 export interface SearchState {
   q: string;
@@ -57,7 +61,7 @@ export function fromQuery(query: LocationQuery, facets: string[]): SearchState {
     (name) => !facets.includes(name),
   );
   const dates: SearchState["dates"] = {};
-  for (const name of DATE_FIELDS) {
+  for (const name of RANGE_FIELDS) {
     const from = one(query[`${name}From`]);
     const to = one(query[`${name}To`]);
     if (from || to) dates[name] = { from, to };

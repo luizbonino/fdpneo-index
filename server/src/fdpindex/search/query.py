@@ -31,7 +31,7 @@ import time
 from collections import Counter, defaultdict
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -220,6 +220,8 @@ class SearchParams:
     fdps: list[UUID] = field(default_factory=lambda: [])
     filters: dict[str, list[str]] = field(default_factory=lambda: {})
     ranges: dict[str, tuple[datetime | None, datetime | None]] = field(default_factory=lambda: {})
+    # Temporal coverage overlapping these days (TASKS 8.3); None: no such filter.
+    temporal: tuple[date | None, date | None] | None = None
     fdp_state: str | None = None
     lang: str = "en"
     sort: str = ""
@@ -509,6 +511,8 @@ class SearchService:
                 conditions.append(column >= low)
             if high is not None:
                 conditions.append(column <= high)
+        if params.temporal is not None:
+            conditions.extend(_overlaps(res, *params.temporal))
         if params.fdp_state:
             conditions.append(and_(E.state == EntryState.VALID, E.last_retrieval_at > threshold))
         if params.q:
@@ -700,6 +704,11 @@ class SearchService:
                     "filters": {names.get(k, k): v for k, v in params.filters.items()},
                     "fdp": [str(u) for u in params.fdps],
                     "lang": params.lang,
+                    **(
+                        {"temporal": _period_view(*params.temporal)}
+                        if params.temporal is not None
+                        else {}
+                    ),
                     "sort": params.sort or ("relevance" if params.q else "modified,desc"),
                 },
                 "totalResults": total,
@@ -1042,7 +1051,7 @@ class SearchService:
     @staticmethod
     def _light(params: SearchParams) -> bool:
         """No words and no date ranges: conditions need no resource columns but kind and entry."""
-        return not params.q and not params.ranges
+        return not params.q and not params.ranges and params.temporal is None
 
     def _cache_key(self, params: SearchParams, name: str, size: int) -> tuple[Any, ...] | None:
         if not self._light(params) or self._facet_cache_seconds <= 0:
@@ -1186,6 +1195,7 @@ class SearchService:
                 ),
                 "issued": resource.issued.isoformat() if resource.issued else None,
                 "modified": resource.modified.isoformat() if resource.modified else None,
+                "temporal": _period_view(resource.temporal_start, resource.temporal_end),
                 "landingPage": resource.landing_page,
                 "sourceUrl": resource.node_iri,
                 "facts": {k: v for k, v in resource.facts.items() if k != "titleFallback"},
@@ -1326,6 +1336,7 @@ class SearchService:
                 "completeness": resource.completeness,
                 "issued": resource.issued.isoformat() if resource.issued else None,
                 "modified": resource.modified.isoformat() if resource.modified else None,
+                "temporal": _period_view(resource.temporal_start, resource.temporal_end),
                 "landingPage": resource.landing_page,
                 "sourceUrl": resource.node_iri,
                 "harvestedAt": resource.harvested_at.isoformat(),
@@ -1831,4 +1842,27 @@ def _brief(resource: SearchResource, lang: str) -> dict[str, Any]:
         "iri": resource.iri,
         "type": resource.kind,
         "title": picked[1] if picked else resource.title,
+    }
+
+
+def _overlaps(res: Any, low: date | None, high: date | None) -> list[ColumnElement[bool]]:
+    """Temporal coverage that overlaps ``low``..``high``; an open bound overlaps everything.
+
+    Resources without a temporal coverage never match.
+    """
+    start, end = res.temporal_start, res.temporal_end
+    conditions: list[ColumnElement[bool]] = [or_(start.is_not(None), end.is_not(None))]
+    if high is not None:
+        conditions.append(or_(start.is_(None), start <= high))
+    if low is not None:
+        conditions.append(or_(end.is_(None), end >= low))
+    return conditions
+
+
+def _period_view(start: date | None, end: date | None) -> dict[str, str | None] | None:
+    if start is None and end is None:
+        return None
+    return {
+        "start": start.isoformat() if start else None,
+        "end": end.isoformat() if end else None,
     }

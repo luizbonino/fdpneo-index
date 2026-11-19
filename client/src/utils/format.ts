@@ -117,3 +117,18 @@ export function hostOf(url: string): string {
     return url;
   }
 }
+
+/**
+ * A temporal coverage for display: whole years as years ("2010 – 2015"), other
+ * bounds as dates; an open end reads "since 2018", an open start "until 2020".
+ */
+export function formatPeriod(
+  period: { start: string | null; end: string | null } | null | undefined,
+  t: (key: string, values: Record<string, string>) => string,
+): string {
+  if (!period || (!period.start && !period.end)) return "";
+  const from = period.start?.endsWith("-01-01") ? period.start.slice(0, 4) : period.start;
+  const to = period.end?.endsWith("-12-31") ? period.end.slice(0, 4) : period.end;
+  if (from && to) return from === to ? from : t("search.period.range", { from, to });
+  return from ? t("search.period.since", { from }) : t("search.period.until", { to: to ?? "" });
+}

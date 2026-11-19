@@ -15,6 +15,9 @@ response (``approximation``) and explained in comments at the top of the query:
 * ``ranking``: results are ordered by title instead of relevance;
 * ``dates``: date ranges compare the first ten characters (the day);
 * ``harvested``: the harvest time is not in the store; the range is dropped;
+* ``temporal``: temporal coverage is read from a period's start and end
+  (``dcat:``, ``schema:`` and ``time:`` forms); a period written as a literal
+  (``"2010/2020"``) is not matched;
 * ``type``: resources without a recognised type ("other") cannot be selected.
 
 Kinds follow the class a resource declares; the index resolves a resource with
@@ -34,6 +37,7 @@ from fdpindex.sparql.gate import is_safe_iri, string_term
 from fdpindex.sparql.prefixes import PREFIXES
 
 if TYPE_CHECKING:
+    from datetime import date
     from uuid import UUID
 
     from fdpindex.search.profile import Kind, Profile, SearchField
@@ -51,6 +55,10 @@ NOTES = {
     "ranking": "Results are ordered by title; the search page orders them by relevance.",
     "dates": "Date ranges compare the day only, ignoring time zones.",
     "harvested": "The harvest time is not in the SPARQL store; that range is left out.",
+    "temporal": (
+        "Temporal coverage is read from the period's start and end dates; "
+        'a period written as text ("2010/2020") is not matched.'
+    ),
     "type": 'Resources without a recognised type ("other") cannot be selected in SPARQL.',
 }
 _LOCAL = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
@@ -168,6 +176,64 @@ def _exists(pattern: str, condition: str, *, negated: bool = False, inline: bool
         return f"{'!' if negated else ''}EXISTS {{ {pattern} FILTER({condition}) }}"
     keyword = "FILTER NOT EXISTS" if negated else "FILTER EXISTS"
     return f"{keyword} {{\n  {pattern} .\n  FILTER({condition})\n}}"
+
+
+def _temporal(w: _Writer, spec: SearchField, low: date | None, high: date | None) -> str:
+    """Resources whose period overlaps ``low``..``high``, as the index decides it.
+
+    Days compare as text. A start of "2010" is before "2010-06-30" as text
+    already; an end is compared with ``low`` cut to its own length, so an end
+    of "2015" or "2015-02" still reaches a ``low`` inside that year or month.
+    """
+    time = "http://www.w3.org/2006/time#"
+    instants = "|".join(
+        w.iri(time + n)
+        for n in (
+            "inXSDDate",
+            "inXSDDateTimeStamp",
+            "inXSDDateTime",
+            "inXSDgYear",
+            "inXSDgYearMonth",
+        )
+    )
+
+    def bound(predicates: tuple[str, ...], link: str) -> str:
+        direct = [w.iri(p) for p in predicates]
+        return f"({'|'.join(direct)}|{w.iri(time + link)}/({instants}))"
+
+    start_path = bound(
+        (
+            "http://www.w3.org/ns/dcat#startDate",
+            "http://schema.org/startDate",
+            "https://schema.org/startDate",
+        ),
+        "hasBeginning",
+    )
+    end_path = bound(
+        (
+            "http://www.w3.org/ns/dcat#endDate",
+            "http://schema.org/endDate",
+            "https://schema.org/endDate",
+        ),
+        "hasEnd",
+    )
+    start = "SUBSTR(STR(?periodStart), 1, 10)"
+    end = "SUBSTR(STR(?periodEnd), 1, 10)"
+    checks = ["(BOUND(?periodStart) || BOUND(?periodEnd))"]
+    if high is not None:
+        checks.append(f"(!BOUND(?periodStart) || {start} <= {_string(high.isoformat())})")
+    if low is not None:
+        cut = f"SUBSTR({_string(low.isoformat())}, 1, STRLEN({end}))"
+        checks.append(f"(!BOUND(?periodEnd) || {end} >= {cut})")
+    condition = "\n    && ".join(checks)
+    return (
+        "FILTER EXISTS {\n"
+        f"  ?resource {w.path(spec)} ?period .\n"
+        f"  OPTIONAL {{ ?period {start_path} ?periodStart }}\n"
+        f"  OPTIONAL {{ ?period {end_path} ?periodEnd }}\n"
+        f"  FILTER({condition})\n"
+        "}"
+    )
 
 
 def _kinds(w: _Writer, profile: Profile, wanted: set[Kind]) -> list[str]:
@@ -292,6 +358,11 @@ def to_sparql(
             checks.append(f'{day} <= "{high.date().isoformat()}"')
         graph.append(_exists(f"?resource {path} ?{name}Range", " && ".join(checks)))
         w.note("dates")
+
+    # Temporal coverage overlapping the period (TASKS 8.3).
+    if params.temporal is not None and "temporal" in profile.fields:
+        graph.append(_temporal(w, profile.fields["temporal"], *params.temporal))
+        w.note("temporal")
 
     # Full text, approximated by substrings.
     if params.q:

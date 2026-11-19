@@ -261,6 +261,16 @@ async def test_search_stems_folds_accents_and_ranks(
     assert result["facets"]["fdp"]["buckets"][0]["count"] == 2
     detail = await search.resource(result["hits"][0]["id"])
     assert detail["parents"][0]["type"] == "fdp"
+    # Temporal coverage overlaps on date columns (TASKS 8.3).
+    from datetime import date
+
+    assert set(await titles(temporal=(date(2022, 6, 1), None))) == {
+        "Lung function tests",
+        "Genome cohort",
+    }
+    assert await titles(temporal=(date(2012, 1, 1), date(2013, 12, 31))) == [
+        "Breast cancer registry"
+    ]
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

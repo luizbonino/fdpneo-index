@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { countryLabel, hostOf, isoToSeconds, relativeTime, toAmount, toIso } from "./format";
+import {
+  countryLabel,
+  hostOf,
+  isoToSeconds,
+  relativeTime,
+  toAmount,
+  toIso,
+  formatPeriod,
+} from "./format";
 
 describe("durations", () => {
   it.each([
@@ -48,5 +56,21 @@ describe("display helpers", () => {
   it("shortens URLs to their host", () => {
     expect(hostOf("https://fdp.example.org/path")).toBe("fdp.example.org");
     expect(hostOf("not a url")).toBe("not a url");
+  });
+});
+
+describe("periods", () => {
+  const t = (key: string, values: Record<string, string>) =>
+    `${key.split(".").pop()}:${Object.values(values).join("|")}`;
+
+  it("shows whole years as years and open ends in words", () => {
+    expect(formatPeriod({ start: "2010-01-01", end: "2015-12-31" }, t)).toBe("range:2010|2015");
+    expect(formatPeriod({ start: "2015-01-01", end: "2015-12-31" }, t)).toBe("2015");
+    expect(formatPeriod({ start: "2010-03-01", end: "2012-06-30" }, t)).toBe(
+      "range:2010-03-01|2012-06-30",
+    );
+    expect(formatPeriod({ start: "2018-01-01", end: null }, t)).toBe("since:2018");
+    expect(formatPeriod({ start: null, end: "2020-12-31" }, t)).toBe("until:2020");
+    expect(formatPeriod(null, t)).toBe("");
   });
 });

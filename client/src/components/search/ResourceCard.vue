@@ -12,7 +12,7 @@ import { useI18n } from "vue-i18n";
 import type { Hit, ValueView } from "@/search/api";
 import { isLinkable } from "@/sparql/results";
 import StateBadge from "@/components/StateBadge.vue";
-import { absoluteTime, relativeTime } from "@/utils/format";
+import { absoluteTime, formatPeriod, relativeTime } from "@/utils/format";
 
 const props = defineProps<{
   hit: Hit;
@@ -55,6 +55,7 @@ const keyFields = computed(() =>
     .filter((item): item is { name: string; text: string } => item !== null),
 );
 const date = computed(() => props.hit.modified ?? props.hit.issued);
+const period = computed(() => formatPeriod(props.hit.temporal, t));
 const down = computed(() => !["ACTIVE", "UNKNOWN"].includes(props.hit.fdp.state));
 const source = computed(() =>
   isLinkable(props.hit.landingPage ?? "")
@@ -139,6 +140,9 @@ const source = computed(() =>
           <dd>{{ item.text }}</dd>
         </div>
       </dl>
+      <span v-if="period" class="muted small period">
+        {{ t("search.fields.temporal") }}: {{ period }}
+      </span>
       <span v-if="date" class="muted small" :title="absoluteTime(date)">
         {{ t("search.updated", { when: relativeTime(date) }) }}
       </span>

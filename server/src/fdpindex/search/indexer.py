@@ -413,6 +413,8 @@ def _columns(row: ResourceRow, row_hash: str, now: Any, *, postgres: bool) -> di
         "landing_page": row.landing_page,
         "issued": row.issued,
         "modified": row.modified,
+        "temporal_start": row.temporal_start,
+        "temporal_end": row.temporal_end,
         "completeness": row.completeness,
         "facts": row.facts,
         "text_segments": [list(segment) for segment in row.segments],

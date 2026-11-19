@@ -30,6 +30,14 @@ ranking, and how common spellings fold into one value (`csv`, `text/csv`
 and the EU file-type IRI are one format). It covers DCAT 2 and 3, DCAT-AP,
 FDP-O, the Java FDP's shapes, FOAF and vCard.
 
+Temporal coverage (`dct:temporal`) is read in every form FDPs use: a
+period with `dcat:startDate`/`dcat:endDate` (DCAT 2 and 3),
+`schema:startDate`/`schema:endDate` (DCAT 1, DCAT-AP 1.x), OWL-Time
+`time:hasBeginning`/`time:hasEnd`, or a literal such as `"2010/2020"`. It
+is stored as a first and a last day, which `temporalFrom`/`temporalTo`
+compare by overlap. In **Show as SPARQL**, a period written as a literal is
+not matched; the query says so.
+
 The profile also captures **every property** one step from a resource (IRI
 values and literals up to 100 characters), which is what lets visitors add a
 filter on any property. `capture.properties: false` in the profile turns

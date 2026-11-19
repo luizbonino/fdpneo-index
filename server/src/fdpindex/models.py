@@ -8,13 +8,14 @@ the importer (TASKS 3.4) maps them one to one.
 from __future__ import annotations
 
 import enum
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Date,
     Enum as SAEnum,
     Float,
     ForeignKey,
@@ -234,6 +235,9 @@ class SearchResource(Base):
     landing_page: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     issued: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
     modified: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # Temporal coverage (TASKS 8.3): first and last day; either may be open.
+    temporal_start: Mapped[date | None] = mapped_column(Date, nullable=True)
+    temporal_end: Mapped[date | None] = mapped_column(Date, nullable=True)
     completeness: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     # Counts and flags computed over the entry: datasetCount, distributionCount, titleFallback.
     facts: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False, default=dict)
@@ -249,6 +253,7 @@ class SearchResource(Base):
         UniqueConstraint("entry_uuid", "iri", name="uq_search_resource_entry_iri"),
         Index("ix_search_resource_kind_modified", "kind", "modified"),
         Index("ix_search_resource_entry_kind", "entry_uuid", "kind"),
+        Index("ix_search_resource_temporal", "temporal_start", "temporal_end"),
         Index("ix_search_resource_parent", "entry_uuid", "parent_iri"),
         Index("ix_search_resource_tsv_lang", "tsv_lang", postgresql_using="gin"),
         Index("ix_search_resource_tsv_simple", "tsv_simple", postgresql_using="gin"),

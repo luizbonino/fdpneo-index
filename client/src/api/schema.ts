@@ -283,7 +283,9 @@ export interface paths {
      *     the harvested metadata is a facet and filter too, named `prop:<IRI>`
      *     (see `/index/search/properties`). Also `type`, `fdp`,
      *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
-     *     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
+     *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
+     *     dates; a resource matches when its temporal coverage overlaps the period),
+     *     `fdpState=ACTIVE`, `sort`, `page`, `size`,
      *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
      *     each hit has `highlight`: its title and description as text segments with
      *     the matching words marked (`{"text", "match"}`), never HTML.

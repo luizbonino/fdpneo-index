@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  PERIOD_BOUND,
   addFacet,
   apiParams,
   chips,
@@ -45,6 +46,17 @@ describe("search URL state", () => {
       added: [],
     });
     expect(fromQuery(toQuery(state) as never, FACETS)).toEqual(state);
+  });
+
+  it("keeps temporal coverage as typed, as temporalFrom/temporalTo", () => {
+    const state = fromQuery({ temporalFrom: "2010", temporalTo: "2012-06" }, FACETS);
+    expect(state.dates).toEqual({ temporal: { from: "2010", to: "2012-06" } });
+    const params = apiParams(state);
+    expect([params.get("temporalFrom"), params.get("temporalTo")]).toEqual(["2010", "2012-06"]);
+    expect(chips(state)).toEqual([{ name: "temporal", value: "2010..2012-06" }]);
+    expect(PERIOD_BOUND.test("2010-05-31")).toBe(true);
+    expect(PERIOD_BOUND.test("2010-13")).toBe(false);
+    expect(PERIOD_BOUND.test("10")).toBe(false);
   });
 
   it("falls back on bad values", () => {

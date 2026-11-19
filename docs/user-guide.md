@@ -60,6 +60,13 @@ the results; click it to remove it.
   the page's address, so a shared link carries them, and this browser
   remembers them. **Remove** takes one away.
 
+**Dates** narrows by when a resource was issued or last modified. **Period
+covered** finds data whose temporal coverage overlaps the years you give:
+type a year (`2010`), a month (`2010-05`) or a date (`2010-05-31`), or
+leave one side open. A dataset covering 2013 to 2025 matches 2012–2013;
+one with no end date matches every later year. Resources that do not
+state a temporal coverage are left out once this filter is set.
+
 Very broad searches count their filters on a sample: those counts show
 with ≈.
 
@@ -67,7 +74,7 @@ with ≈.
 
 Each result shows its type, where it comes from (the FDP and the catalog),
 a description, its themes, subjects and keywords (click one to filter on
-it), and the formats of its files. **Open at source** goes to the
+it), the formats of its files and the period its data cover. **Open at source** goes to the
 resource on its FDP. A resource's own page shows every value, its parents
 and children, and its metadata as harvested (Turtle, JSON-LD or
 N-Triples).

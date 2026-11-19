@@ -32,7 +32,7 @@ KINDS: tuple[Kind, ...] = (
 )
 
 # Fields stored as columns of search_resource rather than as search_value rows.
-COLUMN_FIELDS = frozenset({"title", "description", "issued", "modified", "landingPage"})
+COLUMN_FIELDS = frozenset({"title", "description", "issued", "modified", "landingPage", "temporal"})
 # Computed fields a card may name besides profile fields.
 COMPUTED_FIELDS = frozenset({"datasetCount", "distributionCount"})
 
@@ -40,7 +40,9 @@ COMPUTED_FIELDS = frozenset({"datasetCount", "distributionCount"})
 class SearchField(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["text", "iri", "literal", "agent", "datetime", "number", "boolean"]
+    # ``period``: the path leads to a period (a node with a start and an end, or a
+    # literal such as "2010/2020"), stored as two date columns (TASKS 8.3).
+    kind: Literal["text", "iri", "literal", "agent", "datetime", "period", "number", "boolean"]
     paths: list[str] = PydanticField(min_length=1)
     facet: Literal["main", "more"] | None = None
     weight: Literal["A", "B", "C", "D"] | None = None
@@ -110,6 +112,8 @@ class Profile(BaseModel):
                 raise ValueError(f"field '{name}': namespaces apply to iri and agent fields")
             for namespace in (*spec.namespaces, *spec.exclude):
                 self.expand(namespace)
+            if spec.kind == "period" and name != "temporal":
+                raise ValueError(f"field '{name}': only temporal is a period field")
             if spec.kind == "number" and not spec.buckets:
                 raise ValueError(f"field '{name}': a number field needs buckets")
             for path in spec.paths:

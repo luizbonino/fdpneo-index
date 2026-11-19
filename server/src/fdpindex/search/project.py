@@ -16,7 +16,8 @@ Deviations from the design, all deliberate:
 * IRIs are not stripped of trailing slashes (licence IRIs carry one by
   definition); only the scheme of the EU authority tables and Creative
   Commons IRIs is folded to ``http``.
-* Temporal and spatial columns and ``dedup_key`` come with Phases 8 and 9.
+* Temporal coverage is two date columns (:mod:`fdpindex.search.period`); spatial
+  columns and ``dedup_key`` come later (TASKS 8.4, 8.8).
 * Raw capture stores every property of a resource as ``p:<key>`` values,
   where the key is a hash of the property IRI (``property_field``): the
   ``field`` column is short, and ``search_property`` maps keys back.
@@ -38,6 +39,7 @@ from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
+from fdpindex.search.period import Period, merge as merge_periods, period_of
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
 from fdpindex.search.vocab import bundled_labels
 
@@ -71,7 +73,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 6
+PROJECTION_VERSION = 7
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -150,6 +152,8 @@ class ResourceRow:
     facts: dict[str, Any] = field(default_factory=lambda: {})
     children: list[str] = field(default_factory=lambda: [])
     part_of: str | None = None
+    temporal_start: date | None = None
+    temporal_end: date | None = None
 
     @property
     def search_text(self) -> str:
@@ -157,7 +161,7 @@ class ResourceRow:
 
     @property
     def row_hash(self) -> str:
-        data = {
+        data: dict[str, Any] = {
             "iri": self.iri,
             "node": self.node_iri,
             "kind": self.kind,
@@ -175,6 +179,11 @@ class ResourceRow:
             "completeness": self.completeness,
             "facts": self.facts,
         }
+        if self.temporal_start or self.temporal_end:
+            data["temporal"] = [
+                self.temporal_start.isoformat() if self.temporal_start else None,
+                self.temporal_end.isoformat() if self.temporal_end else None,
+            ]
         text = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         return hashlib.sha256(text.encode()).hexdigest()
 
@@ -485,6 +494,7 @@ class _Projector:
         segments: list[tuple[str, str, str]] = []
         texts: dict[str, dict[str, str]] = {"title": {}, "description": {}}
         dates: dict[str, datetime] = {}
+        periods: list[Period] = []
         landing: str | None = None
         for name, spec in self.profile.fields.items():
             found = self._field(node, name, spec, segments)
@@ -501,6 +511,8 @@ class _Projector:
                     if parsed is not None:
                         dates[name] = parsed
                         break
+            elif spec.kind == "period":
+                periods.extend(period_of(node.graph, item) for item in found)
             elif name == "landingPage":
                 landing = next((str(v) for v in found if isinstance(v, URIRef)), None)
             else:
@@ -533,6 +545,7 @@ class _Projector:
                 None,
             ),
         )
+        row.temporal_start, row.temporal_end = merge_periods(periods)
         if fallback:
             row.facts["titleFallback"] = True
         return row, _labels(node)

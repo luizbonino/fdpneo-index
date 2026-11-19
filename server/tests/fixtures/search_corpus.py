@@ -21,6 +21,7 @@ PREFIXES = """
 @prefix r3d: <http://www.re3data.org/schema/3-0#> .
 @prefix ldp: <http://www.w3.org/ns/ldp#> .
 @prefix healthdcatap: <http://healthdataportal.eu/ns/health#> .
+@prefix time: <http://www.w3.org/2006/time#> .
 """
 
 ALPHA = "https://fdp.alpha.example"
@@ -56,6 +57,8 @@ PAGES: dict[str, str] = {
   dct:publisher <https://ror.org/alpha> ;
   dct:issued "2020-01-01"^^xsd:date ;
   dct:modified "2026-11-01T10:00:00Z"^^xsd:dateTime ;
+  dct:temporal [ a dct:PeriodOfTime ;
+    dcat:startDate "2010-01-01"^^xsd:date ; dcat:endDate "2015-12-31"^^xsd:date ] ;
   dcat:contactPoint [ vcard:fn "Data desk" ; vcard:hasEmail <mailto:desk@alpha.example> ] ;
   healthdcatap:numberOfRecords 2500 ;
   dcat:distribution <{ALPHA}/distribution/x1>, <{ALPHA}/distribution/x2> .
@@ -81,6 +84,7 @@ PAGES: dict[str, str] = {
   dcat:theme <{EU}data-theme/HEAL>, <{EU}data-theme/TECH> ;
   dct:publisher [ a foaf:Agent ; foaf:name "Pulmonology Lab" ] ;
   dct:accessRights <{EU}access-right/RESTRICTED> ;
+  dct:temporal [ <http://schema.org/startDate> "2018"^^xsd:gYear ] ;
   dct:modified "2025-03-01"^^xsd:date .
 """,
     BETA: f"""
@@ -109,6 +113,8 @@ PAGES: dict[str, str] = {
   dct:license <https://creativecommons.org/licenses/by/4.0/> ;
   dct:isPartOf <{BETA}/catalog/k> ;
   dct:publisher [ foaf:name "Beta Institute" ] ;
+  dct:temporal [ time:hasBeginning [ time:inXSDDate "2020-01-01"^^xsd:date ] ;
+    time:hasEnd [ time:inXSDgYear "2022"^^xsd:gYear ] ] ;
   dcat:distribution <{BETA}/distribution/vcf> .
 """,
     f"{BETA}/distribution/vcf": f"""

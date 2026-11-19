@@ -28,6 +28,8 @@ import {
 } from "@/search/api";
 import {
   DATE_FIELDS,
+  PERIOD_BOUND,
+  RANGE_FIELDS,
   SORTS,
   TYPE_TABS,
   addFacet,
@@ -53,6 +55,7 @@ import ResourceCard from "@/components/search/ResourceCard.vue";
 import HelpTip from "@/components/HelpTip.vue";
 import { useServiceInfo } from "@/composables/queries";
 import { encodeQuery } from "@/sparql/history";
+import { formatPeriod } from "@/utils/format";
 import { curie } from "@/sparql/results";
 
 const route = useRoute();
@@ -259,7 +262,12 @@ const labelCache = computed(() => {
 });
 function chipLabel(chip: Chip): string {
   if (chip.name === "fdpState") return t("search.onlyActive");
-  if ((DATE_FIELDS as readonly string[]).includes(chip.name)) {
+  if (chip.name === "temporal") {
+    const [from, to] = chip.value.split("..");
+    const period = formatPeriod({ start: from || null, end: to || null }, t);
+    return t("search.temporal.chip", { period });
+  }
+  if ((RANGE_FIELDS as readonly string[]).includes(chip.name)) {
     const [from, to] = chip.value.split("..");
     return `${fieldLabel(chip.name)}: ${from || "…"} – ${to || "…"}`;
   }
@@ -295,6 +303,17 @@ function setDate(name: string, end: "from" | "to", value: string) {
   if (!range.from && !range.to) delete dates[name];
   go({ ...state.value, dates, page: 1 });
 }
+
+// Temporal coverage takes years, months or days as typed; a bound it cannot read is
+// flagged on its input and not sent (TASKS 8.3).
+const periodInvalid = ref({ from: false, to: false });
+function setPeriod(end: "from" | "to", raw: string) {
+  const value = raw.trim();
+  periodInvalid.value = { ...periodInvalid.value, [end]: !!value && !PERIOD_BOUND.test(value) };
+  if (periodInvalid.value[end]) return;
+  setDate("temporal", end, value);
+}
+const periodError = computed(() => periodInvalid.value.from || periodInvalid.value.to);
 
 const heading = ref<HTMLElement>();
 function page(to: number) {
@@ -498,6 +517,43 @@ const counters = computed(() => {
                 @change="setDate(name, 'to', ($event.target as HTMLInputElement).value)"
               />
             </label>
+          </div>
+          <div class="range period">
+            <span class="small">{{ t("search.temporal.legend") }}</span>
+            <label>
+              <span class="visually-hidden">{{ t("search.temporal.from") }}</span>
+              <input
+                class="input"
+                type="text"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="2010"
+                autocomplete="off"
+                :value="state.dates.temporal?.from ?? ''"
+                :aria-invalid="periodInvalid.from || undefined"
+                aria-describedby="period-hint"
+                @change="setPeriod('from', ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <span aria-hidden="true">–</span>
+            <label>
+              <span class="visually-hidden">{{ t("search.temporal.to") }}</span>
+              <input
+                class="input"
+                type="text"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="2020"
+                autocomplete="off"
+                :value="state.dates.temporal?.to ?? ''"
+                :aria-invalid="periodInvalid.to || undefined"
+                aria-describedby="period-hint"
+                @change="setPeriod('to', ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <p id="period-hint" :class="['hint', 'small', periodError ? 'error' : 'muted']">
+              {{ periodError ? t("search.temporal.invalid") : t("search.temporal.help") }}
+            </p>
           </div>
         </fieldset>
 
@@ -823,6 +879,15 @@ const counters = computed(() => {
 .range .small {
   grid-column: 1 / -1;
   color: var(--fair-text-muted);
+}
+.range .hint {
+  margin: 0;
+}
+.range .hint.error {
+  color: var(--fair-danger, #c53030);
+}
+.range .input[aria-invalid="true"] {
+  border-color: var(--fair-danger, #c53030);
 }
 .range > span.small + label {
   grid-column: 1 / 3;

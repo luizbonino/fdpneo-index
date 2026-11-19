@@ -1,6 +1,6 @@
 # Conformance and republication — design
 
-- Status: **proposed, for review** (TASKS 11.1). Becomes ADR-0007 once agreed.
+- Status: **agreed 2026-11-19, except question 3** (who may see reports, §9). Becomes ADR-0007.
 - Date: 2026-11-19
 - Scope: Phase 11 of `TASKS.md`. Validating harvested records against SHACL
   profile packs (11.2, 11.3), how strict each surface is (11.4), republishing
@@ -288,7 +288,7 @@ Client: a **Conformance** tab on the FDP's page (summary per pack, top
 problems with "show records", per record findings), a badge and a facet in
 search, and a **Conformance** section in Settings (packs, surfaces).
 
-## 9. Questions for review
+## 9. Questions for review, and the answers (2026-11-19)
 
 1. **pySHACL as a new runtime dependency.** It is pure Python and already
    in FDPneo's server. The alternative is a compiled engine from the start.
@@ -316,3 +316,10 @@ search, and a **Conformance** section in Settings (packs, surfaces).
    `foaf:name` on the publisher fails for that FDP. Proposal: accept that
    (it is what the FDP serves for the dataset), or follow `dct:publisher`
    one node deep as a pack option.
+
+**Answers.** 1 agreed (pySHACL). 2: bundle HealthDCAT-AP Release 8 as the
+example, although it is still a draft. 3: open; the reports are built
+with a setting for who may see them, public until decided. 4 to 7 agreed
+(lenient feed by default, strict in the EHDS profile; quality certificates
+shown now; records do not follow other nodes; OAI-PMH with the feed).
+

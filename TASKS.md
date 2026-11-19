@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-71 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
+75 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -25,7 +25,7 @@ task are listed in the last column.
 | 1 Server: port of the reference index | Ping intake, retrieval, harvest, entries and admin API, webhooks, auth, outbound safety | 17/17 | – | – | ✅ Done | – |
 | 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 5/5 | – | – | ✅ Done | – |
-| 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 5/9 | – | 4 | 🟡 Mostly done | Long-unreachable entries and expiry (4.6), per-FDP options (4.7), verified approval (4.8), self-service registration (4.9) |
+| 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 9/9 | – | – | ✅ Done | – |
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 1/4 | – | 3 | 🔹 Started (decided 19 Nov) | Running next to FDPneo (5.1), documentation here (5.2), Java index guidance (5.3) |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
@@ -34,7 +34,7 @@ task are listed in the last column.
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **71/115** | **4** | **40** | | |
+| **Total** | | **75/115** | **4** | **36** | | |
 
 ## Phase 0 — Foundations
 
@@ -93,10 +93,10 @@ registered FDPs itself. See [ADR-0004](docs/adr/0004-active-liveness-checks.md).
 - [x] 4.3 `HealthCheck` events; consecutive-failure threshold before an entry becomes Unreachable; webhooks only on state transitions
 - [x] 4.4 Settings: enabled, interval, failure threshold, permits checked, re-harvest when the metadata changed
 - [x] 4.5 UI: last check, liveness history, "check now"
-- [ ] 4.6 Optional policy for entries unreachable for a long time (notify, or hide from the public list); the FAIR Discovery design's `EXPIRED` state after 90 days without contact, revived by a ping
-- [ ] 4.7 Per-FDP options: directory only (registered and checked, not harvested), and its own harvest interval
-- [ ] 4.8 A "verified" approval policy next to automatic and manual approval: approve automatically after a successful check of the FDP's root
-- [ ] 4.9 Self-service registration: the Register page submits an FDP and shows the result of an immediate check; administrators can add an FDP through the API
+- [x] 4.6 Optional policy for entries unreachable for a long time (notify, or hide from the public list); the FAIR Discovery design's `EXPIRED` state after 90 days without contact, revived by a ping — *done: `expiry` setting (off; 90 days), `Expiry` event and `EntryExpired` webhook once, optional hiding from the public directory and search (not yet from SPARQL), revived by a successful retrieval; a flag (`expiredTime`), not a new state, to keep the reference states*
+- [x] 4.7 Per-FDP options: directory only (registered and checked, not harvested), and its own harvest interval — *done: `options` on `PUT /index/entries/{uuid}`, entry page controls*
+- [x] 4.8 A "verified" approval policy next to automatic and manual approval: approve automatically after a successful check of the FDP's root — *done: `verifiedPermit` setting; Settings page offers automatic, after a successful check, by an administrator*
+- [x] 4.9 Self-service registration: the Register page submits an FDP and shows the result of an immediate check; administrators can add an FDP through the API — *done: `POST /index/register`, `POST /index/entries`*
 
 ## Phase 5 — Separation from the FAIR Data Point
 

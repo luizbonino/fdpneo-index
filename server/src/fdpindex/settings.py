@@ -123,6 +123,27 @@ class HealthCheckSettings(_Camel):
         return [permit for permit in EntryPermit if permit in value]
 
 
+class ExpirySettings(_Camel):
+    """Entries without contact for a long time (TASKS 4.6).
+
+    An accepted entry whose last successful retrieval (or, never retrieved, its
+    registration) is older than ``after`` is marked expired once: an ``Expiry``
+    event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
+    the public directory and the search. A successful retrieval revives it.
+    """
+
+    enabled: bool = False
+    after: Duration = timedelta(days=90)
+    hide: bool = False
+
+    @field_validator("after")
+    @classmethod
+    def _at_least_a_day(cls, value: timedelta) -> timedelta:
+        if value < timedelta(days=1):
+            raise ValueError("must be at least one day")
+        return value
+
+
 class IndexSettings(_Camel):
     retrieval: RetrievalSettings
     ping: PingSettings
@@ -130,12 +151,18 @@ class IndexSettings(_Camel):
     health_check: HealthCheckSettings = Field(
         default_factory=HealthCheckSettings, alias="healthCheck"
     )
+    # Without auto-permit: accept a new FDP once its root metadata is retrieved and
+    # valid, instead of waiting for an administrator (TASKS 4.8).
+    verified_permit: bool = Field(default=False, alias="verifiedPermit")
+    expiry: ExpirySettings = Field(default_factory=ExpirySettings)
 
     def matches_defaults(self, defaults: IndexSettings) -> bool:
         return (
             self.retrieval == defaults.retrieval
             and self.ping == defaults.ping
             and self.health_check == defaults.health_check
+            and self.verified_permit == defaults.verified_permit
+            and self.expiry == defaults.expiry
         )
 
     def denies(self, client_url: str) -> bool:
@@ -203,5 +230,7 @@ class SettingsService:
             ping=settings.ping,
             autoPermit=settings.auto_permit,
             healthCheck=settings.health_check,
+            verifiedPermit=settings.verified_permit,
+            expiry=settings.expiry,
             isDefault=settings.matches_defaults(self.defaults()),
         )

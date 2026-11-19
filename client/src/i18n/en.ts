@@ -83,6 +83,21 @@ export const en = {
     next: "Next",
   },
   entry: {
+    expired: "Expired",
+    options: {
+      harvest: "Harvest its metadata",
+      harvestOn: "The metadata will be harvested.",
+      harvestOff: "Directory only: the harvested metadata was removed.",
+      directoryOnly: "Directory only",
+      interval: "Harvest again",
+      intervals: {
+        changed: "when its metadata changes",
+        PT12H: "every 12 hours",
+        PT24H: "every day",
+        PT168H: "every week",
+      },
+      saved: "Options saved.",
+    },
     back: "All FAIR Data Points",
     open: "Open FDP",
     metadata: "Metadata",
@@ -129,6 +144,8 @@ export const en = {
     WebhookPing: "Webhook test",
     HealthCheck: "Scheduled check",
     Harvest: "Harvest",
+    Expiry: "Expired",
+    Registration: "Registered",
     pending: "in progress",
     details: "Details",
     request: "Request",
@@ -156,9 +173,25 @@ export const en = {
     },
     adminTitle: "Add an FDP yourself",
     adminHelp: "Registers the address as if it had pinged, and checks it now.",
+    nowTitle: "Register an FDP now",
+    nowHelp:
+      "Enter the address of your FAIR Data Point's root. The index registers it and checks it straight away, and tells you what it found.",
     addressLabel: "FDP address",
-    add: "Add and check",
+    add: "Register and check",
+    checking: "Checking…",
     added: "Added {url}; checking it in the background.",
+    checked: "Checked {url}.",
+    recentlyChecked: "It was checked a few minutes ago; this is that check's result.",
+    open: "Open its page",
+    verdict: {
+      listed:
+        "Found valid FAIR Data Point metadata. The FDP is listed and its metadata is being harvested.",
+      pending: "Found valid metadata. The FDP waits for an administrator to accept it.",
+      rejected: "This FDP was rejected by an administrator of this index.",
+      unreachable:
+        "The index could not reach this address. Check that it is public and answers with metadata, then try again.",
+      invalid: "The address answered, but not with FAIR Data Point metadata the index understands.",
+    },
   },
   approvals: {
     title: "Approvals",
@@ -180,6 +213,24 @@ export const en = {
     registration: "Registration",
     autoPermit: "Accept new FDPs automatically",
     autoPermitHelp: "When off, new FDPs wait under Approvals before they are listed and harvested.",
+    approval: "New FDPs are accepted",
+    approvals: {
+      automatic: "Automatically",
+      verified: "After a successful check",
+      manual: "By an administrator",
+    },
+    approvalsHelp: {
+      automatic: "Listed and harvested as soon as they ping.",
+      verified:
+        "Listed and harvested once the index has retrieved valid metadata from them; until then they wait under Approvals.",
+      manual: "They wait under Approvals until an administrator accepts them.",
+    },
+    expiry: "FDPs out of contact",
+    expiryLead:
+      "An FDP the index has not reached for a long time can be marked expired: an Expiry event and an EntryExpired webhook. It revives as soon as the index reaches it again.",
+    expiryEnabled: "Mark FDPs as expired",
+    expiryAfter: "After this long without contact",
+    expiryHide: "Hide expired FDPs from the public directory and the search",
     pings: "Pings",
     validDuration: "An FDP stays active for",
     validDurationHelp: "After a successful check. FDPs should ping at least this often.",
@@ -282,6 +333,7 @@ export const en = {
       EntryUnreachable: "FDP checked: unreachable",
       AdminTrigger: "Check requested by an admin",
       WebhookPing: "Test delivery",
+      EntryExpired: "FDP expired: no contact for a long time",
     },
   },
   signIn: {

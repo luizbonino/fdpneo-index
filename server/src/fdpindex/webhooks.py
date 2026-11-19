@@ -79,6 +79,8 @@ def webhook_events_for(event: Event, entry: IndexEntry | None) -> list[WebhookEv
             return [mapping[state]] if state is not None and state in mapping else []
         case EventType.WEBHOOK_PING:
             return [WebhookEvent.WEBHOOK_PING]
+        case EventType.EXPIRY:
+            return [WebhookEvent.ENTRY_EXPIRED]
         case EventType.HEALTH_CHECK:
             # Scheduled checks notify on state transitions only (ADR-0004).
             if not (event.payload.get("healthCheck") or {}).get("stateChanged"):

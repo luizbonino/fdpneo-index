@@ -79,6 +79,18 @@ function setPermit(permit: Permit) {
   );
 }
 
+/** Per-FDP options (administrators): directory only, and an own harvest interval. */
+const HARVEST_INTERVALS = ["", "PT12H", "PT24H", "PT168H"];
+function setHarvest(harvest: boolean) {
+  void run(
+    () => api.setOptions(props.uuid, { harvest }),
+    harvest ? t("entry.options.harvestOn") : t("entry.options.harvestOff"),
+  );
+}
+function setHarvestInterval(harvestInterval: string) {
+  void run(() => api.setOptions(props.uuid, { harvestInterval }), t("entry.options.saved"));
+}
+
 function checkNow() {
   const url = detail.value?.clientUrl ?? "";
   void run(() => api.trigger(url), t("entry.checkStarted", { url }));
@@ -129,6 +141,16 @@ async function remove() {
           <div class="row">
             <StateBadge :state="detail.state" />
             <PermitBadge v-if="session.isAdmin" :permit="detail.permit" />
+            <span
+              v-if="detail.expiredTime"
+              class="chip warn"
+              :title="absoluteTime(detail.expiredTime)"
+            >
+              {{ t("entry.expired") }}
+            </span>
+            <span v-if="detail.options && !detail.options.harvest" class="chip info">
+              {{ t("entry.options.directoryOnly") }}
+            </span>
             <span class="muted small">{{ t(`state.help.${detail.state}`) }}</span>
             <StatusHelp :permits="session.isAdmin" />
           </div>
@@ -158,6 +180,30 @@ async function remove() {
           <button class="btn danger" :disabled="busy" @click="remove">
             {{ t("entry.delete") }}
           </button>
+        </div>
+        <div v-if="detail.options" class="row options">
+          <label class="check">
+            <input
+              type="checkbox"
+              :checked="detail.options.harvest"
+              :disabled="busy"
+              @change="setHarvest(($event.target as HTMLInputElement).checked)"
+            />
+            {{ t("entry.options.harvest") }}
+          </label>
+          <label class="row">
+            <span class="small">{{ t("entry.options.interval") }}</span>
+            <select
+              class="input select"
+              :value="detail.options.harvestInterval ?? ''"
+              :disabled="busy || !detail.options.harvest"
+              @change="setHarvestInterval(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="value in HARVEST_INTERVALS" :key="value" :value="value">
+                {{ t(`entry.options.intervals.${value || "changed"}`) }}
+              </option>
+            </select>
+          </label>
         </div>
       </section>
 
@@ -277,6 +323,10 @@ async function remove() {
 }
 .head {
   gap: var(--fair-space-2);
+}
+.options {
+  flex-basis: 100%;
+  gap: var(--fair-space-4);
 }
 .admin {
   display: flex;

@@ -79,6 +79,9 @@ def test_default_settings_serialise_like_the_reference() -> None:
             "permits": ["ACCEPTED"],
             "reharvestOnChange": True,
         },
+        # additions (TASKS 4.6, 4.8)
+        "verifiedPermit": False,
+        "expiry": {"enabled": False, "after": "PT2160H", "hide": False},
     }
 
 

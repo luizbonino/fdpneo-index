@@ -86,6 +86,39 @@
         "title": "EntriesInfoView",
         "type": "object"
       },
+      "EntryCreateRequest": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryOptionsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryPermit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "clientUrl"
+        ],
+        "title": "EntryCreateRequest",
+        "type": "object"
+      },
       "EntryDetailView": {
         "properties": {
           "clientUrl": {
@@ -108,6 +141,17 @@
             },
             "title": "Events",
             "type": "array"
+          },
+          "expiredTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiredtime"
           },
           "harvest": {
             "anyOf": [
@@ -144,6 +188,16 @@
             "title": "Modificationtime",
             "type": "string"
           },
+          "options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryOptionsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "permit": {
             "$ref": "#/components/schemas/EntryPermit"
           },
@@ -172,6 +226,62 @@
           "lastRetrievalTime"
         ],
         "title": "EntryDetailView",
+        "type": "object"
+      },
+      "EntryOptionsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "harvest": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvest"
+          },
+          "harvestInterval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvestinterval"
+          }
+        },
+        "title": "EntryOptionsRequest",
+        "type": "object"
+      },
+      "EntryOptionsView": {
+        "description": "Per-FDP options (TASKS 4.7).",
+        "properties": {
+          "harvest": {
+            "description": "False: directory only, checked but never harvested",
+            "title": "Harvest",
+            "type": "boolean"
+          },
+          "harvestInterval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Harvest again at least this often (ISO-8601 duration); null: when changed",
+            "title": "Harvestinterval"
+          }
+        },
+        "required": [
+          "harvest"
+        ],
+        "title": "EntryOptionsView",
         "type": "object"
       },
       "EntryPageView": {
@@ -241,14 +351,29 @@
         "type": "string"
       },
       "EntryUpdateRequest": {
+        "description": "The reference sends ``permit``; ``options`` is an addition. Either may be left out.",
         "properties": {
+          "options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryOptionsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "permit": {
-            "$ref": "#/components/schemas/EntryPermit"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryPermit"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
-        "required": [
-          "permit"
-        ],
         "title": "EntryUpdateRequest",
         "type": "object"
       },
@@ -257,6 +382,17 @@
           "clientUrl": {
             "title": "Clienturl",
             "type": "string"
+          },
+          "expiredTime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiredtime"
           },
           "lastRetrievalTime": {
             "anyOf": [
@@ -550,6 +686,58 @@
         "title": "ExampleRequest",
         "type": "object"
       },
+      "ExpirySettings-Input": {
+        "additionalProperties": false,
+        "description": "Entries without contact for a long time (TASKS 4.6).\n\nAn accepted entry whose last successful retrieval (or, never retrieved, its\nregistration) is older than ``after`` is marked expired once: an ``Expiry``\nevent and an ``EntryExpired`` webhook. With ``hide``, expired entries leave\nthe public directory and the search. A successful retrieval revives it.",
+        "properties": {
+          "after": {
+            "default": "P90D",
+            "format": "duration",
+            "title": "After",
+            "type": "string"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "hide": {
+            "default": false,
+            "title": "Hide",
+            "type": "boolean"
+          }
+        },
+        "title": "ExpirySettings",
+        "type": "object"
+      },
+      "ExpirySettings-Output": {
+        "additionalProperties": false,
+        "description": "Entries without contact for a long time (TASKS 4.6).\n\nAn accepted entry whose last successful retrieval (or, never retrieved, its\nregistration) is older than ``after`` is marked expired once: an ``Expiry``\nevent and an ``EntryExpired`` webhook. With ``hide``, expired entries leave\nthe public directory and the search. A successful retrieval revives it.",
+        "properties": {
+          "after": {
+            "default": "PT2160H",
+            "title": "After",
+            "type": "string"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "hide": {
+            "default": false,
+            "title": "Hide",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "after",
+          "hide"
+        ],
+        "title": "ExpirySettings",
+        "type": "object"
+      },
       "FacetSetting-Input": {
         "additionalProperties": false,
         "properties": {
@@ -796,6 +984,9 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "expiry": {
+            "$ref": "#/components/schemas/ExpirySettings-Input"
+          },
           "healthCheck": {
             "$ref": "#/components/schemas/HealthCheckSettings-Input"
           },
@@ -804,6 +995,11 @@
           },
           "retrieval": {
             "$ref": "#/components/schemas/RetrievalSettings-Input"
+          },
+          "verifiedPermit": {
+            "default": false,
+            "title": "Verifiedpermit",
+            "type": "boolean"
           }
         },
         "required": [
@@ -821,6 +1017,9 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "expiry": {
+            "$ref": "#/components/schemas/ExpirySettings-Output"
+          },
           "healthCheck": {
             "$ref": "#/components/schemas/HealthCheckSettings-Output"
           },
@@ -833,6 +1032,11 @@
           },
           "retrieval": {
             "$ref": "#/components/schemas/RetrievalSettings-Output"
+          },
+          "verifiedPermit": {
+            "default": false,
+            "title": "Verifiedpermit",
+            "type": "boolean"
           }
         },
         "required": [
@@ -840,6 +1044,8 @@
           "ping",
           "autoPermit",
           "healthCheck",
+          "verifiedPermit",
+          "expiry",
           "isDefault"
         ],
         "title": "IndexSettingsView",
@@ -1100,6 +1306,82 @@
           "hidden"
         ],
         "title": "PropertySettings",
+        "type": "object"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientUrl"
+        ],
+        "title": "RegisterRequest",
+        "type": "object"
+      },
+      "RegistrationView": {
+        "description": "The outcome of registering an FDP (TASKS 4.9).",
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "newEntry": {
+            "title": "Newentry",
+            "type": "boolean"
+          },
+          "permit": {
+            "$ref": "#/components/schemas/EntryPermit"
+          },
+          "retrieved": {
+            "description": "False when a retrieval ran shortly before; the state is that one's",
+            "title": "Retrieved",
+            "type": "boolean"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "clientUrl",
+          "newEntry",
+          "state",
+          "permit",
+          "retrieved",
+          "error",
+          "title"
+        ],
+        "title": "RegistrationView",
         "type": "object"
       },
       "ReindexRequest": {
@@ -1439,7 +1721,8 @@
           "EntryInvalid",
           "EntryUnreachable",
           "AdminTrigger",
-          "WebhookPing"
+          "WebhookPing",
+          "EntryExpired"
         ],
         "title": "WebhookEvent",
         "type": "string"
@@ -1846,6 +2129,46 @@
         "tags": [
           "Index"
         ]
+      },
+      "post": {
+        "description": "Register an FDP and retrieve its root metadata now (addition).\n\nThe entry gets `permit` (default: the approval policy's) and `options`;\nan existing entry with that URL is updated instead.",
+        "operationId": "create_entry_index_entries_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryDetailView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add an FDP (administrators)",
+        "tags": [
+          "Index"
+        ]
       }
     },
     "/index/entries/all": {
@@ -2015,6 +2338,7 @@
         ]
       },
       "put": {
+        "description": "Change the permit (as in the reference) and the per-FDP options (addition).\n\n`options.harvest: false` makes the entry directory only: it stays listed\nand checked, and its harvested metadata is removed from search and SPARQL.\n`options.harvestInterval` (ISO-8601, at least an hour; empty clears it)\nharvests again at that interval even when the root metadata did not\nchange; it takes effect at the entry's checks.",
         "operationId": "update_entry_index_entries__entry_id__put",
         "parameters": [
           {
@@ -2232,6 +2556,57 @@
           }
         },
         "summary": "Get Event",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/register": {
+      "post": {
+        "description": "Self-service registration (addition): a ping whose retrieval runs before the answer.\n\nThe same deny list, rate limit and approval policy apply as to `POST /`.\nThe answer says whether the FDP's root metadata was found and valid, and\nwhether the entry waits for approval.",
+        "operationId": "register_index_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Not an http(s) URL"
+          },
+          "403": {
+            "description": "URL denied"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "summary": "Register an FDP and check it now",
         "tags": [
           "Index"
         ]

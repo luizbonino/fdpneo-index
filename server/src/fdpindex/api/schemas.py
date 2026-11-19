@@ -59,6 +59,7 @@ class EntryView(_Api):
     # additions
     last_retrieval_time: str | None = Field(serialization_alias="lastRetrievalTime")
     title: str | None = None
+    expired_time: str | None = Field(default=None, serialization_alias="expiredTime")
 
     @classmethod
     def of(cls, entry: IndexEntry, state: str) -> EntryView:
@@ -71,6 +72,7 @@ class EntryView(_Api):
             modification_time=instant(entry.updated_at) or "",
             last_retrieval_time=instant(entry.last_retrieval_at),
             title=(entry.repository_metadata or {}).get("title"),
+            expired_time=instant(entry.expired_at),
         )
 
 
@@ -166,10 +168,65 @@ class EntryDetailView(_Api):
     # additions
     harvest: HarvestView | None = None
     health: HealthView | None = None
+    options: EntryOptionsView | None = None
+    expired_time: str | None = Field(default=None, serialization_alias="expiredTime")
+
+
+class EntryOptionsView(_Api):
+    """Per-FDP options (TASKS 4.7)."""
+
+    harvest: bool = Field(description="False: directory only, checked but never harvested")
+    harvest_interval: str | None = Field(
+        default=None,
+        serialization_alias="harvestInterval",
+        description="Harvest again at least this often (ISO-8601 duration); null: when changed",
+    )
+
+
+class EntryOptionsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    harvest: bool | None = None
+    # An ISO-8601 duration; "" or null clears it. At least an hour.
+    harvest_interval: str | None = Field(default=None, alias="harvestInterval")
 
 
 class EntryUpdateRequest(BaseModel):
+    """The reference sends ``permit``; ``options`` is an addition. Either may be left out."""
+
+    permit: EntryPermit | None = None
+    options: EntryOptionsRequest | None = None
+
+
+class RegisterRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    client_url: str = Field(alias="clientUrl")
+
+    @field_validator("client_url")
+    @classmethod
+    def _url(cls, value: str) -> str:
+        return _http_url(value)
+
+
+class RegistrationView(_Api):
+    """The outcome of registering an FDP (TASKS 4.9)."""
+
+    uuid: str
+    client_url: str = Field(serialization_alias="clientUrl")
+    new_entry: bool = Field(serialization_alias="newEntry")
+    state: str
     permit: EntryPermit
+    retrieved: bool = Field(
+        description="False when a retrieval ran shortly before; the state is that one's"
+    )
+    error: str | None
+    title: str | None
+
+
+class EntryCreateRequest(RegisterRequest):
+    permit: EntryPermit | None = None
+    options: EntryOptionsRequest | None = None
 
 
 class EntriesInfoView(_Api):
@@ -304,6 +361,9 @@ def event_outcome(event: Event) -> str | None:
         case "AdminTrigger":
             # Not the administrator's name: outcomes are shown to anonymous callers too.
             return "Triggered by an administrator"
+        case "Expiry":
+            expiry = payload.get("expiry") or {}
+            return f"Expired: no contact since {str(expiry.get('lastContact', ''))[:10]}"
         case "HealthCheck":
             check = payload.get("healthCheck") or {}
             if check.get("error"):

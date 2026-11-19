@@ -68,11 +68,13 @@ harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 | Path | Who | Purpose |
 |---|---|---|
 | `POST /` | anyone | Ping |
+| `POST /index/register` | anyone | Register an FDP and check it now: the ping's rules apply, and the answer says what the check found and whether the entry waits for approval |
 | `GET /index/entries` | anyone* | Paged list: `state`, `permit`, `q`, `sort`, `page`, `size` |
 | `GET /index/entries/all`, `/info` | anyone* | Unpaged list; counts per state |
 | `GET /index/entries/{uuid}` | anyone* | Detail with metadata and recent events |
 | `GET /index/entries/{uuid}/data` | anyone* | Harvested metadata (Turtle, JSON-LD, N-Triples, RDF/XML) |
-| `PUT` / `DELETE /index/entries/{uuid}` | admin | Accept or reject; delete |
+| `POST /index/entries` | admin | Add an FDP with a permit and options, and check it now |
+| `PUT` / `DELETE /index/entries/{uuid}` | admin | Accept or reject; per-FDP `options` (`harvest: false` for directory only, `harvestInterval`); delete |
 | `GET /index/entries/{uuid}/events`, `/index/events/{uuid}` | admin | Full event log with exchanges |
 | `GET` / `PUT` / `DELETE /index/settings` | admin | Settings; `DELETE` resets |
 | `POST /index/admin/trigger`, `/trigger-all` | admin | Retrieve (and harvest) now |

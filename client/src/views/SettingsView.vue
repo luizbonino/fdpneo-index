@@ -33,6 +33,8 @@ const form = reactive<SettingsForm>({
     permits: ["ACCEPTED"],
     reharvestOnChange: true,
   },
+  verifiedPermit: false,
+  expiry: { enabled: false, after: "PT2160H", hide: false },
 });
 const errors = ref<Record<string, string>>({});
 const saving = ref(false);
@@ -42,7 +44,20 @@ function load(value: Settings) {
   form.ping = { ...value.ping, denyList: [...value.ping.denyList] };
   form.retrieval = { ...value.retrieval };
   form.healthCheck = { ...value.healthCheck, permits: [...value.healthCheck.permits] };
+  form.verifiedPermit = value.verifiedPermit;
+  form.expiry = { ...value.expiry };
 }
+
+/** Automatic, after a successful check (verified), or manual: two settings in the API. */
+type Approval = "automatic" | "verified" | "manual";
+const approval = computed<Approval>({
+  get: () => (form.autoPermit ? "automatic" : form.verifiedPermit ? "verified" : "manual"),
+  set: (value) => {
+    form.autoPermit = value === "automatic";
+    form.verifiedPermit = value === "verified";
+  },
+});
+const APPROVALS: Approval[] = ["automatic", "verified", "manual"];
 watch(
   () => settings.data.value,
   (value) => value && load(value),
@@ -137,11 +152,16 @@ function fieldError(path: string): string | undefined {
     <form v-else class="stack form" @submit.prevent="save">
       <section class="card stack">
         <h2>{{ t("settings.registration") }}</h2>
-        <label class="check">
-          <input v-model="form.autoPermit" type="checkbox" />
-          {{ t("settings.autoPermit") }}
-        </label>
-        <p class="help muted small">{{ t("settings.autoPermitHelp") }}</p>
+        <fieldset class="stack plain">
+          <legend class="label">{{ t("settings.approval") }}</legend>
+          <label v-for="option in APPROVALS" :key="option" class="check approval">
+            <input v-model="approval" type="radio" name="approval" :value="option" />
+            <span>
+              {{ t(`settings.approvals.${option}`) }}
+              <span class="help muted small">{{ t(`settings.approvalsHelp.${option}`) }}</span>
+            </span>
+          </label>
+        </fieldset>
       </section>
 
       <section class="card stack">
@@ -242,6 +262,26 @@ function fieldError(path: string): string | undefined {
       </section>
 
       <section class="card stack">
+        <h2>{{ t("settings.expiry") }}</h2>
+        <p class="muted small">{{ t("settings.expiryLead") }}</p>
+        <label class="check">
+          <input v-model="form.expiry.enabled" type="checkbox" />
+          {{ t("settings.expiryEnabled") }}
+        </label>
+        <fieldset class="stack plain" :disabled="!form.expiry.enabled">
+          <div class="field">
+            <label for="expiry-after">{{ t("settings.expiryAfter") }}</label>
+            <DurationInput id="expiry-after" v-model="form.expiry.after" :units="['days']" />
+            <span v-if="fieldError('after')" class="error">{{ fieldError("after") }}</span>
+          </div>
+          <label class="check">
+            <input v-model="form.expiry.hide" type="checkbox" />
+            {{ t("settings.expiryHide") }}
+          </label>
+        </fieldset>
+      </section>
+
+      <section class="card stack">
         <h2>{{ t("settings.denyList") }}</h2>
         <p class="muted small">{{ t("settings.denyListHelp") }}</p>
         <div v-for="(_, index) in form.ping.denyList" :key="index" class="pattern">
@@ -310,6 +350,12 @@ function fieldError(path: string): string | undefined {
   border: 0;
   padding: 0;
   margin: 0;
+}
+.approval {
+  align-items: flex-start;
+}
+.approval .help {
+  display: block;
 }
 .pattern {
   display: grid;

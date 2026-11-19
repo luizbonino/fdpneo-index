@@ -96,6 +96,16 @@ class IndexChange:
 
 
 @dataclass
+class Registration:
+    """The outcome of :meth:`IndexService.register`."""
+
+    entry: IndexEntry
+    new_entry: bool
+    retrieved: bool  # False: skipped by the retrieval rate limit; the state is the last one
+    error: str | None
+
+
+@dataclass
 class PingOutcome:
     event_id: UUID
     entry_id: UUID
@@ -112,6 +122,19 @@ class Retrieval:
     content_hash: str | None = None
     etag: str | None = None
     last_modified: str | None = None
+
+
+def _harvest_due(entry: IndexEntry, now: datetime) -> bool:
+    """The entry's own harvest interval has passed since its last harvest (TASKS 4.7)."""
+    if not entry.harvest_interval_seconds:
+        return False
+    last = entry.last_harvest_at
+    return last is None or now - last >= timedelta(seconds=entry.harvest_interval_seconds)
+
+
+def last_contact(entry: IndexEntry) -> datetime:
+    """The last successful retrieval, or the registration of an entry never retrieved."""
+    return entry.last_success_at or entry.created_at
 
 
 def next_check(now: datetime, interval: timedelta) -> datetime:
@@ -489,15 +512,29 @@ class IndexService:
                 )
                 entry.last_retrieval_at = now
                 state_changed = entry.state is not previous
+                if (
+                    entry.permit is EntryPermit.PENDING
+                    and entry.state is EntryState.VALID
+                    and settings.verified_permit
+                ):
+                    # Verified approval (TASKS 4.8): the FDP answered with valid metadata.
+                    entry.permit = EntryPermit.ACCEPTED
+                    payload["approved"] = "verified"
+                    log.info("entry_approved_verified", client_url=entry.client_url)
                 if scheduled:
                     payload["notModified"] = result.not_modified
                     payload["metadataChanged"] = changed
                     payload["stateChanged"] = state_changed
                     payload["consecutiveFailures"] = entry.consecutive_failures
-                wants_harvest = not scheduled or (changed and check.reharvest_on_change)
+                wants_harvest = (
+                    not scheduled
+                    or (changed and check.reharvest_on_change)
+                    or _harvest_due(entry, now)
+                )
                 if (
                     entry.state is EntryState.VALID
                     and entry.permit is EntryPermit.ACCEPTED
+                    and entry.harvest_enabled
                     and wants_harvest
                 ):
                     harvest_entry = self._new_harvest(session, entry.uuid, event.uuid).uuid
@@ -528,6 +565,7 @@ class IndexService:
         if result.state is not EntryState.VALID:
             return False
         entry.last_success_at = utcnow()
+        entry.expired_at = None  # contact again: no longer expired (TASKS 4.6)
         if result.not_modified or result.metadata is None:
             return False
         entry.repository_uri = result.metadata["repositoryUri"]
@@ -588,6 +626,164 @@ class IndexService:
         if started:
             log.info("health_checks_started", count=len(started))
         return len(started)
+
+    # --- expiry (TASKS 4.6) ----------------------------------------------------------
+
+    async def mark_expired(self, *, batch: int = 100) -> int:
+        """Mark accepted entries without contact for longer than the expiry setting.
+
+        Each is marked once: an ``Expiry`` event, which the webhooks turn into
+        ``EntryExpired``. A successful retrieval clears the mark.
+        """
+        settings = await self._settings.get()
+        expiry = settings.expiry
+        if not expiry.enabled:
+            return 0
+        now = utcnow()
+        cutoff = now - expiry.after
+        marked: list[UUID] = []
+        async with self._session_factory() as session, session.begin():
+            rows = await session.scalars(
+                select(IndexEntry)
+                .where(
+                    IndexEntry.permit == EntryPermit.ACCEPTED,
+                    IndexEntry.expired_at.is_(None),
+                    func.coalesce(IndexEntry.last_success_at, IndexEntry.created_at) < cutoff,
+                )
+                .limit(batch)
+                .with_for_update(skip_locked=True)
+            )
+            for entry in rows:
+                entry.expired_at = now
+                event = Event(
+                    uuid=uuid4(),
+                    type=EventType.EXPIRY,
+                    related_to=entry.uuid,
+                    payload={
+                        "expiry": {
+                            "lastContact": last_contact(entry).isoformat(),
+                            "after": format_duration(expiry.after),
+                            "hidden": expiry.hide,
+                        }
+                    },
+                    created_at=now,
+                    executed_at=now,
+                    finished_at=now,
+                )
+                session.add(event)
+                marked.append(event.uuid)
+        for event_id in marked:
+            self._webhooks.schedule_trigger(event_id)
+        if marked:
+            log.info("entries_expired", count=len(marked))
+            self._notify(IndexChange("entries"))
+        return len(marked)
+
+    async def hides_expired(self) -> bool:
+        settings = await self._settings.get()
+        return settings.expiry.enabled and settings.expiry.hide
+
+    # --- per-FDP options (TASKS 4.7) ------------------------------------------------
+
+    async def update_options(
+        self,
+        entry_id: UUID,
+        *,
+        harvest_enabled: bool | None = None,
+        harvest_interval: timedelta | None = None,
+        clear_interval: bool = False,
+    ) -> IndexEntry:
+        """Directory only (no harvest) and the entry's own harvest interval."""
+        async with self._session_factory() as session, session.begin():
+            entry = await session.get(IndexEntry, entry_id)
+            if entry is None:
+                raise NotFound("Index entry not found")
+            stop_harvest = harvest_enabled is False and entry.harvest_enabled
+            if harvest_enabled is not None:
+                entry.harvest_enabled = harvest_enabled
+            if clear_interval:
+                entry.harvest_interval_seconds = None
+            elif harvest_interval is not None:
+                entry.harvest_interval_seconds = int(harvest_interval.total_seconds())
+        if stop_harvest:
+            # Directory only: what was harvested leaves search and SPARQL.
+            await self.delete_harvested(entry_id)
+        return await self.get_entry(entry_id)
+
+    # --- registration (TASKS 4.9) ---------------------------------------------------
+
+    async def register(
+        self,
+        client_url: str,
+        *,
+        remote_addr: str | None,
+        actor: str | None = None,
+        permit: EntryPermit | None = None,
+        harvest_enabled: bool | None = None,
+        harvest_interval: timedelta | None = None,
+    ) -> Registration:
+        """Register an FDP and retrieve its root metadata now; return the outcome.
+
+        Visitors go through the ping intake (deny list, rate limit, approval
+        policy); ``actor`` is an administrator, whose registration is an admin
+        trigger. Either way the retrieval runs here rather than in the
+        background, so the caller sees its result; harvests follow as usual.
+        An administrator's ``permit`` and options apply before the retrieval, so
+        a directory-only entry is never harvested.
+        """
+        if actor is None:
+            outcome = await self.accept_ping(
+                client_url,
+                remote_addr=remote_addr,
+                method="POST",
+                path="/index/register",
+                headers={},
+                body=None,
+            )
+            trigger_id, entry_id, new_entry = outcome.event_id, outcome.entry_id, outcome.new_entry
+        else:
+            async with self._session_factory() as session:
+                existing = await session.scalar(
+                    select(IndexEntry.uuid).where(IndexEntry.client_url == client_url)
+                )
+            trigger_id = await self.admin_trigger(client_url, actor=actor, remote_addr=remote_addr)
+            new_entry = existing is None
+            entry_id = (await self.get_event(trigger_id)).related_to
+            assert entry_id is not None
+            async with self._session_factory() as session, session.begin():
+                entry = await session.get(IndexEntry, entry_id)
+                assert entry is not None
+                if permit is not None:
+                    entry.permit = permit
+                if harvest_enabled is not None:
+                    entry.harvest_enabled = harvest_enabled
+                if harvest_interval is not None:
+                    entry.harvest_interval_seconds = int(harvest_interval.total_seconds())
+        self._webhooks.schedule_trigger(trigger_id)
+        retrieval_id = uuid4()
+        async with self._session_factory() as session, session.begin():
+            session.add(
+                Event(
+                    uuid=retrieval_id,
+                    type=EventType.METADATA_RETRIEVAL,
+                    triggered_by=trigger_id,
+                    related_to=entry_id,
+                    payload={
+                        "metadataRetrieval": {"error": None, "exchange": None, "metadata": None}
+                    },
+                    created_at=utcnow(),
+                )
+            )
+        await self.run_retrieval(retrieval_id)
+        retrieval = await self.get_event(retrieval_id)
+        entry = await self.get_entry(entry_id)
+        detail = (retrieval.payload or {}).get("metadataRetrieval") or {}
+        return Registration(
+            entry=entry,
+            new_entry=new_entry,
+            retrieved=retrieval.executed_at is not None,
+            error=detail.get("error"),
+        )
 
     # --- harvest -------------------------------------------------------------------
 
@@ -795,6 +991,9 @@ class IndexService:
                 event.payload = {"harvest": report}
                 event.executed_at = event.executed_at or now
                 event.finished_at = now
+                entry = await active.get(IndexEntry, event.related_to) if event.related_to else None
+                if entry is not None:
+                    entry.last_harvest_at = now
 
         if session is not None:
             await write(session)
@@ -903,9 +1102,13 @@ class IndexService:
         sort: list[str] | None = None,
         page: int = 0,
         size: int = 20,
+        public: bool = False,
     ) -> EntryPage:
         threshold = await self.valid_threshold()
-        conditions: list[ColumnElement[bool]] = [IndexEntry.permit.in_(permits)]
+        conditions: list[ColumnElement[bool]] = [
+            IndexEntry.permit.in_(permits),
+            *await self._public_conditions(public),
+        ]
         state_condition = self._state_filter(state, threshold)
         if state_condition is not None:
             conditions.append(state_condition)
@@ -936,21 +1139,33 @@ class IndexService:
             items = list(rows.scalars().all())
         return EntryPage(items=items, total=int(total or 0), page=page, size=size)
 
-    async def all_entries(self, permits: list[EntryPermit]) -> list[IndexEntry]:
+    async def _public_conditions(self, public: bool) -> list[ColumnElement[bool]]:
+        """For anonymous callers: expired entries leave the lists when the policy hides them."""
+        if public and await self.hides_expired():
+            return [IndexEntry.expired_at.is_(None)]
+        return []
+
+    async def all_entries(
+        self, permits: list[EntryPermit], *, public: bool = False
+    ) -> list[IndexEntry]:
+        hidden = await self._public_conditions(public)
         async with self._session_factory() as session:
             rows = await session.execute(
                 select(IndexEntry)
-                .where(IndexEntry.permit.in_(permits))
+                .where(IndexEntry.permit.in_(permits), *hidden)
                 .order_by(IndexEntry.created_at.desc())
             )
             return list(rows.scalars().all())
 
-    async def counts(self, permits: list[EntryPermit]) -> dict[str, int]:
+    async def counts(self, permits: list[EntryPermit], *, public: bool = False) -> dict[str, int]:
         threshold = await self.valid_threshold()
+        hidden = await self._public_conditions(public)
         result: dict[str, int] = {}
         async with self._session_factory() as session:
             base = (
-                select(func.count()).select_from(IndexEntry).where(IndexEntry.permit.in_(permits))
+                select(func.count())
+                .select_from(IndexEntry)
+                .where(IndexEntry.permit.in_(permits), *hidden)
             )
             result["ALL"] = int(await session.scalar(base) or 0)
             for state in API_STATES:

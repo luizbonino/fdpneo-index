@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID
 
@@ -23,7 +24,10 @@ from sqlalchemy import text
 from fdpindex import __version__
 from fdpindex.api.schemas import (
     EntriesInfoView,
+    EntryCreateRequest,
     EntryDetailView,
+    EntryOptionsRequest,
+    EntryOptionsView,
     EntryPageView,
     EntryUpdateRequest,
     EntryView,
@@ -33,6 +37,8 @@ from fdpindex.api.schemas import (
     HarvestView,
     HealthView,
     PingRequest,
+    RegisterRequest,
+    RegistrationView,
     RepositoryMetadataView,
     ServiceInfo,
     TriggerRequest,
@@ -41,6 +47,7 @@ from fdpindex.api.schemas import (
     instant,
 )
 from fdpindex.auth import Principal, current_principal, require_admin
+from fdpindex.durations import format_duration, parse_duration
 from fdpindex.errors import BadRequest, NotFound, RateLimited
 from fdpindex.models import EntryPermit
 from fdpindex.service import IndexService, api_state
@@ -209,7 +216,13 @@ async def list_entries(
 ) -> EntryPageView:
     size = min(size, MAX_PAGE_SIZE)
     result = await index.list_entries(
-        permits=_permits(caller, permit), state=state, query=q, sort=sort, page=page, size=size
+        permits=_permits(caller, permit),
+        state=state,
+        query=q,
+        sort=sort,
+        page=page,
+        size=size,
+        public=not caller.is_admin,
     )
     threshold = await index.valid_threshold()
     content = [EntryView.of(entry, api_state(entry, threshold)) for entry in result.items]
@@ -230,13 +243,15 @@ async def list_entries(
 @router.get("/index/entries/all", tags=["Index"], response_model=list[EntryView])
 async def all_entries(index: Index, caller: Caller, permit: str = "accepted") -> list[EntryView]:
     threshold = await index.valid_threshold()
-    entries = await index.all_entries(_permits(caller, permit))
+    entries = await index.all_entries(_permits(caller, permit), public=not caller.is_admin)
     return [EntryView.of(entry, api_state(entry, threshold)) for entry in entries]
 
 
 @router.get("/index/entries/info", tags=["Index"], response_model=EntriesInfoView)
 async def entries_info(index: Index, caller: Caller, permit: str = "accepted") -> EntriesInfoView:
-    return EntriesInfoView(entries_count=await index.counts(_permits(caller, permit)))
+    return EntriesInfoView(
+        entries_count=await index.counts(_permits(caller, permit), public=not caller.is_admin)
+    )
 
 
 async def _visible(index: IndexService, caller: Principal, entry_id: UUID) -> None:
@@ -274,6 +289,13 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
             last_success_time=instant(entry.last_success_at),
             consecutive_failures=entry.consecutive_failures,
         ),
+        options=EntryOptionsView(
+            harvest=entry.harvest_enabled,
+            harvest_interval=format_duration(timedelta(seconds=entry.harvest_interval_seconds))
+            if entry.harvest_interval_seconds
+            else None,
+        ),
+        expired_time=instant(entry.expired_at),
     )
 
 
@@ -287,8 +309,101 @@ async def get_entry(entry_id: UUID, index: Index, caller: Caller) -> EntryDetail
 async def update_entry(
     entry_id: UUID, body: EntryUpdateRequest, request: Request, index: Index, admin: Admin
 ) -> EntryDetailView:
-    await index.update_permit(entry_id, body.permit, actor=admin.name, remote_addr=_remote(request))
+    """Change the permit (as in the reference) and the per-FDP options (addition).
+
+    `options.harvest: false` makes the entry directory only: it stays listed
+    and checked, and its harvested metadata is removed from search and SPARQL.
+    `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
+    harvests again at that interval even when the root metadata did not
+    change; it takes effect at the entry's checks.
+    """
+    if body.options is not None:
+        await _apply_options(index, entry_id, body.options)
+    if body.permit is not None:
+        await index.update_permit(
+            entry_id, body.permit, actor=admin.name, remote_addr=_remote(request)
+        )
     return await _detail(index, entry_id)
+
+
+def _interval(value: str | None) -> timedelta | None:
+    if not value:
+        return None
+    try:
+        interval = parse_duration(value)
+    except ValueError as err:
+        raise BadRequest(f"harvestInterval: {err}") from err
+    if interval < timedelta(hours=1):
+        raise BadRequest("harvestInterval: at least an hour")
+    return interval
+
+
+async def _apply_options(index: IndexService, entry_id: UUID, options: EntryOptionsRequest) -> None:
+    interval = _interval(options.harvest_interval)
+    clear = options.harvest_interval == ""
+    await index.update_options(
+        entry_id, harvest_enabled=options.harvest, harvest_interval=interval, clear_interval=clear
+    )
+
+
+@router.post(
+    "/index/entries",
+    tags=["Index"],
+    status_code=201,
+    response_model=EntryDetailView,
+    summary="Add an FDP (administrators)",
+)
+async def create_entry(
+    body: EntryCreateRequest, request: Request, index: Index, admin: Admin
+) -> EntryDetailView:
+    """Register an FDP and retrieve its root metadata now (addition).
+
+    The entry gets `permit` (default: the approval policy's) and `options`;
+    an existing entry with that URL is updated instead.
+    """
+    options = body.options or EntryOptionsRequest()
+    outcome = await index.register(
+        body.client_url,
+        remote_addr=_remote(request),
+        actor=admin.name,
+        permit=body.permit,
+        harvest_enabled=options.harvest,
+        harvest_interval=_interval(options.harvest_interval),
+    )
+    return await _detail(index, outcome.entry.uuid)
+
+
+@router.post(
+    "/index/register",
+    tags=["Index"],
+    response_model=RegistrationView,
+    summary="Register an FDP and check it now",
+    responses={
+        400: {"description": "Not an http(s) URL"},
+        403: {"description": "URL denied"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def register(body: RegisterRequest, request: Request, index: Index) -> RegistrationView:
+    """Self-service registration (addition): a ping whose retrieval runs before the answer.
+
+    The same deny list, rate limit and approval policy apply as to `POST /`.
+    The answer says whether the FDP's root metadata was found and valid, and
+    whether the entry waits for approval.
+    """
+    outcome = await index.register(body.client_url, remote_addr=_remote(request))
+    entry = outcome.entry
+    threshold = await index.valid_threshold()
+    return RegistrationView(
+        uuid=str(entry.uuid),
+        client_url=entry.client_url,
+        new_entry=outcome.new_entry,
+        state=api_state(entry, threshold),
+        permit=entry.permit,
+        retrieved=outcome.retrieved,
+        error=outcome.error,
+        title=(entry.repository_metadata or {}).get("title"),
+    )
 
 
 @router.delete(

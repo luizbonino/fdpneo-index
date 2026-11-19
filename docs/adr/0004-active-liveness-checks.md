@@ -44,6 +44,30 @@ addition to ping-triggered retrievals:
 The entry API gains `health` (`nextCheckTime`, `lastSuccessTime`,
 `consecutiveFailures`); the events gain the `HealthCheck` type.
 
+## Amendment (19 November 2026): registry policies (TASKS 4.6 to 4.9)
+
+- **Expiry**, off by default: an accepted entry without a successful
+  retrieval for `expiry.after` (90 days by default; counted from its
+  registration when it was never reached) is marked once, with an `Expiry`
+  event and an `EntryExpired` webhook. With `expiry.hide`, expired entries
+  leave the public directory (lists and counts) and the search; the SPARQL
+  store keeps them. A successful retrieval, after a ping or a check, clears
+  the mark. The reference states are unchanged; entries gain `expiredTime`.
+- **Per-FDP options**: `harvest: false` keeps an entry in the directory,
+  checked, but never harvested (its harvested metadata is removed); a
+  `harvestInterval` harvests it again at that interval, even when the root
+  metadata did not change, at its checks.
+- **Verified approval** (`verifiedPermit`): with auto-permit off, a new
+  entry is accepted once a retrieval finds valid FDP metadata.
+- **Registration**: `POST /index/register` is a ping whose retrieval runs
+  before the answer, under the same deny list, rate limit and approval
+  policy; `POST /index/entries` lets administrators add an FDP with a
+  permit and options, applied before its first retrieval.
+
+These settle the first open question below (hiding, off by default) and,
+with `harvestInterval`, give the periodic re-harvest the third asks for, per
+FDP.
+
 ## Open questions
 
 - Should `ACTIVE` keep meaning "retrieved within the valid duration"? With

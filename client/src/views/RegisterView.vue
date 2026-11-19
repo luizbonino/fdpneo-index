@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { api } from "@/api";
+import { api, type Permit } from "@/api";
 import { ApiError } from "@/api/client";
 import { session } from "@/auth/session";
 import { useInvalidateEntries } from "@/composables/queries";
 import { toast } from "@/composables/feedback";
 import CopyField from "@/components/CopyField.vue";
+import StateBadge from "@/components/StateBadge.vue";
 import { runtimeApiUrl, runtimePublicOrigin } from "@/runtimeConfig";
 
 const { t } = useI18n();
@@ -25,13 +26,42 @@ const address = ref("");
 const error = ref("");
 const adding = ref(false);
 
+/** What the immediate check found (TASKS 4.9). */
+interface Outcome {
+  uuid: string;
+  clientUrl: string;
+  state: string;
+  permit: Permit;
+  newEntry: boolean;
+  retrieved: boolean;
+  error: string | null;
+  title: string | null;
+}
+const outcome = ref<Outcome | null>(null);
+
 async function add() {
   error.value = "";
+  outcome.value = null;
   adding.value = true;
+  const url = address.value.trim();
   try {
-    await api.trigger(address.value.trim());
-    toast(t("register.added", { url: address.value.trim() }));
+    if (session.isAdmin) {
+      const detail = await api.createEntry(url);
+      outcome.value = {
+        uuid: detail.uuid,
+        clientUrl: detail.clientUrl,
+        state: detail.state,
+        permit: detail.permit,
+        newEntry: true,
+        retrieved: true,
+        error: null,
+        title: detail.currentMetadata?.metadata.title ?? null,
+      };
+    } else {
+      outcome.value = await api.register(url);
+    }
     address.value = "";
+    toast(t("register.checked", { url }));
     setTimeout(() => void invalidate(), 2500);
   } catch (err) {
     error.value =
@@ -40,6 +70,16 @@ async function add() {
     adding.value = false;
   }
 }
+
+const verdict = computed(() => {
+  const found = outcome.value;
+  if (!found) return "";
+  if (found.state === "UNREACHABLE") return "unreachable";
+  if (found.state === "INVALID") return "invalid";
+  if (found.permit === "PENDING") return "pending";
+  if (found.permit === "REJECTED") return "rejected";
+  return "listed";
+});
 </script>
 
 <template>
@@ -77,9 +117,11 @@ async function add() {
       </ol>
     </section>
 
-    <section v-if="session.isAdmin" id="add" class="card stack">
-      <h2>{{ t("register.adminTitle") }}</h2>
-      <p class="muted">{{ t("register.adminHelp") }}</p>
+    <section id="add" class="card stack">
+      <h2>{{ t("register.nowTitle") }}</h2>
+      <p class="muted">
+        {{ session.isAdmin ? t("register.adminHelp") : t("register.nowHelp") }}
+      </p>
       <form class="add" @submit.prevent="add">
         <div class="field">
           <label for="fdp-address">{{ t("register.addressLabel") }}</label>
@@ -96,9 +138,25 @@ async function add() {
           <span id="fdp-address-error" class="error" role="alert">{{ error }}</span>
         </div>
         <button class="btn primary" type="submit" :disabled="adding || !address.trim()">
-          {{ t("register.add") }}
+          {{ adding ? t("register.checking") : t("register.add") }}
         </button>
       </form>
+      <div v-if="outcome" class="outcome" role="status">
+        <div class="row">
+          <StateBadge :state="outcome.state" />
+          <strong>{{ outcome.title || outcome.clientUrl }}</strong>
+        </div>
+        <p>{{ t(`register.verdict.${verdict}`) }}</p>
+        <p v-if="outcome.error" class="muted small">{{ outcome.error }}</p>
+        <p v-if="!outcome.retrieved" class="muted small">{{ t("register.recentlyChecked") }}</p>
+        <router-link
+          v-if="outcome.permit === 'ACCEPTED' || session.isAdmin"
+          class="btn sm"
+          :to="{ name: 'entry', params: { uuid: outcome.uuid } }"
+        >
+          {{ t("register.open") }}
+        </router-link>
+      </div>
     </section>
   </div>
 </template>
@@ -124,5 +182,15 @@ async function add() {
 }
 .add .btn {
   margin-top: 28px;
+}
+.outcome {
+  display: grid;
+  gap: var(--fair-space-2);
+  padding: var(--fair-space-3) var(--fair-space-4);
+  border-radius: var(--fair-radius-md, 8px);
+  background: var(--fair-surface-2, var(--tool-accent-tint));
+}
+.outcome p {
+  margin: 0;
 }
 </style>

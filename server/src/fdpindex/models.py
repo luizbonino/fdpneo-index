@@ -53,6 +53,8 @@ class EventType(enum.StrEnum):
     WEBHOOK_PING = "WebhookPing"
     HEALTH_CHECK = "HealthCheck"  # addition: scheduled liveness check (ADR-0004)
     HARVEST = "Harvest"  # addition: a harvest of an entry's metadata tree (TASKS 1.15)
+    EXPIRY = "Expiry"  # addition: the expiry policy marked an entry (TASKS 4.6)
+    REGISTRATION = "Registration"  # addition: self-service or admin registration (TASKS 4.9)
 
 
 class WebhookEvent(enum.StrEnum):
@@ -63,6 +65,8 @@ class WebhookEvent(enum.StrEnum):
     ENTRY_UNREACHABLE = "EntryUnreachable"
     ADMIN_TRIGGER = "AdminTrigger"
     WEBHOOK_PING = "WebhookPing"
+    # additions
+    ENTRY_EXPIRED = "EntryExpired"
 
 
 def _enum(cls: type[enum.StrEnum], name: str) -> SAEnum:
@@ -103,6 +107,14 @@ class IndexEntry(Base):
     # Validators for conditional requests (If-None-Match / If-Modified-Since).
     http_etag: Mapped[str | None] = mapped_column(String(512), nullable=True)
     http_last_modified: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # --- per-FDP options and expiry (TASKS 4.6, 4.7) ---
+    # False: directory only, checked but never harvested.
+    harvest_enabled: Mapped[bool] = mapped_column(nullable=False, default=True)
+    # Harvest again at least this often, even when the root metadata is unchanged.
+    harvest_interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_harvest_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # Set when the expiry policy marked the entry; cleared by a successful retrieval.
+    expired_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
 
     __table_args__ = (
         Index("ix_index_entry_state_permit", "state", "permit"),

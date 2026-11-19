@@ -20,6 +20,12 @@ export type Webhook = Schemas["WebhookView"];
 export type WebhookInput = Schemas["WebhookRequest"];
 export type WebhookEvent = Schemas["WebhookEvent"];
 export type ServiceInfo = Schemas["ServiceInfo"];
+export type Registration = Schemas["RegistrationView"];
+export interface EntryOptions {
+  harvest?: boolean;
+  /** ISO-8601 duration; "" clears it. */
+  harvestInterval?: string;
+}
 
 export type EntryState = "ACTIVE" | "INACTIVE" | "UNREACHABLE" | "INVALID" | "UNKNOWN";
 export const ENTRY_STATES: EntryState[] = [
@@ -38,6 +44,7 @@ export const WEBHOOK_EVENTS: WebhookEvent[] = [
   "EntryUnreachable",
   "AdminTrigger",
   "WebhookPing",
+  "EntryExpired",
 ];
 
 export interface EntryQuery {
@@ -70,6 +77,15 @@ export const api = {
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),
   setPermit: (uuid: string, permit: Permit) =>
     request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { permit } }),
+  setOptions: (uuid: string, options: EntryOptions) =>
+    request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { options } }),
+  register: (clientUrl: string) =>
+    request<Registration>("/index/register", { method: "POST", body: { clientUrl } }),
+  createEntry: (clientUrl: string, permit?: Permit, options?: EntryOptions) =>
+    request<EntryDetail>("/index/entries", {
+      method: "POST",
+      body: { clientUrl, permit, options },
+    }),
   deleteEntry: (uuid: string) => request<void>(`/index/entries/${uuid}`, { method: "DELETE" }),
   events: (uuid: string, page = 0, size = 50) =>
     request<EventPage>(`/index/entries/${uuid}/events${query({ page, size })}`),

@@ -341,6 +341,7 @@ class SearchService:
         self._sample_size = sample_size
         self._max_page_percent = max_page_percent
         self._facet_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
+        self._hide_expired = False
 
     # --- sessions ----------------------------------------------------------------
 
@@ -367,6 +368,8 @@ class SearchService:
 
     async def _threshold(self) -> datetime:
         settings = await self._settings.get()
+        # Read with the threshold, once per request: the expiry policy may hide entries.
+        self._hide_expired = settings.expiry.enabled and settings.expiry.hide
         return utcnow() - settings.ping.valid_duration
 
     # --- facet names ---------------------------------------------------------------
@@ -432,6 +435,8 @@ class SearchService:
         if res is not R:
             scope = _Scope(res.id, res.kind, res.entry_uuid)
         conditions: list[ColumnElement[bool]] = [E.permit == EntryPermit.ACCEPTED]
+        if self._hide_expired:
+            conditions.append(E.expired_at.is_(None))
         if skip != "type":
             conditions.append(scope.kind.in_(params.types))
         if skip != "fdp" and params.fdps:
@@ -952,6 +957,7 @@ class SearchService:
         filters = tuple(sorted((k, tuple(sorted(v))) for k, v in params.filters.items() if v))
         return (
             self.indexer.generation,
+            self._hide_expired,
             name,
             size,
             params.lang,

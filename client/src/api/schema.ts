@@ -109,7 +109,14 @@ export interface paths {
     /** List Entries */
     get: operations["list_entries_index_entries_get"];
     put?: never;
-    post?: never;
+    /**
+     * Add an FDP (administrators)
+     * @description Register an FDP and retrieve its root metadata now (addition).
+     *
+     *     The entry gets `permit` (default: the approval policy's) and `options`;
+     *     an existing entry with that URL is updated instead.
+     */
+    post: operations["create_entry_index_entries_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -159,7 +166,16 @@ export interface paths {
     };
     /** Get Entry */
     get: operations["get_entry_index_entries__entry_id__get"];
-    /** Update Entry */
+    /**
+     * Update Entry
+     * @description Change the permit (as in the reference) and the per-FDP options (addition).
+     *
+     *     `options.harvest: false` makes the entry directory only: it stays listed
+     *     and checked, and its harvested metadata is removed from search and SPARQL.
+     *     `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
+     *     harvests again at that interval even when the root metadata did not
+     *     change; it takes effect at the entry's checks.
+     */
     put: operations["update_entry_index_entries__entry_id__put"];
     post?: never;
     /** Delete Entry */
@@ -220,6 +236,30 @@ export interface paths {
     get: operations["get_event_index_events__event_id__get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Register an FDP and check it now
+     * @description Self-service registration (addition): a ping whose retrieval runs before the answer.
+     *
+     *     The same deny list, rate limit and approval policy apply as to `POST /`.
+     *     The answer says whether the FDP's root metadata was found and valid, and
+     *     whether the entry waits for approval.
+     */
+    post: operations["register_index_register_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -712,6 +752,13 @@ export interface components {
         [key: string]: number;
       };
     };
+    /** EntryCreateRequest */
+    EntryCreateRequest: {
+      /** Clienturl */
+      clientUrl: string;
+      options?: components["schemas"]["EntryOptionsRequest"] | null;
+      permit?: components["schemas"]["EntryPermit"] | null;
+    };
     /** EntryDetailView */
     EntryDetailView: {
       /** Clienturl */
@@ -719,12 +766,15 @@ export interface components {
       currentMetadata: components["schemas"]["RepositoryMetadataView"] | null;
       /** Events */
       events: components["schemas"]["EventView"][];
+      /** Expiredtime */
+      expiredTime?: string | null;
       harvest?: components["schemas"]["HarvestView"] | null;
       health?: components["schemas"]["HealthView"] | null;
       /** Lastretrievaltime */
       lastRetrievalTime: string | null;
       /** Modificationtime */
       modificationTime: string;
+      options?: components["schemas"]["EntryOptionsView"] | null;
       permit: components["schemas"]["EntryPermit"];
       /** Registrationtime */
       registrationTime: string;
@@ -732,6 +782,29 @@ export interface components {
       state: string;
       /** Uuid */
       uuid: string;
+    };
+    /** EntryOptionsRequest */
+    EntryOptionsRequest: {
+      /** Harvest */
+      harvest?: boolean | null;
+      /** Harvestinterval */
+      harvestInterval?: string | null;
+    };
+    /**
+     * EntryOptionsView
+     * @description Per-FDP options (TASKS 4.7).
+     */
+    EntryOptionsView: {
+      /**
+       * Harvest
+       * @description False: directory only, checked but never harvested
+       */
+      harvest: boolean;
+      /**
+       * Harvestinterval
+       * @description Harvest again at least this often (ISO-8601 duration); null: when changed
+       */
+      harvestInterval?: string | null;
     };
     /**
      * EntryPageView
@@ -762,14 +835,20 @@ export interface components {
      * @enum {string}
      */
     EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
-    /** EntryUpdateRequest */
+    /**
+     * EntryUpdateRequest
+     * @description The reference sends ``permit``; ``options`` is an addition. Either may be left out.
+     */
     EntryUpdateRequest: {
-      permit: components["schemas"]["EntryPermit"];
+      options?: components["schemas"]["EntryOptionsRequest"] | null;
+      permit?: components["schemas"]["EntryPermit"] | null;
     };
     /** EntryView */
     EntryView: {
       /** Clienturl */
       clientUrl: string;
+      /** Expiredtime */
+      expiredTime?: string | null;
       /** Lastretrievaltime */
       lastRetrievalTime: string | null;
       /** Modificationtime */
@@ -864,6 +943,59 @@ export interface components {
       parameters?: {
         [key: string]: string;
       };
+    };
+    /**
+     * ExpirySettings
+     * @description Entries without contact for a long time (TASKS 4.6).
+     *
+     *     An accepted entry whose last successful retrieval (or, never retrieved, its
+     *     registration) is older than ``after`` is marked expired once: an ``Expiry``
+     *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
+     *     the public directory and the search. A successful retrieval revives it.
+     */
+    "ExpirySettings-Input": {
+      /**
+       * After
+       * Format: duration
+       * @default P90D
+       */
+      after: string;
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Hide
+       * @default false
+       */
+      hide: boolean;
+    };
+    /**
+     * ExpirySettings
+     * @description Entries without contact for a long time (TASKS 4.6).
+     *
+     *     An accepted entry whose last successful retrieval (or, never retrieved, its
+     *     registration) is older than ``after`` is marked expired once: an ``Expiry``
+     *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
+     *     the public directory and the search. A successful retrieval revives it.
+     */
+    "ExpirySettings-Output": {
+      /**
+       * After
+       * @default PT2160H
+       */
+      after: string;
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Hide
+       * @default false
+       */
+      hide: boolean;
     };
     /** FacetSetting */
     "FacetSetting-Input": {
@@ -994,19 +1126,31 @@ export interface components {
     IndexSettings: {
       /** Autopermit */
       autoPermit: boolean;
+      expiry?: components["schemas"]["ExpirySettings-Input"];
       healthCheck?: components["schemas"]["HealthCheckSettings-Input"];
       ping: components["schemas"]["PingSettings-Input"];
       retrieval: components["schemas"]["RetrievalSettings-Input"];
+      /**
+       * Verifiedpermit
+       * @default false
+       */
+      verifiedPermit: boolean;
     };
     /** IndexSettingsView */
     IndexSettingsView: {
       /** Autopermit */
       autoPermit: boolean;
+      expiry: components["schemas"]["ExpirySettings-Output"];
       healthCheck: components["schemas"]["HealthCheckSettings-Output"];
       /** Isdefault */
       isDefault: boolean;
       ping: components["schemas"]["PingSettings-Output"];
       retrieval: components["schemas"]["RetrievalSettings-Output"];
+      /**
+       * Verifiedpermit
+       * @default false
+       */
+      verifiedPermit: boolean;
     };
     /** LabelsRequest */
     LabelsRequest: {
@@ -1106,6 +1250,35 @@ export interface components {
        * @default true
        */
       visitors: boolean;
+    };
+    /** RegisterRequest */
+    RegisterRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /**
+     * RegistrationView
+     * @description The outcome of registering an FDP (TASKS 4.9).
+     */
+    RegistrationView: {
+      /** Clienturl */
+      clientUrl: string;
+      /** Error */
+      error: string | null;
+      /** Newentry */
+      newEntry: boolean;
+      permit: components["schemas"]["EntryPermit"];
+      /**
+       * Retrieved
+       * @description False when a retrieval ran shortly before; the state is that one's
+       */
+      retrieved: boolean;
+      /** State */
+      state: string;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
     };
     /** ReindexRequest */
     ReindexRequest: {
@@ -1233,7 +1406,8 @@ export interface components {
       | "EntryInvalid"
       | "EntryUnreachable"
       | "AdminTrigger"
-      | "WebhookPing";
+      | "WebhookPing"
+      | "EntryExpired";
     /** WebhookRequest */
     WebhookRequest: {
       /**
@@ -1488,6 +1662,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["EntryPageView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_entry_index_entries_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntryCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
         };
       };
       /** @description Validation Error */
@@ -1757,6 +1964,60 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
         };
+      };
+    };
+  };
+  register_index_register_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistrationView"];
+        };
+      };
+      /** @description Not an http(s) URL */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description URL denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

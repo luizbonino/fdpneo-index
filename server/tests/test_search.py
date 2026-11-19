@@ -1059,3 +1059,25 @@ def test_the_profile_over_http(api: Api) -> None:
     restored = api.client.delete("/index/search/profile", headers=ADMIN)
     assert restored.json()["overlay"] is None
     assert "fdpVersion" not in restored.json()["profile"]["fields"]
+
+
+async def test_highlights_are_segments_not_html(search: SearchService) -> None:
+    result = await search.search(SearchParams(q="registry nationwide", highlight=True, facets=[]))
+    hit = result["hits"][0]
+    assert hit["highlight"]["title"] == [
+        {"text": "Breast cancer ", "match": False},
+        {"text": "registry", "match": True},
+    ]
+    assert {"text": "nationwide", "match": True} in hit["highlight"]["description"]
+    assert "fullDescription" not in hit
+    plain = await search.search(SearchParams(q="registry", facets=[]))
+    assert "highlight" not in plain["hits"][0] and "fullDescription" not in plain["hits"][0]
+
+
+def test_control_characters_cannot_forge_marks() -> None:
+    from fdpindex.search.query import START, STOP, _mark_prefixes, _plain, _segments
+
+    text = _plain(f"evil {START}fake{STOP} registry")
+    segments = _segments(_mark_prefixes(text, ["registry"]))
+    assert [s["text"] for s in segments if s["match"]] == ["registry"]
+    assert START not in "".join(s["text"] for s in segments)

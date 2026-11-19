@@ -85,10 +85,22 @@ const source = computed(() =>
         :to="{ name: 'resource', params: { id: hit.id } }"
         :lang="hit.titleLang || undefined"
       >
-        {{ hit.title }}
+        <template v-if="hit.highlight">
+          <template v-for="(part, i) in hit.highlight.title" :key="i">
+            <mark v-if="part.match">{{ part.text }}</mark>
+            <template v-else>{{ part.text }}</template>
+          </template>
+        </template>
+        <template v-else>{{ hit.title }}</template>
       </router-link>
     </h3>
-    <p v-if="hit.description" class="description">{{ hit.description }}</p>
+    <p v-if="hit.highlight?.description" class="description">
+      <template v-for="(part, i) in hit.highlight.description" :key="i">
+        <mark v-if="part.match">{{ part.text }}</mark>
+        <template v-else>{{ part.text }}</template>
+      </template>
+    </p>
+    <p v-else-if="hit.description" class="description">{{ hit.description }}</p>
     <ul v-if="themes.length || subjects.length || keywords.length" class="chips">
       <li v-for="theme in themes" :key="theme.value">
         <button
@@ -298,5 +310,11 @@ h3 a:hover {
 }
 .source {
   margin-left: auto;
+}
+mark {
+  background: var(--tool-accent-tint);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 </style>

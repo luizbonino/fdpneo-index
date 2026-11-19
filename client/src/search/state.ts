@@ -99,7 +99,7 @@ export function toQuery(state: SearchState): LocationQueryRaw {
 /** The API parameters for a state. */
 export function apiParams(
   state: SearchState,
-  options: { facets?: string[]; size?: number; lang?: string } = {},
+  options: { facets?: string[]; size?: number; lang?: string; highlight?: boolean } = {},
 ): URLSearchParams {
   const params = new URLSearchParams();
   if (state.q) params.set("q", state.q);
@@ -119,6 +119,7 @@ export function apiParams(
   if (options.facets)
     params.set("facets", options.facets.length ? options.facets.join(",") : "none");
   if (options.lang) params.set("lang", options.lang);
+  if (options.highlight && state.q) params.set("highlight", "true");
   return params;
 }
 

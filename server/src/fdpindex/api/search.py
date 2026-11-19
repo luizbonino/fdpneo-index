@@ -53,6 +53,7 @@ RESERVED = {
     "size",
     "facets",
     "facetSize",
+    "highlight",
     "field",
     "contains",
 }
@@ -145,6 +146,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         page=_int(query.get("page"), 0, "page"),
         size=_int(query.get("size"), 20, "size"),
         facet_size=_int(query.get("facetSize"), 20, "facetSize"),
+        highlight=query.get("highlight", "").lower() in {"true", "1", "yes"},
     )
     if facets is not None:
         params.facets = [] if facets == "none" else [f for f in facets.split(",") if f]
@@ -177,7 +179,9 @@ async def search(
     (see `/index/search/properties`). Also `type`, `fdp`,
     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
-    `facets` (comma-separated, or `none`) and `facetSize`.
+    `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
+    each hit has `highlight`: its title and description as text segments with
+    the matching words marked (`{"text", "match"}`), never HTML.
     """
     del q
     _limit(request, caller)

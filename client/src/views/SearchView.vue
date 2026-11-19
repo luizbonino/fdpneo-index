@@ -146,7 +146,7 @@ onMounted(() => {
   }
 });
 
-const params = computed(() => apiParams(state.value, { facets: requested.value }));
+const params = computed(() => apiParams(state.value, { facets: requested.value, highlight: true }));
 const results = useQuery({
   queryKey: computed(() => ["search", params.value.toString(), session.isAdmin]),
   queryFn: () => searchApi.search(params.value),

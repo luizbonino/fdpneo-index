@@ -222,6 +222,8 @@ class SearchParams:
     # None: the index's default facets (search settings); names as in the API.
     facets: list[str] | None = None
     facet_size: int = 20
+    # Mark the words of ``q`` in titles and descriptions (TASKS 8.1).
+    highlight: bool = False
 
     def validate(self, profile: Profile, properties: frozenset[str] = frozenset()) -> None:
         """Check the parameters; ``properties`` are the ``p:`` fields resolved for this request."""
@@ -640,6 +642,10 @@ class SearchService:
             hits = await self._hits(
                 session, rows, params, threshold, labels, scored=score is not None
             )
+            if params.highlight and params.q:
+                await self._highlight(session, hits, params, postgres=postgres)
+            for hit in hits:
+                hit.pop("fullDescription", None)
             assert params.facets is not None
             facets = {
                 names.get(name, name): await self._facet(
@@ -1098,6 +1104,8 @@ class SearchService:
                 "titleLang": title_lang or None,
                 "titleFallback": bool(resource.facts.get("titleFallback")),
                 "description": description[1][:600] if description else None,
+                # Removed again after highlighting: the snippet may come from further in.
+                "fullDescription": description[1][:5000] if description else None,
                 "score": round(float(row[2] or 0) / top, 4) if scored and top > 0 else None,
                 "completeness": resource.completeness,
                 "fdp": _fdp_view(entry, threshold),
@@ -1125,6 +1133,56 @@ class SearchService:
                 ]
             hits.append(hit)
         return hits
+
+    async def _highlight(
+        self,
+        session: AsyncSession,
+        hits: list[dict[str, Any]],
+        params: SearchParams,
+        *,
+        postgres: bool,
+    ) -> None:
+        """Add ``highlight`` to each hit: its title and description as segments, the
+        matching ones marked. Segments, not HTML: harvested text stays text.
+
+        PostgreSQL's ``ts_headline`` marks stemmed matches (searching "registries"
+        marks "registry") and picks the description's best fragments; elsewhere
+        words that start with a searched word are marked.
+        """
+        texts: list[str] = []
+        for hit in hits:
+            texts += [_plain(hit["title"]), _plain(hit.get("fullDescription") or "")]
+        if postgres:
+            q_lang, _ = self._queries(params)
+            options = (
+                f"StartSel={START}, StopSel={STOP}, MaxFragments=2, MinWords=12, "
+                'MaxWords=35, FragmentDelimiter=" … ", HighlightAll=false'
+            )
+            title_options = f"StartSel={START}, StopSel={STOP}, HighlightAll=true"
+            config = cast(literal(ts_config(params.lang)), REGCONFIG)
+            marked: list[str] = []
+            for index, text in enumerate(texts):
+                if not text:
+                    marked.append("")
+                    continue
+                opts = title_options if index % 2 == 0 else options
+                value = await session.scalar(
+                    select(func.ts_headline(config, literal(text), q_lang, literal(opts)))
+                )
+                marked.append(str(value or ""))
+        else:
+            words = [
+                w.lower()
+                for w in re.findall(r"-?\w+", params.q)
+                if not w.startswith("-") and w.lower() != "or"
+            ]
+            marked = [_mark_prefixes(text, words) for text in texts]
+        for index, hit in enumerate(hits):
+            title, description = marked[2 * index], marked[2 * index + 1]
+            highlight: dict[str, Any] = {"title": _segments(title)}
+            if description and START in description:
+                highlight["description"] = _segments(description)
+            hit["highlight"] = highlight
 
     def _value_views(
         self, values: list[SearchValue], labels: Labels
@@ -1424,6 +1482,39 @@ class SearchService:
                 for uuid, url, n, avg in per_entry
             ],
         }
+
+
+START, STOP = "\x02", "\x03"
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _plain(text: str) -> str:
+    """Harvested text without control characters, so the markers cannot be forged."""
+    return _CONTROL.sub(" ", text)
+
+
+def _mark_prefixes(text: str, words: list[str]) -> str:
+    if not text or not words:
+        return text
+
+    def mark(match: re.Match[str]) -> str:
+        token = match.group(0)
+        return f"{START}{token}{STOP}" if token.lower().startswith(tuple(words)) else token
+
+    return re.sub(r"\w+", mark, text)
+
+
+def _segments(marked: str) -> list[dict[str, Any]]:
+    """``a\x02b\x03c`` → ``[{"text": "a", "match": false}, {"text": "b", "match": true}, …]``."""
+    out: list[dict[str, Any]] = []
+    for part in re.split(f"({START}[^{STOP}]*{STOP})", marked):
+        if not part:
+            continue
+        if part.startswith(START):
+            out.append({"text": part[1:-1], "match": True})
+        else:
+            out.append({"text": part, "match": False})
+    return out
 
 
 def curie(iri: str) -> str | None:

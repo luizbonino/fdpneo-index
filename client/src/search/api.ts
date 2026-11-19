@@ -29,6 +29,12 @@ export interface FdpView {
   state: string;
 }
 
+/** A piece of a highlighted title or description; `match` marks a searched word. */
+export interface Segment {
+  text: string;
+  match: boolean;
+}
+
 export interface Hit {
   id: string;
   iri: string;
@@ -48,6 +54,8 @@ export interface Hit {
   sourceUrl: string;
   facts: Record<string, number>;
   values: Record<string, ValueView[]>;
+  /** With `highlight=true` and words: title and description with the matches marked. */
+  highlight?: { title: Segment[]; description?: Segment[] };
   distributions?: { id: string; iri: string; title: string; values: Record<string, ValueView[]> }[];
 }
 

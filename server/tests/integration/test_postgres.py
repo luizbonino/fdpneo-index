@@ -261,6 +261,12 @@ async def test_search_stems_folds_accents_and_ranks(
     assert result["facets"]["fdp"]["buckets"][0]["count"] == 2
     detail = await search.resource(result["hits"][0]["id"])
     assert detail["parents"][0]["type"] == "fdp"
+    # Highlighting marks stemmed matches (TASKS 8.1).
+    marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
+    hit = marked["hits"][0]
+    assert {"text": "registry", "match": True} in hit["highlight"]["title"]
+    assert any(s["match"] and s["text"] == "Biopsies" for s in hit["highlight"]["description"])
+    assert "fullDescription" not in hit
 
 
 async def test_large_searches_count_facets_on_a_sample(

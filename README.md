@@ -187,6 +187,18 @@ uv run pytest -m integration    # PostgreSQL via testcontainers (needs Docker)
 FDPINDEX_DATABASE_URL=sqlite+aiosqlite:///dev.db uv run fdpindex db migrate
 ```
 
+To try the search by hand, `server/bench/seed_demo.py` fills an index with
+synthetic FDPs. Their addresses are under `synthetic.example`, their titles
+say "(synthetic)", and their liveness checks are switched off. Run it where
+`FDPINDEX_DATABASE_URL` points to the index's database, then restart the
+server so it indexes them:
+
+```bash
+docker cp server/bench/seed_demo.py fdpindex-server-1:/tmp/
+docker exec fdpindex-server-1 python /tmp/seed_demo.py --fdps 150   # --remove takes them out
+docker restart fdpindex-server-1
+```
+
 ## Licence
 
 MIT. Contributions need a [DCO](DCO) sign-off (`git commit -s`).

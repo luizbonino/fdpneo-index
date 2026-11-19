@@ -112,7 +112,7 @@ ignore = [
 "src/fdpindex/api/sparql.py" = ["N818", "B008"]
 "src/fdpindex/api/search.py" = ["N818", "B008"]
 "src/fdpindex/search/*.py" = ["N818"]
-"bench/**" = ["S311", "SIM905"]  # a benchmark: seeded pseudo-random data, word lists as text
+"bench/**" = ["S311", "SIM905", "RUF001"]  # seeded pseudo-random data, word lists as text, en dashes in titles
 
 [tool.ruff.lint.isort]
 known-first-party = ["fdpindex"]

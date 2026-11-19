@@ -98,6 +98,40 @@ new filters fill in as entries are done. `DELETE /index/search/profile`
 restores the bundled profile. Which filters the page shows, and in what
 order, is a separate setting: [administering.md](administering.md#search-filters).
 
+## Structured search for programs
+
+`POST /index/search` takes the search as JSON: the parameters of
+`GET /index/search` (`q`, `types`, `fdp`, `sort`, `page`, `size`,
+`facets`, `collapse` …) and a list of typed `filters`:
+
+```json
+{
+  "q": "registry",
+  "types": ["dataset"],
+  "filters": [
+    {"field": "theme", "op": "in", "values": ["http://publications.europa.eu/resource/authority/data-theme/HEAL"]},
+    {"path": "dct:conformsTo", "op": "eq", "value": "https://healthdcat-ap.eu/R5"},
+    {"path": "dcat:contactPoint/vcard:hasEmail", "op": "exists"},
+    {"field": "keyword", "op": "prefix", "value": "cardio"},
+    {"field": "modified", "op": "gte", "value": "2024-01-01"},
+    {"field": "records", "op": "between", "from": 1000, "to": 100000},
+    {"field": "temporal", "op": "overlaps", "from": "2010", "to": "2020"}
+  ]
+}
+```
+
+`eq`, `in` and `not` work on any field or property; `prefix`, `contains`
+(ignoring case), `exists` and `missing` on values; `gte`, `lte` and
+`between` on `issued`, `modified`, `harvested` and number fields;
+`overlaps` on `temporal`. A `path` is a property (CURIE or IRI), as
+captured; a two-step path must be listed under `capture.paths` in the
+profile, for example `{"capture": {"paths": ["dcat:contactPoint/vcard:hasEmail"]}}`
+as an overlay. A bad filter answers 400 and names it (`filters.2.op`).
+Visitors may filter on the properties open to them, as on the search page.
+
+`GET /index/search/stats` (administrators) lists how often each captured
+property occurs, overall and per FDP: which predicates are worth a filter.
+
 ## Limits
 
 | What | Setting | Default |

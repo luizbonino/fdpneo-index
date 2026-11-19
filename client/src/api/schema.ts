@@ -296,7 +296,17 @@ export interface paths {
      */
     get: operations["search_index_search_get"];
     put?: never;
-    post?: never;
+    /**
+     * Search with structured filters
+     * @description The search of `GET /index/search` with a JSON body, for expert and machine use.
+     *
+     *     `filters` is a list of `{"field" | "path", "op", "value" | "values" | "from"/"to"}`:
+     *     `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
+     *     as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
+     *     `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
+     *     `temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.
+     */
+    post: operations["search_structured_index_search_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1116,6 +1126,46 @@ export interface components {
        */
       placement: "main" | "more" | "hidden";
     };
+    /**
+     * FilterRequest
+     * @description One structured filter of `POST /index/search` (search design §2.1).
+     */
+    FilterRequest: {
+      /**
+       * Field
+       * @description A profile field, or prop:<IRI>
+       */
+      field?: string | null;
+      /** From */
+      from?: string | number | null;
+      /**
+       * Op
+       * @enum {string}
+       */
+      op:
+        | "eq"
+        | "in"
+        | "not"
+        | "prefix"
+        | "contains"
+        | "exists"
+        | "missing"
+        | "gte"
+        | "lte"
+        | "between"
+        | "overlaps";
+      /**
+       * Path
+       * @description A property, as a CURIE or IRI, or a two-step path the profile captures (dcat:contactPoint/vcard:hasEmail)
+       */
+      path?: string | null;
+      /** To */
+      to?: string | number | null;
+      /** Value */
+      value?: string | number | null;
+      /** Values */
+      values?: string[] | null;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1387,6 +1437,59 @@ export interface components {
       rateLimitWait: string;
       /** Timeout */
       timeout: string;
+    };
+    /**
+     * SearchRequest
+     * @description The body of `POST /index/search`: the same search as `GET`, with typed filters.
+     */
+    SearchRequest: {
+      /**
+       * Collapse
+       * @default false
+       */
+      collapse: boolean;
+      /**
+       * Facetsize
+       * @default 20
+       */
+      facetSize: number;
+      /** Facets */
+      facets?: string[] | null;
+      /** Fdp */
+      fdp?: string[];
+      /** Fdpstate */
+      fdpState?: string | null;
+      /** Filters */
+      filters?: components["schemas"]["FilterRequest"][];
+      /**
+       * Highlight
+       * @default false
+       */
+      highlight: boolean;
+      /** Lang */
+      lang?: string | null;
+      /**
+       * Page
+       * @default 0
+       */
+      page: number;
+      /**
+       * Q
+       * @default
+       */
+      q: string;
+      /**
+       * Size
+       * @default 20
+       */
+      size: number;
+      /**
+       * Sort
+       * @default
+       */
+      sort: string;
+      /** Types */
+      types?: string[];
     };
     /** SearchSettings */
     SearchSettings: {
@@ -2114,6 +2217,41 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  search_structured_index_search_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchRequest"];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

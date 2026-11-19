@@ -217,11 +217,25 @@ KIND_BOOST = {
 RANK_WEIGHTS = "{0.1, 0.2, 0.4, 1.0}"  # D, C, B, A
 DISTRIBUTIONS_PER_HIT = 5
 MAX_DUPLICATES = 10
+STATS_PER_FDP = 25
 
 
 class SearchBusy(IndexServiceError):
     code = "index.search_busy"
     http_status = 503
+
+
+TEST_OPS = ("prefix", "contains", "exists", "missing")
+
+
+@dataclass(frozen=True)
+class ValueTest:
+    """A typed test on a field's values (TASKS 9.2): ``prefix`` and ``contains`` ignore
+    case; ``exists`` and ``missing`` ask whether the field has a value at all."""
+
+    field: str
+    op: str
+    value: str = ""
 
 
 @dataclass
@@ -236,6 +250,8 @@ class SearchParams:
     # ``title:`` and ``description:`` prefixes taken out of ``q`` (TASKS 9.1); the other
     # prefixes became filters. Both kinds are echoed as ``fields``.
     texts: list[Prefix] = field(default_factory=lambda: [])
+    # Typed tests from POST /index/search (TASKS 9.2).
+    tests: list[ValueTest] = field(default_factory=lambda: [])
     prefixes: list[Prefix] = field(default_factory=lambda: [])
     # One hit per group of copies across FDPs, the best-placed one (TASKS 8.8).
     collapse: bool = False
@@ -275,6 +291,13 @@ class SearchParams:
         for name in self.facets:
             if name not in facets and name not in {"type", "fdp"}:
                 raise BadRequest(f"Unknown facet: {name}")
+        for test in self.tests:
+            if test.field not in filterable:
+                raise BadRequest(f"Unknown field: {test.field}")
+            if test.op not in TEST_OPS:
+                raise BadRequest(f"Unknown operator: {test.op}")
+            if test.op in {"prefix", "contains"} and not test.value:
+                raise BadRequest(f"{test.op} on {test.field} needs a value")
         for name, (low, high) in self.numbers.items():
             spec = profile.fields.get(name)
             if spec is None or spec.kind != "number":
@@ -471,19 +494,25 @@ class SearchService:
         names: dict[str, str] = {}
         await self._field_prefixes(params)
 
+        captured = {" ".join(self.profile.path_iris(p)) for p in self.profile.capture.paths}
+
         def resolve(name: str) -> str:
             if not name.startswith(PROPERTY_FACET):
                 return name
             iri = name.removeprefix(PROPERTY_FACET)
-            if not is_property_iri(iri):
+            steps = iri.split(" ")
+            if len(steps) > 2 or not all(is_property_iri(step) for step in steps):
                 raise BadRequest(f"Not a property IRI: {iri[:100]}")
-            if not admin and not self._open(settings, name, iri):
-                raise BadRequest(f"Facets on {iri} are not offered on this index")
+            if len(steps) == 2 and iri not in captured:
+                raise BadRequest(f"The path {iri[:200]} is not captured by the search profile")
+            if not admin and not self._open(settings, name, steps[0]):
+                raise BadRequest(f"Facets on {steps[0]} are not offered on this index")
             key = property_field(iri)
             names[key] = name
             return key
 
         params.filters = {resolve(k): v for k, v in params.filters.items()}
+        params.tests = [ValueTest(resolve(t.field), t.op, t.value) for t in params.tests]
         params.facets = [resolve(n) for n in params.facets]
         merged = [
             n
@@ -557,6 +586,8 @@ class SearchService:
         for name, (low, high) in params.numbers.items():
             if name != skip:
                 conditions.append(_in_range(name, low, high, scope.id))
+        for test in params.tests:
+            conditions.append(_test(test, scope.id))
         columns = {"issued": res.issued, "modified": res.modified, "harvested": res.harvested_at}
         for name, (low, high) in params.ranges.items():
             column = columns[name]
@@ -1174,7 +1205,7 @@ class SearchService:
         if not self._light(params) or self._facet_cache_seconds <= 0:
             return None
         filters = tuple(sorted((k, tuple(sorted(v))) for k, v in params.filters.items() if v))
-        numbers = tuple(sorted(params.numbers.items()))
+        numbers = (tuple(sorted(params.numbers.items())), tuple(params.tests))
         return (
             self.indexer.generation,
             self._hide_expired,
@@ -1687,6 +1718,8 @@ class SearchService:
                     V.field.startswith("p:"),
                     V.kind.in_(types),
                     E.permit == EntryPermit.ACCEPTED,
+                    # Captured two-step paths are for path filters, not the facet picker.
+                    ~SearchProperty.iri.contains(" "),
                 )
                 .group_by(SearchProperty.iri)
                 .order_by(n.desc(), SearchProperty.iri)
@@ -1859,17 +1892,42 @@ class SearchService:
             values = int(await session.scalar(select(func.count()).select_from(V)) or 0)
             labels = int(await session.scalar(select(func.count()).select_from(SearchLabel)) or 0)
             concepts = await concept_stats(session)
+            # Predicate frequency per FDP from the raw capture (TASKS 9.2): which
+            # predicates occur, before an administrator makes one a facet.
+            n = func.count(func.distinct(V.resource_id))
+            frequency = (
+                await session.execute(
+                    select(V.entry_uuid, SearchProperty.iri, n)
+                    .join(SearchProperty, SearchProperty.field == V.field)
+                    .where(V.field.startswith("p:"))
+                    .group_by(V.entry_uuid, SearchProperty.iri)
+                )
+            ).all()
+        overall: dict[str, list[int]] = {}
+        per_fdp: dict[UUID, list[tuple[str, int]]] = defaultdict(list)
+        for uuid, iri, count in frequency:
+            total = overall.setdefault(str(iri), [0, 0])
+            total[0] += int(count)
+            total[1] += 1
+            per_fdp[uuid].append((str(iri), int(count)))
         return {
             "profileHash": self.profile.hash,
             "values": values,
             "labels": labels,
             "concepts": concepts,
+            "properties": [
+                {"property": iri, "curie": curie(iri.split(" ")[0]), "resources": r, "fdps": f}
+                for iri, (r, f) in sorted(overall.items(), key=lambda i: (-i[1][0], i[0]))[:200]
+            ],
             "entries": [
                 {
                     "uuid": str(uuid),
                     "clientUrl": url,
                     "resources": int(n),
                     "completeness": round(float(avg or 0), 3),
+                    "properties": dict(
+                        sorted(per_fdp.get(uuid, []), key=lambda i: (-i[1], i[0]))[:STATS_PER_FDP]
+                    ),
                     "projectedAt": states[uuid].projected_at.isoformat()
                     if uuid in states
                     else None,
@@ -1978,6 +2036,18 @@ def curie(iri: str) -> str | None:
 
 def _rows(result: Any) -> list[tuple[int, str, UUID]]:
     return [(int(rid), str(kind), entry) for rid, kind, entry in result]
+
+
+def _test(test: ValueTest, resource_id: Any) -> ColumnElement[bool]:
+    value = aliased(SearchValue)
+    conditions = [value.resource_id == resource_id, value.field == test.field]
+    needle = _like(test.value.lower())
+    if test.op == "prefix":
+        conditions.append(func.lower(value.value).like(f"{needle}%", escape="\\"))
+    elif test.op == "contains":
+        conditions.append(func.lower(value.value).like(f"%{needle}%", escape="\\"))
+    found = exists().where(*conditions)
+    return not_(found) if test.op == "missing" else found
 
 
 def _in_range(

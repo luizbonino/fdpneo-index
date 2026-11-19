@@ -1408,3 +1408,88 @@ def test_field_prefixes_over_http(api: Api) -> None:
     body = api.client.get("/index/search", params={"q": "keyword:lungs"}).json()
     assert [h["title"] for h in body["hits"]] == ["Lung function tests"]
     assert body["query"]["fields"][0]["field"] == "keyword"
+
+
+# --- structured search: POST /index/search, typed tests, paths (TASKS 9.2) -------------
+
+
+def test_structured_search_over_http(api: Api) -> None:
+    def titles(*filters: dict[str, Any], **body: Any) -> set[str]:
+        response = api.client.post(
+            "/index/search", json={"types": ["dataset"], "filters": list(filters), **body}
+        )
+        assert response.status_code == 200, response.text
+        return {h["title"] for h in response.json()["hits"]}
+
+    restricted = f"{EU}access-right/RESTRICTED"
+    assert titles({"path": "dct:accessRights", "op": "eq", "value": restricted}) == {
+        "Lung function tests"
+    }
+    assert titles({"field": "keyword", "op": "prefix", "value": "LUN"}) == {"Lung function tests"}
+    assert titles({"field": "keyword", "op": "contains", "value": "anc"}) == {
+        "Breast cancer registry",
+        "Lung function tests",
+    }
+    assert titles({"path": "dct:license", "op": "missing"}) == {"Lung function tests"}
+    assert titles({"field": "keyword", "op": "not", "value": "cancer"}) == {"Genome cohort"}
+    assert titles({"field": "modified", "op": "gte", "value": "2026-01-01"}) == {
+        "Breast cancer registry"
+    }
+    assert titles({"field": "records", "op": "between", "from": 1000, "to": 5000}) == {
+        "Breast cancer registry"
+    }
+    assert titles({"field": "temporal", "op": "overlaps", "from": "2012", "to": "2013"}) == {
+        "Breast cancer registry"
+    }
+    # The rest of the search as in GET.
+    assert titles({"field": "theme", "op": "in", "values": [f"{EU}data-theme/HEAL"]}, q="lung") == {
+        "Lung function tests"
+    }
+    for bad, message in (
+        ({"field": "keyword", "path": "dcat:keyword", "op": "eq", "value": "x"}, "field or a path"),
+        ({"field": "nothing", "op": "exists"}, "Unknown field"),
+        ({"path": "nope:x", "op": "exists"}, "unknown prefix"),
+        ({"path": "dcat:contactPoint/vcard:hasEmail", "op": "exists"}, "not captured"),
+        ({"field": "keyword", "op": "gte", "value": "a"}, "dates and number fields"),
+        ({"field": "keyword", "op": "prefix"}, "needs one value"),
+        ({"field": "keyword", "op": "overlaps", "from": "2010"}, "applies to temporal"),
+    ):
+        response = api.client.post("/index/search", json={"filters": [bad]})
+        assert response.status_code == 400, (bad, response.text)
+        assert message in response.json()["message"], response.json()
+    unknown = api.client.post("/index/search", json={"filters": [{"op": "near"}]})
+    assert unknown.status_code == 400
+    assert "filters.0.op" in unknown.json()["errors"]
+
+
+async def test_typed_tests_and_captured_paths(search: SearchService) -> None:
+    from fdpindex.search.query import ValueTest
+
+    email = "dcat:contactPoint/vcard:hasEmail"
+    await search.change_profile({"capture": {"paths": [email]}})
+    await search.indexer.sync_once()
+    path = "prop:http://www.w3.org/ns/dcat#contactPoint http://www.w3.org/2006/vcard/ns#hasEmail"
+    cases = [
+        [ValueTest(path, "contains", "desk@alpha")],
+        [ValueTest("keyword", "prefix", "lun")],
+        [ValueTest("prop:http://purl.org/dc/terms/license", "missing")],
+        [ValueTest("prop:http://purl.org/dc/terms/license", "exists")],
+    ]
+    found = []
+    for tests in cases:
+        params = SearchParams(types=["dataset"], tests=list(tests), facets=[], size=100)
+        expected = {h["iri"] for h in (await search.search(params))["hits"]}
+        translated = await search.sparql(SearchParams(types=["dataset"], tests=list(tests)))
+        assert set(_sparql(translated["query"])) == expected, tests
+        found.append(expected)
+    assert found[0] == {f"{ALPHA}/dataset/d1"}
+    assert found[2] == {f"{ALPHA}/dataset/d2"}
+    # Paths are for filters; the facet picker lists single properties only.
+    listed = await search.properties(["dataset"], admin=True)
+    assert not any(" " in p["property"] for p in listed["properties"])
+    # Predicate frequency per FDP.
+    stats = await search.stats()
+    license_ = next(p for p in stats["properties"] if p["property"].endswith("terms/license"))
+    assert (license_["resources"], license_["fdps"]) >= (3, 2)
+    alpha = next(e for e in stats["entries"] if e["clientUrl"] == ALPHA)
+    assert alpha["properties"]["http://purl.org/dc/terms/license"] >= 1

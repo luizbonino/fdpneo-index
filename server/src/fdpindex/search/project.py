@@ -334,7 +334,9 @@ _CAPTURED_DATATYPES = {
 
 
 def property_field(iri: str) -> str:
-    """The ``search_value.field`` of a captured property: ``p:`` and 24 hex digits."""
+    """The ``search_value.field`` of a captured property: ``p:`` and 24 hex digits.
+
+    A two-step path is its two IRIs joined by a space (TASKS 9.2)."""
     return PROPERTY_PREFIX + hashlib.sha256(iri.encode()).hexdigest()[:24]
 
 
@@ -485,6 +487,7 @@ class _Projector:
             name: [profile.path_iris(p) for p in spec.paths]
             for name, spec in profile.fields.items()
         }
+        self.capture_paths = [profile.path_iris(p) for p in profile.capture.paths]
         self.kind_types: list[tuple[Kind, frozenset[str]]] = [
             (kind, frozenset(profile.expand(c) for c in profile.types.get(kind, [])))
             for kind in KINDS
@@ -588,15 +591,8 @@ class _Projector:
             iri = str(predicate)
             if len(iri) > 2048:
                 continue
-            value: str | None = None
-            if isinstance(item, URIRef):
-                value = canonical_iri(str(item))
-            elif isinstance(item, Literal):
-                datatype = str(item.datatype) if item.datatype else None
-                text = str(item).strip()
-                if datatype in _CAPTURED_DATATYPES and 0 < len(text) <= capture.literal_max_chars:
-                    value = _clean(text, capture.literal_max_chars)
-            if not value or len(value) > MAX_VALUE_CHARS:
+            value = _captured(item, capture.literal_max_chars)
+            if value is None:
                 continue
             key = property_field(iri)
             if per_property.get(key, 0) >= capture.max_values:
@@ -604,6 +600,17 @@ class _Projector:
             per_property[key] = per_property.get(key, 0) + 1
             self.properties[key] = iri
             out.append(Value(key, value))
+        for path in self.capture_paths:
+            iri = " ".join(path)
+            key = property_field(iri)
+            count = 0
+            for item in node.objects(path):
+                value = _captured(item, capture.literal_max_chars)
+                if value is None or count >= capture.max_values:
+                    continue
+                count += 1
+                self.properties[key] = iri
+                out.append(Value(key, value))
         return out
 
     def _field(
@@ -647,6 +654,19 @@ class _Projector:
                 limit = MAX_DESCRIPTION_CHARS if spec.weight in {"C", "D"} else MAX_TITLE_CHARS
                 segments.append((ts_config(lang), spec.weight, _clean(text, limit)))
         return found
+
+
+def _captured(item: Node, max_chars: int) -> str | None:
+    """A captured value: an IRI, or a short string, language-tagged or boolean literal."""
+    value: str | None = None
+    if isinstance(item, URIRef):
+        value = canonical_iri(str(item))
+    elif isinstance(item, Literal):
+        datatype = str(item.datatype) if item.datatype else None
+        text = str(item).strip()
+        if datatype in _CAPTURED_DATATYPES and 0 < len(text) <= max_chars:
+            value = _clean(text, max_chars)
+    return value if value and len(value) <= MAX_VALUE_CHARS else None
 
 
 def found_values(

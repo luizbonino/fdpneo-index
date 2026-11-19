@@ -288,6 +288,10 @@ async def test_search_stems_folds_accents_and_ranks(
         "Breast cancer registry",
         "Lung function tests",
     }
+    # Typed tests on values (TASKS 9.2).
+    from fdpindex.search.query import ValueTest
+
+    assert await titles(tests=[ValueTest("keyword", "prefix", "LUN")]) == ["Lung function tests"]
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

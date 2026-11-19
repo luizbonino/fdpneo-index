@@ -113,6 +113,17 @@ class _Writer:
         return "|".join(self.iri(self.profile.expand(c)) for c in NAME_PATH.split("|"))
 
 
+def _field_path(
+    w: _Writer, profile: Profile, properties: Mapping[str, str], name: str
+) -> tuple[SearchField, str]:
+    """A profile field, or a captured property or two-step path, and its SPARQL path."""
+    spec = profile.fields.get(name)
+    if spec is not None:
+        return spec, w.path(spec, rollup=spec.rollup)
+    iris = properties[name].split(" ")
+    return _property_field(iris[0]), "/".join(w.iri(i) for i in iris)
+
+
 def _property_field(iri: str) -> SearchField:
     """A captured property as a field: its IRI values and literals, one step from the resource."""
     from fdpindex.search.profile import SearchField
@@ -345,8 +356,7 @@ def to_sparql(
 
     # Named fields: values ORed within a field, fields ANDed, "!value" excludes.
     for index, (name, values) in enumerate(sorted(params.filters.items()), start=1):
-        spec = profile.fields.get(name) or _property_field(properties[name])
-        path = w.path(spec, rollup=spec.rollup)
+        spec, path = _field_path(w, profile, properties, name)
         var = f"?{re.sub(r'[^A-Za-z0-9]', '', name)}{index}"
         wanted = [v for v in values if not v.startswith("!")]
         unwanted = [v[1:] for v in values if v.startswith("!")]
@@ -371,6 +381,18 @@ def to_sparql(
         if unwanted:
             condition = _value_condition(w, spec, unwanted, var)
             graph.append(_exists(pattern, condition, negated=True))
+
+    # Typed tests on values (TASKS 9.2).
+    for index, test in enumerate(params.tests, start=1):
+        _, path = _field_path(w, profile, properties, test.field)
+        var = f"?test{index}"
+        pattern = f"?resource {path} {var}"
+        if test.op in {"exists", "missing"}:
+            graph.append(_exists(pattern, "true", negated=test.op == "missing"))
+        else:
+            function = "STRSTARTS" if test.op == "prefix" else "CONTAINS"
+            condition = f"{function}(LCASE(STR({var})), {_string(test.value.lower())})"
+            graph.append(_exists(pattern, condition))
 
     # Number fields within bounds (TASKS 8.5).
     for name, (low, high) in sorted(params.numbers.items()):

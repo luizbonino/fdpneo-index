@@ -24,12 +24,12 @@ import asyncio
 import json
 import math
 from datetime import UTC, date, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 import yaml
 from fastapi import APIRouter, Depends, Query, Request, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
@@ -38,7 +38,7 @@ from fdpindex.search.period import parse_day
 from fdpindex.search.profile import KINDS, Kind
 from fdpindex.search.profile_store import ProfileError, examples
 from fdpindex.search.project import parse_datetime
-from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService
+from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService, ValueTest
 from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
 
 router = APIRouter(tags=["Search"])
@@ -254,6 +254,153 @@ async def search(
     del q
     _limit(request, caller)
     params = _params(request, service, _language(request, lang))
+    return await service.search(params, admin=caller.is_admin)
+
+
+class FilterRequest(BaseModel):
+    """One structured filter of `POST /index/search` (search design §2.1)."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    field: str | None = Field(default=None, description="A profile field, or prop:<IRI>")
+    path: str | None = Field(
+        default=None,
+        description="A property, as a CURIE or IRI, or a two-step path the profile captures "
+        "(dcat:contactPoint/vcard:hasEmail)",
+    )
+    op: Literal[
+        "eq",
+        "in",
+        "not",
+        "prefix",
+        "contains",
+        "exists",
+        "missing",
+        "gte",
+        "lte",
+        "between",
+        "overlaps",
+    ]
+    value: str | float | None = None
+    values: list[str] | None = Field(default=None, max_length=50)
+    start: str | float | None = Field(default=None, alias="from")
+    end: str | float | None = Field(default=None, alias="to")
+
+
+class SearchRequest(BaseModel):
+    """The body of `POST /index/search`: the same search as `GET`, with typed filters."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    q: str = ""
+    types: list[str] = Field(default_factory=lambda: [])
+    lang: str | None = None
+    fdp: list[UUID] = Field(default_factory=lambda: [], max_length=100)
+    fdp_state: str | None = Field(default=None, alias="fdpState")
+    filters: list[FilterRequest] = Field(default_factory=lambda: [], max_length=50)
+    sort: str = ""
+    page: int = 0
+    size: int = 20
+    facets: list[str] | None = None
+    facet_size: int = Field(default=20, alias="facetSize")
+    highlight: bool = False
+    collapse: bool = False
+
+
+def _structured(body: SearchRequest, service: SearchService, lang: str) -> SearchParams:
+    """`POST /index/search` as search parameters; a bad filter is a 400 that names it."""
+    profile = service.profile
+    params = SearchParams(
+        q=body.q,
+        types=list(body.types),  # pyright: ignore[reportArgumentType]
+        fdps=list(body.fdp),
+        fdp_state=body.fdp_state,
+        lang=lang,
+        sort=body.sort,
+        page=body.page,
+        size=body.size,
+        facets=body.facets,
+        facet_size=body.facet_size,
+        highlight=body.highlight,
+        collapse=body.collapse,
+    )
+    for index, item in enumerate(body.filters):
+        where = f"filters[{index}]"
+        if (item.field is None) == (item.path is None):
+            raise BadRequest(f"{where}: give a field or a path")
+        if item.path is not None:
+            try:
+                iris = profile.path_iris(item.path)
+            except ValueError as err:
+                raise BadRequest(f"{where}: {err}") from err
+            name = PROPERTY_FACET + " ".join(iris)
+        else:
+            name = item.field or ""
+        spec = profile.fields.get(name)
+        kind = spec.kind if spec is not None else "iri"
+        values = [str(v) for v in (item.values or [])]
+        if item.value is not None:
+            values.append(str(item.value))
+        if item.op in {"eq", "in", "not"}:
+            if not values:
+                raise BadRequest(f"{where}: {item.op} needs a value")
+            marked = [("!" + v) if item.op == "not" else v for v in values]
+            params.filters[name] = [*params.filters.get(name, []), *marked]
+        elif item.op in {"prefix", "contains", "exists", "missing"}:
+            if item.op in {"prefix", "contains"} and len(values) != 1:
+                raise BadRequest(f"{where}: {item.op} needs one value")
+            params.tests.append(ValueTest(name, item.op, values[0] if values else ""))
+        elif item.op == "overlaps":
+            if name != "temporal":
+                raise BadRequest(f"{where}: overlaps applies to temporal")
+            params.temporal = (
+                _day(f"{where}.from", None if item.start is None else str(item.start)),
+                _day(f"{where}.to", None if item.end is None else str(item.end), end=True),
+            )
+        else:
+            low, high = _bounds(item, values, where)
+            if name in RANGES:
+                params.ranges[name] = (
+                    _date(f"{where}.from", low),
+                    _date(f"{where}.to", high, end=True),
+                )
+            elif kind == "number":
+                params.numbers[name] = (
+                    _float(f"{where}.from", low),
+                    _float(f"{where}.to", high),
+                )
+            else:
+                raise BadRequest(f"{where}: {item.op} applies to dates and number fields")
+    return params
+
+
+def _bounds(item: FilterRequest, values: list[str], where: str) -> tuple[str | None, str | None]:
+    if item.op == "between":
+        if item.start is None and item.end is None:
+            raise BadRequest(f"{where}: between needs from or to")
+        return (
+            None if item.start is None else str(item.start),
+            None if item.end is None else str(item.end),
+        )
+    if len(values) != 1:
+        raise BadRequest(f"{where}: {item.op} needs one value")
+    return (values[0], None) if item.op == "gte" else (None, values[0])
+
+
+@router.post("/index/search", summary="Search with structured filters")
+async def search_structured(
+    request: Request, service: Search, caller: Caller, body: SearchRequest
+) -> dict[str, Any]:
+    """The search of `GET /index/search` with a JSON body, for expert and machine use.
+
+    `filters` is a list of `{"field" | "path", "op", "value" | "values" | "from"/"to"}`:
+    `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
+    as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
+    `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
+    `temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.
+    """
+    _limit(request, caller)
+    params = _structured(body, service, _language(request, body.lang))
     return await service.search(params, admin=caller.is_admin)
 
 

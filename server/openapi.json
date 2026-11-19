@@ -821,6 +821,115 @@
         "title": "FacetSetting",
         "type": "object"
       },
+      "FilterRequest": {
+        "additionalProperties": false,
+        "description": "One structured filter of `POST /index/search` (search design \u00a72.1).",
+        "properties": {
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A profile field, or prop:<IRI>",
+            "title": "Field"
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From"
+          },
+          "op": {
+            "enum": [
+              "eq",
+              "in",
+              "not",
+              "prefix",
+              "contains",
+              "exists",
+              "missing",
+              "gte",
+              "lte",
+              "between",
+              "overlaps"
+            ],
+            "title": "Op",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A property, as a CURIE or IRI, or a two-step path the profile captures (dcat:contactPoint/vcard:hasEmail)",
+            "title": "Path"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values"
+          }
+        },
+        "required": [
+          "op"
+        ],
+        "title": "FilterRequest",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1474,6 +1583,109 @@
           "timeout"
         ],
         "title": "RetrievalSettings",
+        "type": "object"
+      },
+      "SearchRequest": {
+        "additionalProperties": false,
+        "description": "The body of `POST /index/search`: the same search as `GET`, with typed filters.",
+        "properties": {
+          "collapse": {
+            "default": false,
+            "title": "Collapse",
+            "type": "boolean"
+          },
+          "facetSize": {
+            "default": 20,
+            "title": "Facetsize",
+            "type": "integer"
+          },
+          "facets": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facets"
+          },
+          "fdp": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Fdp",
+            "type": "array"
+          },
+          "fdpState": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fdpstate"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/FilterRequest"
+            },
+            "maxItems": 50,
+            "title": "Filters",
+            "type": "array"
+          },
+          "highlight": {
+            "default": false,
+            "title": "Highlight",
+            "type": "boolean"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "page": {
+            "default": 0,
+            "title": "Page",
+            "type": "integer"
+          },
+          "q": {
+            "default": "",
+            "title": "Q",
+            "type": "string"
+          },
+          "size": {
+            "default": 20,
+            "title": "Size",
+            "type": "integer"
+          },
+          "sort": {
+            "default": "",
+            "title": "Sort",
+            "type": "string"
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "title": "SearchRequest",
         "type": "object"
       },
       "SearchSettings": {
@@ -2686,6 +2898,48 @@
           }
         },
         "summary": "Search the harvested metadata",
+        "tags": [
+          "Search"
+        ]
+      },
+      "post": {
+        "description": "The search of `GET /index/search` with a JSON body, for expert and machine use.\n\n`filters` is a list of `{\"field\" | \"path\", \"op\", \"value\" | \"values\" | \"from\"/\"to\"}`:\n`eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`\nas a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,\n`between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on\n`temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.",
+        "operationId": "search_structured_index_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Search Structured Index Search Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search with structured filters",
         "tags": [
           "Search"
         ]

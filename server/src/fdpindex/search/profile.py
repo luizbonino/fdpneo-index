@@ -78,6 +78,9 @@ class Capture(BaseModel):
     properties: bool = True
     literal_max_chars: int = PydanticField(default=100, ge=0, le=512)
     max_values: int = PydanticField(default=50, ge=1, le=200)
+    # Two-step paths captured as well (TASKS 9.2), such as dcat:contactPoint/vcard:hasEmail:
+    # path filters on POST /index/search can test them.
+    paths: list[str] = PydanticField(default_factory=lambda: [], max_length=50)
 
 
 class Landing(BaseModel):
@@ -122,6 +125,9 @@ class Profile(BaseModel):
                     raise ValueError(f"field '{name}': path '{path}' is longer than two steps")
                 for step in steps:
                     self.expand(step)
+        for path in self.capture.paths:
+            if len(self.path_iris(path)) != 2:
+                raise ValueError(f"capture path '{path}' is not two steps")
         for curies in self.types.values():
             for curie in curies:
                 self.expand(curie)

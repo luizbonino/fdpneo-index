@@ -26,6 +26,7 @@ import math
 from datetime import UTC, date, datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
+from xml.sax.saxutils import escape
 
 import yaml
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -562,7 +563,7 @@ async def resource(
     return Response(content=await asyncio.to_thread(render), media_type=media)
 
 
-def _json(body: dict[str, Any]) -> bytes:
+def _json(body: Any) -> bytes:
     return json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
 
 
@@ -593,17 +594,86 @@ async def suggest(
     q: str = "",
     type: Annotated[list[str] | None, Query()] = None,
     lang: str | None = None,
-) -> dict[str, Any]:
+    output: str | None = None,
+) -> Any:
     """Resources whose title contains `q`, and filter values (keywords, subjects, themes,
-    publishers) whose name starts with it, with counts. At least two characters."""
+    publishers) whose name starts with it, with counts. At least two characters.
+
+    With `output=opensearch`, OpenSearch suggestions for browsers (TASKS 9.7):
+    `[q, [texts…]]`."""
     _limit(request, caller)
     kinds = [t for v in type or [] for t in v.split(",") if t]
     unknown = [t for t in kinds if t not in KINDS]
     if unknown:
         raise BadRequest(f"Unknown type: {', '.join(unknown)}")
     wanted: list[Kind] = [t for t in KINDS if t in kinds] or list(DEFAULT_TYPES)
-    return await service.suggest(
+    found = await service.suggest(
         q, types=wanted, lang=_language(request, lang), admin=caller.is_admin
+    )
+    if output == "opensearch":
+        texts = [
+            s.get("title") or s.get("text") or s.get("label") or "" for s in found["suggestions"]
+        ]
+        return Response(
+            content=_json([q, list(dict.fromkeys(t for t in texts if t))]),
+            media_type="application/x-suggestions+json",
+        )
+    return found
+
+
+@router.get(
+    "/index/search/opensearch.xml",
+    summary="OpenSearch description",
+    response_class=Response,
+    responses={200: {"content": {"application/opensearchdescription+xml": {}}}},
+)
+async def opensearch(request: Request, service: Search) -> Response:
+    """The index as a search engine for browsers and tools (TASKS 9.7): templates for
+    the search page, JSON, JSON-LD and Turtle results, and suggestions. Pages count
+    from 0 (`pageOffset="0"`). Absolute URLs use `FDPINDEX_PUBLIC_URL` when set."""
+    del service
+    base: str = request.app.state.config.public_url or str(request.base_url)
+    base = base.rstrip("/")
+    terms = "q={searchTerms}"
+    paging = "page={startPage?}&size={count?}"
+    urls = [
+        ("text/html", f"{base}/search?{terms}", ""),
+        ("application/json", f"{base}/index/search?{terms}&{paging}", ' pageOffset="0"'),
+        (
+            "application/ld+json",
+            f"{base}/index/search?{terms}&{paging}&output=jsonld",
+            ' pageOffset="0"',
+        ),
+        ("text/turtle", f"{base}/index/search?{terms}&{paging}&output=ttl", ' pageOffset="0"'),
+        (
+            "application/x-suggestions+json",
+            f"{base}/index/search/suggest?{terms}&output=opensearch",
+            "",
+        ),
+        (
+            "application/opensearchdescription+xml",
+            f"{base}/index/search/opensearch.xml",
+            ' rel="self"',
+        ),
+    ]
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">',
+        "  <ShortName>FDPneo Index</ShortName>",
+        "  <Description>Datasets, catalogs and services of the FAIR Data Points in this"
+        " index.</Description>",
+        "  <InputEncoding>UTF-8</InputEncoding>",
+        "  <OutputEncoding>UTF-8</OutputEncoding>",
+        f'  <Image type="image/svg+xml">{escape(base)}/favicon.svg</Image>',
+        *(
+            f'  <Url type="{kind}" template="{escape(template)}"{extra}/>'
+            for kind, template, extra in urls
+        ),
+        '  <Query role="example" searchTerms="registry"/>',
+        "</OpenSearchDescription>",
+    ]
+    return Response(
+        content="\n".join(lines) + "\n", media_type="application/opensearchdescription+xml"
     )
 
 

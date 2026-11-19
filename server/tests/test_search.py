@@ -1598,3 +1598,30 @@ def test_paging_links(api: Api) -> None:
     assert 'rel="prev"' in last.headers["link"] and 'rel="next"' not in last.headers["link"]
     walked = api.client.get("/index/search", params={"size": "3", "cursor": "*", "sort": "title"})
     assert "cursor=" in walked.headers["link"] and 'rel="next"' in walked.headers["link"]
+
+
+# --- OpenSearch (TASKS 9.7) -------------------------------------------------------------
+
+
+def test_opensearch_description_and_suggestions(api: Api) -> None:
+    import xml.etree.ElementTree as ET
+
+    response = api.client.get("/index/search/opensearch.xml")
+    assert response.headers["content-type"].startswith("application/opensearchdescription+xml")
+    ns = {"os": "http://a9.com/-/spec/opensearch/1.1/"}
+    root = ET.fromstring(response.text)
+    urls = {u.get("type"): u for u in root.findall("os:Url", ns)}
+    assert urls["text/html"].get("template") == "http://testserver/search?q={searchTerms}"
+    assert urls["application/json"].get("pageOffset") == "0"
+    assert "output=jsonld" in (urls["application/ld+json"].get("template") or "")
+    assert root.findtext("os:ShortName", namespaces=ns) == "FDPneo Index"
+    # The templates work as they read.
+    template = urls["application/json"].get("template") or ""
+    filled = template.replace("{searchTerms}", "cancer").replace("{startPage?}", "0")
+    body = api.client.get(filled.replace("{count?}", "5").removeprefix("http://testserver")).json()
+    assert (body["totalResults"], body["startIndex"], body["itemsPerPage"]) == (2, 0, 5)
+    suggested = api.client.get(
+        "/index/search/suggest", params={"q": "breast", "output": "opensearch"}
+    )
+    assert suggested.headers["content-type"].startswith("application/x-suggestions+json")
+    assert suggested.json() == ["breast", ["Breast cancer registry"]]

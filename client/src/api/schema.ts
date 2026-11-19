@@ -376,6 +376,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/search/opensearch.xml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * OpenSearch description
+     * @description The index as a search engine for browsers and tools (TASKS 9.7): templates for
+     *     the search page, JSON, JSON-LD and Turtle results, and suggestions. Pages count
+     *     from 0 (`pageOffset="0"`). Absolute URLs use `FDPINDEX_PUBLIC_URL` when set.
+     */
+    get: operations["opensearch_index_search_opensearch_xml_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/search/profile": {
     parameters: {
       query?: never;
@@ -570,6 +592,9 @@ export interface paths {
      * Suggestions while typing
      * @description Resources whose title contains `q`, and filter values (keywords, subjects, themes,
      *     publishers) whose name starts with it, with counts. At least two characters.
+     *
+     *     With `output=opensearch`, OpenSearch suggestions for browsers (TASKS 9.7):
+     *     `[q, [texts…]]`.
      */
     get: operations["suggest_index_search_suggest_get"];
     put?: never;
@@ -2387,6 +2412,26 @@ export interface operations {
       };
     };
   };
+  opensearch_index_search_opensearch_xml_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/opensearchdescription+xml": unknown;
+        };
+      };
+    };
+  };
   profile_index_search_profile_get: {
     parameters: {
       query?: never;
@@ -2727,6 +2772,7 @@ export interface operations {
         q?: string;
         type?: string[] | null;
         lang?: string | null;
+        output?: string | null;
       };
       header?: never;
       path?: never;
@@ -2740,9 +2786,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            [key: string]: unknown;
-          };
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */

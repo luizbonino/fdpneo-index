@@ -137,6 +137,13 @@ parameter is `output`, not `format`, because `format` is the file-format
 filter. Paging links are in the `Link` header (`first`, `prev`, `next`).
 The search page's **Download** offers the current page in these formats.
 
+Browsers and tools find the search through OpenSearch:
+`/index/search/opensearch.xml` describes it (search page, JSON, JSON-LD,
+Turtle, and suggestions in the browsers' format), and the web client
+announces it with `<link rel="search">`, so a browser can add the index
+as a search engine. Set `FDPINDEX_PUBLIC_URL` to the address people use,
+or the description names the address the request came to.
+
 To fetch every result of a search (offset paging stops at 10 000), ask
 with `cursor=*` and a sort of `modified`, `issued`, `title` or `harvested`,
 then pass each response's `nextCursor` until it is `null`:

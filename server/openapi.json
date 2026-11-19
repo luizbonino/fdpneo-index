@@ -3173,6 +3173,24 @@
         ]
       }
     },
+    "/index/search/opensearch.xml": {
+      "get": {
+        "description": "The index as a search engine for browsers and tools (TASKS 9.7): templates for\nthe search page, JSON, JSON-LD and Turtle results, and suggestions. Pages count\nfrom 0 (`pageOffset=\"0\"`). Absolute URLs use `FDPINDEX_PUBLIC_URL` when set.",
+        "operationId": "opensearch_index_search_opensearch_xml_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/opensearchdescription+xml": {}
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "OpenSearch description",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/index/search/profile": {
       "delete": {
         "operationId": "delete_profile_index_search_profile_delete",
@@ -3634,7 +3652,7 @@
     },
     "/index/search/suggest": {
       "get": {
-        "description": "Resources whose title contains `q`, and filter values (keywords, subjects, themes,\npublishers) whose name starts with it, with counts. At least two characters.",
+        "description": "Resources whose title contains `q`, and filter values (keywords, subjects, themes,\npublishers) whose name starts with it, with counts. At least two characters.\n\nWith `output=opensearch`, OpenSearch suggestions for browsers (TASKS 9.7):\n`[q, [texts\u2026]]`.",
         "operationId": "suggest_index_search_suggest_get",
         "parameters": [
           {
@@ -3681,6 +3699,22 @@
               ],
               "title": "Lang"
             }
+          },
+          {
+            "in": "query",
+            "name": "output",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output"
+            }
           }
         ],
         "responses": {
@@ -3688,9 +3722,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Suggest Index Search Suggest Get",
-                  "type": "object"
+                  "title": "Response Suggest Index Search Suggest Get"
                 }
               }
             },

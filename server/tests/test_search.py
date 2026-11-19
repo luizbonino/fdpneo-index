@@ -1493,3 +1493,58 @@ async def test_typed_tests_and_captured_paths(search: SearchService) -> None:
     assert (license_["resources"], license_["fdps"]) >= (3, 2)
     alpha = next(e for e in stats["entries"] if e["clientUrl"] == ALPHA)
     assert alpha["properties"]["http://purl.org/dc/terms/license"] >= 1
+
+
+# --- keyset paging (TASKS 9.4) ---------------------------------------------------------
+
+
+@pytest.mark.parametrize("sort", ["", "modified,asc", "title", "title,desc", "issued", "harvested"])
+async def test_a_cursor_walks_every_result_once(search: SearchService, sort: str) -> None:
+    total = (await search.search(SearchParams(size=1, facets=[])))["totalResults"]
+    walked: list[dict[str, Any]] = []
+    cursor: str | None = "*"
+    while cursor is not None:
+        page = await search.search(SearchParams(sort=sort, size=2, facets=[], cursor=cursor))
+        walked += page["hits"]
+        cursor = page["nextCursor"]
+        assert len(walked) <= total
+    assert len({h["iri"] for h in walked}) == len(walked) == total == 8
+    key, _, way = sort.partition(",")
+    if key == "title":
+        titles = [h["title"].lower() for h in walked]
+        assert titles == sorted(titles, reverse=way == "desc")
+    elif key in {"", "modified", "issued"}:
+        field = "issued" if key == "issued" else "modified"
+        dates = [h[field] or (h["issued"] if field == "modified" else None) for h in walked]
+        present = [d for d in dates if d]
+        # Dated hits first, in order; undated ones last.
+        assert dates[: len(present)] == present
+        assert present == sorted(present, reverse=way != "asc")
+
+
+async def test_cursor_errors(search: SearchService) -> None:
+    first = await search.search(SearchParams(sort="title", size=2, cursor="*", facets=[]))
+    assert first["nextCursor"]
+    for params in (
+        SearchParams(sort="relevance", cursor="*"),
+        SearchParams(cursor="*", page=1),
+        SearchParams(sort="modified", cursor=first["nextCursor"]),
+        SearchParams(cursor="not-a-cursor!"),
+    ):
+        with pytest.raises(BadRequest):
+            await search.search(params)
+    plain = await search.search(SearchParams(size=2, facets=[]))
+    assert plain["nextCursor"] is None
+
+
+def test_cursor_over_http(api: Api) -> None:
+    seen: list[str] = []
+    cursor = "*"
+    while cursor:
+        body = api.client.get(
+            "/index/search",
+            params={"cursor": cursor, "size": "3", "sort": "title", "facets": "none"},
+        ).json()
+        seen += [h["id"] for h in body["hits"]]
+        cursor = body["nextCursor"]
+    assert len(seen) == len(set(seen)) == 8

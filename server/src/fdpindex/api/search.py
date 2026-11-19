@@ -48,6 +48,7 @@ Caller = Annotated[Principal, Depends(current_principal)]
 RESERVED = {
     "q",
     "collapse",
+    "cursor",
     "type",
     "fdp",
     "fdpState",
@@ -191,6 +192,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         facet_size=_int(query.get("facetSize"), 20, "facetSize"),
         highlight=query.get("highlight", "").lower() in {"true", "1", "yes"},
         collapse=query.get("collapse", "").lower() in {"true", "1", "yes"},
+        cursor=query.get("cursor") or None,
     )
     if facets is not None:
         params.facets = [] if facets == "none" else [f for f in facets.split(",") if f]
@@ -243,6 +245,8 @@ async def search(
     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
     dates; a resource matches when its temporal coverage overlaps the period),
     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+    `cursor=*` for keyset paging through every result (then each response's
+    `nextCursor`; with `sort=modified|issued|title|harvested`),
     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
     counts groups, `resources` the resources), every hit lists its copies in
     other FDPs (`duplicates`, `duplicateCount`),
@@ -305,6 +309,7 @@ class SearchRequest(BaseModel):
     facet_size: int = Field(default=20, alias="facetSize")
     highlight: bool = False
     collapse: bool = False
+    cursor: str | None = Field(default=None, max_length=1000)
 
 
 def _structured(body: SearchRequest, service: SearchService, lang: str) -> SearchParams:
@@ -323,6 +328,7 @@ def _structured(body: SearchRequest, service: SearchService, lang: str) -> Searc
         facet_size=body.facet_size,
         highlight=body.highlight,
         collapse=body.collapse,
+        cursor=body.cursor,
     )
     for index, item in enumerate(body.filters):
         where = f"filters[{index}]"

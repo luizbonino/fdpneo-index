@@ -75,6 +75,7 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
+from fdpindex.search import cursor as cursors
 from fdpindex.search.concepts import (
     ConceptGroups,
     concept_groups,
@@ -255,6 +256,8 @@ class SearchParams:
     prefixes: list[Prefix] = field(default_factory=lambda: [])
     # One hit per group of copies across FDPs, the best-placed one (TASKS 8.8).
     collapse: bool = False
+    # Keyset paging (TASKS 9.4): "*" for the first page, then each nextCursor.
+    cursor: str | None = None
     # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
     numbers: dict[str, tuple[float | None, float | None]] = field(default_factory=lambda: {})
     fdp_state: str | None = None
@@ -308,7 +311,11 @@ class SearchParams:
             raise BadRequest(f"At most {MAX_FACETS} facets")
         if not 1 <= self.size <= MAX_SIZE:
             raise BadRequest(f"size must be between 1 and {MAX_SIZE}")
-        if self.page < 0 or (self.page + 1) * self.size > MAX_WINDOW:
+        if self.cursor is not None:
+            if self.page:
+                raise BadRequest("Use cursor or page, not both")
+            cursors.direction(self.sort)
+        elif self.page < 0 or (self.page + 1) * self.size > MAX_WINDOW:
             raise BadRequest(f"Pages reach at most {MAX_WINDOW} results; narrow the search")
         if not 1 <= self.facet_size <= MAX_FACET_SIZE:
             raise BadRequest(f"facetSize must be between 1 and {MAX_FACET_SIZE}")
@@ -751,7 +758,8 @@ class SearchService:
                 exact_ids = None if base.approximate else base.ids
             else:
                 total = await self._count(session, params, conditions)
-            score = self._score(params, threshold) if postgres and params.q else None
+            paging = params.cursor is not None
+            score = self._score(params, threshold) if postgres and params.q and not paging else None
             columns: list[Any] = [R, E]
             if score is not None:
                 columns.append(score)
@@ -769,6 +777,16 @@ class SearchService:
                 .offset(params.page * params.size)
                 .limit(params.size)
             )
+            if params.cursor is not None:
+                # Keyset paging: a strict order, from after the last hit (TASKS 9.4).
+                keyset = cursors.after(params.sort, params.cursor)
+                query = (
+                    select(*columns, cursors.key_of(params.sort).label("cursor_key"))
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*known, *([keyset] if keyset is not None else []))
+                    .order_by(*cursors.order(params.sort))
+                    .limit(params.size)
+                )
             bounded = score is not None and total > self._sample_above
             collapsed_total: int | None = None
             if params.collapse:
@@ -859,6 +877,11 @@ class SearchService:
                 "totalResults": total if collapsed_total is None else collapsed_total,
                 **({"resources": total} if collapsed_total is not None else {}),
                 "startIndex": params.page * params.size,
+                "nextCursor": (
+                    cursors.encode(params.sort, rows[-1][-1], rows[-1][0].id)
+                    if params.cursor is not None and len(rows) == params.size
+                    else None
+                ),
                 "itemsPerPage": params.size,
                 "page": params.page,
                 "hits": hits,

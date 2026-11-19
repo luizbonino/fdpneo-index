@@ -129,6 +129,14 @@ profile, for example `{"capture": {"paths": ["dcat:contactPoint/vcard:hasEmail"]
 as an overlay. A bad filter answers 400 and names it (`filters.2.op`).
 Visitors may filter on the properties open to them, as on the search page.
 
+To fetch every result of a search (offset paging stops at 10 000), ask
+with `cursor=*` and a sort of `modified`, `issued`, `title` or `harvested`,
+then pass each response's `nextCursor` until it is `null`:
+
+```sh
+curl -s 'https://index.example.org/index/search?type=dataset&sort=modified&size=100&facets=none&cursor=*'
+```
+
 `GET /index/search/stats` (administrators) lists how often each captured
 property occurs, overall and per FDP: which predicates are worth a filter.
 

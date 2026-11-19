@@ -286,6 +286,8 @@ export interface paths {
      *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
      *     dates; a resource matches when its temporal coverage overlaps the period),
      *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+     *     `cursor=*` for keyset paging through every result (then each response's
+     *     `nextCursor`; with `sort=modified|issued|title|harvested`),
      *     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
      *     counts groups, `resources` the resources), every hit lists its copies in
      *     other FDPs (`duplicates`, `duplicateCount`),
@@ -1451,6 +1453,8 @@ export interface components {
        * @default false
        */
       collapse: boolean;
+      /** Cursor */
+      cursor?: string | null;
       /**
        * Facetsize
        * @default 20

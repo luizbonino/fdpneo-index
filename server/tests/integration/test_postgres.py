@@ -292,6 +292,15 @@ async def test_search_stems_folds_accents_and_ranks(
     from fdpindex.search.query import ValueTest
 
     assert await titles(tests=[ValueTest("keyword", "prefix", "LUN")]) == ["Lung function tests"]
+    # Keyset paging walks every hit once (TASKS 9.4).
+    for sort in ("modified", "title", "issued,asc"):
+        walked: list[str] = []
+        cursor: str | None = "*"
+        while cursor is not None:
+            page = await search.search(SearchParams(sort=sort, size=3, facets=[], cursor=cursor))
+            walked += [h["iri"] for h in page["hits"]]
+            cursor = page["nextCursor"]
+        assert len(walked) == len(set(walked)) == 8, sort
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

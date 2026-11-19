@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from fdpindex.db import utcnow
 from fdpindex.models import IndexSettingsRow
+from fdpindex.search.languages import set_fallback
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -80,6 +81,21 @@ class SearchSettings(_Camel):
         pattern=r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$",
         description="Language of titles and labels when the reader's browser states none",
     )
+    language_fallback: list[str] = Field(
+        default_factory=lambda: ["en"],
+        alias="languageFallback",
+        max_length=10,
+        description="When a title or label is not in the reader's language nor untagged: "
+        "these languages, in order (TASKS 11.8)",
+    )
+
+    @field_validator("language_fallback")
+    @classmethod
+    def _languages(cls, value: list[str]) -> list[str]:
+        for code in value:
+            if not re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})?", code):
+                raise ValueError(f"not a language code: {code}")
+        return list(dict.fromkeys(value)) or ["en"]
 
     @field_validator("facets")
     @classmethod
@@ -162,6 +178,7 @@ class SearchSettingsService:
         settings = SearchSettings() if row is None else SearchSettings.model_validate(row.value)
         self._cached = (time.monotonic(), settings)
         self.default_language = settings.default_language
+        set_fallback(settings.language_fallback)
         return settings
 
     async def view(self) -> SearchSettingsView:
@@ -179,6 +196,7 @@ class SearchSettingsService:
                 row.updated_at = utcnow()
         self._cached = (time.monotonic(), settings)
         self.default_language = settings.default_language
+        set_fallback(settings.language_fallback)
         self.version += 1
         return _view(settings)
 
@@ -190,6 +208,7 @@ class SearchSettingsService:
         settings = SearchSettings()
         self._cached = (time.monotonic(), settings)
         self.default_language = settings.default_language
+        set_fallback(settings.language_fallback)
         self.version += 1
         return _view(settings)
 
@@ -199,5 +218,6 @@ def _view(settings: SearchSettings) -> SearchSettingsView:
         facets=settings.facets,
         properties=settings.properties,
         defaultLanguage=settings.default_language,
+        languageFallback=settings.language_fallback,
         isDefault=settings == SearchSettings(),
     )

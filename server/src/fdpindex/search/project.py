@@ -43,6 +43,7 @@ from rdflib.term import Node
 from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.search.dedup import KINDS as DEDUP_KINDS, dedup_key
 from fdpindex.search.geometry import Box, box_of, merge as merge_boxes
+from fdpindex.search.languages import fallback as language_fallback
 from fdpindex.search.period import Period, merge as merge_periods, period_of
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
 from fdpindex.search.vocab import bundled_labels, country_code, geonames_iri, place_alias
@@ -408,7 +409,8 @@ def parse_datetime(text: str) -> datetime | None:
 
 
 def pick_language(texts: dict[str, str], lang: str = DEFAULT_LANGUAGE) -> tuple[str, str] | None:
-    """The text in ``lang``, else untagged, else English, else any (§3.6)."""
+    """The text in ``lang``, else untagged, else the index's fallback languages in order
+    (TASKS 11.8; English by default), else any (§3.6)."""
     if not texts:
         return None
     wanted = lang.lower()
@@ -418,8 +420,12 @@ def pick_language(texts: dict[str, str], lang: str = DEFAULT_LANGUAGE) -> tuple[
     for key, text in texts.items():
         if key.split("-")[0] == wanted.split("-")[0]:
             return key, text
-    if "en" in texts:
-        return "en", texts["en"]
+    for fallback in language_fallback():
+        if fallback in texts:
+            return fallback, texts[fallback]
+        for key, text in texts.items():
+            if key.split("-")[0] == fallback.split("-")[0]:
+                return key, text
     key = sorted(texts)[0]
     return key, texts[key]
 

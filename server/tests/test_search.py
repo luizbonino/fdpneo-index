@@ -1728,3 +1728,54 @@ def test_saved_and_featured_searches(api: Api) -> None:
     assert api.client.delete(f"/index/search/saved/{saved['id']}", headers=ADMIN).status_code == 204
     assert api.client.delete(f"/index/search/saved/{saved['id']}", headers=ADMIN).status_code == 404
     assert api.client.get("/index/search/landing").json()["featured"] == []
+
+
+# --- the language fallback order (TASKS 11.8) ------------------------------------------
+
+
+@pytest.fixture
+def english_fallback() -> Iterator[None]:
+    from fdpindex.search.languages import set_fallback
+
+    yield
+    set_fallback(["en"])
+
+
+def test_the_fallback_order_decides_the_language(english_fallback: None) -> None:
+    from fdpindex.search.languages import set_fallback
+    from fdpindex.search.vocab import bundled_label
+
+    titles = {"en": "Lung function tests", "nl": "Longfunctietesten", "de": "Lungenfunktion"}
+    assert pick_language(titles, "fr") == ("en", "Lung function tests")
+    set_fallback(["nl", "en"])
+    assert pick_language(titles, "fr") == ("nl", "Longfunctietesten")
+    assert pick_language(titles, "de-AT") == ("de", "Lungenfunktion")  # the reader's first
+    assert pick_language({**titles, "": "untagged"}, "fr") == ("", "untagged")
+    assert pick_language({"fr-BE": "Fonction"}, "sv") == ("fr-BE", "Fonction")  # any at last
+    assert bundled_label(f"{EU}data-theme/HEAL", "sv") == "Hälsa"
+    assert bundled_label(f"{EU}data-theme/HEAL", "xx") == "Gezondheid"
+
+
+def test_the_fallback_order_is_a_setting(api: Api, english_fallback: None) -> None:
+    settings = api.client.get("/index/search/settings", headers=ADMIN).json()
+    assert settings.pop("isDefault") is True
+    assert settings["languageFallback"] == ["en"]
+    bad = api.client.put(
+        "/index/search/settings", json={**settings, "languageFallback": ["Dutch"]}, headers=ADMIN
+    )
+    assert bad.status_code == 400
+
+    def lung(lang: str) -> str:
+        body = api.client.get("/index/search", params={"q": "lung", "lang": lang}).json()
+        return body["hits"][0]["title"]
+
+    assert lung("de") == "Lung function tests"
+    changed = api.client.put(
+        "/index/search/settings",
+        json={**settings, "languageFallback": ["nl", "en"]},
+        headers=ADMIN,
+    )
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["languageFallback"] == ["nl", "en"]
+    assert lung("de") == "Longfunctietesten"
+    assert lung("en") == "Lung function tests"

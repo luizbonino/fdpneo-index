@@ -340,6 +340,9 @@ export const en = {
     defaultLanguage: "Default language of titles and labels",
     defaultLanguageHelp:
       "Used when a reader's browser states no language; readers can also choose one on the search page.",
+    fallback: "Fallback languages",
+    fallbackHelp:
+      "When a title or label is not in the reader's language and has no untagged form: these languages, in this order (codes such as en, nl, de). Then any.",
     save: "Save filters",
     saved: "Search filters saved.",
     resetConfirm: "Restore the default search filters?",

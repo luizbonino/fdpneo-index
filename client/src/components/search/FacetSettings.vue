@@ -36,6 +36,8 @@ const rows = ref<FacetSetting[]>([]);
 const visitors = ref(true);
 const hidden = ref("");
 const defaultLanguage = ref("en");
+// The fallback order as typed: language codes separated by commas (TASKS 11.8).
+const fallback = ref("en");
 const languages = computed(() => {
   const names = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
   return (landing.data.value?.languages ?? ["en"]).map((code) => ({
@@ -61,6 +63,7 @@ function load(settings: SearchSettings) {
   visitors.value = settings.properties.visitors;
   hidden.value = settings.properties.hidden.join("\n");
   defaultLanguage.value = settings.defaultLanguage;
+  fallback.value = (settings.languageFallback ?? ["en"]).join(", ");
 }
 watch(
   () => [stored.data.value, landing.data.value] as const,
@@ -112,6 +115,10 @@ async function save() {
           .filter(Boolean),
       },
       defaultLanguage: defaultLanguage.value,
+      languageFallback: fallback.value
+        .split(/[\s,]+/)
+        .map((code) => code.trim().toLowerCase())
+        .filter(Boolean),
     });
     client.setQueryData(["search-settings"], saved);
     await client.invalidateQueries({ queryKey: ["search-landing"] });
@@ -254,6 +261,19 @@ async function reset() {
         </option>
       </select>
       <span class="help">{{ t("searchSettings.defaultLanguageHelp") }}</span>
+    </div>
+
+    <div class="field">
+      <label for="language-fallback">{{ t("searchSettings.fallback") }}</label>
+      <input
+        id="language-fallback"
+        v-model="fallback"
+        class="input"
+        autocomplete="off"
+        placeholder="en, nl, de"
+        aria-describedby="language-fallback-help"
+      />
+      <span id="language-fallback-help" class="help">{{ t("searchSettings.fallbackHelp") }}</span>
     </div>
 
     <p v-if="error" class="notice error">{{ error }}</p>

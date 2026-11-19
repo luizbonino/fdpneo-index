@@ -25,6 +25,8 @@ from functools import cache
 from importlib import resources
 from pathlib import Path
 
+from fdpindex.search.languages import fallback
+
 EU = "http://publications.europa.eu/resource/authority/"
 
 
@@ -264,12 +266,15 @@ def bundled_labels(iri: str) -> dict[str, str]:
 
 
 def bundled_label(iri: str, lang: str = "en") -> str | None:
-    """The bundled label in ``lang``, else English, else any; None when there is none."""
+    """The bundled label in ``lang``, else in the index's fallback languages (English by
+    default), else any; None when there is none."""
     labels = bundled_labels(iri)
     if not labels:
         return None
-    base = lang.lower().split("-", 1)[0]
-    return labels.get(base) or labels.get("en") or next(iter(labels.values()))
+    for code in (lang.lower().split("-", 1)[0], *(f.split("-", 1)[0] for f in fallback())):
+        if code in labels:
+            return labels[code]
+    return next(iter(labels.values()))
 
 
 # English labels by IRI, for callers that want a plain mapping.

@@ -201,6 +201,8 @@ export interface SearchSettings {
   facets: FacetSetting[] | null;
   properties: { visitors: boolean; hidden: string[] };
   defaultLanguage: string;
+  /** Languages to show when a text is not in the reader's (TASKS 11.8). */
+  languageFallback?: string[];
   isDefault?: boolean;
 }
 
@@ -353,6 +355,7 @@ export const searchApi = {
         facets: settings.facets,
         properties: settings.properties,
         defaultLanguage: settings.defaultLanguage,
+        languageFallback: settings.languageFallback ?? ["en"],
       },
     }),
   profile: () => request<ProfileView>("/index/search/profile"),

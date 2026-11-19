@@ -86,6 +86,11 @@ address** shows which pattern matches.
   button. Properties listed under **Properties visitors may not use** (an
   IRI, or a namespace ending in `/` or `#`) are refused to visitors; the
   filters listed above stay open to everyone.
+- **Default language of titles and labels**: for readers whose browser
+  states no language.
+- **Fallback languages**: when a title or label is not in the reader's
+  language and has no untagged form, these languages in this order (for
+  example `nl, en, de` for a Dutch index), then any.
 
 These are stored as `/index/search/settings` and need no re-indexing.
 

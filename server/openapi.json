@@ -1839,6 +1839,15 @@
             "description": "Ordered facets; null for the profile's",
             "title": "Facets"
           },
+          "languageFallback": {
+            "description": "When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Languagefallback",
+            "type": "array"
+          },
           "properties": {
             "$ref": "#/components/schemas/PropertySettings-Input"
           }
@@ -1875,6 +1884,15 @@
             "title": "Isdefault",
             "type": "boolean"
           },
+          "languageFallback": {
+            "description": "When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Languagefallback",
+            "type": "array"
+          },
           "properties": {
             "$ref": "#/components/schemas/PropertySettings-Output"
           }
@@ -1883,6 +1901,7 @@
           "facets",
           "properties",
           "defaultLanguage",
+          "languageFallback",
           "isDefault"
         ],
         "title": "SearchSettingsView",

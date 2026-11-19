@@ -32,9 +32,9 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | 1 | 7 | 🔹 Started | Design note (11.1) awaiting review; all of 11.2 to 11.8 |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 1/8 | 1 | 6 | 🔹 Started | Design note (11.1) awaiting review; 11.2 to 11.7 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **103/115** | **1** | **11** | | |
+| **Total** | | **104/115** | **1** | **10** | | |
 
 ## Phase 0 — Foundations
 
@@ -204,7 +204,7 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 - [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)
 - [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
 - [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches
-- [ ] 11.8 Configurable language fallback order for titles, descriptions and labels
+- [x] 11.8 Configurable language fallback order for titles, descriptions and labels — *done: `languageFallback` in the search settings (default `en`): the reader's language, untagged text, then these languages in order, then any; for titles, descriptions, harvested, resolved and bundled labels; "Fallback languages" in Settings*
 
 ### Phase 12 — Sources beyond FDPs
 

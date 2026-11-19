@@ -1642,6 +1642,11 @@ export interface components {
        * @description Ordered facets; null for the profile's
        */
       facets?: components["schemas"]["FacetSetting-Input"][] | null;
+      /**
+       * Languagefallback
+       * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
+       */
+      languageFallback?: string[];
       properties?: components["schemas"]["PropertySettings-Input"];
     };
     /** SearchSettingsView */
@@ -1659,6 +1664,11 @@ export interface components {
       facets: components["schemas"]["FacetSetting-Output"][] | null;
       /** Isdefault */
       isDefault: boolean;
+      /**
+       * Languagefallback
+       * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
+       */
+      languageFallback: string[];
       properties: components["schemas"]["PropertySettings-Output"];
     };
     /** ServiceInfo */

@@ -1,0 +1,63 @@
+{
+  "realm": "fdpindex",
+  "displayName": "FDPneo Index",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administers the FDPneo Index: approvals, settings, webhooks, search settings"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fdpindex-app",
+      "name": "FDPneo Index web app",
+      "description": "The index's web app: a public client with PKCE.",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:8090/auth/callback"],
+      "webOrigins": ["http://localhost:8090"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8090"
+      },
+      "protocolMappers": [
+        {
+          "name": "fdpindex audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "fdpindex",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "index-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Index",
+      "lastName": "Administrator",
+      "email": "index-admin@example.org",
+      "credentials": [{ "type": "password", "value": "change-me", "temporary": true }],
+      "requiredActions": ["UPDATE_PASSWORD"],
+      "realmRoles": ["admin", "default-roles-fdpindex"]
+    }
+  ]
+}

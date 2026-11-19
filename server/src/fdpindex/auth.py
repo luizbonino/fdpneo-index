@@ -64,19 +64,25 @@ def _claim(claims: dict[str, Any], path: str) -> Any:
 class OidcVerifier:
     """Validates access tokens against the issuer's JWKS (discovered once, keys cached)."""
 
-    def __init__(self, issuer: str, audience: str | None, http: httpx.AsyncClient) -> None:
+    def __init__(
+        self,
+        issuer: str,
+        audience: str | None,
+        http: httpx.AsyncClient,
+        *,
+        discovery_url: str | None = None,
+    ) -> None:
         self._issuer = issuer.rstrip("/")
         self._audience = audience
         self._http = http
+        self._discovery = discovery_url or f"{self._issuer}/.well-known/openid-configuration"
         self._jwks: jwt.PyJWKClient | None = None
         self._lock = asyncio.Lock()
 
     async def _client(self) -> jwt.PyJWKClient:
         async with self._lock:
             if self._jwks is None:
-                response = await self._http.get(
-                    f"{self._issuer}/.well-known/openid-configuration", timeout=10
-                )
+                response = await self._http.get(self._discovery, timeout=10)
                 response.raise_for_status()
                 self._jwks = jwt.PyJWKClient(str(response.json()["jwks_uri"]), cache_keys=True)
             return self._jwks

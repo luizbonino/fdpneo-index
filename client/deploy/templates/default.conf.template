@@ -14,11 +14,13 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header X-Frame-Options "DENY" always;
 
+    # Behind another reverse proxy: trust its X-Forwarded-For (FDPINDEX_TRUSTED_PROXY).
+    ${FDPINDEX_REALIP}
+
     proxy_set_header Host $host;
     # The address that connected, never one the client claims: the server keys
-    # its per-address rate limits on this. Behind another reverse proxy, use
-    # nginx's realip module (set_real_ip_from <that proxy>) so $remote_addr is
-    # the client's, and keep this line.
+    # its per-address rate limits on this. Behind another reverse proxy,
+    # FDPINDEX_TRUSTED_PROXY makes $remote_addr the client's (realip module).
     proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Host $host;

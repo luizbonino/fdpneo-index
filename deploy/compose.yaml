@@ -7,6 +7,11 @@
 # FDPs ping http://<this host>:8090/ . The server is not published: it trusts
 # X-Forwarded-For from the client container only, which the per-IP ping rate
 # limit relies on.
+#
+# Sign-in with Keycloak (optional, for trying OIDC locally): set the Keycloak
+# block of .env.example, then add `--profile keycloak`. The realm in
+# deploy/keycloak/ has the app's client and one administrator, index-admin,
+# whose password (change-me) must be changed at the first sign-in.
 
 name: fdpindex
 
@@ -34,6 +39,7 @@ services:
       FDPINDEX_OIDC_ISSUER: ${FDPINDEX_OIDC_ISSUER:-}
       FDPINDEX_OIDC_AUDIENCE: ${FDPINDEX_OIDC_AUDIENCE:-}
       FDPINDEX_OIDC_CLIENT_ID: ${FDPINDEX_OIDC_CLIENT_ID:-}
+      FDPINDEX_OIDC_DISCOVERY_URL: ${FDPINDEX_OIDC_DISCOVERY_URL:-}
       FDPINDEX_AUTO_PERMIT: ${FDPINDEX_AUTO_PERMIT:-true}
       FDPINDEX_OUTBOUND_ALLOW_PRIVATE: ${FDPINDEX_OUTBOUND_ALLOW_PRIVATE:-false}
       FDPINDEX_PUBLIC_URL: ${FDPINDEX_PUBLIC_URL:-}
@@ -59,12 +65,32 @@ services:
       FDPINDEX_PUBLIC_ORIGIN: ${FDPINDEX_PUBLIC_ORIGIN:-}
       # For the Content-Security-Policy: sign-in talks to the OIDC issuer.
       FDPINDEX_OIDC_ISSUER: ${FDPINDEX_OIDC_ISSUER:-}
+      # Behind another reverse proxy: its address(es), so rate limits see clients.
+      FDPINDEX_TRUSTED_PROXY: ${FDPINDEX_TRUSTED_PROXY:-}
     ports:
       # Loopback by default; set FDPINDEX_BIND=0.0.0.0 (or put a reverse proxy in
       # front) for FDPs on other hosts to reach the index.
       - "${FDPINDEX_BIND:-127.0.0.1}:${FDPINDEX_PORT:-8090}:80"
     depends_on:
       - server
+    restart: unless-stopped
+
+  keycloak:
+    profiles: [keycloak]
+    image: quay.io/keycloak/keycloak:26.4.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me}
+      # Tokens name this public address as their issuer; the index server reads
+      # the keys at http://keycloak:8080 (FDPINDEX_OIDC_DISCOVERY_URL), and
+      # Keycloak answers it with internal URLs.
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8180}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    volumes:
+      - ./keycloak/fdpindex-realm.json:/opt/keycloak/data/import/fdpindex-realm.json:ro
+    ports:
+      - "127.0.0.1:${KEYCLOAK_PORT:-8180}:8080"
     restart: unless-stopped
 
 volumes:

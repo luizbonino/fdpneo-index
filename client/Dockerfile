@@ -14,6 +14,7 @@ RUN apk add --no-cache jq
 ENV FDPINDEX_API_UPSTREAM=http://server:8000
 COPY deploy/templates/default.conf.template /etc/nginx/templates/default.conf.template
 COPY deploy/docker-entrypoint.d/15-csp.envsh /docker-entrypoint.d/15-csp.envsh
+COPY deploy/docker-entrypoint.d/16-realip.envsh /docker-entrypoint.d/16-realip.envsh
 COPY deploy/docker-entrypoint.d/40-config.sh /docker-entrypoint.d/40-config.sh
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

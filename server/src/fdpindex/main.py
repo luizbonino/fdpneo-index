@@ -156,7 +156,12 @@ def create_app(
             harvest_node_timeout=config.harvest_node_timeout_seconds,
         )
         verifier = (
-            OidcVerifier(config.oidc_issuer, config.oidc_audience, http)
+            OidcVerifier(
+                config.oidc_issuer,
+                config.oidc_audience,
+                http,
+                discovery_url=config.oidc_discovery_url,
+            )
             if config.oidc_issuer
             else None
         )

@@ -137,6 +137,8 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_AUTO_PERMIT` | `true` | Initial auto-permit setting |
 | `FDPINDEX_OIDC_ISSUER`, `FDPINDEX_OIDC_AUDIENCE`, `FDPINDEX_OIDC_CLIENT_ID` | — | OIDC sign-in for administrators |
 | `FDPINDEX_OIDC_ROLES_CLAIM`, `FDPINDEX_OIDC_ADMIN_ROLE` | `realm_access.roles`, `admin` | Where the admin role is |
+| `FDPINDEX_TRUSTED_PROXY` (client container) | — | Address or CIDR range(s) of a reverse proxy in front of the stack, whose `X-Forwarded-For` nginx trusts for the client's address |
+| `FDPINDEX_OIDC_DISCOVERY_URL` | the issuer's `/.well-known/openid-configuration` | Where the server reads the issuer's configuration, when it cannot reach the issuer's public address (Keycloak inside Compose); tokens are still checked against the issuer |
 | `FDPINDEX_ADMIN_TOKENS` | — | SHA-256 digests of static admin tokens (`fdpindex token new`) |
 | `FDPINDEX_OUTBOUND_ALLOW_PRIVATE` | `false` | Allow fetching private / loopback addresses (local stacks only) |
 | `FDPINDEX_OUTBOUND_MAX_BYTES` | `5242880` | Largest response read |
@@ -164,11 +166,30 @@ per-address rate limit. They are configurable, and administrators get more
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted. The per-address rate limits rely on it: the proxy must overwrite the header with the address that connected (the bundled nginx does), never append to what the client sent |
 
 Search at scale (memory, migration 0004, the measured times at 1 000 FDPs):
-[docs/search-performance.md](docs/search-performance.md).
+[docs/search-performance.md](docs/search-performance.md). Reverse proxies,
+backup and restore, upgrades and monitoring: [docs/operations.md](docs/operations.md).
 
 Rate limits, durations, the deny list, auto-permit and the liveness checks
 (interval, failure threshold, which permits) are index settings, changed at
-runtime under `/index/settings` or on the Settings page.
+runtime under `/index/settings` or on the Settings page. The search page's
+filters are too (`/index/search/settings`).
+
+### Trying OIDC sign-in with Keycloak
+
+The Compose stack has an optional Keycloak (profile `keycloak`) with a realm
+for the index: the web app's public client (`fdpindex-app`, PKCE), the
+`admin` role and one administrator, `index-admin`, password `change-me`, to
+be changed at the first sign-in. In `deploy/.env`, set the Keycloak block of
+`.env.example`, then:
+
+```sh
+docker compose -f deploy/compose.yaml --env-file deploy/.env --profile keycloak up -d
+```
+
+Sign in at http://localhost:8090/sign-in with "Sign in with your
+organisation". Keycloak's console is at http://localhost:8180 (`admin`,
+`KEYCLOAK_ADMIN_PASSWORD`). It runs in development mode, for local trials
+only; a production deployment uses its own identity provider.
 
 ## Moving from a Java FAIR Data Point's index
 

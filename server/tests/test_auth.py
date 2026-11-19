@@ -93,3 +93,23 @@ def test_comma_separated_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()
     assert settings.admin_tokens == ["aa", "bb"]
     assert settings.cors_origins == ["https://a.example", "https://b.example"]
+
+
+async def test_discovery_can_come_from_an_internal_address() -> None:
+    """Inside Compose the server reads Keycloak's configuration at keycloak:8080, while
+    tokens name the public issuer."""
+    asked: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(str(request.url))
+        return httpx.Response(200, json={"jwks_uri": "http://keycloak:8080/realms/fdp/certs"})
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    internal = "http://keycloak:8080/realms/fdp/.well-known/openid-configuration"
+    verifier = OidcVerifier(ISSUER, "fdpindex", http, discovery_url=internal)
+    client = await verifier._client()  # pyright: ignore[reportPrivateUsage]
+    assert asked == [internal]
+    assert client.uri == "http://keycloak:8080/realms/fdp/certs"
+    default = OidcVerifier(ISSUER, None, http)
+    await default._client()  # pyright: ignore[reportPrivateUsage]
+    assert asked[-1] == f"{ISSUER}/.well-known/openid-configuration"

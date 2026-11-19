@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     oidc_issuer: str | None = None
     oidc_audience: str | None = None
     oidc_client_id: str | None = None  # handed to the web client, not used by the server
+    # Where the server reads the issuer's configuration, when it cannot reach the
+    # issuer's public address (Keycloak inside Compose: http://keycloak:8080/realms/…).
+    # Tokens are still checked against oidc_issuer.
+    oidc_discovery_url: str | None = None
     oidc_roles_claim: str = "realm_access.roles"
     oidc_admin_role: str = "admin"
 

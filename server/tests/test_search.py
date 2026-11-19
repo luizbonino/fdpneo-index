@@ -1660,3 +1660,30 @@ def test_box_over_http(api: Api) -> None:
         },
     )
     assert [h["title"] for h in posted.json()["hits"]] == ["Lung function tests"]
+
+
+# --- did you mean (TASKS 10.2) ----------------------------------------------------------
+
+
+async def test_did_you_mean(search: SearchService) -> None:
+    async def suggested(q: str) -> dict[str, Any] | None:
+        result = await search.search(SearchParams(q=q, facets=[]))
+        return result.get("didYouMean")
+
+    assert await suggested("registy") == {"q": "registry", "totalResults": 1}
+    assert await suggested("brest cancr") == {"q": "breast cancer", "totalResults": 1}
+    assert await suggested("title:registy") == {"q": "title:registry", "totalResults": 1}
+    # A search with hits, or one nothing is close to, gets no suggestion.
+    assert await suggested("registry") is None
+    assert await suggested("xyzzyq") is None
+
+
+def test_links_use_the_public_url(api: Api) -> None:
+    api.app.state.config = api.app.state.config.model_copy(
+        update={"public_url": "https://index.example.org/"}
+    )
+    links = api.client.get("/index/search", params={"size": "3"}).headers["link"]
+    assert links.startswith("<https://index.example.org/index/search?")
+    turtle = api.client.get("/index/search", params={"size": "3", "output": "ttl"}).text
+    assert "<https://index.example.org/index/search?" in turtle
+    assert "https://index.example.org/search/r/" in turtle

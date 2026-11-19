@@ -778,6 +778,19 @@ const counters = computed(() => {
         </div>
         <section v-else-if="data && !data.hits.length" class="card empty">
           <h2>{{ t("search.noResults") }}</h2>
+          <p v-if="data?.didYouMean" class="did-you-mean">
+            {{ t("search.didYouMean") }}
+            <button
+              type="button"
+              class="link"
+              @click="go({ ...state, q: data.didYouMean.q, page: 1 })"
+            >
+              {{ data.didYouMean.q }}
+            </button>
+            <span class="muted small">
+              ({{ t("search.results", data.didYouMean.totalResults) }})
+            </span>
+          </p>
           <p class="muted">{{ t("search.noResultsHint") }}</p>
           <button v-if="activeChips.length" type="button" class="btn" @click="go(clearAll(state))">
             {{ t("search.clearAll") }}

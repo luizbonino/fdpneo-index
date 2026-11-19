@@ -17,13 +17,14 @@ server {
     # Behind another reverse proxy: trust its X-Forwarded-For (FDPINDEX_TRUSTED_PROXY).
     ${FDPINDEX_REALIP}
 
-    proxy_set_header Host $host;
+    # $http_host keeps the port (127.0.0.1:8090), so links the server writes work.
+    proxy_set_header Host $http_host;
     # The address that connected, never one the client claims: the server keys
     # its per-address rate limits on this. Behind another reverse proxy,
     # FDPINDEX_TRUSTED_PROXY makes $remote_addr the client's (realip module).
     proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Host $http_host;
 
     # FDPs ping the root: POST / is the API, everything else at / is the app.
     location = / {

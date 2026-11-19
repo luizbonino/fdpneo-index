@@ -98,6 +98,8 @@ export interface FacetResult {
 
 export interface SearchResult {
   query: { q: string; types: Kind[]; sort: string; lang: string };
+  /** No hits for these words: the corrected search, if it finds something (TASKS 10.2). */
+  didYouMean?: { q: string; totalResults: number };
   /** Collapsed: the number of groups; `resources` the resources they stand for. */
   totalResults: number;
   resources?: number;

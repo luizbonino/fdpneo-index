@@ -303,6 +303,10 @@ async def test_search_stems_folds_accents_and_ranks(
         assert len(walked) == len(set(walked)) == 8, sort
     # The area filter on the four columns (TASKS 9.8).
     assert await titles(bbox=(13.0, 52.0, 14.0, 53.0)) == ["Lung function tests"]
+    # Did you mean: trigram candidates from titles (TASKS 10.2).
+    misspelt = await search.search(SearchParams(q="brest cancr", facets=[]))
+    assert misspelt["totalResults"] == 0
+    assert misspelt["didYouMean"]["q"] == "breast cancer"
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

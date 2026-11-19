@@ -658,6 +658,7 @@ export const en = {
     sparqlFailed: "Could not translate this search to SPARQL",
     busy: "The search is busy right now. Try again in a moment.",
     noResults: "No results",
+    didYouMean: "Did you mean",
     noResultsHint: "Try fewer or other words, or remove a filter.",
     distributions: "no distributions | 1 distribution | {n} distributions",
     updated: "updated {when}",

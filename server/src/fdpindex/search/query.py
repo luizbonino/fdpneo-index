@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import difflib
 import re
 import time
 from collections import Counter, defaultdict
@@ -218,6 +219,9 @@ KIND_BOOST = {
 RANK_WEIGHTS = "{0.1, 0.2, 0.4, 1.0}"  # D, C, B, A
 DISTRIBUTIONS_PER_HIT = 5
 MAX_DUPLICATES = 10
+DID_YOU_MEAN_RATIO = 0.75
+DID_YOU_MEAN_TITLES = 200
+_WORD = re.compile(r"[^\W\d_][\w'-]{2,}", re.UNICODE)
 STATS_PER_FDP = 25
 
 
@@ -258,6 +262,8 @@ class SearchParams:
     collapse: bool = False
     # Resources whose box intersects this one (TASKS 9.8): min lon, min lat, max lon, max lat.
     bbox: tuple[float, float, float, float] | None = None
+    # q as given, before field prefixes were taken out (for "did you mean").
+    raw_q: str = ""
     # Keyset paging (TASKS 9.4): "*" for the first page, then each nextCursor.
     cursor: str | None = None
     # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
@@ -464,6 +470,7 @@ class SearchService:
     async def _field_prefixes(self, params: SearchParams) -> None:
         """Take ``title:``, ``keyword:`` … out of ``q`` (TASKS 9.1): text prefixes into
         ``texts``, the others into filters on the values they name."""
+        params.raw_q = params.raw_q or params.q
         if params.prefixes or ":" not in params.q:
             return
         rest, found = parse_prefixes(params.q, self.profile)
@@ -834,6 +841,11 @@ class SearchService:
                 )
                 query = query.where(R.id.in_(candidates))
             rows = (await session.execute(query)).all()
+            suggestion = (
+                await self._did_you_mean(session, params, threshold, postgres=postgres)
+                if not rows and params.q and params.cursor is None and params.page == 0
+                else None
+            )
             labels = Labels(session, params.lang)
             hits = await self._hits(
                 session, rows, params, threshold, labels, scored=score is not None
@@ -887,6 +899,7 @@ class SearchService:
                 # resources they stand for are in ``resources``.
                 "totalResults": total if collapsed_total is None else collapsed_total,
                 **({"resources": total} if collapsed_total is not None else {}),
+                **({"didYouMean": suggestion} if suggestion else {}),
                 "startIndex": params.page * params.size,
                 "nextCursor": (
                     cursors.encode(params.sort, rows[-1][-1], rows[-1][0].id)
@@ -1419,6 +1432,61 @@ class SearchService:
                 ]
             hits.append(hit)
         return hits
+
+    async def _did_you_mean(
+        self, session: AsyncSession, params: SearchParams, threshold: datetime, *, postgres: bool
+    ) -> dict[str, Any] | None:
+        """A search with no hits: the same search with misspelt words corrected, if that
+        finds something (TASKS 10.2). Words come from titles and keywords."""
+        words = list(dict.fromkeys(w.lower() for w in _WORD.findall(params.q)))[:6]
+        if not words:
+            return None
+        if postgres:
+            # The operator's default (0.6) misses "brest" for "breast"; for this query only.
+            await session.execute(text("SET LOCAL pg_trgm.word_similarity_threshold = 0.4"))
+        near = {word: await self._near_words(session, word, postgres=postgres) for word in words}
+        pooled: set[str] = set().union(*near.values())
+        replacements: dict[str, str] = {}
+        for word in words:
+            candidates = {c for c in pooled if abs(len(c) - len(word)) <= 3} | near[word]
+            if word in candidates:
+                continue
+            best = max(candidates, key=lambda c: (_closeness(word, c), c), default=None)
+            if best is not None and _closeness(word, best) >= DID_YOU_MEAN_RATIO:
+                replacements[word] = best
+        if not replacements:
+            return None
+
+        def corrected(text: str) -> str:
+            return _WORD.sub(lambda m: replacements.get(m.group(0).lower(), m.group(0)), text)
+
+        retry = copy.copy(params)
+        retry.q = corrected(params.q)
+        retry.texts = [Prefix(p.field, corrected(p.term), p.negated) for p in params.texts]
+        total = await self._count(
+            session, retry, self._conditions(retry, threshold, postgres=postgres)
+        )
+        if not total:
+            return None
+        return {"q": corrected(params.raw_q or params.q), "totalResults": total}
+
+    async def _near_words(self, session: AsyncSession, word: str, *, postgres: bool) -> set[str]:
+        """Words of titles and keywords that may be what ``word`` meant."""
+        if postgres:
+            titles = await session.scalars(
+                select(R.title).where(literal(word).op("<%")(R.title)).limit(DID_YOU_MEAN_TITLES)
+            )
+        else:
+            titles = await session.scalars(select(R.title).limit(5000))
+        found = {w.lower() for title in titles for w in _WORD.findall(title or "")}
+        keywords = await session.scalars(
+            select(V.value)
+            .where(V.field == "keyword", V.value.like(f"{_like(word[:2])}%", escape="\\"))
+            .distinct()
+            .limit(500)
+        )
+        found.update(k for keyword in keywords for k in _WORD.findall(keyword))
+        return {w for w in found if abs(len(w) - len(word)) <= 3}
 
     async def _duplicates(
         self,
@@ -2187,3 +2255,8 @@ def _bbox_view(resource: SearchResource) -> list[float] | None:
         resource.bbox_max_lat,
     )
     return None if any(v is None for v in box) else [float(v) for v in box if v is not None]
+
+
+def _closeness(a: str, b: str) -> float:
+    """How alike two words are, 0 to 1 (difflib's ratio)."""
+    return difflib.SequenceMatcher(None, a, b).ratio()

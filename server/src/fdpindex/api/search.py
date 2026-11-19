@@ -31,6 +31,7 @@ from xml.sax.saxutils import escape
 import yaml
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.datastructures import URL
 
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
@@ -316,7 +317,10 @@ async def _answer(
     if not wants_rdf:
         return Response(content=_json(result), media_type="application/json", headers=headers)
     media = _negotiate(format, accept)
-    graph = results_graph(result, str(request.url), str(request.base_url), service.profile)
+    base: str = request.app.state.config.public_url or str(request.base_url)
+    graph = results_graph(
+        result, str(_request_url(request)), base.rstrip("/") + "/", service.profile
+    )
 
     def render() -> str:
         for prefix, namespace in PREFIXES.items():
@@ -326,9 +330,18 @@ async def _answer(
     return Response(content=await asyncio.to_thread(render), media_type=media, headers=headers)
 
 
+def _request_url(request: Request) -> URL:
+    """The request's URL, on FDPINDEX_PUBLIC_URL when set (not the Host header)."""
+    base: str | None = request.app.state.config.public_url
+    if not base:
+        return request.url
+    public = URL(base.rstrip("/"))
+    return request.url.replace(scheme=public.scheme, netloc=public.netloc)
+
+
 def _links(request: Request, result: dict[str, Any], params: SearchParams) -> str:
     """``Link`` header values for paging: first, prev, next (or the next cursor)."""
-    url = request.url
+    url = _request_url(request)
     found: list[str] = []
     if params.cursor is not None:
         if result.get("nextCursor"):

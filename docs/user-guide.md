@@ -40,6 +40,9 @@ Any field the index has works the same way (`format:csv`, `licence:…`,
 `subject:…`). A prefix on a field acts as a filter: its values show ticked
 in the filters at the side.
 
+A search that finds nothing proposes a correction when one finds
+something: *brest cancr* offers **Did you mean breast cancer**.
+
 When the index resolves subject names (an administrator's choice), a search
 also finds subjects by their names in other languages and by broader
 terms: *borstkanker* or *Brustkrebs* find datasets tagged with the Wikidata

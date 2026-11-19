@@ -8,6 +8,10 @@
   --fair-text-muted: #5c6673;
   --fair-text-light: #616b78;
   --fair-text-on-accent: #ffffff;
+  /* The shared directory blue (#2a6fdb) and success green reach 4.1–4.46:1 on
+     their tints and the slate background; these pass 4.5:1 on all of them. */
+  --tool-directory: #2563c7;
+  --fair-success: #2b752f;
   --tool-accent: var(--tool-directory);
   --tool-accent-tint: var(--tool-directory-tint);
 }

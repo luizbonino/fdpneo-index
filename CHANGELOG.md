@@ -31,6 +31,8 @@ The first release will contain:
 - **Copies across FDPs**: a resource several FDPs list (the same DOI,
   identifier, IRI, or an `owl:sameAs` mirror) says where else it is, and
   **Group copies** shows it once.
+- **Accessibility**: an axe-core and keyboard pass over the public pages
+  (WCAG 2.2 AA), with fixes to contrast, heading order and the Subject tree.
 - **Concept labels** from Wikidata, ROR, OLS and RDF vocabularies, off by
   default (ADR-0006).
 - **SPARQL** endpoint and page: editor, builder, example library, charts.

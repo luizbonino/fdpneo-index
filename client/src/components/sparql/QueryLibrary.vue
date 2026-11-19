@@ -91,7 +91,7 @@ async function edit() {
 
     <template v-else-if="!example">
       <section v-for="group in groups" :key="group.name" class="group">
-        <h3>{{ group.name }}</h3>
+        <h2>{{ group.name }}</h2>
         <div class="cards">
           <button
             v-for="item in group.examples"
@@ -115,7 +115,7 @@ async function edit() {
       </button>
       <header>
         <span class="eyebrow">{{ example.group }}</span>
-        <h3>{{ example.title }}</h3>
+        <h2>{{ example.title }}</h2>
         <p class="muted">{{ example.description }}</p>
       </header>
       <form class="form" @submit.prevent="run">
@@ -203,7 +203,7 @@ async function edit() {
   display: grid;
   gap: var(--fair-space-5);
 }
-.group h3 {
+.group h2 {
   margin: 0 0 var(--fair-space-2);
   font-size: var(--fair-text-sm);
   text-transform: uppercase;
@@ -240,8 +240,9 @@ async function edit() {
   display: grid;
   gap: var(--fair-space-3);
 }
-.chosen header h3 {
+.chosen header h2 {
   margin: 2px 0;
+  font-size: var(--fair-text-lg, 1.15rem);
 }
 .chosen header p {
   margin: 0;

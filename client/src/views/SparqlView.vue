@@ -340,7 +340,7 @@ onMounted(async () => {
           @run="runEditor"
         />
         <aside class="vocab" :aria-label="t('sparql.editor.inData')">
-          <h3 class="small">{{ t("sparql.editor.classes") }}</h3>
+          <h2 class="small">{{ t("sparql.editor.classes") }}</h2>
           <ul>
             <li v-for="c in (schema.data.value?.classes ?? []).slice(0, 12)" :key="c.iri">
               <button class="term" :title="c.iri" @click="editor?.insertAtCursor(c.curie)">
@@ -350,7 +350,7 @@ onMounted(async () => {
               </button>
             </li>
           </ul>
-          <h3 class="small">{{ t("sparql.editor.properties") }}</h3>
+          <h2 class="small">{{ t("sparql.editor.properties") }}</h2>
           <ul>
             <li v-for="p in (schema.data.value?.properties ?? []).slice(0, 25)" :key="p.iri">
               <button class="term" :title="p.iri" @click="editor?.insertAtCursor(p.curie)">
@@ -489,7 +489,7 @@ kbd {
   border-left: 1px solid var(--fair-separator);
   padding-left: var(--fair-space-3);
 }
-.vocab h3 {
+.vocab h2 {
   margin: var(--fair-space-2) 0 4px;
   color: var(--fair-text-muted);
   text-transform: uppercase;

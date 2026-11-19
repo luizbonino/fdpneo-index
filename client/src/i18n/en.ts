@@ -566,8 +566,7 @@ export const en = {
       title: "{name}: broader and narrower",
       lead: "Each subject sits under its broader one, from the vocabularies it comes from; counts include everything narrower. Tick one to find it and everything below it.",
       orNarrower: "{name} (or narrower)",
-      expand: "Show what is below {name}",
-      collapse: "Hide what is below {name}",
+      toggle: "Narrower than {name}",
     },
     suggest: {
       label: "Suggestions",

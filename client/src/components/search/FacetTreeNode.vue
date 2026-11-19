@@ -1,6 +1,10 @@
 <script setup lang="ts">
-/** One concept of a facet tree, with its narrower concepts behind a toggle. */
-import { computed, ref } from "vue";
+/**
+ * One concept of a facet tree, with its narrower concepts behind a toggle.
+ * A disclosure, not an ARIA tree: every checkbox and toggle is reached with Tab,
+ * and the toggle says whether its branch is open (TASKS 8.9).
+ */
+import { computed, ref, useId } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TreeNode } from "@/search/api";
 
@@ -14,26 +18,19 @@ function holdsSelected(node: TreeNode): boolean {
   return node.children.some((c) => props.selected.includes(c.value) || holdsSelected(c));
 }
 const open = ref(props.level === 1 || holdsSelected(props.node));
+const branch = useId();
 </script>
 
 <template>
-  <li
-    role="treeitem"
-    :aria-level="level"
-    :aria-expanded="hasChildren ? open : undefined"
-    :aria-selected="selected.includes(node.value)"
-    class="node"
-  >
+  <li class="node">
     <div class="row">
       <button
         v-if="hasChildren"
         type="button"
         class="twisty"
-        :aria-label="
-          open
-            ? t('search.tree.collapse', { name: node.label })
-            : t('search.tree.expand', { name: node.label })
-        "
+        :aria-expanded="open"
+        :aria-controls="open ? branch : undefined"
+        :aria-label="t('search.tree.toggle', { name: node.label })"
         @click="open = !open"
       >
         {{ open ? "▾" : "▸" }}
@@ -49,7 +46,7 @@ const open = ref(props.level === 1 || holdsSelected(props.node));
         <span class="count">{{ node.count.toLocaleString() }}</span>
       </label>
     </div>
-    <ul v-if="hasChildren && open" role="group" class="children">
+    <ul v-if="hasChildren && open" :id="branch" class="children">
       <FacetTreeNode
         v-for="child in node.children"
         :key="child.value"

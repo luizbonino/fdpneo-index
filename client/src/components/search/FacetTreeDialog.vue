@@ -53,7 +53,7 @@ onMounted(async () => {
     <p v-if="error" class="notice error">{{ error }}</p>
     <p v-else-if="loading" class="muted">{{ t("common.loading") }}</p>
     <p v-else-if="!nodes.length" class="muted">{{ t("search.dialog.none") }}</p>
-    <ul v-else role="tree" class="tree" :aria-label="title">
+    <ul v-else class="tree" :aria-label="title">
       <FacetTreeNode
         v-for="node in nodes"
         :key="node.value"

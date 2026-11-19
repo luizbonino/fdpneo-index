@@ -1625,3 +1625,38 @@ def test_opensearch_description_and_suggestions(api: Api) -> None:
     )
     assert suggested.headers["content-type"].startswith("application/x-suggestions+json")
     assert suggested.json() == ["breast", ["Breast cancer registry"]]
+
+
+# --- the area filter (TASKS 9.8) --------------------------------------------------------
+
+
+async def test_resources_within_a_box(search: SearchService) -> None:
+    async def titles(box: tuple[float, float, float, float]) -> set[str]:
+        result = await search.search(SearchParams(bbox=box, facets=[]))
+        return {h["title"] for h in result["hits"]}
+
+    # The Netherlands: a dcat:bbox polygon and a GeoJSON point (Amsterdam).
+    assert await titles((3.0, 50.0, 8.0, 54.0)) == {"Breast cancer registry", "Genome cohort"}
+    # Around Berlin: a dcat:centroid.
+    assert await titles((13.0, 52.0, 14.0, 53.0)) == {"Lung function tests"}
+    # Inside the Dutch box but away from Amsterdam: only the box.
+    assert await titles((6.0, 53.0, 7.0, 53.5)) == {"Breast cancer registry"}
+    assert await titles((100.0, 0.0, 110.0, 10.0)) == set()
+    hit = (await search.search(SearchParams(q="genome", facets=[])))["hits"][0]
+    assert hit["bbox"] == [4.89, 52.37, 4.89, 52.37]
+    translated = await search.sparql(SearchParams(bbox=(3.0, 50.0, 8.0, 54.0)))
+    assert "bbox" in translated["approximation"]
+
+
+def test_box_over_http(api: Api) -> None:
+    body = api.client.get("/index/search", params={"bbox": "13,52,14,53"}).json()
+    assert [h["title"] for h in body["hits"]] == ["Lung function tests"]
+    assert body["query"]["bbox"] == [13.0, 52.0, 14.0, 53.0]
+    assert api.client.get("/index/search", params={"bbox": "14,52,13,53"}).status_code == 400
+    posted = api.client.post(
+        "/index/search",
+        json={
+            "filters": [{"field": "bbox", "op": "intersects", "values": ["13", "52", "14", "53"]}]
+        },
+    )
+    assert [h["title"] for h in posted.json()["hits"]] == ["Lung function tests"]

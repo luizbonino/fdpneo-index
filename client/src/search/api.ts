@@ -66,6 +66,8 @@ export interface Hit {
   modified: string | null;
   /** Temporal coverage (TASKS 8.3): first and last day, either may be open. */
   temporal: Period | null;
+  /** The box around its area: min lon, min lat, max lon, max lat (TASKS 9.8). */
+  bbox?: number[] | null;
   landingPage: string | null;
   sourceUrl: string;
   facts: Record<string, number>;
@@ -243,6 +245,7 @@ export interface ResourceDetail {
   issued: string | null;
   modified: string | null;
   temporal: Period | null;
+  bbox?: number[] | null;
   landingPage: string | null;
   sourceUrl: string;
   harvestedAt: string;

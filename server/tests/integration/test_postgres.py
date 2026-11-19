@@ -301,6 +301,8 @@ async def test_search_stems_folds_accents_and_ranks(
             walked += [h["iri"] for h in page["hits"]]
             cursor = page["nextCursor"]
         assert len(walked) == len(set(walked)) == 8, sort
+    # The area filter on the four columns (TASKS 9.8).
+    assert await titles(bbox=(13.0, 52.0, 14.0, 53.0)) == ["Lung function tests"]
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

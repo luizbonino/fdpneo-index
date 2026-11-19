@@ -217,6 +217,14 @@ fields:
         The period the data covers. Read from dcat:startDate and dcat:endDate,
         schema:startDate and schema:endDate, time:hasBeginning and time:hasEnd,
         or a literal such as "2010/2020".
+  bbox:
+    kind: geometry
+    paths: [dct:spatial]
+    label: {en: Area}
+    help:
+      en: >-
+        The area the data covers, from dcat:bbox, dcat:centroid or locn:geometry
+        (WKT or GeoJSON), as a box of longitudes and latitudes.
   records:
     kind: number
     paths: [healthdcatap:numberOfRecords]

@@ -34,6 +34,8 @@ export interface SearchState {
   active: boolean;
   /** One hit per group of copies across FDPs (`collapse=true`, TASKS 8.8). */
   collapse: boolean;
+  /** `minLon,minLat,maxLon,maxLat`: resources whose area intersects it (TASKS 9.8). */
+  bbox: string;
   sort: string;
   page: number;
   /** Property facets the reader added (`prop:<IRI>`), in the order added. */
@@ -87,6 +89,7 @@ export function fromQuery(query: LocationQuery, facets: string[]): SearchState {
     numbers,
     active: one(query.fdpState) === "ACTIVE",
     collapse: one(query.collapse) === "true",
+    bbox: parseBox(one(query.bbox)) ? one(query.bbox) : "",
     sort: (SORTS as readonly string[]).includes(one(query.sort)) ? one(query.sort) : "",
     page: Number.isFinite(page) && page > 0 ? page : 1,
     added,
@@ -112,6 +115,7 @@ export function toQuery(state: SearchState): LocationQueryRaw {
   }
   if (state.active) query.fdpState = "ACTIVE";
   if (state.collapse) query.collapse = "true";
+  if (state.bbox) query.bbox = state.bbox;
   if (state.sort) query.sort = state.sort;
   if (state.page > 1) query.page = String(state.page);
   if (state.added.length) query.facet = [...state.added];
@@ -145,6 +149,7 @@ export function apiParams(
   }
   if (state.active) params.set("fdpState", "ACTIVE");
   if (state.collapse) params.set("collapse", "true");
+  if (state.bbox) params.set("bbox", state.bbox);
   if (state.sort) params.set("sort", sortParam(state.sort));
   params.set("page", String(state.page - 1));
   params.set("size", String(options.size ?? PAGE_SIZE));
@@ -214,12 +219,36 @@ export function setNumber(
   return { ...state, numbers, page: 1 };
 }
 
+/** `minLon,minLat,maxLon,maxLat` within -180..180 and -90..90, minimum before maximum. */
+export function parseBox(text: string): [number, number, number, number] | null {
+  const parts = text.split(",").map((p) => p.trim());
+  if (parts.length !== 4 || parts.some((p) => !isNumber(p))) return null;
+  const [minLon, minLat, maxLon, maxLat] = parts.map(Number) as [number, number, number, number];
+  const ok =
+    -180 <= minLon &&
+    minLon <= maxLon &&
+    maxLon <= 180 &&
+    -90 <= minLat &&
+    minLat <= maxLat &&
+    maxLat <= 90;
+  return ok ? [minLon, minLat, maxLon, maxLat] : null;
+}
+
 export function isNumber(text: string): boolean {
   return text.trim() !== "" && Number.isFinite(Number(text));
 }
 
 export function clearAll(state: SearchState): SearchState {
-  return { ...state, filters: {}, fdp: [], dates: {}, numbers: {}, active: false, page: 1 };
+  return {
+    ...state,
+    filters: {},
+    fdp: [],
+    dates: {},
+    numbers: {},
+    bbox: "",
+    active: false,
+    page: 1,
+  };
 }
 
 export interface Chip {
@@ -243,12 +272,14 @@ export function chips(state: SearchState): Chip[] {
     if (range.min || range.max)
       out.push({ name, value: `${range.min}..${range.max}`, range: true });
   }
+  if (state.bbox) out.push({ name: "bbox", value: state.bbox });
   if (state.active) out.push({ name: "fdpState", value: "ACTIVE" });
   return out;
 }
 
 export function removeChip(state: SearchState, chip: Chip): SearchState {
   if (chip.name === "fdpState") return { ...state, active: false, page: 1 };
+  if (chip.name === "bbox") return { ...state, bbox: "", page: 1 };
   if (chip.name in state.dates) {
     const dates = { ...state.dates };
     delete dates[chip.name];

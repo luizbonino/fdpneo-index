@@ -77,6 +77,10 @@ and also take a lowest and a highest value of your own. Yes/No filters say
 whether a resource states something at all (for example whether it
 concerns personal data, on indexes that use the HealthDCAT-AP filters).
 
+**Area** finds data whose area overlaps a box you give as four numbers:
+west, south, east, north (for the Netherlands, about `3.3, 50.7, 7.3,
+53.6`). Only resources that state an area as coordinates have one.
+
 **Dates** narrows by when a resource was issued or last modified. **Period
 covered** finds data whose temporal coverage overlaps the years you give:
 type a year (`2010`), a month (`2010-05`) or a date (`2010-05-31`), or

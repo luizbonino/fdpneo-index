@@ -42,6 +42,7 @@ from rdflib.term import Node
 
 from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.search.dedup import KINDS as DEDUP_KINDS, dedup_key
+from fdpindex.search.geometry import Box, box_of, merge as merge_boxes
 from fdpindex.search.period import Period, merge as merge_periods, period_of
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
 from fdpindex.search.vocab import bundled_labels, country_code, geonames_iri, place_alias
@@ -76,7 +77,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 9
+PROJECTION_VERSION = 10
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -159,6 +160,7 @@ class ResourceRow:
     temporal_start: date | None = None
     temporal_end: date | None = None
     dedup_key: str | None = None
+    bbox: Box | None = None
 
     @property
     def search_text(self) -> str:
@@ -189,6 +191,8 @@ class ResourceRow:
         }
         if self.dedup_key:
             data["dedup"] = self.dedup_key
+        if self.bbox:
+            data["bbox"] = list(self.bbox)
         if self.temporal_start or self.temporal_end:
             data["temporal"] = [
                 self.temporal_start.isoformat() if self.temporal_start else None,
@@ -514,6 +518,7 @@ class _Projector:
         texts: dict[str, dict[str, str]] = {"title": {}, "description": {}}
         dates: dict[str, datetime] = {}
         periods: list[Period] = []
+        boxes: list[Box] = []
         landing: str | None = None
         for name, spec in self.profile.fields.items():
             found = self._field(node, name, spec, segments)
@@ -532,6 +537,8 @@ class _Projector:
                         break
             elif spec.kind == "period":
                 periods.extend(period_of(node.graph, item) for item in found)
+            elif spec.kind == "geometry":
+                boxes.extend(b for item in found if (b := box_of(node.graph, item)) is not None)
             elif name == "landingPage":
                 landing = next((str(v) for v in found if isinstance(v, URIRef)), None)
             else:
@@ -565,6 +572,7 @@ class _Projector:
             ),
         )
         row.temporal_start, row.temporal_end = merge_periods(periods)
+        row.bbox = merge_boxes(boxes)
         if row.kind in DEDUP_KINDS:
             row.dedup_key = dedup_key(node.graph, subject)
         if fallback:

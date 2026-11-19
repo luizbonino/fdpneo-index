@@ -50,6 +50,7 @@ HEALTH = Namespace("http://healthdataportal.eu/ns/health#")
 LDP = Namespace("http://www.w3.org/ns/ldp#")
 SCHEMA = Namespace("http://schema.org/")
 DPV = Namespace("https://w3id.org/dpv#")
+GSP = Namespace("http://www.opengis.net/ont/geosparql#")
 HDEU = "https://hdeu-dcat.data.health.europa.eu/resource/authority/"
 TIME = Namespace("http://www.w3.org/2006/time#")
 DCAT3 = Namespace("http://www.w3.org/ns/dcat#")  # rdflib's DCAT lacks dcat:version
@@ -82,6 +83,21 @@ GEONAMES_IDS = {
     "PRT": 2264397,
     "CHE": 2658434,
     "AUT": 2782113,
+}
+# Rough boxes of those countries: west, south, east, north.
+BOXES = {
+    "NLD": (3.31, 50.75, 7.23, 53.68),
+    "DEU": (5.87, 47.27, 15.04, 55.06),
+    "BEL": (2.54, 49.5, 6.41, 51.51),
+    "FRA": (-5.14, 41.33, 9.56, 51.09),
+    "ESP": (-9.39, 35.95, 3.04, 43.79),
+    "ITA": (6.63, 35.49, 18.52, 47.09),
+    "SWE": (11.03, 55.34, 24.17, 69.06),
+    "FIN": (20.55, 59.81, 31.59, 70.09),
+    "DNK": (8.08, 54.56, 15.2, 57.75),
+    "PRT": (-9.53, 36.96, -6.19, 42.15),
+    "CHE": (5.96, 45.82, 10.49, 47.81),
+    "AUT": (9.53, 46.37, 17.16, 49.02),
 }
 LANGUAGES = {
     "nl": "NLD",
@@ -729,6 +745,17 @@ class FdpBuilder:
             g.add((node, DCTERMS.spatial, Literal(self.country)))
         if rng.random() < 0.1:
             g.add((node, DCTERMS.spatial, URIRef("https://sws.geonames.org/6255148/")))
+        if rng.random() < 0.35:
+            # The country's box as a location with dcat:bbox (TASKS 9.8).
+            west, south, east, north = BOXES[code]
+            location = BNode()
+            g.add((node, DCTERMS.spatial, location))
+            g.add((location, RDF.type, DCTERMS.Location))
+            polygon = (
+                f"POLYGON(({west} {south}, {east} {south}, {east} {north}, "
+                f"{west} {north}, {west} {south}))"
+            )
+            g.add((location, DCAT.bbox, Literal(polygon, datatype=GSP.wktLiteral)))
 
     @staticmethod
     def _health(g: Graph, node: URIRef, iri: str, people: int) -> None:

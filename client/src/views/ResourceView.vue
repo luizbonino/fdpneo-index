@@ -251,6 +251,12 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
                 <dt>{{ t("search.fields.modified") }}</dt>
                 <dd :title="absoluteTime(r.modified)">{{ relativeTime(r.modified) }}</dd>
               </template>
+              <template v-if="r.bbox">
+                <dt>{{ t("search.area.legend") }}</dt>
+                <dd class="mono small">
+                  {{ r.bbox.map((v) => v.toFixed(2)).join(", ") }}
+                </dd>
+              </template>
               <template v-if="r.temporal">
                 <dt>{{ t("search.fields.temporal") }}</dt>
                 <dd>{{ formatPeriod(r.temporal, t) }}</dd>

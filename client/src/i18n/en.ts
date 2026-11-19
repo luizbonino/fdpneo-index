@@ -621,6 +621,13 @@ export const en = {
       minShort: "Min",
       maxShort: "Max",
     },
+    area: {
+      legend: "Area",
+      help: "Longitudes and latitudes of a box: west, south, east, north. Data whose area overlaps it.",
+      invalid:
+        "Four numbers: west, south, east, north (longitudes −180 to 180, latitudes −90 to 90).",
+      chip: "Within {box}",
+    },
     period: {
       range: "{from} – {to}",
       since: "since {from}",

@@ -417,6 +417,13 @@ def _columns(row: ResourceRow, row_hash: str, now: Any, *, postgres: bool) -> di
         "temporal_start": row.temporal_start,
         "temporal_end": row.temporal_end,
         "dedup_key": row.dedup_key,
+        **dict(
+            zip(
+                ("bbox_min_lon", "bbox_min_lat", "bbox_max_lon", "bbox_max_lat"),
+                row.bbox or (None, None, None, None),
+                strict=True,
+            )
+        ),
         "completeness": row.completeness,
         "facts": row.facts,
         "text_segments": [list(segment) for segment in row.segments],

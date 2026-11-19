@@ -863,7 +863,8 @@
               "gte",
               "lte",
               "between",
-              "overlaps"
+              "overlaps",
+              "intersects"
             ],
             "title": "Op",
             "type": "string"
@@ -2931,7 +2932,7 @@
         ]
       },
       "post": {
-        "description": "The search of `GET /index/search` with a JSON body, for expert and machine use.\n\n`filters` is a list of `{\"field\" | \"path\", \"op\", \"value\" | \"values\" | \"from\"/\"to\"}`:\n`eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`\nas a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,\n`between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on\n`temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.",
+        "description": "The search of `GET /index/search` with a JSON body, for expert and machine use.\n\n`filters` is a list of `{\"field\" | \"path\", \"op\", \"value\" | \"values\" | \"from\"/\"to\"}`:\n`eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`\nas a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,\n`between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on\n`temporal`; `intersects` on `bbox` (`\"minLon,minLat,maxLon,maxLat\"` or four values). Filters on one field are ORed, the rest ANDed, as in `GET`.",
         "operationId": "search_structured_index_search_post",
         "parameters": [
           {

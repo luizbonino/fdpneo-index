@@ -311,7 +311,7 @@ export interface paths {
      *     `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
      *     as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
      *     `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
-     *     `temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.
+     *     `temporal`; `intersects` on `bbox` (`"minLon,minLat,maxLon,maxLat"` or four values). Filters on one field are ORed, the rest ANDed, as in `GET`.
      */
     post: operations["search_structured_index_search_post"];
     delete?: never;
@@ -1188,7 +1188,8 @@ export interface components {
         | "gte"
         | "lte"
         | "between"
-        | "overlaps";
+        | "overlaps"
+        | "intersects";
       /**
        * Path
        * @description A property, as a CURIE or IRI, or a two-step path the profile captures (dcat:contactPoint/vcard:hasEmail)

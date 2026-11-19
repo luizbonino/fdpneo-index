@@ -47,6 +47,14 @@ copies (`duplicates`, `duplicateCount`); `collapse=true` keeps the
 best-placed copy of each group, `totalResults` then counts groups and
 `resources` the resources.
 
+An area is read from `dct:spatial` too: `dcat:bbox`, `dcat:centroid` or
+`locn:geometry` on the location, or a WKT or GeoJSON literal as the value
+(WKT `POINT`, `LINESTRING`, `POLYGON`, their `MULTI` forms and `ENVELOPE`;
+longitude first, unless the literal names EPSG:4326). It is stored as a
+box of four numbers, without PostGIS, and `bbox=west,south,east,north`
+finds resources whose box overlaps. A box across the antimeridian is not
+handled, and "Show as SPARQL" leaves the area out and says so.
+
 Temporal coverage (`dct:temporal`) is read in every form FDPs use: a
 period with `dcat:startDate`/`dcat:endDate` (DCAT 2 and 3),
 `schema:startDate`/`schema:endDate` (DCAT 1, DCAT-AP 1.x), OWL-Time

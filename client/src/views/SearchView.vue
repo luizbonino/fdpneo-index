@@ -42,6 +42,7 @@ import {
   isFiltered,
   removeChip,
   setNumber,
+  parseBox,
   removeFacet,
   toQuery,
   toggle,
@@ -293,6 +294,7 @@ function chipLabel(chip: Chip): string {
   if (facetResults.value[chip.name]?.kind === "boolean") {
     return `${facetTitle(chip.name)}: ${chip.value === "true" ? t("search.yes") : t("search.no")}`;
   }
+  if (chip.name === "bbox") return t("search.area.chip", { box: chip.value.replace(/,/g, ", ") });
   if (chip.name === "temporal") {
     const [from, to] = chip.value.split("..");
     const period = formatPeriod({ start: from || null, end: to || null }, t);
@@ -345,6 +347,15 @@ function setPeriod(end: "from" | "to", raw: string) {
   setDate("temporal", end, value);
 }
 const periodError = computed(() => periodInvalid.value.from || periodInvalid.value.to);
+
+// The area as minLon,minLat,maxLon,maxLat (TASKS 9.8); one that does not read is
+// flagged and not sent.
+const boxInvalid = ref(false);
+function setBox(raw: string) {
+  const value = raw.replace(/\s+/g, "");
+  boxInvalid.value = !!value && !parseBox(value);
+  if (!boxInvalid.value) go({ ...state.value, bbox: value, page: 1 });
+}
 
 const heading = ref<HTMLElement>();
 function page(to: number) {
@@ -610,6 +621,24 @@ const counters = computed(() => {
             </label>
             <p id="period-hint" :class="['hint', 'small', periodError ? 'error' : 'muted']">
               {{ periodError ? t("search.temporal.invalid") : t("search.temporal.help") }}
+            </p>
+          </div>
+          <div class="area">
+            <label for="area-input" class="small">{{ t("search.area.legend") }}</label>
+            <input
+              id="area-input"
+              class="input"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="3.3, 50.7, 7.3, 53.6"
+              :value="state.bbox.replace(/,/g, ', ')"
+              :aria-invalid="boxInvalid || undefined"
+              aria-describedby="area-hint"
+              @change="setBox(($event.target as HTMLInputElement).value)"
+            />
+            <p id="area-hint" :class="['hint', 'small', boxInvalid ? 'error' : 'muted']">
+              {{ boxInvalid ? t("search.area.invalid") : t("search.area.help") }}
             </p>
           </div>
         </fieldset>
@@ -959,8 +988,22 @@ const counters = computed(() => {
   grid-column: 1 / -1;
   color: var(--fair-text-muted);
 }
-.range .hint {
+.range .hint,
+.area .hint {
   margin: 0;
+}
+.area {
+  display: grid;
+  gap: 6px;
+}
+.area .small {
+  color: var(--fair-text-muted);
+}
+.area .input[aria-invalid="true"] {
+  border-color: var(--fair-danger, #c53030);
+}
+.area .hint.error {
+  color: var(--fair-danger, #c53030);
 }
 .range .hint.error {
   color: var(--fair-danger, #c53030);

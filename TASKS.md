@@ -30,11 +30,11 @@ task are listed in the last column.
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
-| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 7/9 | – | 2 | 🔹 Started | Bounding box (9.8); 9.6 moved to 11.5 |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **98/115** | **–** | **17** | | |
+| **Total** | | **99/115** | **–** | **16** | | |
 
 ## Phase 0 — Foundations
 
@@ -180,7 +180,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation — *done: JSON-LD, Turtle, N-Triples, RDF/XML on GET and POST; the parameter is `output=` because `format` is the file-format filter; OpenSearch counts on the catalog; `Link` first/prev/next (or the next cursor); "Download" on the search page*
 - [ ] 9.6 (see 11.5) `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test — *moved: 11.5 replaces it, after the Phase 11 design note*
 - [x] 9.7 `GET /index/search/opensearch.xml`; `totalResults`/`startIndex`/`itemsPerPage` in responses; `<link rel="search">` in the client's `index.html` — *done: the description (search page, JSON, JSON-LD, Turtle with `pageOffset="0"`, suggestions as `application/x-suggestions+json`), the counts were already in responses; the client adds the link at start-up (works when the API is on another origin)*
-- [ ] 9.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks)
+- [x] 9.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks) — *done: a `geometry` field kind (`bbox` from `dct:spatial`: `dcat:bbox`, `dcat:centroid`, `locn:geometry`, WKT or GeoJSON literals; EPSG:4326 axis order), four columns (migration 0013), `bbox=` and POST `intersects`, `bbox` on hits and the resource page, an "Area" input with a chip; noted, not translated, in "Show as SPARQL"; the antimeridian is not handled*
 - [x] 9.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests — *done with 6.15: sampled counts above 50 000 matches, marked `approximate`; an in-process facet cache*
 
 ### Phase 10 — Optional engines and extras (each behind a flag)

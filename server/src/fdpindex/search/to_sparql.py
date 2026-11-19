@@ -57,6 +57,7 @@ NOTES = {
     "dates": "Date ranges compare the day only, ignoring time zones.",
     "harvested": "The harvest time is not in the SPARQL store; that range is left out.",
     "collapse": "Copies of a resource in several FDPs are listed one by one, not grouped.",
+    "bbox": "The area filter is not in this query: SPARQL here has no geometry functions.",
     "temporal": (
         "Temporal coverage is read from the period's start and end dates; "
         'a period written as text ("2010/2020") is not matched.'
@@ -423,6 +424,8 @@ def to_sparql(
 
     if params.collapse:
         w.note("collapse")
+    if params.bbox is not None:
+        w.note("bbox")
 
     # Temporal coverage overlapping the period (TASKS 8.3).
     if params.temporal is not None and "temporal" in profile.fields:

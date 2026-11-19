@@ -10,6 +10,7 @@ import {
   removeChip,
   removeFacet,
   setNumber,
+  parseBox,
   toQuery,
   toggle,
   type SearchState,
@@ -44,6 +45,7 @@ describe("search URL state", () => {
       numbers: {},
       active: true,
       collapse: false,
+      bbox: "",
       sort: "modified",
       page: 3,
       added: [],
@@ -74,6 +76,15 @@ describe("search URL state", () => {
       max: "500",
     });
     expect(setNumber(state, "records", "min", "").numbers).toEqual({});
+  });
+
+  it("keeps a valid area, as bbox", () => {
+    const state = fromQuery({ bbox: "3.3,50.7,7.3,53.6" }, FACETS);
+    expect(state.bbox).toBe("3.3,50.7,7.3,53.6");
+    expect(apiParams(state).get("bbox")).toBe("3.3,50.7,7.3,53.6");
+    expect(chips(state)).toEqual([{ name: "bbox", value: "3.3,50.7,7.3,53.6" }]);
+    expect(fromQuery({ bbox: "7,50,3,53" }, FACETS).bbox).toBe("");
+    expect(parseBox("200,0,201,1")).toBeNull();
   });
 
   it("falls back on bad values", () => {

@@ -32,7 +32,9 @@ KINDS: tuple[Kind, ...] = (
 )
 
 # Fields stored as columns of search_resource rather than as search_value rows.
-COLUMN_FIELDS = frozenset({"title", "description", "issued", "modified", "landingPage", "temporal"})
+COLUMN_FIELDS = frozenset(
+    {"title", "description", "issued", "modified", "landingPage", "temporal", "bbox"}
+)
 # Computed fields a card may name besides profile fields.
 COMPUTED_FIELDS = frozenset({"datasetCount", "distributionCount"})
 
@@ -42,7 +44,11 @@ class SearchField(BaseModel):
 
     # ``period``: the path leads to a period (a node with a start and an end, or a
     # literal such as "2010/2020"), stored as two date columns (TASKS 8.3).
-    kind: Literal["text", "iri", "literal", "agent", "datetime", "period", "number", "boolean"]
+    # ``geometry``: the path leads to a location or a WKT/GeoJSON literal, stored as a
+    # bounding box (TASKS 9.8).
+    kind: Literal[
+        "text", "iri", "literal", "agent", "datetime", "period", "geometry", "number", "boolean"
+    ]
     paths: list[str] = PydanticField(min_length=1)
     facet: Literal["main", "more"] | None = None
     weight: Literal["A", "B", "C", "D"] | None = None
@@ -117,6 +123,8 @@ class Profile(BaseModel):
                 self.expand(namespace)
             if spec.kind == "period" and name != "temporal":
                 raise ValueError(f"field '{name}': only temporal is a period field")
+            if spec.kind == "geometry" and name != "bbox":
+                raise ValueError(f"field '{name}': only bbox is a geometry field")
             if spec.kind == "number" and not spec.buckets:
                 raise ValueError(f"field '{name}': a number field needs buckets")
             for path in spec.paths:

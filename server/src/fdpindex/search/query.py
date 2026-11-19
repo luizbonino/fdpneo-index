@@ -256,6 +256,8 @@ class SearchParams:
     prefixes: list[Prefix] = field(default_factory=lambda: [])
     # One hit per group of copies across FDPs, the best-placed one (TASKS 8.8).
     collapse: bool = False
+    # Resources whose box intersects this one (TASKS 9.8): min lon, min lat, max lon, max lat.
+    bbox: tuple[float, float, float, float] | None = None
     # Keyset paging (TASKS 9.4): "*" for the first page, then each nextCursor.
     cursor: str | None = None
     # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
@@ -604,6 +606,14 @@ class SearchService:
                 conditions.append(column <= high)
         if params.temporal is not None:
             conditions.extend(_overlaps(res, *params.temporal))
+        if params.bbox is not None:
+            min_lon, min_lat, max_lon, max_lat = params.bbox
+            conditions += [
+                res.bbox_min_lon <= max_lon,
+                res.bbox_max_lon >= min_lon,
+                res.bbox_min_lat <= max_lat,
+                res.bbox_max_lat >= min_lat,
+            ]
         for prefix in params.texts:
             match = self._in_text(prefix, params.lang, postgres=postgres, res=res)
             conditions.append(not_(match) if prefix.negated else match)
@@ -855,6 +865,7 @@ class SearchService:
                     "fdp": [str(u) for u in params.fdps],
                     "lang": params.lang,
                     **({"collapse": True} if params.collapse else {}),
+                    **({"bbox": list(params.bbox)} if params.bbox is not None else {}),
                     **(
                         {
                             "fields": [
@@ -1222,7 +1233,13 @@ class SearchService:
     @staticmethod
     def _light(params: SearchParams) -> bool:
         """No words and no date ranges: conditions need no resource columns but kind and entry."""
-        return not params.q and not params.ranges and params.temporal is None and not params.texts
+        return (
+            not params.q
+            and not params.ranges
+            and params.temporal is None
+            and not params.texts
+            and params.bbox is None
+        )
 
     def _cache_key(self, params: SearchParams, name: str, size: int) -> tuple[Any, ...] | None:
         if not self._light(params) or self._facet_cache_seconds <= 0:
@@ -1384,6 +1401,7 @@ class SearchService:
                 "issued": resource.issued.isoformat() if resource.issued else None,
                 "modified": resource.modified.isoformat() if resource.modified else None,
                 "temporal": _period_view(resource.temporal_start, resource.temporal_end),
+                "bbox": _bbox_view(resource),
                 "landingPage": resource.landing_page,
                 "sourceUrl": resource.node_iri,
                 "facts": {k: v for k, v in resource.facts.items() if k != "titleFallback"},
@@ -1569,6 +1587,7 @@ class SearchService:
                 "issued": resource.issued.isoformat() if resource.issued else None,
                 "modified": resource.modified.isoformat() if resource.modified else None,
                 "temporal": _period_view(resource.temporal_start, resource.temporal_end),
+                "bbox": _bbox_view(resource),
                 "landingPage": resource.landing_page,
                 "sourceUrl": resource.node_iri,
                 "harvestedAt": resource.harvested_at.isoformat(),
@@ -2158,3 +2177,13 @@ def _period_view(start: date | None, end: date | None) -> dict[str, str | None] 
         "start": start.isoformat() if start else None,
         "end": end.isoformat() if end else None,
     }
+
+
+def _bbox_view(resource: SearchResource) -> list[float] | None:
+    box = (
+        resource.bbox_min_lon,
+        resource.bbox_min_lat,
+        resource.bbox_max_lon,
+        resource.bbox_max_lat,
+    )
+    return None if any(v is None for v in box) else [float(v) for v in box if v is not None]

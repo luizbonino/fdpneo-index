@@ -35,6 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.errors import BadRequest, IndexServiceError, NotFound, RateLimited
+from fdpindex.search.geometry import parse_query
 from fdpindex.search.period import parse_day
 from fdpindex.search.profile import KINDS, Kind
 from fdpindex.search.profile_store import ProfileError, examples
@@ -55,6 +56,7 @@ Caller = Annotated[Principal, Depends(current_principal)]
 
 RESERVED = {
     "q",
+    "bbox",
     "collapse",
     "cursor",
     "output",
@@ -202,10 +204,23 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         highlight=query.get("highlight", "").lower() in {"true", "1", "yes"},
         collapse=query.get("collapse", "").lower() in {"true", "1", "yes"},
         cursor=query.get("cursor") or None,
+        bbox=_bbox("bbox", query.get("bbox")),
     )
     if facets is not None:
         params.facets = [] if facets == "none" else [f for f in facets.split(",") if f]
     return params
+
+
+def _bbox(name: str, value: str | None) -> tuple[float, float, float, float] | None:
+    if not value:
+        return None
+    box = parse_query(value)
+    if box is None:
+        raise BadRequest(
+            f"{name}: minLon,minLat,maxLon,maxLat within -180..180 and -90..90, "
+            "minimum before maximum"
+        )
+    return box
 
 
 def _float(name: str, value: str | None) -> float | None:
@@ -351,6 +366,7 @@ class FilterRequest(BaseModel):
         "lte",
         "between",
         "overlaps",
+        "intersects",
     ]
     value: str | float | None = None
     values: list[str] | None = Field(default=None, max_length=50)
@@ -423,6 +439,11 @@ def _structured(body: SearchRequest, service: SearchService, lang: str) -> Searc
             if item.op in {"prefix", "contains"} and len(values) != 1:
                 raise BadRequest(f"{where}: {item.op} needs one value")
             params.tests.append(ValueTest(name, item.op, values[0] if values else ""))
+        elif item.op == "intersects":
+            if name != "bbox":
+                raise BadRequest(f"{where}: intersects applies to bbox")
+            box = ",".join(values) if len(values) == 4 else (values[0] if values else "")
+            params.bbox = _bbox(where, box)
         elif item.op == "overlaps":
             if name != "temporal":
                 raise BadRequest(f"{where}: overlaps applies to temporal")
@@ -478,7 +499,7 @@ async def search_structured(
     `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
     as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
     `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
-    `temporal`. Filters on one field are ORed, the rest ANDed, as in `GET`.
+    `temporal`; `intersects` on `bbox` (`"minLon,minLat,maxLon,maxLat"` or four values). Filters on one field are ORed, the rest ANDed, as in `GET`.
     """
     _limit(request, caller)
     params = _structured(body, service, _language(request, body.lang))

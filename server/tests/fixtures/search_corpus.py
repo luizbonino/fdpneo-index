@@ -22,6 +22,8 @@ PREFIXES = """
 @prefix ldp: <http://www.w3.org/ns/ldp#> .
 @prefix healthdcatap: <http://healthdataportal.eu/ns/health#> .
 @prefix time: <http://www.w3.org/2006/time#> .
+@prefix gsp: <http://www.opengis.net/ont/geosparql#> .
+@prefix locn: <http://www.w3.org/ns/locn#> .
 """
 
 ALPHA = "https://fdp.alpha.example"
@@ -54,7 +56,9 @@ PAGES: dict[str, str] = {
   dct:license "CC-BY-4.0" ;
   dct:accessRights <https://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
   dct:language "en" ;
-  dct:spatial <https://publications.europa.eu/resource/authority/country/NLD> ;
+  dct:spatial <https://publications.europa.eu/resource/authority/country/NLD>,
+    [ a dct:Location ; dcat:bbox
+      "POLYGON((3.31 50.75, 7.23 50.75, 7.23 53.68, 3.31 53.68, 3.31 50.75))"^^gsp:wktLiteral ] ;
   dct:publisher <https://ror.org/alpha> ;
   dct:issued "2020-01-01"^^xsd:date ;
   dct:modified "2026-11-01T10:00:00Z"^^xsd:dateTime ;
@@ -89,7 +93,8 @@ PAGES: dict[str, str] = {
   dct:publisher [ a foaf:Agent ; foaf:name "Pulmonology Lab" ] ;
   dct:accessRights <{EU}access-right/RESTRICTED> ;
   dct:temporal [ <http://schema.org/startDate> "2018"^^xsd:gYear ] ;
-  dct:spatial <http://www.geonames.org/2750405/>, <https://sws.geonames.org/2759794/> ;
+  dct:spatial <http://www.geonames.org/2750405/>, <https://sws.geonames.org/2759794/>,
+    [ dcat:centroid "POINT(13.40 52.52)"^^gsp:wktLiteral ] ;
   healthdcatap:numberOfUniqueIndividuals "40"^^xsd:nonNegativeInteger ;
   <https://w3id.org/dpv#hasPersonalData> <https://w3id.org/dpv/dpv-pd#Age> ;
   dct:modified "2025-03-01"^^xsd:date .
@@ -120,7 +125,8 @@ PAGES: dict[str, str] = {
   dct:license <https://creativecommons.org/licenses/by/4.0/> ;
   dct:isPartOf <{BETA}/catalog/k> ;
   dct:publisher [ foaf:name "Beta Institute" ] ;
-  dct:spatial "NL" ;
+  dct:spatial "NL",
+    [ locn:geometry '{{"type": "Point", "coordinates": [4.89, 52.37]}}'^^gsp:geoJSONLiteral ] ;
   <http://www.w3.org/2002/07/owl#sameAs> <http://fdp.alpha.example/dataset/d2/> ;
   dct:temporal [ time:hasBeginning [ time:inXSDDate "2020-01-01"^^xsd:date ] ;
     time:hasEnd [ time:inXSDgYear "2022"^^xsd:gYear ] ] ;

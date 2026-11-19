@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-75 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
+80 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -26,15 +26,15 @@ task are listed in the last column.
 | 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 5/5 | – | – | ✅ Done | – |
 | 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 9/9 | – | – | ✅ Done | – |
-| 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 1/4 | – | 3 | 🔹 Started (decided 19 Nov) | Running next to FDPneo (5.1), documentation here (5.2), Java index guidance (5.3) |
-| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
-| 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
+| 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 4/4 | – | – | ✅ Done | – |
+| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 14/16 | 2 | – | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12) |
+| 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 3/13 | 1 | 9 | 🔹 Started | All but 8.6, 8.10 and 8.13 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 1 | 7 | 🔹 Started | All but 9.9 (done with 6.15) and the capture part of 9.2 (done with 8.13) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **75/115** | **4** | **36** | | |
+| **Total** | | **80/115** | **4** | **31** | | |
 
 ## Phase 0 — Foundations
 
@@ -108,9 +108,9 @@ Decisions of 19 November 2026:
 - FDPneo's evaluation stack is not changed until further notice.
 - The Index's documentation lives in this repository, not in fdpneo-docs.
 
-- [ ] 5.1 Running the Index next to FDPneo, documented here: the Index's own Compose stack, and FDPneo pinging it through its admin-managed index targets (FDPneo ADR-0025). FDPneo's evaluation stack stays as it is.
-- [ ] 5.2 Documentation in this repository (README and `docs/`): deploying, registering an FDP, administering, a user guide to search and SPARQL
-- [ ] 5.3 Guidance for Java FDP deployments running `FDP_INDEX=true`: migrate with the importer, then switch the mode off (guidance only)
+- [x] 5.1 Running the Index next to FDPneo, documented here: the Index's own Compose stack, and FDPneo pinging it through its admin-managed index targets (FDPneo ADR-0025). FDPneo's evaluation stack stays as it is. — *done: [docs/with-fdpneo.md](docs/with-fdpneo.md): ping targets by environment or admin API, production and one-machine set-ups*
+- [x] 5.2 Documentation in this repository (README and `docs/`): deploying, registering an FDP, administering, a user guide to search and SPARQL — *done: [docs/](docs/README.md): deploying, administering, operations, a user guide to search and SPARQL*
+- [x] 5.3 Guidance for Java FDP deployments running `FDP_INDEX=true`: migrate with the importer, then switch the mode off (guidance only) — *done: [docs/java-fdp.md](docs/java-fdp.md): import, switch over, what changes*
 - [x] 5.4 Record in FDPneo ADR-0021 that FAIR Discovery is built as this standalone service, and list what of its design is still open here — *done: FAIRDataTeam/fdpneo-server#52, merged 19 Nov*
 
 ## Phases 6–10 — Search and SPARQL over harvested metadata
@@ -136,7 +136,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 6.13 Client: `/search` route, `SearchView.vue`, `SearchBox.vue`, `FacetGroup.vue` (with ⓘ help, Clear, Show more, numeric and boolean groups), `ResourceCard.vue` (key-fields footer), landing strip with counters and the hierarchy explainer, URL state, type tabs, mobile bottom sheet, states; `useSearch()` composable; unit tests; "Search this FDP's metadata" on the entry page — *done; suggestions in the search box come with 8.2*
 - [x] 6.14 Client: resource detail page `/search/r/{id}` as a label/value table with language switch, labelled IRIs, parent chain, distributions, raw triples, Turtle / JSON-LD / N-Triples download buttons
 - [x] 6.15 Performance check on a synthetic corpus (1 000 entries × 2 000 nodes, generated from the fixture graphs): `EXPLAIN ANALYZE` of the main query shapes, documented numbers and the `maintenance_work_mem` advice in the operator documentation — *done: `server/bench/search_bench.py`, results and advice in [docs/search-performance.md](docs/search-performance.md); fixes in migration 0004 and `search/query.py` (facets from `search_value` alone, matched-id facets with sampling above 50 000, bounded ranking, sort indexes, an in-process facet cache, `random_page_cost` per search). Open: first queries on a cold cache with phrases or very common words take several seconds*
-- [ ] 6.16 Operator documentation: extensions, profile, reindex, limits; README API table extended
+- [x] 6.16 Operator documentation: extensions, profile, reindex, limits; README API table extended — *done: [docs/search-and-sparql.md](docs/search-and-sparql.md) (profile, capture, limits, reindex, labels, troubleshooting); README API table. Profile extensions wait for 6.12/9.3*
 
 ### Phase 7 — SPARQL API and UI
 
@@ -153,7 +153,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 7.11 Client: builder tab (`QueryBuilder.vue` and friends): type → conditions (property picker with labels/counts, operators, value autocomplete, one nesting level) → columns/aggregates → live SPARQL preview; TypeScript generator with unit tests against golden queries; builder state in the URL; "Edit as SPARQL", "Open in search" — *done except "Open in search" (no search page yet) and multi-level nesting (one hop)*
 - [x] 7.12 Charts in results (Chart.js 4 + `vue-chartjs`, lazy-loaded): bar, horizontal bar, pie/donut, line; chart defaults per example query; `aria-label` summaries — *done: bar, horizontal bar, pie, line*
 - [x] 7.13 History (localStorage, pin/clear) and sharing: URL-embedded queries, `POST /index/sparql/share` for long ones, `/sparql?example=…&param=…` deep links; "Show as SPARQL" on the search page, "Query this in SPARQL" on resource pages, "Open in YASGUI" escape hatch — *done: history, pins, URL-embedded queries and examples; `POST /index/sparql/share`, and "Open in YASGUI" pending; "Show as SPARQL" done with 7.7*
-- [ ] 7.14 Documentation: SPARQL page in the operator docs (store directory, workers, limits, rebuild), a user guide with the example queries, `curl` samples; README API table
+- [x] 7.14 Documentation: SPARQL page in the operator docs (store directory, workers, limits, rebuild), a user guide with the example queries, `curl` samples; README API table — *done: operator part in [docs/search-and-sparql.md](docs/search-and-sparql.md) (store, workers, limits, rebuild), user guide with example queries and `curl` in [docs/user-guide.md](docs/user-guide.md); README API table*
 
 ### Phase 8 — Richer discovery
 

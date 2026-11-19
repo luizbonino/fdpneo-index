@@ -21,6 +21,7 @@ reference client works against its API (see
 | [`server/`](server/) | The index API: Python, FastAPI, PostgreSQL |
 | [`client/`](client/) | The directory and administration web client: Vue 3 |
 | [`deploy/`](deploy/) | Compose stack |
+| [`docs/`](docs/README.md) | Guides: using, administering, deploying, operating, next to FDPneo, replacing a Java FDP's index |
 | [`docs/adr/`](docs/adr/) | Design decisions |
 | [`TASKS.md`](TASKS.md) | Implementation phases and status |
 
@@ -194,6 +195,8 @@ organisation". Keycloak's console is at http://localhost:8180 (`admin`,
 only; a production deployment uses its own identity provider.
 
 ## Moving from a Java FAIR Data Point's index
+
+The steps, what comes across and how to switch over: [docs/java-fdp.md](docs/java-fdp.md).
 
 ```bash
 fdpindex import-java postgresql://fdp:…@old-host:5432/fdp --dry-run

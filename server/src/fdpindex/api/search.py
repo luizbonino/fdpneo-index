@@ -223,7 +223,13 @@ async def search(
     request: Request,
     service: Search,
     caller: Caller,
-    q: Annotated[str, Query(description='Words, "phrases", or, -word')] = "",
+    q: Annotated[
+        str,
+        Query(
+            description='Words, "phrases", or, -word; field prefixes such as title:word, '
+            'keyword:x, theme:Health, publisher:"a name", -keyword:x'
+        ),
+    ] = "",
     lang: str | None = None,
 ) -> dict[str, Any]:
     """Faceted search over every accepted FDP's harvested DCAT metadata.

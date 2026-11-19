@@ -50,6 +50,7 @@ from sqlalchemy import (
     exists,
     func,
     literal,
+    literal_column,
     not_,
     or_,
     select,
@@ -80,6 +81,14 @@ from fdpindex.search.concepts import (
     concept_parents,
     concept_stats,
     descendants,
+)
+from fdpindex.search.prefixes import (
+    NOTHING,
+    TEXT_FIELDS,
+    Prefix,
+    parse as parse_prefixes,
+    resolve as resolve_prefix,
+    value_fields,
 )
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
 from fdpindex.search.profile_store import ProfileStore
@@ -224,6 +233,10 @@ class SearchParams:
     ranges: dict[str, tuple[datetime | None, datetime | None]] = field(default_factory=lambda: {})
     # Temporal coverage overlapping these days (TASKS 8.3); None: no such filter.
     temporal: tuple[date | None, date | None] | None = None
+    # ``title:`` and ``description:`` prefixes taken out of ``q`` (TASKS 9.1); the other
+    # prefixes became filters. Both kinds are echoed as ``fields``.
+    texts: list[Prefix] = field(default_factory=lambda: [])
+    prefixes: list[Prefix] = field(default_factory=lambda: [])
     # One hit per group of copies across FDPs, the best-placed one (TASKS 8.8).
     collapse: bool = False
     # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
@@ -250,10 +263,12 @@ class SearchParams:
         if not self.types:
             self.types = list(DEFAULT_TYPES)
         facets = set(profile.facets) | properties | set(profile.hierarchies)
+        # Field prefixes filter on any value field, a facet or not (TASKS 9.1).
+        filterable = facets | set(value_fields(profile).values())
         if self.facets is None:
             self.facets = list(DEFAULT_FACETS)
         for name, values in self.filters.items():
-            if name not in facets:
+            if name not in filterable:
                 raise BadRequest(f"Unknown filter: {name}")
             if len(values) > MAX_FILTER_VALUES:
                 raise BadRequest(f"At most {MAX_FILTER_VALUES} values per filter")
@@ -414,6 +429,28 @@ class SearchService:
 
     # --- facet names ---------------------------------------------------------------
 
+    async def _field_prefixes(self, params: SearchParams) -> None:
+        """Take ``title:``, ``keyword:`` … out of ``q`` (TASKS 9.1): text prefixes into
+        ``texts``, the others into filters on the values they name."""
+        if params.prefixes or ":" not in params.q:
+            return
+        rest, found = parse_prefixes(params.q, self.profile)
+        if not found:
+            return
+        params.prefixes = found
+        params.texts = [p for p in found if p.field in TEXT_FIELDS]
+        async with self._session_factory() as session:
+            for prefix in found:
+                if prefix.field in TEXT_FIELDS:
+                    continue
+                values = await resolve_prefix(session, self.profile, prefix) or [NOTHING]
+                marked = [("!" + v) if prefix.negated else v for v in values]
+                current = params.filters.get(prefix.field, [])
+                params.filters[prefix.field] = list(dict.fromkeys([*current, *marked]))
+        # The words of title: and description: rank the hits too.
+        words = [f'"{p.term}"' if " " in p.term else p.term for p in params.texts if not p.negated]
+        params.q = " ".join([rest, *words]).strip()
+
     async def _prepare(self, params: SearchParams, *, admin: bool) -> dict[str, str]:
         """Resolve facet names and validate; returns ``p:`` field → API name (``prop:<IRI>``).
 
@@ -432,6 +469,7 @@ class SearchService:
                 ),
             ]
         names: dict[str, str] = {}
+        await self._field_prefixes(params)
 
         def resolve(name: str) -> str:
             if not name.startswith(PROPERTY_FACET):
@@ -528,6 +566,9 @@ class SearchService:
                 conditions.append(column <= high)
         if params.temporal is not None:
             conditions.extend(_overlaps(res, *params.temporal))
+        for prefix in params.texts:
+            match = self._in_text(prefix, params.lang, postgres=postgres, res=res)
+            conditions.append(not_(match) if prefix.negated else match)
         if params.fdp_state:
             conditions.append(and_(E.state == EntryState.VALID, E.last_retrieval_at > threshold))
         if params.q:
@@ -555,6 +596,26 @@ class SearchService:
         return func.to_tsquery(
             cast(literal(SIMPLE_CONFIG), REGCONFIG), " & ".join(f"{w}:*" for w in words)
         )
+
+    def _in_text(
+        self, prefix: Prefix, lang: str, *, postgres: bool, res: Any
+    ) -> ColumnElement[bool]:
+        """The words of ``title:``/``description:`` in that text only (TASKS 9.1)."""
+        if postgres:
+            weights = literal_column(f"'{{{TEXT_FIELDS[prefix.field]}}}'::\"char\"[]")
+            q_lang = func.websearch_to_tsquery(
+                cast(literal(ts_config(lang)), REGCONFIG), prefix.term
+            )
+            q_simple = func.websearch_to_tsquery(
+                cast(literal(SIMPLE_CONFIG), REGCONFIG), prefix.term
+            )
+            return or_(
+                func.ts_filter(res.tsv_lang, weights).op("@@")(q_lang),
+                func.ts_filter(res.tsv_simple, weights).op("@@")(q_simple),
+            )
+        column = res.title if prefix.field == "title" else res.description
+        needle = prefix.term.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return func.lower(func.coalesce(column, "")).like(f"%{needle}%", escape="\\")
 
     def _text(self, params: SearchParams, *, postgres: bool, res: Any = R) -> ColumnElement[bool]:
         if postgres:
@@ -745,6 +806,16 @@ class SearchService:
                     "fdp": [str(u) for u in params.fdps],
                     "lang": params.lang,
                     **({"collapse": True} if params.collapse else {}),
+                    **(
+                        {
+                            "fields": [
+                                {"field": p.field, "term": p.term, "negated": p.negated}
+                                for p in params.prefixes
+                            ]
+                        }
+                        if params.prefixes
+                        else {}
+                    ),
                     **(
                         {"temporal": _period_view(*params.temporal)}
                         if params.temporal is not None
@@ -1097,7 +1168,7 @@ class SearchService:
     @staticmethod
     def _light(params: SearchParams) -> bool:
         """No words and no date ranges: conditions need no resource columns but kind and entry."""
-        return not params.q and not params.ranges and params.temporal is None
+        return not params.q and not params.ranges and params.temporal is None and not params.texts
 
     def _cache_key(self, params: SearchParams, name: str, size: int) -> tuple[Any, ...] | None:
         if not self._light(params) or self._facet_cache_seconds <= 0:

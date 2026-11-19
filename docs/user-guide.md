@@ -29,6 +29,16 @@ languages, and finds other forms of a word (searching *registry* finds *registri
 | `"lung function"` | that exact phrase |
 | `cancer or tumour` | either word |
 | `cancer -lung` | *cancer* without *lung* |
+| `title:registry` | *registry* in the title (also `description:`) |
+| `keyword:asthma` | resources with that keyword |
+| `theme:Health`, `theme:HEAL` | a theme by its name in any language, its code or its IRI |
+| `publisher:"Alpha University"` | publishers whose name contains the words |
+| `identifier:10.5072/abc` | a DOI or another identifier |
+| `-keyword:mouse` | without that keyword |
+
+Any field the index has works the same way (`format:csv`, `licence:…`,
+`subject:…`). A prefix on a field acts as a filter: its values show ticked
+in the filters at the side.
 
 When the index resolves subject names (an administrator's choice), a search
 also finds subjects by their names in other languages and by broader

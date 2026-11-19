@@ -280,6 +280,14 @@ async def test_search_stems_folds_accents_and_ranks(
     )
     assert (collapsed["totalResults"], collapsed["resources"]) == (1, 2)
     assert collapsed["hits"][0]["duplicateCount"] == 1
+    # title: matches the title only, stemmed (TASKS 9.1).
+    assert await titles(q="title:registries") == ["Breast cancer registry"]
+    assert await titles(q="title:biopsies") == []
+    assert await titles(q="description:biopsy") == ["Breast cancer registry"]
+    assert set(await titles(q="theme:Gezondheid", types=["dataset"])) == {
+        "Breast cancer registry",
+        "Lung function tests",
+    }
     # Highlighting marks stemmed matches (TASKS 8.1).
     marked = await search.search(SearchParams(q="registries biopsy", highlight=True, facets=[]))
     hit = marked["hits"][0]

@@ -407,6 +407,16 @@ def to_sparql(
         graph.append(_temporal(w, profile.fields["temporal"], *params.temporal))
         w.note("temporal")
 
+    # title: and description: prefixes (TASKS 9.1), as substrings of that text.
+    for index, prefix in enumerate(params.texts, start=1):
+        if prefix.field not in profile.fields:
+            continue
+        w.note("fulltext")
+        var = f"?{prefix.field}Text{index}"
+        pattern = f"?resource {w.path(profile.fields[prefix.field])} {var}"
+        condition = f"CONTAINS(LCASE(STR({var})), {_string(prefix.term.lower())})"
+        graph.append(_exists(pattern, condition, negated=prefix.negated))
+
     # Full text, approximated by substrings.
     if params.q:
         w.note("fulltext")

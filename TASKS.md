@@ -30,11 +30,11 @@ task are listed in the last column.
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
-| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 2 | 6 | 🔹 Started | All but 9.9 (done), and the capture of 9.2 and profile facets of 9.3 (done with 8.13 and 6.12) |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 2/9 | 2 | 5 | 🔹 Started | Paths, operators and `POST` of 9.2; the builder's picker of 9.3; 9.4 to 9.8 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **92/115** | **2** | **21** | | |
+| **Total** | | **93/115** | **2** | **20** | | |
 
 ## Phase 0 — Foundations
 
@@ -173,7 +173,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 
 ### Phase 9 — Expert and machine access
 
-- [ ] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery`
+- [x] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery` — *done: `title:`/`description:` restrict the words to that text (`ts_filter` on the weighted vectors), any IRI, agent or literal field of the profile is a prefix that becomes a filter on the values it names (IRI, code, label in any language; names by substring; DOIs in any spelling); `-field:x` excludes; echoed as `query.fields`; in "Show as SPARQL" too*
 - [~] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats` — *capture done with 8.13 (IRIs and short literals one step from the resource, `p:<hash>` with `search_property`, `GET /index/search/properties` with counts); two-step paths, typed operators and `POST /index/search` open*
 - [~] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker — *done with 6.12 as overlay fields (a field with `facet` is a filter under its own name, labelled in the client); `f.` prefixes were not needed; the SPARQL builder's picker still names predicates, not profile fields*
 - [ ] 9.4 Keyset `cursor` paging for non-relevance sorts

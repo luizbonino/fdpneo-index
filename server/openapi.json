@@ -2633,13 +2633,13 @@
         "operationId": "search_index_search_get",
         "parameters": [
           {
-            "description": "Words, \"phrases\", or, -word",
+            "description": "Words, \"phrases\", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:\"a name\", -keyword:x",
             "in": "query",
             "name": "q",
             "required": false,
             "schema": {
               "default": "",
-              "description": "Words, \"phrases\", or, -word",
+              "description": "Words, \"phrases\", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:\"a name\", -keyword:x",
               "title": "Q",
               "type": "string"
             }

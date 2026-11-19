@@ -1343,3 +1343,68 @@ async def test_copies_in_other_fdps(search: SearchService) -> None:
 def test_collapse_over_http(api: Api) -> None:
     body = api.client.get("/index/search", params={"type": "dataset", "collapse": "true"}).json()
     assert (body["totalResults"], body["resources"]) == (2, 3)
+
+
+# --- field prefixes in q (TASKS 9.1) ---------------------------------------------------
+
+
+def test_field_prefixes_are_parsed_out_of_q() -> None:
+    from fdpindex.search.prefixes import Prefix, parse
+
+    rest, found = parse(
+        "cancer title:registry -keyword:lungs Theme:HEAL https://x.org/a foo:bar "
+        'publisher:"Alpha University" title:""',
+        default_profile(),
+    )
+    assert rest == 'cancer https://x.org/a foo:bar title:""'
+    assert found == [
+        Prefix("title", "registry"),
+        Prefix("keyword", "lungs", negated=True),
+        Prefix("theme", "HEAL"),
+        Prefix("publisher", "Alpha University"),
+    ]
+
+
+async def test_field_prefixes_search_one_field(search: SearchService) -> None:
+    async def titles(q: str) -> set[str]:
+        result = await search.search(SearchParams(q=q, types=["dataset"], facets=[]))
+        return {h["title"] for h in result["hits"]}
+
+    health = {"Breast cancer registry", "Lung function tests"}
+    assert await titles("keyword:lungs") == {"Lung function tests"}
+    assert await titles("keyword:LUNGS") == {"Lung function tests"}
+    # An IRI field: the IRI, its code, or a label in any language (bundled here).
+    assert await titles(f"theme:{EU}data-theme/HEAL") == health
+    assert await titles("theme:HEAL") == health
+    assert await titles("theme:Gezondheid") == health
+    assert await titles('theme:"Science and technology"') == {
+        "Lung function tests",
+        "Genome cohort",  # its dct:subject is the EU theme
+    }
+    # A publisher by part of its name, harvested as a label or as the value.
+    assert await titles("publisher:alpha") == {"Breast cancer registry"}
+    assert await titles("publisher:pulmonology") == {"Lung function tests"}
+    # The words of title: must be in the title; the rest of q as usual.
+    assert await titles("title:registry") == {"Breast cancer registry"}
+    assert await titles("title:biopsies") == set()
+    assert await titles("description:biopsies") == {"Breast cancer registry"}
+    assert await titles("-title:cancer theme:HEAL") == {"Lung function tests"}
+    assert await titles("-keyword:cancer") == {"Genome cohort"}
+    assert await titles("theme:nothing-like-this") == set()
+    result = await search.search(SearchParams(q="registry keyword:cancer"))
+    assert result["query"]["fields"] == [{"field": "keyword", "term": "cancer", "negated": False}]
+    assert [h["title"] for h in result["hits"]] == ["Breast cancer registry"]
+    # The same as SPARQL.
+    for q in ("title:registry", "theme:Gezondheid", "-keyword:cancer"):
+        expected = {
+            h["iri"]
+            for h in (await search.search(SearchParams(q=q, types=["dataset"], size=100)))["hits"]
+        }
+        translated = await search.sparql(SearchParams(q=q, types=["dataset"]))
+        assert set(_sparql(translated["query"])) == expected, q
+
+
+def test_field_prefixes_over_http(api: Api) -> None:
+    body = api.client.get("/index/search", params={"q": "keyword:lungs"}).json()
+    assert [h["title"] for h in body["hits"]] == ["Lung function tests"]
+    assert body["query"]["fields"][0]["field"] == "keyword"

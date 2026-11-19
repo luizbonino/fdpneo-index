@@ -2105,7 +2105,7 @@ export interface operations {
   search_index_search_get: {
     parameters: {
       query?: {
-        /** @description Words, "phrases", or, -word */
+        /** @description Words, "phrases", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:"a name", -keyword:x */
         q?: string;
         lang?: string | null;
       };

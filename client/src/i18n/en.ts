@@ -514,7 +514,8 @@ export const en = {
     lead: "Find datasets, catalogs and data services across every FAIR Data Point in this index.",
     placeholder: "Search titles, descriptions, keywords, publishers…",
     submit: "Search",
-    syntax: 'Use "quotes" for a phrase, or between alternatives, and -word to leave a word out.',
+    syntax:
+      'Use "quotes" for a phrase, or between alternatives, -word to leave a word out, and field:word for one field (title:, keyword:, theme:, publisher:).',
     tabs: {
       all: "All",
       dataset: "Datasets",

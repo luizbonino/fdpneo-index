@@ -569,10 +569,14 @@ class FdpBuilder:
         g.add((node, DCTERMS.description, Literal(" ".join(sentences), lang="en")))
         for keyword in rng.sample(topic.keywords, rng.randint(2, min(5, len(topic.keywords)))):
             g.add((node, DCAT.keyword, Literal(keyword, lang="en")))
-        g.add((node, DCAT.theme, URIRef(f"{EU}data-theme/{topic.theme}")))
+        # Providers differ: some put the EU theme in dct:subject, some put
+        # MeSH or Wikidata concepts in dcat:theme (DCAT-AP 3 allows it).
+        theme_predicate = DCTERMS.subject if rng.random() < 0.1 else DCAT.theme
+        g.add((node, theme_predicate, URIRef(f"{EU}data-theme/{topic.theme}")))
         for concept in CONCEPTS.get(topic.name, ()):
             if rng.random() < 0.8:
-                g.add((node, DCTERMS.subject, URIRef(concept)))
+                predicate = DCAT.theme if rng.random() < 0.25 else DCTERMS.subject
+                g.add((node, predicate, URIRef(concept)))
         if rng.random() < 0.2:
             g.add(
                 (

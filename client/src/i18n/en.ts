@@ -480,7 +480,11 @@ export const en = {
     },
     copyLink: "Copy link",
     linkCopied: "Link to this search copied",
+    rankedNewest:
+      "A very broad search: results are ranked among the {n} most recently updated matches. Add words or filters to rank them all.",
     showSparql: "Show as SPARQL",
+    estimated:
+      "Estimated: this search matches so many resources that the counts come from a sample of them",
     showSparqlHelp:
       "Open this search as a SPARQL query in the editor, to refine it or reuse it elsewhere",
     sparqlFailed: "Could not translate this search to SPARQL",

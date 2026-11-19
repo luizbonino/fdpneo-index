@@ -17,6 +17,7 @@ const props = defineProps<{
   buckets: Bucket[];
   selected: string[];
   more: boolean;
+  approximate?: boolean;
 }>();
 const emit = defineEmits<{ toggle: [value: string]; clear: []; more: [] }>();
 const { t } = useI18n();
@@ -56,7 +57,9 @@ const hidden = computed(() => props.buckets.length - visible.value.length);
             class="state"
             :state="bucket.state"
           />
-          <span class="count">{{ bucket.count.toLocaleString() }}</span>
+          <span class="count" :title="approximate ? t('search.estimated') : undefined">
+            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString() }}
+          </span>
         </label>
       </li>
     </ul>

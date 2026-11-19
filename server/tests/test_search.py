@@ -326,6 +326,40 @@ async def test_selected_values_stay_in_their_facet(search: SearchService) -> Non
     assert "genomics" in values and result["facets"]["keyword"]["more"] is True
 
 
+async def test_facets_count_the_same_with_and_without_the_resource_join(
+    search: SearchService,
+) -> None:
+    # Without words or dates the counts come from search_value alone; a date range
+    # that excludes nothing forces the join with search_resource.
+    always: dict[str, Any] = {"harvested": (parse_datetime("2000-01-01"), None)}
+    cases: list[dict[str, Any]] = [
+        {},
+        {"types": ["dataset", "distribution"]},
+        {"filters": {"theme": [f"{EU}data-theme/HEAL"]}},
+        {"filters": {"keyword": ["!cancer"]}, "fdp_state": "ACTIVE"},
+    ]
+    for kwargs in cases:
+        light = await search.search(SearchParams(**kwargs))
+        joined = await search.search(SearchParams(**kwargs, ranges=always))
+        assert light["totalResults"] == joined["totalResults"]
+        assert light["facets"] == joined["facets"], kwargs
+
+
+async def test_facet_counts_are_cached_until_the_index_changes(search: SearchService) -> None:
+    first = await search.search(SearchParams())
+    assert search._facet_cache
+    first["facets"]["theme"]["buckets"].clear()  # callers get copies
+    again = await search.search(SearchParams())
+    assert again["facets"]["theme"]["buckets"]
+    keys = set(search._facet_cache)
+    await search.search(SearchParams(q="cancer"))  # words: not cached
+    assert set(search._facet_cache) == keys
+    generation = search.indexer.generation
+    search.indexer.generation += 1  # as after a projection that wrote rows
+    await search.search(SearchParams())
+    assert {k[0] for k in search._facet_cache} == {generation, search.indexer.generation}
+
+
 async def test_one_facet_in_full(search: SearchService) -> None:
     result = await search.facet(SearchParams(), "theme", contains="sci")
     assert [b["label"] for b in result["buckets"]] == ["Science and technology"]

@@ -8,17 +8,27 @@ the PostgreSQL vectors; on SQLite (unit tests) words are matched with
 
 Every PostgreSQL query runs under ``statement_timeout``; a timeout is a 503.
 
-Deviations from the design: no ``search_facet_cache`` (facet counts are a
-``GROUP BY`` on an index; the cache waits for the performance check, task
-6.15); no keyset cursor, highlights or duplicate grouping (Phases 8 and 9).
+Facet counts without words or date ranges read ``search_value`` alone (its
+copies of the resource's kind and entry, migration 0004); field filters then
+correlate with the value's resource id. With words or dates they join the
+resources. Facet counts and totals of such queries are cached in the process
+per indexer generation for ``FACET_CACHE_SECONDS``. Above ``SAMPLE_ABOVE``
+matches with words or dates, facets are counted on a page sample and marked
+``approximate`` (search design §7); below it, over the exact matching ids.
+
+Deviations from the design: that in-process cache instead of a
+``search_facet_cache`` table (the performance check, task 6.15, found the
+unfiltered views need it; a table would add a refresh job for no gain on one
+replica); no keyset cursor, highlights or duplicate grouping (Phases 8 and 9).
 """
 
 from __future__ import annotations
 
 import asyncio
+import copy
 import re
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -29,8 +39,11 @@ import structlog
 from rdflib import Graph
 from sqlalchemy import (
     REAL,
+    BigInteger,
     ColumnElement,
     and_,
+    any_,
+    bindparam,
     case,
     cast,
     exists,
@@ -76,6 +89,66 @@ log = structlog.get_logger(__name__)
 R = SearchResource
 E = IndexEntry
 V = SearchValue
+
+
+@dataclass(frozen=True)
+class _Scope:
+    """The id, kind and entry columns conditions apply to."""
+
+    id: Any
+    kind: Any
+    entry_uuid: Any
+
+
+RESOURCE = _Scope(R.id, R.kind, R.entry_uuid)
+VALUE = _Scope(V.resource_id, V.kind, V.entry_uuid)
+FACET_CACHE_SECONDS = 60.0
+FACET_CACHE_ENTRIES = 512
+# Above this many matches, facets are counted on a page sample of about SAMPLE_SIZE.
+SAMPLE_ABOVE = 50_000
+SAMPLE_SIZE = 10_000
+# A page sample reads its share of the whole table, whatever the matches; above
+# this share every k-th id is taken instead (one pass over the matches).
+MAX_PAGE_PERCENT = 2.0
+# Above SAMPLE_ABOVE matches, relevance is computed for the most recently
+# modified RANK_CANDIDATES of them; paging stops there (the response says so).
+RANK_CANDIDATES = 5_000
+RANDOM_PAGE_COST = 4.0
+
+
+@dataclass
+class _IdSet:
+    """The resources a facet counts over: all matches, or a page sample of them.
+
+    ``rows`` are ``(id, kind, entry)``: the type and FDP facets count them here.
+    """
+
+    rows: list[tuple[int, str, UUID]]
+    total: int
+    scale: float = 1.0
+    approximate: bool = False
+    # How it was sampled: TABLESAMPLE pages (percent), or every k-th id (step).
+    percent: float | None = None
+    step: int = 1
+
+    @property
+    def ids(self) -> list[int]:
+        return [rid for rid, _, _ in self.rows]
+
+
+@dataclass
+class _Matches:
+    """Matching ids of a search with words or dates, found once per request (PostgreSQL).
+
+    Facets then count by primary key over these ids instead of evaluating the
+    words for every value row. One set per set of conditions: a facet whose own
+    filter is active leaves it out. Above ``SAMPLE_ABOVE`` matches the set is a
+    ``TABLESAMPLE SYSTEM`` page sample (fixed seed, so counts do not change from
+    page to page) and counts are scaled up (search design §7).
+    """
+
+    sets: dict[str | None, _IdSet] = field(default_factory=lambda: {})
+
 
 DEFAULT_TYPES: tuple[Kind, ...] = ("fdp", "catalog", "dataset", "series", "service", "other")
 DEFAULT_FACETS = (
@@ -205,6 +278,10 @@ class SearchService:
         *,
         timeout_seconds: float = 5.0,
         admin_timeout_seconds: float = 30.0,
+        facet_cache_seconds: float = FACET_CACHE_SECONDS,
+        sample_above: int = SAMPLE_ABOVE,
+        sample_size: int = SAMPLE_SIZE,
+        max_page_percent: float = MAX_PAGE_PERCENT,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
@@ -213,6 +290,11 @@ class SearchService:
         self._timeout = timeout_seconds
         self._admin_timeout = admin_timeout_seconds
         self._landing: tuple[int, float, dict[str, Any]] | None = None
+        self._facet_cache_seconds = facet_cache_seconds
+        self._sample_above = sample_above
+        self._sample_size = sample_size
+        self._max_page_percent = max_page_percent
+        self._facet_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
 
     # --- sessions ----------------------------------------------------------------
 
@@ -223,6 +305,11 @@ class SearchService:
             if postgres:
                 ms = int((self._admin_timeout if admin else self._timeout) * 1000)
                 await session.execute(text(f"SET LOCAL statement_timeout = {ms}"))
+                # Search rows are wide (text vectors inline, ~3 KB): fetching them one by one
+                # costs more than an SSD-tuned random_page_cost (1.1) suggests. With it the
+                # planner walked 285 000 rows of a common theme to test a word (8.6 s)
+                # instead of using the full-text index (0.4 s). Task 6.15.
+                await session.execute(text(f"SET LOCAL random_page_cost = {RANDOM_PAGE_COST}"))
             try:
                 return await work(session, postgres)
             except DBAPIError as err:
@@ -245,22 +332,30 @@ class SearchService:
         *,
         postgres: bool,
         skip: str | None = None,
+        scope: _Scope = RESOURCE,
+        res: Any = R,
     ) -> list[ColumnElement[bool]]:
+        """The search's conditions; ``scope=VALUE`` only when there are no words or dates.
+
+        ``res`` is the resource entity: ``search_resource``, or a sampled alias of it.
+        """
+        if res is not R:
+            scope = _Scope(res.id, res.kind, res.entry_uuid)
         conditions: list[ColumnElement[bool]] = [E.permit == EntryPermit.ACCEPTED]
         if skip != "type":
-            conditions.append(R.kind.in_(params.types))
+            conditions.append(scope.kind.in_(params.types))
         if skip != "fdp" and params.fdps:
-            conditions.append(R.entry_uuid.in_(params.fdps))
+            conditions.append(scope.entry_uuid.in_(params.fdps))
         for name, values in params.filters.items():
             if name == skip or not values:
                 continue
             wanted = [v for v in values if not v.startswith("!")]
             unwanted = [v[1:] for v in values if v.startswith("!")]
             if wanted:
-                conditions.append(_has(name, wanted))
+                conditions.append(_has(name, wanted, scope.id))
             if unwanted:
-                conditions.append(not_(_has(name, unwanted)))
-        columns = {"issued": R.issued, "modified": R.modified, "harvested": R.harvested_at}
+                conditions.append(not_(_has(name, unwanted, scope.id)))
+        columns = {"issued": res.issued, "modified": res.modified, "harvested": res.harvested_at}
         for name, (low, high) in params.ranges.items():
             column = columns[name]
             if low is not None:
@@ -270,7 +365,7 @@ class SearchService:
         if params.fdp_state:
             conditions.append(and_(E.state == EntryState.VALID, E.last_retrieval_at > threshold))
         if params.q:
-            conditions.append(self._text(params, postgres=postgres))
+            conditions.append(self._text(params, postgres=postgres, res=res))
         return conditions
 
     def _queries(self, params: SearchParams) -> tuple[Any, Any]:
@@ -295,13 +390,13 @@ class SearchService:
             cast(literal(SIMPLE_CONFIG), REGCONFIG), " & ".join(f"{w}:*" for w in words)
         )
 
-    def _text(self, params: SearchParams, *, postgres: bool) -> ColumnElement[bool]:
+    def _text(self, params: SearchParams, *, postgres: bool, res: Any = R) -> ColumnElement[bool]:
         if postgres:
             q_lang, q_simple = self._queries(params)
-            matches = [R.tsv_lang.op("@@")(q_lang), R.tsv_simple.op("@@")(q_simple)]
+            matches = [res.tsv_lang.op("@@")(q_lang), res.tsv_simple.op("@@")(q_simple)]
             prefix = self._prefix(params)
             if prefix is not None:
-                matches.append(R.tsv_simple.op("@@")(prefix))
+                matches.append(res.tsv_simple.op("@@")(prefix))
             return or_(*matches)
         conditions: list[ColumnElement[bool]] = []
         for word in params.q.lower().replace('"', " ").split():
@@ -310,21 +405,23 @@ class SearchService:
             needle = word.lstrip("-").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             if not needle:
                 continue
-            match = R.search_text.like(f"%{needle}%", escape="\\")
+            match = res.search_text.like(f"%{needle}%", escape="\\")
             conditions.append(not_(match) if word.startswith("-") else match)
         return and_(*conditions) if conditions else literal(True)
 
     def _score(self, params: SearchParams, threshold: datetime) -> ColumnElement[float]:
         q_lang, q_simple = self._queries(params)
+        # ts_rank, not ts_rank_cd: the field weights carry the signal, and cover density
+        # cost ten times as much (1.6 s against 0.16 s over 29 000 matches; task 6.15).
         weights = cast(literal(RANK_WEIGHTS), ARRAY(REAL))
         ranks = [
-            func.ts_rank_cd(weights, R.tsv_lang, q_lang, 33),
-            0.9 * func.ts_rank_cd(weights, R.tsv_simple, q_simple, 33),
+            func.ts_rank(weights, R.tsv_lang, q_lang, 33),
+            0.9 * func.ts_rank(weights, R.tsv_simple, q_simple, 33),
         ]
         prefix = self._prefix(params)
         if prefix is not None:
             # Partial words count, but less than whole ones.
-            ranks.append(0.5 * func.ts_rank_cd(weights, R.tsv_simple, prefix, 33))
+            ranks.append(0.5 * func.ts_rank(weights, R.tsv_simple, prefix, 33))
         text_rank = func.greatest(*ranks)
         bonus = case(
             (func.lower(func.unaccent(R.title)) == func.lower(func.unaccent(params.q)), 0.3),
@@ -381,22 +478,50 @@ class SearchService:
 
         async def work(session: AsyncSession, postgres: bool) -> dict[str, Any]:
             conditions = self._conditions(params, threshold, postgres=postgres)
-            base = select(R.id).join(E, E.uuid == R.entry_uuid).where(*conditions)
-            total = int(
-                await session.scalar(select(func.count()).select_from(base.subquery())) or 0
-            )
+            matches: _Matches | None = None
+            exact_ids: list[int] | None = None
+            if postgres and not self._light(params):
+                matches = _Matches()
+                if "type" in params.facets:
+                    # The type facet's matches (every kind), when few, give the search's own
+                    # too; when many, they are sampled like the search's own, after it.
+                    await self._ids(session, params, threshold, matches, "type", probe=True)
+                base = await self._ids(session, params, threshold, matches, None)
+                assert base is not None
+                total = base.total
+                exact_ids = None if base.approximate else base.ids
+            else:
+                total = await self._count(session, params, conditions)
             score = self._score(params, threshold) if postgres and params.q else None
             columns: list[Any] = [R, E]
             if score is not None:
                 columns.append(score)
+            # Known matches are not evaluated again (a phrase is rechecked row by row).
+            known = (
+                [R.id == any_(bindparam("hit_ids", exact_ids, type_=ARRAY(BigInteger)))]
+                if exact_ids is not None
+                else conditions
+            )
             query = (
                 select(*columns)
                 .join(E, E.uuid == R.entry_uuid)
-                .where(*conditions)
+                .where(*known)
                 .order_by(*self._order(params, score))
                 .offset(params.page * params.size)
                 .limit(params.size)
             )
+            bounded = score is not None and total > self._sample_above
+            if bounded:
+                # Ranking every one of hundreds of thousands of matches takes seconds;
+                # rank the newest ones, walking ix_search_resource_recent.
+                candidates = (
+                    select(R.id)
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*conditions)
+                    .order_by(func.coalesce(R.modified, R.issued).desc().nulls_last())
+                    .limit(RANK_CANDIDATES)
+                )
+                query = query.where(R.id.in_(candidates))
             rows = (await session.execute(query)).all()
             labels = Labels(session, params.lang)
             hits = await self._hits(
@@ -411,6 +536,7 @@ class SearchService:
                     labels,
                     postgres=postgres,
                     size=params.facet_size,
+                    matches=matches,
                 )
                 for name in dict.fromkeys(params.facets)
             }
@@ -429,6 +555,7 @@ class SearchService:
                 "page": params.page,
                 "hits": hits,
                 "facets": facets,
+                **({"ranking": {"candidates": RANK_CANDIDATES}} if bounded else {}),
             }
 
         result: dict[str, Any] = await self._run(admin, work)
@@ -453,8 +580,16 @@ class SearchService:
 
         async def work(session: AsyncSession, postgres: bool) -> dict[str, Any]:
             labels = Labels(session, params.lang)
+            matches = _Matches() if postgres and not self._light(params) else None
             result = await self._facet(
-                session, params, name, threshold, labels, postgres=postgres, size=1000
+                session,
+                params,
+                name,
+                threshold,
+                labels,
+                postgres=postgres,
+                size=1000,
+                matches=matches,
             )
             needle = contains.strip().lower()
             if needle:
@@ -492,16 +627,39 @@ class SearchService:
         *,
         postgres: bool,
         size: int,
+        matches: _Matches | None = None,
     ) -> dict[str, Any]:
-        conditions = self._conditions(params, threshold, postgres=postgres, skip=name)
+        if matches is not None:
+            return await self._facet_over_ids(
+                session, params, name, threshold, labels, size=size, matches=matches
+            )
+        cache_key = self._cache_key(params, name, size)
+        if cache_key is not None and (cached := self._cached(cache_key)) is not None:
+            return cached
         count = func.count().label("n")
         if name == "type":
+            conditions = self._conditions(params, threshold, postgres=postgres, skip=name)
             key: Any = R.kind
             query = select(key, count).join(E, E.uuid == R.entry_uuid)
         elif name == "fdp":
+            conditions = self._conditions(params, threshold, postgres=postgres, skip=name)
             key = R.entry_uuid
             query = select(key, count).join(E, E.uuid == R.entry_uuid)
+        elif self._light(params):
+            # Kind and entry are on the value rows: no resource to look up per value.
+            conditions = self._conditions(
+                params, threshold, postgres=postgres, skip=name, scope=VALUE
+            )
+            key = V.value
+            query = (
+                select(key, count)
+                .select_from(V)
+                .join(E, E.uuid == V.entry_uuid)
+                .where(V.field == name)
+            )
         else:
+            conditions = self._conditions(params, threshold, postgres=postgres, skip=name)
+            conditions.append(V.kind.in_(params.types))
             key = V.value
             query = (
                 select(key, count)
@@ -524,10 +682,202 @@ class SearchService:
             ).all()
             found = {str(value): int(n) for value, n in extra}
             buckets.extend((v, found.get(v, 0)) for v in missing)
-        return {
+        result = {
             "buckets": await self._bucket_views(session, name, buckets, labels, threshold),
             "more": len(rows) > size,
         }
+        if cache_key is not None:
+            self._remember(cache_key, result)
+        return result
+
+    async def _count(
+        self, session: AsyncSession, params: SearchParams, conditions: list[ColumnElement[bool]]
+    ) -> int:
+        key = self._cache_key(params, "", 0)
+        cached = self._cached(key) if key is not None else None
+        if cached is not None:
+            return int(cached)
+        base = select(R.id).join(E, E.uuid == R.entry_uuid).where(*conditions)
+        total = int(await session.scalar(select(func.count()).select_from(base.subquery())) or 0)
+        if key is not None:
+            self._remember(key, total)
+        return total
+
+    async def _ids(
+        self,
+        session: AsyncSession,
+        params: SearchParams,
+        threshold: datetime,
+        matches: _Matches,
+        skip: str | None,
+        *,
+        probe: bool = False,
+    ) -> _IdSet | None:
+        """The matching ids without the ``skip`` facet's filter: all of them, or a sample.
+
+        With ``probe``, only when they are few (``None`` otherwise, nothing counted).
+        """
+        if skip in matches.sets:
+            return matches.sets[skip]
+        conditions = self._conditions(params, threshold, postgres=True, skip=skip)
+        query = (
+            select(R.id, R.kind, R.entry_uuid).join(E, E.uuid == R.entry_uuid).where(*conditions)
+        )
+        base = matches.sets.get(None)
+        if skip is not None and base is not None and base.approximate:
+            # Leaving a condition out only adds matches: this set is large too. The same
+            # pages (same percentage and seed, so already cached) scaled by their share.
+            rows = await self._sampled_rows(
+                session, params, threshold, skip, percent=base.percent, step=base.step
+            )
+            scale = 100.0 / base.percent if base.percent is not None else float(base.step)
+            found = _IdSet(rows, round(len(rows) * scale), scale, True, base.percent, base.step)
+        else:
+            rows = _rows(await session.execute(query.limit(self._sample_above + 1)))
+            if len(rows) <= self._sample_above:
+                found = _IdSet(rows, len(rows))
+                if skip == "type" and None not in matches.sets:
+                    # Every kind matched: the search's own matches are those of its kinds.
+                    own = [row for row in rows if row[1] in params.types]
+                    matches.sets[None] = _IdSet(own, len(own))
+            elif probe:
+                return None
+            else:
+                total = int(
+                    await session.scalar(select(func.count()).select_from(query.subquery())) or 0
+                )
+                share = min(100.0, 100.0 * self._sample_size / max(total, 1))
+                percent: float | None = share if share <= self._max_page_percent else None
+                step = 1 if percent is not None else max(1, total // self._sample_size)
+                rows = await self._sampled_rows(
+                    session, params, threshold, skip, percent=percent, step=step
+                )
+                scale = total / len(rows) if rows else 0.0
+                found = _IdSet(rows, total, scale, True, percent, step)
+        matches.sets[skip] = found
+        return found
+
+    async def _sampled_rows(
+        self,
+        session: AsyncSession,
+        params: SearchParams,
+        threshold: datetime,
+        skip: str | None,
+        *,
+        percent: float | None,
+        step: int,
+    ) -> list[tuple[int, str, UUID]]:
+        """A page sample of ``percent`` of the table, or (``None``) every ``step``-th id."""
+        if percent is None:
+            conditions = self._conditions(params, threshold, postgres=True, skip=skip)
+            conditions.append(R.id % step == 0)
+            query = (
+                select(R.id, R.kind, R.entry_uuid)
+                .join(E, E.uuid == R.entry_uuid)
+                .where(*conditions)
+            )
+            return _rows(await session.execute(query))
+        sampled = aliased(
+            R,
+            R.__table__.tablesample(func.system(percent), name="sampled", seed=literal(1)),  # pyright: ignore[reportUnknownMemberType,reportAttributeAccessIssue]
+        )
+        conditions = self._conditions(params, threshold, postgres=True, skip=skip, res=sampled)
+        query = (
+            select(sampled.id, sampled.kind, sampled.entry_uuid)
+            .join(E, E.uuid == sampled.entry_uuid)
+            .where(*conditions)
+        )
+        return _rows(await session.execute(query))
+
+    async def _facet_over_ids(
+        self,
+        session: AsyncSession,
+        params: SearchParams,
+        name: str,
+        threshold: datetime,
+        labels: Labels,
+        *,
+        size: int,
+        matches: _Matches,
+    ) -> dict[str, Any]:
+        selected = [v.lstrip("!") for v in self._selected(params, name)]
+        own = name == "type" or bool(selected)
+        found = await self._ids(session, params, threshold, matches, name if own else None)
+        assert found is not None
+
+        def scaled(n: Any) -> int:
+            return max(1, round(int(n) * found.scale)) if found.approximate else int(n)
+
+        if name in {"type", "fdp"}:
+            # Kind and entry came with the ids.
+            position = 1 if name == "type" else 2
+            counter = Counter(str(row[position]) for row in found.rows)
+            rows = sorted(counter.items(), key=lambda item: (-item[1], item[0]))[: size + 1]
+            counted = dict(counter)
+        else:
+            wanted = any_(bindparam(f"ids_{name}", found.ids, type_=ARRAY(BigInteger)))
+            count = func.count().label("n")
+            query = select(V.value, count).where(V.field == name, V.resource_id == wanted)
+            rows = [
+                (str(value), int(n))
+                for value, n in await session.execute(
+                    query.group_by(V.value).order_by(count.desc(), V.value).limit(size + 1)
+                )
+            ]
+            counted = {}
+            missing = [v for v in selected if v not in {value for value, _ in rows[:size]}]
+            if missing:
+                extra = await session.execute(query.where(V.value.in_(missing)).group_by(V.value))
+                counted = {str(value): int(n) for value, n in extra}
+        buckets = [(value, scaled(n)) for value, n in rows[:size]]
+        shown = {value for value, _ in buckets}
+        buckets.extend(
+            (v, scaled(counted[v]) if counted.get(v) else 0) for v in selected if v not in shown
+        )
+        result: dict[str, Any] = {
+            "buckets": await self._bucket_views(session, name, buckets, labels, threshold),
+            "more": len(rows) > size,
+        }
+        if found.approximate:
+            result["approximate"] = True
+        return result
+
+    # --- the facet cache -------------------------------------------------------------
+
+    @staticmethod
+    def _light(params: SearchParams) -> bool:
+        """No words and no date ranges: conditions need no resource columns but kind and entry."""
+        return not params.q and not params.ranges
+
+    def _cache_key(self, params: SearchParams, name: str, size: int) -> tuple[Any, ...] | None:
+        if not self._light(params) or self._facet_cache_seconds <= 0:
+            return None
+        filters = tuple(sorted((k, tuple(sorted(v))) for k, v in params.filters.items() if v))
+        return (
+            self.indexer.generation,
+            name,
+            size,
+            params.lang,
+            tuple(sorted(params.types)),
+            tuple(sorted(str(u) for u in params.fdps)),
+            params.fdp_state,
+            filters,
+        )
+
+    def _cached(self, key: tuple[Any, ...]) -> Any | None:
+        found = self._facet_cache.get(key)
+        if found is None or time.monotonic() - found[0] > self._facet_cache_seconds:
+            return None
+        return copy.deepcopy(found[1])
+
+    def _remember(self, key: tuple[Any, ...], value: Any) -> None:
+        if len(self._facet_cache) >= FACET_CACHE_ENTRIES:
+            # Drop the oldest half; entries of older generations go first by age anyway.
+            for old in sorted(self._facet_cache, key=lambda k: self._facet_cache[k][0])[
+                : FACET_CACHE_ENTRIES // 2
+            ]:
+                del self._facet_cache[old]
+        self._facet_cache[key] = (time.monotonic(), copy.deepcopy(value))
 
     def _selected(self, params: SearchParams, name: str) -> list[str]:
         if name == "type":
@@ -874,10 +1224,16 @@ class SearchService:
         }
 
 
-def _has(name: str, values: list[str]) -> ColumnElement[bool]:
+def _rows(result: Any) -> list[tuple[int, str, UUID]]:
+    return [(int(rid), str(kind), entry) for rid, kind, entry in result]
+
+
+def _has(name: str, values: list[str], resource_id: Any) -> ColumnElement[bool]:
     # An alias: the facet queries select from search_value themselves.
     value = aliased(SearchValue)
-    return exists().where(value.resource_id == R.id, value.field == name, value.value.in_(values))
+    return exists().where(
+        value.resource_id == resource_id, value.field == name, value.value.in_(values)
+    )
 
 
 async def _values(session: AsyncSession, ids: list[int]) -> dict[int, list[SearchValue]]:

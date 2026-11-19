@@ -61,6 +61,8 @@ export interface Bucket {
 export interface FacetResult {
   buckets: Bucket[];
   more: boolean;
+  /** Counted on a sample of a large result set and scaled up. */
+  approximate?: boolean;
 }
 
 export interface SearchResult {
@@ -72,6 +74,8 @@ export interface SearchResult {
   took: number;
   hits: Hit[];
   facets: Record<string, FacetResult>;
+  /** Present when a very broad search was ranked among its newest matches only. */
+  ranking?: { candidates: number };
 }
 
 export interface FacetInfo {

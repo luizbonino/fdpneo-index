@@ -67,8 +67,17 @@ search, and a SPARQL endpoint and UI are a requirement, not an extra.
      language. The accent-folded `simple` vector still matches any language.
    - Plain words also match as prefixes ("demo" finds "demonstration"). A
      prefix match ranks at half a whole-word match.
-   - There is no facet cache yet (task 6.15 decides), and no
-     administrator-editable profile yet.
+   - The performance check (task 6.15, [numbers](../search-performance.md))
+     changed the facet counting. Facets of searches without words or dates
+     come from `search_value` alone, which now holds each value's kind and
+     entry (migration 0004). Facets of other searches count over the
+     matching ids, found once per request. Above 50 000 matches those ids
+     are a sample, and the counts are scaled and marked `approximate`.
+   - Facet counts and totals are cached in the process for 60 s per indexer
+     generation, instead of a `search_facet_cache` table.
+   - Above 50 000 matches, relevance is computed for the 5 000 most
+     recently modified matches only, and the response says so.
+   - There is no administrator-editable profile yet.
    - "Show as SPARQL" (`GET /index/search/sparql`) matches each filter
      value in every raw form that normalises to it, and mirrors the kind
      precedence. The response lists what SPARQL can only approximate (full

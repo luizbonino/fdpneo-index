@@ -154,9 +154,13 @@ function chipLabel(chip: Chip): string {
 const activeChips = computed(() => chips(state.value));
 const filtered = computed(() => isFiltered(state.value));
 const total = computed(() => data.value?.totalResults ?? 0);
-const pages = computed(() =>
-  Math.max(1, Math.ceil(total.value / (data.value?.itemsPerPage ?? 20))),
-);
+// The server pages through at most 10 000 results (fewer when a broad search was ranked
+// among its newest matches only).
+const MAX_WINDOW = 10_000;
+const pages = computed(() => {
+  const reachable = Math.min(total.value, data.value?.ranking?.candidates ?? MAX_WINDOW);
+  return Math.max(1, Math.ceil(reachable / (data.value?.itemsPerPage ?? 20)));
+});
 const sortValue = computed(() => state.value.sort || (state.value.q ? "relevance" : "modified"));
 const empty = computed(() => {
   const counters = landing.data.value?.counters;
@@ -318,6 +322,7 @@ const counters = computed(() => {
           :help="facetHelp(facet.name)"
           :buckets="data?.facets[facet.name]?.buckets ?? []"
           :more="data?.facets[facet.name]?.more ?? false"
+          :approximate="data?.facets[facet.name]?.approximate ?? false"
           :selected="selected(facet.name)"
           @toggle="(value) => go(toggle(state, facet.name, value))"
           @clear="go(clearFacet(state, facet.name))"
@@ -329,6 +334,7 @@ const counters = computed(() => {
           :help="facetHelp('fdp')"
           :buckets="data?.facets.fdp?.buckets ?? []"
           :more="data?.facets.fdp?.more ?? false"
+          :approximate="data?.facets.fdp?.approximate ?? false"
           :selected="state.fdp"
           @toggle="(value) => go(toggle(state, 'fdp', value))"
           @clear="go(clearFacet(state, 'fdp'))"
@@ -370,6 +376,7 @@ const counters = computed(() => {
             :help="facetHelp(facet.name)"
             :buckets="data?.facets[facet.name]?.buckets ?? []"
             :more="data?.facets[facet.name]?.more ?? false"
+            :approximate="data?.facets[facet.name]?.approximate ?? false"
             :selected="selected(facet.name)"
             @toggle="(value) => go(toggle(state, facet.name, value))"
             @clear="go(clearFacet(state, facet.name))"
@@ -396,6 +403,9 @@ const counters = computed(() => {
             </template>
             <template v-else>{{ t("common.loading") }}</template>
           </h2>
+          <p v-if="data?.ranking" class="muted small ranking-note">
+            {{ t("search.rankedNewest", { n: data.ranking.candidates.toLocaleString() }) }}
+          </p>
           <div class="row">
             <button type="button" class="btn sm filters-button" @click="filtersOpen = true">
               {{ filterCount ? t("search.filtersCount", { n: filterCount }) : t("search.filters") }}
@@ -682,6 +692,11 @@ const counters = computed(() => {
   justify-content: space-between;
   gap: var(--fair-space-2);
   margin-bottom: var(--fair-space-3);
+}
+.ranking-note {
+  flex-basis: 100%;
+  order: 3;
+  margin: 0;
 }
 .count-line {
   margin: 0;

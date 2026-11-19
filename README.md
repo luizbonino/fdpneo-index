@@ -157,6 +157,9 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_PUBLIC_URL` | — | Public base URL, for absolute IRIs in the VoID description |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted. The per-address rate limits rely on it: the proxy must overwrite the header with the address that connected (the bundled nginx does), never append to what the client sent |
 
+Search at scale (memory, migration 0004, the measured times at 1 000 FDPs):
+[docs/search-performance.md](docs/search-performance.md).
+
 Rate limits, durations, the deny list, auto-permit and the liveness checks
 (interval, failure threshold, which permits) are index settings, changed at
 runtime under `/index/settings` or on the Settings page.

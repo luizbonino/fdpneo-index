@@ -273,7 +273,14 @@ class SearchIndexer:
                 )
                 touched.extend((int(rid), fresh[str(iri)]) for rid, iri in result.all())
             values = [
-                {"resource_id": rid, "field": v.field, "value": v.value, "lang": v.lang}
+                {
+                    "resource_id": rid,
+                    "field": v.field,
+                    "value": v.value,
+                    "lang": v.lang,
+                    "kind": row.kind,
+                    "entry_uuid": entry_id,
+                }
                 for rid, row in touched
                 for v in row.values
             ]

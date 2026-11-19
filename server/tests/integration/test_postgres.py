@@ -263,6 +263,54 @@ async def test_search_stems_folds_accents_and_ranks(
     assert detail["parents"][0]["type"] == "fdp"
 
 
+async def test_large_searches_count_facets_on_a_sample(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    from fdpindex.search.query import SearchParams, SearchService
+    from tests.fixtures.search_corpus import EU
+
+    exact: Any = await _search_index(index)
+
+    def large(max_page_percent: float) -> SearchService:
+        # Every search counts as large; a sample as big as the corpus takes every match,
+        # through TABLESAMPLE SYSTEM (100) or every first id.
+        return SearchService(
+            exact._session_factory,
+            exact._settings,
+            exact.indexer,
+            sample_above=0,
+            sample_size=10_000,
+            max_page_percent=max_page_percent,
+        )
+
+    heal = f"{EU}data-theme/HEAL"
+    for sampled in (large(100.0), large(2.0)):
+        cases: list[dict[str, Any]] = [
+            {"q": "cancer"},
+            {"q": "cancer", "filters": {"theme": [heal]}},
+            {"q": "genome or lungs", "types": ["dataset"], "filters": {"keyword": ["!cancer"]}},
+        ]
+        for params in cases:
+            want = await exact.search(SearchParams(**params))
+            got = await sampled.search(SearchParams(**params))
+            assert got["totalResults"] == want["totalResults"]
+            assert [h["iri"] for h in got["hits"]] == [h["iri"] for h in want["hits"]]
+            assert got["ranking"] == {"candidates": 5_000}
+            for name, facet in got["facets"].items():
+                assert facet.pop("approximate") is True
+                assert facet == want["facets"][name], (params, name)
+    sampled = large(2.0)
+    dialog = await sampled.facet(SearchParams(q="cancer"), "keyword")
+    assert dialog["approximate"] is True
+    assert {b["value"] for b in dialog["buckets"]} == {"cancer", "registry", "lungs"}
+    # The words-free path (search_value alone) agrees with the join.
+    light = await exact.search(SearchParams(types=["dataset", "distribution"]))
+    joined = await exact.search(
+        SearchParams(types=["dataset", "distribution"], ranges={"harvested": (None, None)})
+    )
+    assert light["facets"] == joined["facets"]
+
+
 async def test_search_rows_follow_the_entry(
     index: tuple[IndexService, JobRunner, FakeNetwork, object],
 ) -> None:

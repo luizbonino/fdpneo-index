@@ -77,7 +77,7 @@ packages = ["src/fdpindex"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "tests", "bench"]
 
 [tool.ruff.lint]
 select = [
@@ -112,6 +112,7 @@ ignore = [
 "src/fdpindex/api/sparql.py" = ["N818", "B008"]
 "src/fdpindex/api/search.py" = ["N818", "B008"]
 "src/fdpindex/search/*.py" = ["N818"]
+"bench/**" = ["S311", "SIM905"]  # a benchmark: seeded pseudo-random data, word lists as text
 
 [tool.ruff.lint.isort]
 known-first-party = ["fdpindex"]
@@ -127,7 +128,7 @@ exclude = ["**/*.md"]
 # Pyright — type checking
 # ----------------------------------------------------------------------------
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "bench"]
 exclude = ["**/__pycache__", ".venv", "src/fdpindex/migrations/versions"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"

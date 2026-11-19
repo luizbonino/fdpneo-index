@@ -19,6 +19,7 @@ const { t } = useI18n();
 const dialog = ref<HTMLDialogElement>();
 const filter = ref("");
 const buckets = ref<Bucket[]>([]);
+const approximate = ref(false);
 const loading = ref(false);
 const error = ref("");
 
@@ -26,7 +27,9 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    buckets.value = (await searchApi.facet(props.name, props.params, filter.value.trim())).buckets;
+    const result = await searchApi.facet(props.name, props.params, filter.value.trim());
+    buckets.value = result.buckets;
+    approximate.value = result.approximate ?? false;
   } catch (err) {
     error.value = (err as Error).message;
   } finally {
@@ -81,7 +84,9 @@ onMounted(() => {
             @change="emit('toggle', bucket.value)"
           />
           <span>{{ bucket.label }}</span>
-          <span class="count">{{ bucket.count.toLocaleString() }}</span>
+          <span class="count" :title="approximate ? t('search.estimated') : undefined">
+            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString() }}
+          </span>
         </label>
       </li>
     </ul>

@@ -62,5 +62,7 @@ harvest of each accepted FDP.
   webhooks (TASKS 3.4).
 - The reference client keeps working against fdpindex; the new client
   replaces it with a better administration experience.
-- Harvested metadata is not searchable with SPARQL in this service; that is
-  the harvest tier of FAIR Discovery (FDPneo ADR-0021).
+- Harvested metadata was at first meant to be searched elsewhere, in the
+  harvest tier of FAIR Discovery (FDPneo ADR-0021). ADR-0005 brought faceted
+  search and SPARQL into this service. Since 19 November 2026 this service is
+  FAIR Discovery, built standalone instead of inside FDPneo (TASKS 5.4).

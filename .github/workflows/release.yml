@@ -1,0 +1,196 @@
+# Release pipeline, triggered by a `v*` tag on main (docs/releasing.md):
+#   verify          tag == server version == client version, and a CHANGELOG section exists
+#   build/publish   sdist + wheel of the server to PyPI (trusted publishing), only when the
+#                   repository variable PUBLISH_PYPI is "true" (set it once PyPI trusts this repo)
+#   image           server and client, native amd64 and arm64 builds, pushed by digest
+#   image-merge     multi-architecture images tagged X.Y.Z, X.Y and latest, signed with
+#                   Sigstore keyless signing, provenance attested, signature verified
+#   github-release  GitHub release with the CHANGELOG section as notes
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tag, server version, client version and CHANGELOG agree
+        run: |
+          SERVER=$(python3 -c "import tomllib; print(tomllib.load(open('server/pyproject.toml','rb'))['project']['version'])")
+          CLIENT=$(node -p "require('./client/package.json').version")
+          for v in "$SERVER" "$CLIENT"; do
+            [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::tag $GITHUB_REF_NAME != version $v (server $SERVER, client $CLIENT)"; exit 1; }
+          done
+          grep -q "^## \[${GITHUB_REF_NAME#v}\]" CHANGELOG.md || { echo "::error::no CHANGELOG section for ${GITHUB_REF_NAME#v}"; exit 1; }
+      - name: The tag is on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::$GITHUB_REF_NAME is not on main"; exit 1; }
+
+  build:
+    needs: verify
+    if: vars.PUBLISH_PYPI == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv build
+      - uses: actions/upload-artifact@v7
+        with: { name: dist, path: server/dist/ }
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi # matches the trusted-publisher configuration on PyPI
+    permissions:
+      id-token: write # OIDC trusted publishing: no API token
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  # One native build per component and architecture (arm64 runners are free for
+  # public repositories), each pushed by digest; image-merge assembles and signs.
+  image:
+    needs: verify
+    strategy:
+      fail-fast: true
+      matrix:
+        component: [server, client]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Image references must be lowercase; account names need not be.
+      - name: Image name
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fdpneo-index-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.component }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ steps.name.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=release-${{ matrix.component }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.component }}-${{ matrix.platform }}
+      - name: Export digest
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.component }}-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # X.Y.Z / X.Y / latest from the per-architecture digests, signed keyless: the
+  # certificate binds the signature to this repository, workflow and tag.
+  image-merge:
+    needs: image
+    strategy:
+      matrix:
+        component: [server, client]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # Sigstore keyless signing and provenance
+      attestations: write
+    steps:
+      - name: Image name (lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fdpneo-index-${{ matrix.component }}" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.component }}-*
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=true
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Create the multi-architecture image
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          # Word splitting is intended: one -t per tag, one source per digest.
+          # shellcheck disable=SC2046
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
+      - name: Resolve the index digest
+        id: index
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DIGEST=$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+      - uses: sigstore/cosign-installer@v4.1.2
+      - name: Sign the image (keyless)
+        run: cosign sign --yes "$IMAGE@${{ steps.index.outputs.digest }}"
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.index.outputs.digest }}
+          push-to-registry: true
+      - name: Verify the signature as a user would
+        run: |
+          cosign verify "$IMAGE@${{ steps.index.outputs.digest }}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/release.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+
+  github-release:
+    needs: image-merge
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Release notes from CHANGELOG
+        run: |
+          V="${TAG#v}"
+          awk -v v="$V" '/^## \[/ { if (found) exit; if (index($0, "## [" v "]") == 1) { found = 1; next } } found' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "::error::no CHANGELOG section for $V"; exit 1; }
+      - name: Create the release
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag --latest

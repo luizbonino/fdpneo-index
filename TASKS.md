@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-70 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
+71 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -24,7 +24,7 @@ task are listed in the last column.
 | 0 Foundations | Repository, ADRs 1–4, tooling, CI | 8/8 | – | – | ✅ Done | – |
 | 1 Server: port of the reference index | Ping intake, retrieval, harvest, entries and admin API, webhooks, auth, outbound safety | 17/17 | – | – | ✅ Done | – |
 | 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
-| 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 4/5 | – | 1 | 🟡 Mostly done | Release process (3.5) |
+| 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 5/5 | – | – | ✅ Done | – |
 | 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 5/9 | – | 4 | 🟡 Mostly done | Long-unreachable entries and expiry (4.6), per-FDP options (4.7), verified approval (4.8), self-service registration (4.9) |
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 1/4 | – | 3 | 🔹 Started (decided 19 Nov) | Running next to FDPneo (5.1), documentation here (5.2), Java index guidance (5.3) |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
@@ -34,7 +34,7 @@ task are listed in the last column.
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **70/115** | **4** | **41** | | |
+| **Total** | | **71/115** | **4** | **40** | | |
 
 ## Phase 0 — Foundations
 
@@ -81,7 +81,7 @@ task are listed in the last column.
 - [x] 3.2 Compose stack: PostgreSQL, server, client; optional Keycloak profile — *done: `--profile keycloak` with a realm (public PKCE client, `admin` role, an administrator who must change the password at first sign-in); `FDPINDEX_OIDC_DISCOVERY_URL` lets the server read the keys inside Compose while tokens name the public issuer; sign-in tested end to end in a browser*
 - [x] 3.3 Operator documentation: configuration reference, reverse proxy (client IP for rate limiting), backup — *done: [docs/operations.md](docs/operations.md) (what holds state, reverse proxy, backup and restore tested on the local stack, upgrades, monitoring); `FDPINDEX_TRUSTED_PROXY` for the client's nginx behind another proxy*
 - [x] 3.4 Importer: entries, events, settings and webhooks from a Java FAIR Data Point database (index tables)
-- [ ] 3.5 Release process (tag-driven, signed multi-arch images, release metadata) once the GitHub repository exists
+- [x] 3.5 Release process (tag-driven, signed multi-arch images, release metadata) once the GitHub repository exists — *done: `release.yml` (tag = server = client version, CHANGELOG section, tag on main; server and client images for amd64 and arm64, signed keyless, provenance attested, signature verified; GitHub release from the CHANGELOG; PyPI behind the `PUBLISH_PYPI` variable), [docs/releasing.md](docs/releasing.md), CHANGELOG.md; no release cut yet*
 
 ## Phase 4 — Active liveness checks (new)
 

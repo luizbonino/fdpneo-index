@@ -226,6 +226,9 @@ docker exec fdpindex-server-1 python /tmp/seed_demo.py --fdps 150   # --remove t
 docker restart fdpindex-server-1
 ```
 
+Releases (versions, CHANGELOG, signed multi-architecture images):
+[docs/releasing.md](docs/releasing.md).
+
 ## Licence
 
 MIT. Contributions need a [DCO](DCO) sign-off (`git commit -s`).

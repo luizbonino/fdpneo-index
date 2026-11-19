@@ -162,6 +162,10 @@ def extract_repository_metadata(graph: Graph, client_url: str) -> RepositoryMeta
 
 # Vocabularies name things with different predicates; the first that has a value wins.
 _SKOS = "http://www.w3.org/2004/02/skos/core#"
+MATCH_PREDICATES = (
+    URIRef("http://www.w3.org/2004/02/skos/core#exactMatch"),
+    URIRef("http://www.w3.org/2002/07/owl#sameAs"),
+)
 _SKOSXL = "http://www.w3.org/2008/05/skos-xl#"
 _GN = "http://www.geonames.org/ontology#"
 _VCARD = "http://www.w3.org/2006/vcard/ns#"
@@ -212,6 +216,9 @@ class ConceptNames:
     labels: dict[str, str] = field(default_factory=lambda: {})
     synonyms: dict[str, list[str]] = field(default_factory=lambda: {})
     broader: list[str] = field(default_factory=lambda: [])
+    # The same concept in other vocabularies (skos:exactMatch, owl:sameAs, Wikidata's
+    # MeSH ID): one facet value for all of them (TASKS 8.11).
+    matches: list[str] = field(default_factory=lambda: [])
 
     @property
     def empty(self) -> bool:
@@ -265,4 +272,9 @@ def describe(graph: Graph, iri: str) -> ConceptNames:
             for o in graph.objects(subject, predicate):
                 if isinstance(o, URIRef) and str(o) not in names.broader and str(o) != iri:
                     names.broader.append(str(o))
+    for predicate in MATCH_PREDICATES:
+        for subject in subjects:
+            for o in graph.objects(subject, predicate):
+                if isinstance(o, URIRef) and str(o) not in names.matches and str(o) != iri:
+                    names.matches.append(str(o))
     return names

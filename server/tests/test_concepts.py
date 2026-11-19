@@ -10,8 +10,10 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 from rdflib import Graph
-from sqlalchemy import select
+from sqlalchemy import select, update
 
+from fdpindex.db import utcnow
+from fdpindex.errors import BadRequest
 from fdpindex.models import Concept, ConceptStatus
 from fdpindex.outbound import OutboundClient
 from fdpindex.rdf import describe
@@ -116,6 +118,8 @@ class Vocabularies:
 
     def __init__(self) -> None:
         self.requests: list[str] = []
+        # Wikidata item → MeSH descriptor (P486); empty unless a test sets it.
+        self.mesh: dict[str, str] = {}
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         url = str(request.url)
@@ -136,6 +140,10 @@ class Vocabularies:
             }
             return httpx.Response(200, json={"entities": entities})
         if host == "www.wikidata.org" and query.get("action") == ["wbgetclaims"]:
+            entity = query["entity"][0]
+            if query.get("property") == ["P486"] and entity in self.mesh:
+                claim = {"mainsnak": {"datavalue": {"value": self.mesh[entity]}}}
+                return httpx.Response(200, json={"claims": {"P486": [claim]}})
             return httpx.Response(200, json={"claims": {}})
         if host == "api.ror.org":
             return httpx.Response(
@@ -385,3 +393,73 @@ def test_settings_parse_comma_separated_hosts() -> None:
         ["en", "nl"],
     )
     assert json.loads(json.dumps(config.labels_resolve)) is False
+
+
+async def test_equivalent_concepts_are_one_subject(
+    resolved: tuple[SearchService, ConceptResolver, Vocabularies, list[Any]],
+    services: Services,
+) -> None:
+    """Wikidata's breast cancer item names MeSH D001943 as its MeSH descriptor (P486)."""
+    search, resolver, vocabularies, _ = resolved
+    before = await search.search(SearchParams(types=["dataset"], facets=["subject"]))
+    assert {WIKIDATA, MESH} <= {b["value"] for b in before["facets"]["subject"]["buckets"]}
+    vocabularies.mesh["Q128581"] = "D001943"
+    async with services.session_factory() as session, session.begin():
+        await session.execute(update(Concept).values(due_at=utcnow()))
+    await resolver.sync_once()
+    await search.indexer.sync_once()
+    assert (await _status(services.session_factory, WIKIDATA)).exact_matches == [MESH]
+    after = await search.search(SearchParams(types=["dataset"], facets=["subject"]))
+    values = [b["value"] for b in after["facets"]["subject"]["buckets"]]
+    assert MESH in values and WIKIDATA not in values  # MeSH represents the pair
+    # A filter on either member is the group's; the Wikidata names still find it.
+    by_wikidata = await search.search(SearchParams(filters={"subject": [WIKIDATA]}, facets=[]))
+    assert [h["title"] for h in by_wikidata["hits"]] == ["Dataset one"]
+    assert by_wikidata["query"]["filters"] == {"subject": [MESH]}
+    found = await search.search(SearchParams(q="Brustkrebs", facets=[]))
+    assert [h["title"] for h in found["hits"]] == ["Dataset one"]
+    # The SPARQL translation asks for every member of the group.
+    translated = await search.sparql(SearchParams(filters={"subject": [MESH]}))
+    assert WIKIDATA.lower() in translated["query"] and MESH.lower() in translated["query"]
+
+
+async def test_groups_pick_a_known_representative(services: Services) -> None:
+    from fdpindex.search.concepts import concept_groups
+
+    other = "http://example.org/vocab/breast-cancer"
+    async with services.session_factory() as session, session.begin():
+        session.add_all(
+            [
+                Concept(iri=WIKIDATA, host="www.wikidata.org", depth=0, exact_matches=[MESH]),
+                Concept(iri=MESH, host="id.nlm.nih.gov", depth=1, exact_matches=[]),
+                Concept(iri=EDAM, host="edamontology.org", depth=0, exact_matches=[other]),
+            ]
+        )
+    async with services.session_factory() as session:
+        groups = await concept_groups(session)
+    # Used as a value (depth 0) beats a preferred vocabulary seen only as broader.
+    assert groups.of(MESH) == WIKIDATA and groups.of(WIKIDATA) == WIKIDATA
+    assert groups.members[WIKIDATA] == sorted([WIKIDATA, MESH])
+    # An IRI the index has never seen joins a group but never represents it.
+    assert groups.of(other) == EDAM
+    assert groups.of(ROR) == ROR
+
+
+async def test_subjects_form_a_tree_with_narrower_counts(
+    resolved: tuple[SearchService, ConceptResolver, Vocabularies, list[Any]],
+) -> None:
+    """MeSH D001943 (Breast Neoplasms) is below D009371 (Neoplasms by Site)."""
+    search = resolved[0]
+    tree = await search.facet(SearchParams(types=["dataset"]), "subject", tree=True)
+    assert tree["filter"] == "subject^"
+    roots = {node["value"]: node for node in tree["tree"]}
+    parent = roots[MESH_PARENT]
+    assert parent["label"] == "Neoplasms by Site" and parent["count"] == 1
+    assert [child["value"] for child in parent["children"]] == [MESH]
+    # "Neoplasms by Site or narrower" finds the dataset tagged Breast Neoplasms.
+    found = await search.search(SearchParams(filters={"subject^": [MESH_PARENT]}, facets=[]))
+    assert [h["title"] for h in found["hits"]] == ["Dataset one"]
+    translated = await search.sparql(SearchParams(filters={"subject^": [MESH_PARENT]}))
+    assert MESH.lower() in translated["query"]
+    with pytest.raises(BadRequest):
+        await search.facet(SearchParams(), "keyword", tree=True)

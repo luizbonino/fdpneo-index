@@ -34,12 +34,14 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
-from fdpindex.search.concepts import concept_fields, concept_texts
+from fdpindex.search.concepts import concept_fields, concept_groups, concept_texts
 from fdpindex.search.project import (
     PROJECTION_VERSION,
     EntryProjection,
     ResourceRow,
+    add_ancestors,
     enrich,
+    merge_equivalents,
     project_entry,
 )
 from fdpindex.search.vocab import pack_digest
@@ -235,7 +237,10 @@ class SearchIndexer:
         if iris:
             async with self._session_factory() as session:
                 concepts = await concept_texts(session, iris)
+                groups = await concept_groups(session)
             enrich(projection, concepts, self.profile)
+            merge_equivalents(projection, groups.canonical, self.profile)
+            add_ancestors(projection, concepts, groups.canonical, self.profile)
         written = await self._write(entry_id, projection, wanted)
         if self.after_projection is not None:
             self.after_projection()

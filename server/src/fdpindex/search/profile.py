@@ -50,6 +50,12 @@ class SearchField(BaseModel):
     # ``exclude`` (full IRIs or CURIEs; http and https forms are treated alike).
     namespaces: list[str] = PydanticField(default_factory=lambda: [])
     exclude: list[str] = PydanticField(default_factory=lambda: [])
+    # For kinds iri and agent: equivalent concepts (exact matches) are one value
+    # (TASKS 8.11), stored and filtered as their group's representative.
+    equivalents: bool = False
+    # For kinds iri and agent: the broader concepts the resolver found are counted too,
+    # in the companion field ``<name>^`` (TASKS 8.12): a tree, and "this or narrower".
+    hierarchy: bool = False
     normalise: str | None = None
     buckets: list[float] | None = None  # for kind number
     presence: bool = False  # for kind boolean: present means true
@@ -154,6 +160,15 @@ class Profile(BaseModel):
     @property
     def facets(self) -> list[str]:
         return [name for name, spec in self.fields.items() if spec.facet is not None]
+
+    @property
+    def hierarchies(self) -> dict[str, str]:
+        """Companion field (``subject^``: this concept or a narrower one) → its field."""
+        return {
+            f"{name}^": name
+            for name, spec in self.fields.items()
+            if spec.hierarchy and spec.facet is not None
+        }
 
     @property
     def hash(self) -> str:

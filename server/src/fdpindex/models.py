@@ -356,6 +356,8 @@ class Concept(Base):
     # Levels above an IRI used in metadata (broader concepts are resolved too, up to a depth).
     depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     broader: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    # The same concept elsewhere (TASKS 8.11): skos:exactMatch, owl:sameAs, Wikidata P486.
+    exact_matches: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
     fetched_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
     due_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
 

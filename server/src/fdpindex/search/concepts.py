@@ -69,6 +69,18 @@ log = structlog.get_logger(__name__)
 BATCH = 100
 MAX_SYNONYMS = 12
 MAX_BROADER = 8
+MAX_MATCHES = 8
+# Which IRI of a group of equivalent concepts represents it: domain vocabularies first
+# (their labels read as terms: "Dementia"), Wikidata last ("dementia").
+_PREFERRED_HOSTS = (
+    "id.nlm.nih.gov",
+    "purl.obolibrary.org",
+    "edamontology.org",
+    "www.ebi.ac.uk",
+    "ror.org",
+    "orcid.org",
+    "publications.europa.eu",
+)
 ACCEPT_RDF = (
     "text/turtle, application/rdf+xml;q=0.9, application/n-triples;q=0.8, "
     "application/ld+json;q=0.7, text/xml;q=0.5"
@@ -390,6 +402,29 @@ class ConceptResolver:
                 if isinstance(value, dict) and str(value.get("id", "")).startswith("Q"):
                     result.names.broader.append(f"http://www.wikidata.org/entity/{value['id']}")
             await asyncio.sleep(1 / self.settings.requests_per_second)
+        # The MeSH descriptor of the item (P486): the same concept in MeSH (TASKS 8.11).
+        for iri, result in results.items():
+            if result.status is not ConceptStatus.RESOLVED:
+                continue
+            url = (
+                "https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json"
+                f"&property=P486&entity={items[iri]}"
+            )
+            try:
+                status, _, body = await self._get(
+                    url, accept="application/json", host="www.wikidata.org"
+                )
+                claims = json.loads(body).get("claims", {}).get("P486", []) if status == 200 else []
+            except _Throttled as throttled:
+                self._pause(throttled)
+                break
+            except (OutboundError, ValueError):
+                claims = []
+            for claim in claims[:MAX_MATCHES]:
+                value = ((claim.get("mainsnak") or {}).get("datavalue") or {}).get("value")
+                if isinstance(value, str) and re.fullmatch(r"[A-Z]\d{6,9}", value):
+                    result.names.matches.append(f"http://id.nlm.nih.gov/mesh/{value}")
+            await asyncio.sleep(1 / self.settings.requests_per_second)
         return results
 
     async def _ror(self, iri: str) -> Resolution:
@@ -511,6 +546,10 @@ class ConceptResolver:
                     if broader != row.broader:
                         changed.add(concept.iri)
                     row.broader = broader
+                    matches = list(dict.fromkeys(result.names.matches))[:MAX_MATCHES]
+                    if matches != (row.exact_matches or []):
+                        changed.add(concept.iri)
+                    row.exact_matches = matches
                     days = (
                         self.settings.refresh_days
                         if result.status is ConceptStatus.RESOLVED
@@ -563,6 +602,98 @@ class ConceptResolver:
 # --- reading -------------------------------------------------------------------------
 
 
+@dataclass
+class ConceptGroups:
+    """Equivalent concepts (TASKS 8.11): each IRI's representative, and each group."""
+
+    canonical: dict[str, str] = field(default_factory=lambda: {})
+    members: dict[str, list[str]] = field(default_factory=lambda: {})
+
+    def of(self, iri: str) -> str:
+        return self.canonical.get(iri, iri)
+
+
+def _rank(iri: str, depth: int) -> tuple[int, int, str]:
+    host = urlsplit(iri).hostname or ""
+    preferred = _PREFERRED_HOSTS.index(host) if host in _PREFERRED_HOSTS else len(_PREFERRED_HOSTS)
+    return (depth, preferred, iri)
+
+
+async def concept_parents(session: AsyncSession, groups: ConceptGroups) -> dict[str, list[str]]:
+    """Each concept's broader concepts, as groups' representatives (TASKS 8.12)."""
+    parents: dict[str, list[str]] = {}
+    for iri, broader in (await session.execute(select(Concept.iri, Concept.broader))).all():
+        node = groups.of(str(iri))
+        ups = parents.setdefault(node, [])
+        for parent in broader or []:
+            up = groups.of(str(parent))
+            if up != node and up not in ups:
+                ups.append(up)
+    return parents
+
+
+def descendants(parents: Mapping[str, list[str]], iri: str, *, limit: int = 500) -> list[str]:
+    """``iri`` and every concept below it, nearest first."""
+    children: dict[str, list[str]] = {}
+    for child, ups in parents.items():
+        for up in ups:
+            children.setdefault(up, []).append(child)
+    found, frontier = [iri], [iri]
+    seen = {iri}
+    while frontier and len(found) < limit:
+        nxt: list[str] = []
+        for node in frontier:
+            for child in sorted(children.get(node, [])):
+                if child not in seen:
+                    seen.add(child)
+                    found.append(child)
+                    nxt.append(child)
+        frontier = nxt
+    return found[:limit]
+
+
+async def concept_groups(session: AsyncSession) -> ConceptGroups:
+    """Group concepts linked by exact matches, either way round (union-find).
+
+    A group's representative is one of its known concepts: those used as
+    values first (depth 0), then by vocabulary preference. A match to an IRI
+    the index has not seen joins the group but never represents it.
+    """
+    rows = (await session.execute(select(Concept.iri, Concept.exact_matches, Concept.depth))).all()
+    linked = [
+        (str(iri), [str(m) for m in matches or []], int(depth)) for iri, matches, depth in rows
+    ]
+    if not any(matches for _, matches, _ in linked):
+        return ConceptGroups()
+    known = {iri: depth for iri, _, depth in linked}
+    parent: dict[str, str] = {}
+
+    def find(iri: str) -> str:
+        parent.setdefault(iri, iri)
+        while parent[iri] != iri:
+            parent[iri] = parent[parent[iri]]
+            iri = parent[iri]
+        return iri
+
+    for iri, matches, _ in linked:
+        for match in matches:
+            parent[find(iri)] = find(match)
+    groups: dict[str, list[str]] = {}
+    for iri in list(parent):
+        groups.setdefault(find(iri), []).append(iri)
+    result = ConceptGroups()
+    for members in groups.values():
+        candidates = [m for m in members if m in known]
+        if len(members) < 2 or not candidates:
+            continue
+        representative = min(candidates, key=lambda m: _rank(m, known[m]))
+        ordered = sorted(members)
+        for member in members:
+            result.canonical[member] = representative
+        result.members[representative] = ordered
+    return result
+
+
 async def concept_texts(
     session: AsyncSession, iris: Iterable[str], *, depth: int = 2
 ) -> dict[str, ConceptText]:
@@ -598,8 +729,9 @@ async def concept_texts(
             break
         level = await load(level)
 
-    def ancestors(iri: str) -> list[tuple[str, str]]:
+    def ancestors(iri: str) -> tuple[list[tuple[str, str]], list[str]]:
         found: list[tuple[str, str]] = []
+        iris: list[str] = []
         frontier, seen = [iri], {iri}
         for _ in range(depth):
             nxt: list[str] = []
@@ -613,14 +745,16 @@ async def concept_texts(
                     chosen = pick_language(labels.get(parent, {}), "en")
                     if chosen is not None:
                         found.append(chosen)
+                        iris.append(parent)
             frontier = nxt
-        return found
+        return found, iris
 
     return {
         iri: ConceptText(
             labels=labels.get(iri, {}),
             synonyms=synonyms.get(iri, {}),
-            broader=ancestors(iri),
+            broader=(up := ancestors(iri))[0],
+            ancestors=up[1],
         )
         for iri in wanted
         if iri in labels or iri in synonyms

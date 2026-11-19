@@ -93,6 +93,8 @@ export interface FacetInfo {
   help: Record<string, string>;
   group: "main" | "more";
   kind: string;
+  /** Fields with a hierarchy (Subject): the filter for "this or narrower", e.g. `subject^`. */
+  hierarchy?: string;
   /** Property facets: the property and its prefixed name, when it has one. */
   property?: string;
   curie?: string | null;
@@ -118,6 +120,14 @@ export function propertyLabel(name: string): string {
     .replace(/[_-]+/g, " ")
     .trim();
   return words ? words[0]!.toUpperCase() + words.slice(1).toLowerCase() : iri;
+}
+
+/** A concept in a facet tree, counting resources tagged with it or anything narrower. */
+export interface TreeNode {
+  value: string;
+  label: string;
+  count: number;
+  children: TreeNode[];
 }
 
 /** `GET /index/search/suggest`: what the search box offers while typing. */
@@ -237,6 +247,17 @@ export const searchApi = {
     query.set("field", field);
     if (contains) query.set("contains", contains);
     return request<FacetResult>(`/index/search/facets?${query}`);
+  },
+  tree: (field: string, params: URLSearchParams) => {
+    const query = new URLSearchParams(params);
+    for (const key of ["page", "size", "sort", "facets", "facetSize", "highlight"])
+      query.delete(key);
+    query.set("field", field);
+    query.set("tree", "true");
+    query.set("size", "1000");
+    return request<{ tree: TreeNode[]; filter: string; approximate?: boolean }>(
+      `/index/search/facets?${query}`,
+    );
   },
   sparql: (params: URLSearchParams) => request<SearchSparql>(`/index/search/sparql?${params}`),
   landing: () => request<Landing>("/index/search/landing"),

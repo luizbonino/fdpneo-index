@@ -48,6 +48,7 @@ import FacetGroup from "@/components/search/FacetGroup.vue";
 import FacetDialog from "@/components/search/FacetDialog.vue";
 import AddFacetDialog from "@/components/search/AddFacetDialog.vue";
 import SuggestBox from "@/components/search/SuggestBox.vue";
+import FacetTreeDialog from "@/components/search/FacetTreeDialog.vue";
 import ResourceCard from "@/components/search/ResourceCard.vue";
 import HelpTip from "@/components/HelpTip.vue";
 import { useServiceInfo } from "@/composables/queries";
@@ -65,7 +66,10 @@ const landing = useQuery({
   staleTime: 60_000,
 });
 const facetInfo = computed(() => landing.data.value?.facets ?? []);
-const facetNames = computed(() => facetInfo.value.map((f) => f.name));
+const facetNames = computed(() => [
+  ...facetInfo.value.map((f) => f.name),
+  ...facetInfo.value.flatMap((f) => (f.hierarchy ? [f.hierarchy] : [])),
+]);
 
 const state = computed<SearchState>(() => fromQuery(route.query, facetNames.value));
 
@@ -170,6 +174,8 @@ function label(record: Record<string, string> | undefined, fallback: string): st
 function facetTitle(name: string): string {
   if (name === "fdp") return t("search.fdpFacet");
   if (name === "type") return t("search.typeFacet");
+  const tree = facetInfo.value.find((f) => f.hierarchy === name);
+  if (tree) return t("search.tree.orNarrower", { name: facetTitle(tree.name) });
   const info = facetInfo.value.find((f) => f.name === name);
   return label(info?.label, isPropertyFacet(name) ? propertyLabel(name) : name);
 }
@@ -193,6 +199,10 @@ function selected(name: string): string[] {
 }
 
 const dialogFacet = ref<string | null>(null);
+const treeFacet = ref<string | null>(null);
+const treeFilter = computed(
+  () => facetInfo.value.find((f) => f.name === treeFacet.value)?.hierarchy ?? "",
+);
 
 // --- tabs, chips, sort, paging -----------------------------------------------------
 
@@ -397,6 +407,15 @@ const counters = computed(() => {
           @clear="go(clearFacet(state, facet.name))"
           @more="dialogFacet = facet.name"
         />
+        <button
+          v-for="facet in mainFacets.filter((f) => f.hierarchy)"
+          :key="`tree-${facet.name}`"
+          type="button"
+          class="btn ghost sm tree-link"
+          @click="treeFacet = facet.name"
+        >
+          {{ t("search.tree.browse", { name: facetTitle(facet.name) }) }}
+        </button>
         <FacetGroup
           v-for="name in state.added"
           :key="name"
@@ -589,6 +608,15 @@ const counters = computed(() => {
       @toggle="(value) => dialogFacet && go(toggle(state, dialogFacet, value))"
       @close="dialogFacet = null"
     />
+    <FacetTreeDialog
+      v-if="treeFacet"
+      :name="treeFacet"
+      :title="facetTitle(treeFacet)"
+      :params="params"
+      :selected="selected(treeFilter)"
+      @toggle="(value) => go(toggle(state, treeFilter, value))"
+      @close="treeFacet = null"
+    />
     <AddFacetDialog
       v-if="adding"
       :types="addTypes"
@@ -762,7 +790,8 @@ const counters = computed(() => {
 .add-facet {
   margin-top: var(--fair-space-2);
 }
-.add-facet {
+.add-facet,
+.tree-link {
   display: block;
 }
 .results {

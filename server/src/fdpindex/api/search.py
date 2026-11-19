@@ -54,6 +54,7 @@ RESERVED = {
     "facets",
     "facetSize",
     "highlight",
+    "tree",
     "field",
     "contains",
 }
@@ -108,7 +109,11 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
     filters = {
         name: [v for v in query.getlist(name) if v]
         for name in dict.fromkeys(
-            [*service.profile.facets, *(k for k in query if k.startswith(PROPERTY_FACET))]
+            [
+                *service.profile.facets,
+                *service.profile.hierarchies,
+                *(k for k in query if k.startswith(PROPERTY_FACET)),
+            ]
         )
         if query.getlist(name)
     }
@@ -198,10 +203,16 @@ async def facet(
     contains: str = "",
     size: Annotated[int, Query(ge=1, le=1000)] = 200,
     lang: str | None = None,
+    tree: bool = False,
 ) -> dict[str, Any]:
+    """All buckets of one facet. With `tree=true` for a field with a hierarchy
+    (Subject): `tree`, nested by broader concepts, each counting resources tagged
+    with it or anything narrower; filter on them with `<field>^`."""
     _limit(request, caller)
     params = _params(request, service, _language(request, lang))
-    return await service.facet(params, field, contains=contains, size=size, admin=caller.is_admin)
+    return await service.facet(
+        params, field, contains=contains, size=size, admin=caller.is_admin, tree=tree
+    )
 
 
 @router.get("/index/search/sparql", summary="A faceted search as SPARQL")

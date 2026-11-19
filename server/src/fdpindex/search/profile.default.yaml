@@ -73,6 +73,8 @@ fields:
     paths: [dcat:theme, dct:subject]
     literals: false
     exclude: ["eu-theme:"]
+    equivalents: true  # MeSH "Dementia" and Wikidata "dementia" are one subject
+    hierarchy: true  # Neoplasms › Breast Neoplasms (from the concepts' broader terms)
     facet: main
     weight: B
     label: {en: Subject}

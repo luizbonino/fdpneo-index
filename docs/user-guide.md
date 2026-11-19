@@ -48,7 +48,11 @@ the results; click it to remove it.
 
 - **Theme**: the 13 broad EU data themes, such as Health.
 - **Subject**: specific topics from vocabularies like MeSH, Wikidata or
-  EDAM.
+  EDAM. The same topic from two vocabularies is one entry when a
+  vocabulary says they match (Wikidata's *dementia* is MeSH's *Dementia*).
+  **Browse Subject as a tree** shows each subject under its broader ones;
+  ticking one there finds it and everything narrower (*Neoplasms by Site*
+  includes *Breast Neoplasms*).
 - **Keyword**, **Publisher**, **Format**, **Licence**, **Access rights**,
   **FAIR Data Point**, and more under **More filters**.
 - **+ Add a filter**: any property found in the metadata, most used first

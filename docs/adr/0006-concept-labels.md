@@ -83,3 +83,18 @@ dereference to HTML.
 - Wikidata answers in the configured languages only
   (`FDPINDEX_LABELS_LANGUAGES`). Other vocabularies' labels are kept in those
   languages plus untagged ones.
+
+## Amendment (19 November 2026): equivalent concepts (TASKS 8.11)
+
+The same topic often comes from two vocabularies: Wikidata's *dementia* and
+MeSH's *Dementia*. The resolver now also records exact matches:
+`skos:exactMatch` and `owl:sameAs` in RDF, and an item's MeSH descriptor
+(Wikidata P486). Concepts linked either way round form a group; a profile
+field with `equivalents: true` (Subject, in the bundled profile) stores a
+group as one value, its representative. The representative is a concept the
+index knows, preferring one used as a value, then a domain vocabulary over
+Wikidata, then the IRI's order. A filter on any member applies to the group,
+and the SPARQL translation asks for every member. The names of every member
+stay in the search text. Migration 0009 adds `concept.exact_matches` and
+makes resolved concepts due again, so existing indexes learn their matches.
+

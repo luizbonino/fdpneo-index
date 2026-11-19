@@ -29,7 +29,7 @@ import copy
 import re
 import time
 from collections import Counter, defaultdict
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -73,7 +73,13 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
-from fdpindex.search.concepts import concept_stats
+from fdpindex.search.concepts import (
+    ConceptGroups,
+    concept_groups,
+    concept_parents,
+    concept_stats,
+    descendants,
+)
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
 from fdpindex.search.profile_store import ProfileStore
 from fdpindex.search.project import (
@@ -235,7 +241,7 @@ class SearchParams:
             raise BadRequest(f"Unknown type: {', '.join(unknown)}")
         if not self.types:
             self.types = list(DEFAULT_TYPES)
-        facets = set(profile.facets) | properties
+        facets = set(profile.facets) | properties | set(profile.hierarchies)
         if self.facets is None:
             self.facets = list(DEFAULT_FACETS)
         for name, values in self.filters.items():
@@ -345,6 +351,7 @@ class SearchService:
         self._max_page_percent = max_page_percent
         self._facet_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
         self._hide_expired = False
+        self._concept_groups: tuple[float, ConceptGroups] | None = None
 
     # --- sessions ----------------------------------------------------------------
 
@@ -426,8 +433,34 @@ class SearchService:
 
         params.filters = {resolve(k): v for k, v in params.filters.items()}
         params.facets = [resolve(n) for n in params.facets]
+        merged = [
+            n
+            for n in params.filters
+            if (spec := self.profile.fields.get(self.profile.hierarchies.get(n, n))) is not None
+            and spec.equivalents
+        ]
+        if merged:
+            # A filter on any member of a group of equivalent concepts is the group's.
+            groups = await self._groups()
+            for name in merged:
+                params.filters[name] = list(
+                    dict.fromkeys(
+                        ("!" + groups.of(v[1:])) if v.startswith("!") else groups.of(v)
+                        for v in params.filters[name]
+                    )
+                )
         params.validate(self.profile, frozenset(names))
         return names
+
+    async def _groups(self) -> ConceptGroups:
+        """Groups of equivalent concepts (TASKS 8.11), read at most once a minute."""
+        cached = self._concept_groups
+        if cached is not None and time.monotonic() - cached[0] < 60:
+            return cached[1]
+        async with self._session_factory() as session:
+            groups = await concept_groups(session)
+        self._concept_groups = (time.monotonic(), groups)
+        return groups
 
     @staticmethod
     def _open(settings: SearchSettings, name: str, iri: str) -> bool:
@@ -690,8 +723,19 @@ class SearchService:
         contains: str = "",
         size: int = 200,
         admin: bool = False,
+        tree: bool = False,
     ) -> dict[str, Any]:
-        """One facet's buckets beyond the top ones, for the "show more" dialog."""
+        """One facet's buckets beyond the top ones, for the "show more" dialog.
+
+        With ``tree`` (fields with ``hierarchy``, TASKS 8.12): the concepts and their
+        broader ones as a tree, each counting the resources tagged with it or with
+        anything narrower; their filter is ``<name>^``.
+        """
+        if tree:
+            spec = self.profile.fields.get(name)
+            if spec is None or not spec.hierarchy:
+                raise BadRequest(f"{name} has no hierarchy")
+            name = f"{name}^"
         params.facets = [name]
         await self._prepare(params, admin=admin)
         name = params.facets[0]
@@ -719,6 +763,11 @@ class SearchService:
                     if needle in b["value"].lower() or needle in str(b["label"]).lower()
                 ]
             result["buckets"] = result["buckets"][: max(1, min(size, 1000))]
+            if tree:
+                groups = await self._groups()
+                parents = await concept_parents(session, groups)
+                result["filter"] = name
+                result["tree"] = _tree(result.pop("buckets"), parents)
             return result
 
         return await self._run(admin, work)
@@ -728,6 +777,21 @@ class SearchService:
         params.facets = []
         names = await self._prepare(params, admin=admin)
         properties = {key: name.removeprefix(PROPERTY_FACET) for key, name in names.items()}
+        hierarchies = {n: b for n, b in self.profile.hierarchies.items() if n in params.filters}
+        if hierarchies:
+            # "This concept or a narrower one": the store has no broader links, so the
+            # concept and those the index knows below it (TASKS 8.12).
+            async with self._session_factory() as session:
+                parents = await concept_parents(session, await self._groups())
+            for name, base in hierarchies.items():
+                expanded = [
+                    ("!" + d) if v.startswith("!") else d
+                    for v in params.filters.pop(name)
+                    for d in descendants(parents, v.lstrip("!"))
+                ]
+                params.filters[base] = list(
+                    dict.fromkeys([*params.filters.get(base, []), *expanded])
+                )
         graphs: dict[UUID, str] = {}
         if params.fdps:
             async with self._session_factory() as session:
@@ -737,7 +801,12 @@ class SearchService:
                     query = query.where(E.permit == EntryPermit.ACCEPTED)
                 graphs = {uuid: str(url) for uuid, url in (await session.execute(query)).all()}
         return to_sparql(
-            params, self.profile, graphs, default_types=DEFAULT_TYPES, properties=properties
+            params,
+            self.profile,
+            graphs,
+            default_types=DEFAULT_TYPES,
+            properties=properties,
+            equivalents=(await self._groups()).members,
         )
 
     async def _facet(
@@ -1360,6 +1429,8 @@ class SearchService:
             spec = self.profile.fields.get(facet.name)
             if spec is not None:
                 view |= {"label": spec.label, "help": spec.help, "kind": spec.kind}
+                if spec.hierarchy:
+                    view["hierarchy"] = f"{facet.name}^"
             elif facet.name == "fdp":
                 view |= {"label": {}, "help": {}, "kind": "fdp"}
             else:
@@ -1613,6 +1684,37 @@ class SearchService:
                 for uuid, url, n, avg in per_entry
             ],
         }
+
+
+def _tree(buckets: list[dict[str, Any]], parents: Mapping[str, list[str]]) -> list[dict[str, Any]]:
+    """Buckets as a tree: each under its nearest broader concept that is a bucket too."""
+    nodes = {b["value"]: {**b, "children": []} for b in buckets}
+
+    def placed_under(value: str) -> str | None:
+        frontier, seen = list(parents.get(value, [])), {value}
+        while frontier:
+            nxt: list[str] = []
+            for up in frontier:
+                if up in nodes:
+                    return up
+                if up not in seen:
+                    seen.add(up)
+                    nxt.extend(parents.get(up, []))
+            frontier = nxt
+        return None
+
+    roots: list[dict[str, Any]] = []
+    for value, node in nodes.items():
+        parent = placed_under(value)
+        (nodes[parent]["children"] if parent is not None else roots).append(node)
+
+    def order(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        items.sort(key=lambda n: (-int(n["count"]), str(n["label"]).lower()))
+        for item in items:
+            order(item["children"])
+        return items
+
+    return order(roots)
 
 
 SUGGEST_TITLES = 5

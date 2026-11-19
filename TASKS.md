@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-84 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
+86 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -29,12 +29,12 @@ task are listed in the last column.
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 4/4 | – | – | ✅ Done | – |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
-| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 5/13 | 1 | 7 | 🔹 Started | Temporal (8.3) and spatial (8.4) facets, numeric and boolean facets (8.5), multilingual display (8.7), duplicates (8.8), keyboard and screen-reader pass (8.9), merged and hierarchical subjects (8.11, 8.12) |
+| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 7/13 | 1 | 5 | 🔹 Started | Temporal (8.3) and spatial (8.4) facets, numeric and boolean facets (8.5), multilingual display (8.7), duplicates (8.8), keyboard and screen-reader pass (8.9) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 2 | 6 | 🔹 Started | All but 9.9 (done), and the capture of 9.2 and profile facets of 9.3 (done with 8.13 and 6.12) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **84/115** | **3** | **28** | | |
+| **Total** | | **86/115** | **3** | **26** | | |
 
 ## Phase 0 — Foundations
 
@@ -167,8 +167,8 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 8.8 Cross-FDP duplicates: `dedup_key` (DOI, identifiers, `owl:sameAs`, landing page), `duplicates` on hits, `collapse=true`, "also in n other FDPs" on cards
 - [~] 8.9 Client polish: active-filter chips, "show more" facet dialog, "more facets", copy link, empty and busy states, keyboard and screen-reader pass — *done with 6.13 except the keyboard and screen-reader pass*
 - [x] 8.10 Theme and Subject facets split by vocabulary: Theme holds the EU data themes, Subject every other concept (MeSH, Wikidata, EDAM …), from `dcat:theme` and `dct:subject` alike; profile option `namespaces` / `exclude` — *done*
-- [ ] 8.11 One Subject entry per topic across vocabularies: merge concepts linked by `skos:exactMatch` or Wikidata's MeSH ID (P486)
-- [ ] 8.12 Subject as a hierarchy in the client, from the broader concepts the resolver stores
+- [x] 8.11 One Subject entry per topic across vocabularies: merge concepts linked by `skos:exactMatch` or Wikidata's MeSH ID (P486) — *done (ADR-0006 amended): matches recorded by the resolver, groups by union-find, one representative per group in fields with `equivalents`, filters and SPARQL follow the group*
+- [x] 8.12 Subject as a hierarchy in the client, from the broader concepts the resolver stores — *done: fields with `hierarchy` store each value with its broader concepts in `<field>^`; `GET /index/search/facets?field=subject&tree=true` nests them with counts that include everything narrower; `subject^=<IRI>` filters on "this or narrower" (SPARQL: the concept and those known below it); "Browse Subject as a tree" dialog*
 - [x] 8.13 Facets chosen by readers and administrators: visitors add a filter on any property of the harvested metadata ("+ Add a filter", `prop:<IRI>`, kept in the URL and remembered in the browser); administrators set the default facets (order; main, more or hidden; labels), make properties default facets, and decide whether visitors may add filters and on which properties (`GET`/`PUT`/`DELETE /index/search/settings`, Settings page) — *done*
 
 ### Phase 9 — Expert and machine access

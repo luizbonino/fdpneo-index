@@ -187,9 +187,69 @@ class ConceptText:
     labels: dict[str, str]
     synonyms: dict[str, list[str]]
     broader: list[tuple[str, str]]
+    # The broader concepts' IRIs, nearest first (TASKS 8.12).
+    ancestors: list[str] = field(default_factory=lambda: [])
 
 
 _ONE_LOWER = {"A": "B", "B": "C", "C": "D", "D": "D"}
+
+
+HIERARCHY_SUFFIX = "^"
+
+
+def add_ancestors(
+    projection: EntryProjection,
+    concepts: Mapping[str, ConceptText],
+    canonical: Mapping[str, str],
+    profile: Profile,
+) -> None:
+    """For fields with ``hierarchy``, store each value and its broader concepts in the
+    companion field ``<name>^`` (TASKS 8.12): counting a concept there counts the
+    resources tagged with it or with anything narrower. Runs after
+    :func:`merge_equivalents`; ancestors are mapped to their groups too.
+    """
+    fields = {name for name, spec in profile.fields.items() if spec.hierarchy}
+    if not fields:
+        return
+    by_canonical: dict[str, ConceptText] = {}
+    for iri, concept in concepts.items():
+        by_canonical.setdefault(canonical.get(iri, iri), concept)
+    for row in projection.resources:
+        extra: list[Value] = []
+        for value in row.values:
+            if value.field not in fields:
+                continue
+            companion = value.field + HIERARCHY_SUFFIX
+            extra.append(Value(companion, value.value))
+            concept = by_canonical.get(value.value) or concepts.get(value.value)
+            for ancestor in concept.ancestors if concept is not None else []:
+                extra.append(Value(companion, canonical.get(ancestor, ancestor)))
+        if extra:
+            row.values = _dedupe(row.values + extra)
+
+
+def merge_equivalents(
+    projection: EntryProjection, canonical: Mapping[str, str], profile: Profile
+) -> None:
+    """Store equivalent concepts as their group's representative (TASKS 8.11).
+
+    Only in fields with ``equivalents``; a resource tagged with both the
+    Wikidata item and the MeSH descriptor gets one value. Their names were
+    added to the text before (``enrich``), so every name still finds it.
+    """
+    fields = {name for name, spec in profile.fields.items() if spec.equivalents}
+    if not fields or not canonical:
+        return
+    for row in projection.resources:
+        changed = False
+        values: list[Value] = []
+        for value in row.values:
+            if value.field in fields and value.value in canonical:
+                value = Value(value.field, canonical[value.value], value.lang)
+                changed = True
+            values.append(value)
+        if changed:
+            row.values = _dedupe(values)
 
 
 def enrich(

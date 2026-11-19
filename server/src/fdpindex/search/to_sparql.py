@@ -229,6 +229,7 @@ def to_sparql(
     *,
     default_types: Iterable[str],
     properties: Mapping[str, str] | None = None,
+    equivalents: Mapping[str, list[str]] | None = None,
 ) -> dict[str, Any]:
     """``{"query", "prefixes", "approximation"}`` for validated search parameters.
 
@@ -237,6 +238,7 @@ def to_sparql(
     ``properties`` maps the ``p:`` fields of property facets to their IRIs.
     """
     properties = properties or {}
+    w_equivalents = equivalents or {}
     w = _Writer(profile)
     graph: list[str] = []
     outer: list[str] = []
@@ -266,6 +268,10 @@ def to_sparql(
         wanted = [v for v in values if not v.startswith("!")]
         unwanted = [v[1:] for v in values if v.startswith("!")]
         pattern = f"?resource {path} {var}"
+        if spec.equivalents:
+            # The index stores a group of equivalent concepts as one; the store has each.
+            wanted = [m for v in wanted for m in w_equivalents.get(v, [v])]
+            unwanted = [m for v in unwanted for m in w_equivalents.get(v, [v])]
         if wanted:
             graph.append(_exists(pattern, _value_condition(w, spec, wanted, var)))
         if unwanted:

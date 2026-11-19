@@ -2678,6 +2678,7 @@
     },
     "/index/search/facets": {
       "get": {
+        "description": "All buckets of one facet. With `tree=true` for a field with a hierarchy\n(Subject): `tree`, nested by broader concepts, each counting resources tagged\nwith it or anything narrower; filter on them with `<field>^`.",
         "operationId": "facet_index_search_facets_get",
         "parameters": [
           {
@@ -2725,6 +2726,16 @@
                 }
               ],
               "title": "Lang"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tree",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Tree",
+              "type": "boolean"
             }
           }
         ],

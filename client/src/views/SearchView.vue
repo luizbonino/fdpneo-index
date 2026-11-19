@@ -189,13 +189,25 @@ const languageNames = computed(() => {
   }));
 });
 
+// The server counts at most 24 facets per request: the first ones come with the
+// results, the rest (many "more" filters, as with the HealthDCAT-AP profile) in a
+// second request for one hit, and their counts are merged.
+const FACETS_PER_REQUEST = 24;
 const params = computed(() =>
   apiParams(state.value, {
-    facets: requested.value,
+    facets: requested.value.slice(0, FACETS_PER_REQUEST),
     highlight: true,
     lang: contentLang.value || undefined,
   }),
 );
+const restParams = computed(() => {
+  const rest = requested.value.slice(FACETS_PER_REQUEST);
+  if (!rest.length) return null;
+  return apiParams(
+    { ...state.value, page: 1 },
+    { facets: rest.slice(0, FACETS_PER_REQUEST), size: 1, lang: contentLang.value || undefined },
+  );
+});
 const results = useQuery({
   queryKey: computed(() => ["search", params.value.toString(), session.isAdmin]),
   queryFn: () => searchApi.search(params.value),
@@ -204,6 +216,16 @@ const results = useQuery({
   retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 1,
 });
 const data = computed(() => results.data.value);
+const rest = useQuery({
+  queryKey: computed(() => ["search-facets", restParams.value?.toString() ?? "", session.isAdmin]),
+  queryFn: () => searchApi.search(restParams.value!),
+  placeholderData: keepPreviousData,
+  enabled: computed(() => landing.isSuccess.value && restParams.value !== null),
+});
+const facetResults = computed(() => ({
+  ...(data.value?.facets ?? {}),
+  ...(restParams.value ? (rest.data.value?.facets ?? {}) : {}),
+}));
 
 function label(record: Record<string, string> | undefined, fallback: string): string {
   return record?.en ?? Object.values(record ?? {})[0] ?? fallback;
@@ -256,7 +278,7 @@ const typeCounts = computed(() => {
 
 const labelCache = computed(() => {
   const map = new Map<string, string>();
-  for (const [name, facet] of Object.entries(data.value?.facets ?? {})) {
+  for (const [name, facet] of Object.entries(facetResults.value)) {
     for (const bucket of facet.buckets) map.set(`${name}\u0000${bucket.value}`, bucket.label);
   }
   return map;
@@ -267,7 +289,7 @@ function chipLabel(chip: Chip): string {
     const [min, max] = chip.value.split("..");
     return `${facetTitle(chip.name)}: ${min || "…"} – ${max || "…"}`;
   }
-  if (data.value?.facets[chip.name]?.kind === "boolean") {
+  if (facetResults.value[chip.name]?.kind === "boolean") {
     return `${facetTitle(chip.name)}: ${chip.value === "true" ? t("search.yes") : t("search.no")}`;
   }
   if (chip.name === "temporal") {
@@ -469,11 +491,11 @@ const counters = computed(() => {
           :title="facetTitle(facet.name)"
           :subtitle="facetSubtitle(facet.name)"
           :help="facetHelp(facet.name)"
-          :buckets="data?.facets[facet.name]?.buckets ?? []"
-          :more="data?.facets[facet.name]?.more ?? false"
-          :approximate="data?.facets[facet.name]?.approximate ?? false"
+          :buckets="facetResults[facet.name]?.buckets ?? []"
+          :more="facetResults[facet.name]?.more ?? false"
+          :approximate="facetResults[facet.name]?.approximate ?? false"
           :selected="selected(facet.name)"
-          :kind="data?.facets[facet.name]?.kind"
+          :kind="facetResults[facet.name]?.kind"
           :range="state.numbers[facet.name]"
           @toggle="(value) => go(toggle(state, facet.name, value))"
           @clear="go(clearFacet(state, facet.name))"
@@ -495,9 +517,9 @@ const counters = computed(() => {
           :name="name"
           :title="facetTitle(name)"
           :subtitle="facetSubtitle(name)"
-          :buckets="data?.facets[name]?.buckets ?? []"
-          :more="data?.facets[name]?.more ?? false"
-          :approximate="data?.facets[name]?.approximate ?? false"
+          :buckets="facetResults[name]?.buckets ?? []"
+          :more="facetResults[name]?.more ?? false"
+          :approximate="facetResults[name]?.approximate ?? false"
           :selected="selected(name)"
           removable
           @toggle="(value) => go(toggle(state, name, value))"
@@ -584,11 +606,11 @@ const counters = computed(() => {
             :name="facet.name"
             :title="facetTitle(facet.name)"
             :help="facetHelp(facet.name)"
-            :buckets="data?.facets[facet.name]?.buckets ?? []"
-            :more="data?.facets[facet.name]?.more ?? false"
-            :approximate="data?.facets[facet.name]?.approximate ?? false"
+            :buckets="facetResults[facet.name]?.buckets ?? []"
+            :more="facetResults[facet.name]?.more ?? false"
+            :approximate="facetResults[facet.name]?.approximate ?? false"
             :selected="selected(facet.name)"
-            :kind="data?.facets[facet.name]?.kind"
+            :kind="facetResults[facet.name]?.kind"
             :range="state.numbers[facet.name]"
             @toggle="(value) => go(toggle(state, facet.name, value))"
             @clear="go(clearFacet(state, facet.name))"

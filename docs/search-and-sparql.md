@@ -37,6 +37,16 @@ as text (`"NL"`, `"NLD"`). The mapping is part of the label pack, from
 GeoNames' country list (CC BY 4.0). Other GeoNames places keep one form and
 get their names from the concept resolver, as do the EU's 4 700 places.
 
+Copies of a resource in several FDPs are recognised by one key per
+dataset, series, service or catalog: the strongest identifier it states,
+in this order: a DOI wherever it appears; a global identifier IRI or URN
+(`dct:identifier`, `adms:identifier`); the target of `owl:sameAs`, so a
+mirror that names its original groups with it; and its own IRI. Landing
+pages and local identifiers ("dataset-1") are not used. Hits carry their
+copies (`duplicates`, `duplicateCount`); `collapse=true` keeps the
+best-placed copy of each group, `totalResults` then counts groups and
+`resources` the resources.
+
 Temporal coverage (`dct:temporal`) is read in every form FDPs use: a
 period with `dcat:startDate`/`dcat:endDate` (DCAT 2 and 3),
 `schema:startDate`/`schema:endDate` (DCAT 1, DCAT-AP 1.x), OWL-Time

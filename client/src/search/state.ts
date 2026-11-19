@@ -32,6 +32,8 @@ export interface SearchState {
   /** Number fields within bounds, as `<name>Min`/`<name>Max` (TASKS 8.5). */
   numbers: Record<string, { min: string; max: string }>;
   active: boolean;
+  /** One hit per group of copies across FDPs (`collapse=true`, TASKS 8.8). */
+  collapse: boolean;
   sort: string;
   page: number;
   /** Property facets the reader added (`prop:<IRI>`), in the order added. */
@@ -84,6 +86,7 @@ export function fromQuery(query: LocationQuery, facets: string[]): SearchState {
     dates,
     numbers,
     active: one(query.fdpState) === "ACTIVE",
+    collapse: one(query.collapse) === "true",
     sort: (SORTS as readonly string[]).includes(one(query.sort)) ? one(query.sort) : "",
     page: Number.isFinite(page) && page > 0 ? page : 1,
     added,
@@ -108,6 +111,7 @@ export function toQuery(state: SearchState): LocationQueryRaw {
     if (range.max) query[`${name}Max`] = range.max;
   }
   if (state.active) query.fdpState = "ACTIVE";
+  if (state.collapse) query.collapse = "true";
   if (state.sort) query.sort = state.sort;
   if (state.page > 1) query.page = String(state.page);
   if (state.added.length) query.facet = [...state.added];
@@ -140,6 +144,7 @@ export function apiParams(
     if (range.max) params.set(`${name}Max`, range.max);
   }
   if (state.active) params.set("fdpState", "ACTIVE");
+  if (state.collapse) params.set("collapse", "true");
   if (state.sort) params.set("sort", sortParam(state.sort));
   params.set("page", String(state.page - 1));
   params.set("size", String(options.size ?? PAGE_SIZE));

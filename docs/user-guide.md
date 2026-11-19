@@ -81,7 +81,11 @@ with ≈.
 
 Each result shows its type, where it comes from (the FDP and the catalog),
 a description, its themes, subjects and keywords (click one to filter on
-it), the formats of its files and the period its data cover. **Open at source** goes to the
+it), the formats of its files and the period its data cover. When other
+FDPs list the same resource, **Also in n other FDPs** opens the list; the
+resource's page shows them under **Also published in**. **Group copies**
+shows such a resource once, as the copy the search ranks first; the count
+then says how many resources the groups stand for. **Open at source** goes to the
 resource on its FDP. A resource's own page shows every value, its parents
 and children, and its metadata as harvested (Turtle, JSON-LD or
 N-Triples).

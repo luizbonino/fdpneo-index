@@ -41,6 +41,7 @@ from sqlalchemy import (
     REAL,
     BigInteger,
     ColumnElement,
+    String,
     and_,
     any_,
     bindparam,
@@ -206,6 +207,7 @@ KIND_BOOST = {
 }
 RANK_WEIGHTS = "{0.1, 0.2, 0.4, 1.0}"  # D, C, B, A
 DISTRIBUTIONS_PER_HIT = 5
+MAX_DUPLICATES = 10
 
 
 class SearchBusy(IndexServiceError):
@@ -222,6 +224,8 @@ class SearchParams:
     ranges: dict[str, tuple[datetime | None, datetime | None]] = field(default_factory=lambda: {})
     # Temporal coverage overlapping these days (TASKS 8.3); None: no such filter.
     temporal: tuple[date | None, date | None] | None = None
+    # One hit per group of copies across FDPs, the best-placed one (TASKS 8.8).
+    collapse: bool = False
     # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
     numbers: dict[str, tuple[float | None, float | None]] = field(default_factory=lambda: {})
     fdp_state: str | None = None
@@ -674,6 +678,30 @@ class SearchService:
                 .limit(params.size)
             )
             bounded = score is not None and total > self._sample_above
+            collapsed_total: int | None = None
+            if params.collapse:
+                # Rank the matches within each group of copies, in the search's own order,
+                # and keep the first of each; counts stay counts of resources.
+                group = func.coalesce(R.dedup_key, cast(R.id, String))
+                ranked = (
+                    select(
+                        R.id.label("id"),
+                        func.row_number()
+                        .over(partition_by=group, order_by=self._order(params, score))
+                        .label("place"),
+                    )
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*known)
+                    .subquery()
+                )
+                query = query.where(R.id.in_(select(ranked.c.id).where(ranked.c.place == 1)))
+                groups = await session.scalar(
+                    select(func.count(func.distinct(group)))
+                    .select_from(R)
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*known)
+                )
+                collapsed_total = int(groups or 0)
             if bounded:
                 # Ranking every one of hundreds of thousands of matches takes seconds;
                 # rank the newest ones, walking ix_search_resource_recent.
@@ -690,6 +718,7 @@ class SearchService:
             hits = await self._hits(
                 session, rows, params, threshold, labels, scored=score is not None
             )
+            await self._duplicates(session, [row[0] for row in rows], hits, threshold)
             if params.highlight and params.q:
                 await self._highlight(session, hits, params, postgres=postgres)
             for hit in hits:
@@ -715,6 +744,7 @@ class SearchService:
                     "filters": {names.get(k, k): v for k, v in params.filters.items()},
                     "fdp": [str(u) for u in params.fdps],
                     "lang": params.lang,
+                    **({"collapse": True} if params.collapse else {}),
                     **(
                         {"temporal": _period_view(*params.temporal)}
                         if params.temporal is not None
@@ -722,7 +752,10 @@ class SearchService:
                     ),
                     "sort": params.sort or ("relevance" if params.q else "modified,desc"),
                 },
-                "totalResults": total,
+                # Collapsed: the number of groups, which is what the pages hold; the
+                # resources they stand for are in ``resources``.
+                "totalResults": total if collapsed_total is None else collapsed_total,
+                **({"resources": total} if collapsed_total is not None else {}),
                 "startIndex": params.page * params.size,
                 "itemsPerPage": params.size,
                 "page": params.page,
@@ -1244,6 +1277,47 @@ class SearchService:
             hits.append(hit)
         return hits
 
+    async def _duplicates(
+        self,
+        session: AsyncSession,
+        resources: Sequence[SearchResource],
+        views: list[dict[str, Any]],
+        threshold: datetime,
+    ) -> None:
+        """Add ``duplicates`` to each view: copies of it in other FDPs (TASKS 8.8)."""
+        keys = {r.dedup_key for r in resources if r.dedup_key}
+        found: dict[str, list[tuple[SearchResource, IndexEntry]]] = defaultdict(list)
+        if keys:
+            conditions = [R.dedup_key.in_(keys), E.permit == EntryPermit.ACCEPTED]
+            if self._hide_expired:
+                conditions.append(E.expired_at.is_(None))
+            for other, entry in (
+                await session.execute(
+                    select(R, E)
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*conditions)
+                    .order_by(R.completeness.desc(), R.id)
+                )
+            ).all():
+                found[other.dedup_key or ""].append((other, entry))
+        for resource, view in zip(resources, views, strict=True):
+            copies = [
+                (other, entry)
+                for other, entry in found.get(resource.dedup_key or "", [])
+                if other.entry_uuid != resource.entry_uuid
+            ]
+            view["duplicateCount"] = len(copies)
+            view["duplicates"] = [
+                {
+                    "id": other.public_id,
+                    "iri": other.iri,
+                    "type": other.kind,
+                    "title": other.title,
+                    "fdp": _fdp_view(entry, threshold),
+                }
+                for other, entry in copies[:MAX_DUPLICATES]
+            ]
+
     async def _highlight(
         self,
         session: AsyncSession,
@@ -1353,7 +1427,10 @@ class SearchService:
             await labels.load({v.value for v in values.get(resource.id, [])} | {resource.iri})
             title_lang, title = pick_language(resource.titles, lang) or ("", resource.title)
             description = pick_language(resource.descriptions, lang)
+            view: dict[str, Any] = {}
+            await self._duplicates(session, [resource], [view], threshold)
             return {
+                **view,
                 "id": resource.public_id,
                 "iri": resource.iri,
                 "type": resource.kind,

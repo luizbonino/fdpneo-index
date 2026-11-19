@@ -1306,3 +1306,40 @@ def test_number_ranges_and_examples_over_http(api: Api) -> None:
     assert listed == [{"name": "healthdcat-ap", "title": "HealthDCAT-AP"}]
     missing = api.client.get("/index/search/profile/examples/nope", headers=ADMIN)
     assert missing.status_code == 404
+
+
+# --- copies across FDPs (TASKS 8.8) ------------------------------------------------------
+
+
+async def test_copies_in_other_fdps(search: SearchService) -> None:
+    result = await search.search(SearchParams(types=["dataset"], facets=[], size=100))
+    hits = {h["title"]: h for h in result["hits"]}
+    # Beta's Genome cohort says it is (owl:sameAs) Alpha's Lung function tests.
+    lung, genome = hits["Lung function tests"], hits["Genome cohort"]
+    assert lung["duplicateCount"] == 1
+    assert lung["duplicates"][0]["iri"] == f"{BETA}/dataset/g"
+    assert lung["duplicates"][0]["fdp"]["title"] == "Beta FDP"
+    assert genome["duplicates"][0]["iri"] == f"{ALPHA}/dataset/d2"
+    assert hits["Breast cancer registry"]["duplicateCount"] == 0
+    collapsed = await search.search(
+        SearchParams(types=["dataset"], facets=[], size=100, collapse=True)
+    )
+    assert collapsed["totalResults"] == 2
+    assert collapsed["resources"] == 3
+    assert collapsed["query"]["collapse"] is True
+    titles = [h["title"] for h in collapsed["hits"]]
+    assert len(titles) == 2 and "Breast cancer registry" in titles
+    # The copy kept is the one the search places first: here, the newest.
+    assert "Lung function tests" in titles
+    # A search that matches only one copy keeps it.
+    only = await search.search(SearchParams(q="genome", types=["dataset"], collapse=True))
+    assert [h["title"] for h in only["hits"]] == ["Genome cohort"]
+    detail = await search.resource(lung["id"])
+    assert detail["duplicateCount"] == 1
+    translated = await search.sparql(SearchParams(types=["dataset"], collapse=True))
+    assert "collapse" in translated["approximation"]
+
+
+def test_collapse_over_http(api: Api) -> None:
+    body = api.client.get("/index/search", params={"type": "dataset", "collapse": "true"}).json()
+    assert (body["totalResults"], body["resources"]) == (2, 3)

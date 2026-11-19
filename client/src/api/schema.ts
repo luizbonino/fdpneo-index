@@ -286,6 +286,9 @@ export interface paths {
      *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
      *     dates; a resource matches when its temporal coverage overlaps the period),
      *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+     *     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
+     *     counts groups, `resources` the resources), every hit lists its copies in
+     *     other FDPs (`duplicates`, `duplicateCount`),
      *     `fdpState=ACTIVE`, `sort`, `page`, `size`,
      *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
      *     each hit has `highlight`: its title and description as text segments with

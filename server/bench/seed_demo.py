@@ -32,7 +32,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid5
 
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
-from rdflib.namespace import DCAT, DCTERMS, FOAF, RDF, XSD
+from rdflib.namespace import DCAT, DCTERMS, FOAF, OWL, RDF, XSD
 from sqlalchemy import delete, select
 
 from fdpindex.db import make_engine, make_session_factory
@@ -484,6 +484,30 @@ class FdpBuilder:
         for iri, topic_group in catalogs:
             self._catalog(iri, topic_group, per_catalog)
 
+    def mirror(self, other: FdpBuilder, count: int) -> None:
+        """Re-publish ``count`` datasets of ``other`` in a catalog of this FDP, with
+        their DOIs and ``owl:sameAs`` the original: copies across FDPs (TASKS 8.8)."""
+        originals = sorted(iri for iri in other.graphs if "/dataset/" in iri)[:count]
+        if not originals:
+            return
+        iri = f"{self.base}/catalog/mirror"
+        node = URIRef(iri)
+        g = self.graph(iri)
+        g.add((node, RDF.type, DCAT.Catalog))
+        g.add((node, DCTERMS.title, Literal(f"Mirrored from {other.institution}", lang="en")))
+        g.add((node, DCTERMS.publisher, self.org))
+        self.graphs[self.base].add((URIRef(self.base), FDPO.metadataCatalog, node))
+        for k, original in enumerate(originals, start=1):
+            copy = URIRef(f"{self.base}/dataset/mirror-{k}")
+            g.add((node, DCAT.dataset, copy))
+            source = other.graphs[original]
+            target = self.graph(str(copy))
+            for s, p, o in source:
+                if p == DCAT.distribution:
+                    continue
+                target.add((copy if s == URIRef(original) else s, p, o))
+            target.add((copy, OWL.sameAs, URIRef(original)))
+
     def _catalog_groups(self) -> list[list[Topic]]:
         topics = list(self.topics)
         self.rng.shuffle(topics)
@@ -825,10 +849,14 @@ async def seed(database_url: str, fdps: int, datasets: int, seed_value: int) -> 
     factory = make_session_factory(engine)
     now = datetime.now(UTC)
     nodes_total = 0
+    previous: FdpBuilder | None = None
     for number in range(1, fdps + 1):
         rng = random.Random(seed_value * 100_000 + number)
         builder = FdpBuilder(number, rng)
         builder.build(max(3, int(rng.lognormvariate(0, 0.8) * datasets)))
+        if previous is not None and number % 10 == 0:
+            builder.mirror(previous, 5)
+        previous = builder
         url = client_url(number)
         repository = extract_repository_metadata(builder.graphs[url], url)
         assert repository is not None

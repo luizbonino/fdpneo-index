@@ -2,7 +2,8 @@
 /**
  * One search hit: type, title (to the resource page), where it comes from
  * (FDP with its state, catalog), a description, theme, subject and keyword chips, the
- * formats of a dataset's distributions, and the profile's key fields.
+ * formats of a dataset's distributions, the profile's key fields, and its
+ * copies in other FDPs (TASKS 8.8).
  *
  * Every link to the source is checked to be http(s): harvested IRIs are
  * attacker-chosen.
@@ -149,6 +150,18 @@ const source = computed(() =>
       <span v-if="hit.completeness < 0.4" class="sparse small" :title="t('search.sparseHelp')">
         {{ t("search.sparse") }}
       </span>
+      <details v-if="hit.duplicateCount" class="copies small">
+        <summary :title="t('search.copiesTitle')">
+          {{ t("search.copies", hit.duplicateCount) }}
+        </summary>
+        <ul>
+          <li v-for="copy in hit.duplicates ?? []" :key="copy.id">
+            <router-link :to="{ name: 'resource', params: { id: copy.id } }">{{
+              copy.fdp.title
+            }}</router-link>
+          </li>
+        </ul>
+      </details>
       <a
         v-if="source"
         class="small source"
@@ -314,6 +327,14 @@ h3 a:hover {
 }
 .source {
   margin-left: auto;
+}
+.copies summary {
+  cursor: pointer;
+  color: var(--tool-accent);
+}
+.copies ul {
+  margin: var(--fair-space-1) 0 0;
+  padding-left: 1.2em;
 }
 mark {
   background: var(--tool-accent-tint);

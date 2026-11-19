@@ -452,6 +452,15 @@ const counters = computed(() => {
           {{ t("search.onlyActive") }}
           <HelpTip :title="t('search.onlyActive')" :text="t('search.onlyActiveHelp')" />
         </label>
+        <label class="check active">
+          <input
+            type="checkbox"
+            :checked="state.collapse"
+            @change="go({ ...state, collapse: !state.collapse, page: 1 })"
+          />
+          {{ t("search.collapse") }}
+          <HelpTip :title="t('search.collapse')" :text="t('search.collapseHelp')" />
+        </label>
 
         <FacetGroup
           v-for="facet in mainFacets"
@@ -603,6 +612,9 @@ const counters = computed(() => {
           <h2 ref="heading" class="count-line" tabindex="-1" aria-live="polite">
             <template v-if="data">
               {{ t("search.results", total) }}
+              <span v-if="data.resources !== undefined" class="muted small">
+                {{ t("search.grouped", { n: data.resources.toLocaleString() }) }}
+              </span>
               <span class="muted small">{{ t("search.took", { ms: data.took }) }}</span>
             </template>
             <template v-else>{{ t("common.loading") }}</template>

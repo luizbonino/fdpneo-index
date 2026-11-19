@@ -279,6 +279,23 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
             </ul>
           </section>
 
+          <section v-if="r.duplicates?.length" class="card">
+            <h2>{{ t("resource.copies") }}</h2>
+            <p class="muted small">{{ t("resource.copiesLead") }}</p>
+            <ul class="children">
+              <li v-for="copy in r.duplicates" :key="copy.id">
+                <router-link :to="{ name: 'resource', params: { id: copy.id } }">{{
+                  copy.title
+                }}</router-link>
+                <span class="muted small"> · {{ copy.fdp.title }}</span>
+                <StateBadge
+                  v-if="!['ACTIVE', 'UNKNOWN'].includes(copy.fdp.state)"
+                  :state="copy.fdp.state"
+                />
+              </li>
+            </ul>
+          </section>
+
           <section v-if="similar.length" class="card">
             <h2>{{ t("resource.similar") }}</h2>
             <ul class="similar">

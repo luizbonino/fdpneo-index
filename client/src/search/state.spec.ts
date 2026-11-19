@@ -43,6 +43,7 @@ describe("search URL state", () => {
       dates: { modified: { from: "2024-01-01", to: "" } },
       numbers: {},
       active: true,
+      collapse: false,
       sort: "modified",
       page: 3,
       added: [],

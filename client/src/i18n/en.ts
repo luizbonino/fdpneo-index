@@ -592,6 +592,12 @@ export const en = {
     fdpFacet: "FAIR Data Point",
     fdpFacetHelp: "The FAIR Data Point the metadata was harvested from.",
     onlyActive: "Only reachable FDPs",
+    collapse: "Group copies",
+    collapseHelp:
+      "Show a resource that several FDPs list once: the same DOI, the same identifier, the same IRI, or one that says it is a copy (owl:sameAs). The others are listed on its card.",
+    grouped: "(grouping {n} resources)",
+    copies: "Also in {n} other FDP | Also in {n} other FDPs",
+    copiesTitle: "The same resource in other FAIR Data Points",
     onlyActiveHelp:
       "Hide resources of FAIR Data Points that are unreachable, invalid or not seen recently. Without this, they are listed lower and marked.",
     dates: "Dates",
@@ -681,6 +687,9 @@ export const en = {
     searchValue: "Search for this value",
     record: "Record",
     harvested: "Harvested",
+    copies: "Also published in",
+    copiesLead:
+      "The same resource, listed by other FAIR Data Points (the same DOI, identifier or IRI, or a copy that says so).",
     completeness: "Completeness",
     contains: "Contains | Contains 1 item | Contains {n} items",
     similar: "Find similar",

@@ -40,6 +40,15 @@ export interface Period {
   end: string | null;
 }
 
+/** A copy of a resource in another FDP (TASKS 8.8). */
+export interface Duplicate {
+  id: string;
+  iri: string;
+  type: Kind;
+  title: string;
+  fdp: FdpView;
+}
+
 export interface Hit {
   id: string;
   iri: string;
@@ -61,6 +70,9 @@ export interface Hit {
   sourceUrl: string;
   facts: Record<string, number>;
   values: Record<string, ValueView[]>;
+  /** Copies in other FDPs (the same DOI, identifier, owl:sameAs target or IRI). */
+  duplicates?: Duplicate[];
+  duplicateCount?: number;
   /** With `highlight=true` and words: title and description with the matches marked. */
   highlight?: { title: Segment[]; description?: Segment[] };
   distributions?: { id: string; iri: string; title: string; values: Record<string, ValueView[]> }[];
@@ -84,7 +96,9 @@ export interface FacetResult {
 
 export interface SearchResult {
   query: { q: string; types: Kind[]; sort: string; lang: string };
+  /** Collapsed: the number of groups; `resources` the resources they stand for. */
   totalResults: number;
+  resources?: number;
   startIndex: number;
   itemsPerPage: number;
   page: number;
@@ -238,6 +252,8 @@ export interface ResourceDetail {
   children: Brief[];
   childCount: number;
   values: Record<string, ValueView[]>;
+  duplicates?: Duplicate[];
+  duplicateCount?: number;
 }
 
 /** Fields labelled by the client's copy rather than by the profile. */

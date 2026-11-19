@@ -47,6 +47,7 @@ Caller = Annotated[Principal, Depends(current_principal)]
 
 RESERVED = {
     "q",
+    "collapse",
     "type",
     "fdp",
     "fdpState",
@@ -189,6 +190,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         size=_int(query.get("size"), 20, "size"),
         facet_size=_int(query.get("facetSize"), 20, "facetSize"),
         highlight=query.get("highlight", "").lower() in {"true", "1", "yes"},
+        collapse=query.get("collapse", "").lower() in {"true", "1", "yes"},
     )
     if facets is not None:
         params.facets = [] if facets == "none" else [f for f in facets.split(",") if f]
@@ -235,6 +237,9 @@ async def search(
     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
     dates; a resource matches when its temporal coverage overlaps the period),
     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+    `collapse=true` (one hit per group of copies across FDPs; `totalResults`
+    counts groups, `resources` the resources), every hit lists its copies in
+    other FDPs (`duplicates`, `duplicateCount`),
     `fdpState=ACTIVE`, `sort`, `page`, `size`,
     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
     each hit has `highlight`: its title and description as text segments with

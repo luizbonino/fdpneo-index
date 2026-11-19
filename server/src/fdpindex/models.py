@@ -24,6 +24,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -238,6 +239,8 @@ class SearchResource(Base):
     # Temporal coverage (TASKS 8.3): first and last day; either may be open.
     temporal_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     temporal_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # The strongest identifier it states: copies in other FDPs share it (TASKS 8.8).
+    dedup_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     completeness: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     # Counts and flags computed over the entry: datasetCount, distributionCount, titleFallback.
     facts: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False, default=dict)
@@ -254,6 +257,12 @@ class SearchResource(Base):
         Index("ix_search_resource_kind_modified", "kind", "modified"),
         Index("ix_search_resource_entry_kind", "entry_uuid", "kind"),
         Index("ix_search_resource_temporal", "temporal_start", "temporal_end"),
+        Index(
+            "ix_search_resource_dedup_key",
+            "dedup_key",
+            "entry_uuid",
+            postgresql_where=text("dedup_key IS NOT NULL"),
+        ),
         Index("ix_search_resource_parent", "entry_uuid", "parent_iri"),
         Index("ix_search_resource_tsv_lang", "tsv_lang", postgresql_using="gin"),
         Index("ix_search_resource_tsv_simple", "tsv_simple", postgresql_using="gin"),

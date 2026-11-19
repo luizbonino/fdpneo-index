@@ -121,6 +121,7 @@ PAGES: dict[str, str] = {
   dct:isPartOf <{BETA}/catalog/k> ;
   dct:publisher [ foaf:name "Beta Institute" ] ;
   dct:spatial "NL" ;
+  <http://www.w3.org/2002/07/owl#sameAs> <http://fdp.alpha.example/dataset/d2/> ;
   dct:temporal [ time:hasBeginning [ time:inXSDDate "2020-01-01"^^xsd:date ] ;
     time:hasEnd [ time:inXSDgYear "2022"^^xsd:gYear ] ] ;
   dcat:distribution <{BETA}/distribution/vcf> .

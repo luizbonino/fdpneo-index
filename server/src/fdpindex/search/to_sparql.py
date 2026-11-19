@@ -56,6 +56,7 @@ NOTES = {
     "ranking": "Results are ordered by title; the search page orders them by relevance.",
     "dates": "Date ranges compare the day only, ignoring time zones.",
     "harvested": "The harvest time is not in the SPARQL store; that range is left out.",
+    "collapse": "Copies of a resource in several FDPs are listed one by one, not grouped.",
     "temporal": (
         "Temporal coverage is read from the period's start and end dates; "
         'a period written as text ("2010/2020") is not matched.'
@@ -397,6 +398,9 @@ def to_sparql(
             checks.append(f'{day} <= "{high.date().isoformat()}"')
         graph.append(_exists(f"?resource {path} ?{name}Range", " && ".join(checks)))
         w.note("dates")
+
+    if params.collapse:
+        w.note("collapse")
 
     # Temporal coverage overlapping the period (TASKS 8.3).
     if params.temporal is not None and "temporal" in profile.fields:

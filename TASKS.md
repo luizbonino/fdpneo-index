@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-66 of 114 tasks are done and 5 are in progress (19 November 2026). "Done"
+67 of 114 tasks are done and 5 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -26,7 +26,7 @@ task are listed in the last column.
 | 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 2/5 | 2 | 1 | 🟡 Mostly done | Keycloak Compose profile (3.2), backup docs (3.3), release process (3.5) |
 | 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 5/9 | – | 4 | 🟡 Mostly done | Long-unreachable entries and expiry (4.6), per-FDP options (4.7), verified approval (4.8), self-service registration (4.9) |
-| 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 0/4 | – | 4 | ⬜ Not started (decided 19 Nov) | All four |
+| 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 1/4 | – | 3 | 🔹 Started (decided 19 Nov) | Running next to FDPneo (5.1), documentation here (5.2), Java index guidance (5.3) |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, polish | 2/12 | 1 | 9 | 🔹 Started | All but 8.6 and 8.10 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
@@ -34,7 +34,7 @@ task are listed in the last column.
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **66/114** | **5** | **43** | | |
+| **Total** | | **67/114** | **5** | **42** | | |
 
 ## Phase 0 — Foundations
 
@@ -111,7 +111,7 @@ Decisions of 19 November 2026:
 - [ ] 5.1 Running the Index next to FDPneo, documented here: the Index's own Compose stack, and FDPneo pinging it through its admin-managed index targets (FDPneo ADR-0025). FDPneo's evaluation stack stays as it is.
 - [ ] 5.2 Documentation in this repository (README and `docs/`): deploying, registering an FDP, administering, a user guide to search and SPARQL
 - [ ] 5.3 Guidance for Java FDP deployments running `FDP_INDEX=true`: migrate with the importer, then switch the mode off (guidance only)
-- [ ] 5.4 Record in FDPneo ADR-0021 that FAIR Discovery is built as this standalone service, and list what of its design is still open here
+- [x] 5.4 Record in FDPneo ADR-0021 that FAIR Discovery is built as this standalone service, and list what of its design is still open here — *done: FAIRDataTeam/fdpneo-server#52, merged 19 Nov*
 
 ## Phases 6–10 — Search and SPARQL over harvested metadata
 

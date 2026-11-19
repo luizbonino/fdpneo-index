@@ -41,5 +41,17 @@ The first release will contain:
   with the EU vocabulary facts their checks need; operator packs from a
   directory; `fdpindex conformance validate` checks a file offline, and
   `GET /index/conformance/packs` lists them.
+- **Conformance checks** of every harvested record in the background
+  (worker processes; only changed records again), with a report on each
+  FDP's page (most frequent problems, the records that have them), findings
+  on each resource's page, and settings for the profiles and who may read
+  reports (public by default).
+
+### Fixed
+
+- A literal holding a character Python treats as a line break (U+0085,
+  U+2028, form feed; seen in double-encoded UTF-8 on a live FDP) was cut in
+  two when a node was stored, which broke the search projection of that
+  FDP.
 - **Operations**: Compose stack with an optional Keycloak profile, trusted
   reverse proxy, backup and restore (docs/operations.md).

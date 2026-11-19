@@ -98,9 +98,13 @@ class Settings(BaseSettings):
     embeddings_threads: int = Field(default=0, ge=0)
     # A hit found by meaning alone must be this close (cosine distance; TASKS 10.1).
     embeddings_max_distance: float = Field(default=0.6, gt=0, le=2)
-    # Conformance (Phase 11): a directory of operator SHACL packs, <id>/<version>/pack.yaml,
-    # beside the bundled DCAT-AP, HealthDCAT-AP and Health-RI packs.
+    # Conformance (Phase 11): validating harvested records against SHACL packs, in the
+    # background. Packs: the bundled DCAT-AP, HealthDCAT-AP and Health-RI ones, and an
+    # operator's directory of <id>/<version>/pack.yaml. Workers: processes running
+    # pySHACL; -1 for the CPUs less one (at most four), 0 for a thread of this process.
+    conformance_enabled: bool = True
     conformance_packs: Path | None = None
+    conformance_workers: int = Field(default=-1, ge=-1, le=64)
     search_timeout_seconds: float = Field(default=5, gt=0)
     search_admin_timeout_seconds: float = Field(default=30, gt=0)
     # Concept labels from vocabularies (TASKS 8.6, ADR-0006): off by default, because it

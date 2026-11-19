@@ -25,6 +25,9 @@ from fdpindex.api.sparql import router as sparql_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.config import Settings, get_settings
 from fdpindex.conformance.packs import discover as discover_packs
+from fdpindex.conformance.service import ConformanceService
+from fdpindex.conformance.settings import ConformanceSettingsService
+from fdpindex.conformance.workers import ValidationPool, default_workers
 from fdpindex.db import create_schema, make_engine, make_session_factory
 from fdpindex.errors import register_exception_handlers
 from fdpindex.health import HealthScheduler
@@ -49,6 +52,8 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+    from fdpindex.search.profile import Profile
 
 log = structlog.get_logger(__name__)
 
@@ -197,6 +202,10 @@ def create_app(
         )
         app.state.search = search
         app.state.search_rate = RateLimiter(config.search_rate_per_minute)
+        conformance_settings = ConformanceSettingsService(factory, app.state.conformance_packs)
+        app.state.conformance_settings = conformance_settings
+        conformance = await _start_conformance(config, factory, index, search, conformance_settings)
+        app.state.conformance = conformance
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
@@ -210,6 +219,8 @@ def create_app(
         finally:
             await scheduler.stop()
             await jobs.close()
+            if conformance is not None:
+                await conformance.stop()
             if search is not None:
                 if search.semantic is not None:
                     await search.semantic.stop()
@@ -245,6 +256,33 @@ def create_app(
     app.include_router(search_router)
     app.include_router(conformance_router)
     return app
+
+
+async def _start_conformance(
+    config: Settings,
+    factory: async_sessionmaker[AsyncSession],
+    index: IndexService,
+    search: SearchService | None,
+    settings: ConformanceSettingsService,
+) -> ConformanceService | None:
+    if not config.conformance_enabled:
+        return None
+    # Record kinds come from the search profile: the one search uses, kept current when an
+    # administrator changes it, or the effective profile when search is off.
+    fixed = None if search is not None else await ProfileStore(factory).effective()
+
+    def profile() -> Profile:
+        if search is not None:
+            return search.indexer.profile
+        assert fixed is not None
+        return fixed
+
+    workers = config.conformance_workers if config.conformance_workers >= 0 else default_workers()
+    service = ConformanceService(factory, settings, profile, ValidationPool(workers))
+    index.add_listener(service.notify)
+    service.start()
+    log.info("conformance_started", packs=len(settings.packs), workers=workers)
+    return service
 
 
 async def _start_search(

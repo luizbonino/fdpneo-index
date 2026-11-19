@@ -1,6 +1,116 @@
 {
   "components": {
     "schemas": {
+      "ActivePack-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Files validated against; null for the pack's defaults",
+            "title": "Files"
+          },
+          "key": {
+            "description": "id@version, as GET /index/conformance/packs lists it",
+            "title": "Key",
+            "type": "string"
+          },
+          "kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "fdp",
+                    "catalog",
+                    "dataset",
+                    "series",
+                    "service",
+                    "distribution",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Record kinds validated; null for the pack's own",
+            "title": "Kinds"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "ActivePack",
+        "type": "object"
+      },
+      "ActivePack-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Files validated against; null for the pack's defaults",
+            "title": "Files"
+          },
+          "key": {
+            "description": "id@version, as GET /index/conformance/packs lists it",
+            "title": "Key",
+            "type": "string"
+          },
+          "kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "fdp",
+                    "catalog",
+                    "dataset",
+                    "series",
+                    "service",
+                    "distribution",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Record kinds validated; null for the pack's own",
+            "title": "Kinds"
+          }
+        },
+        "required": [
+          "key",
+          "kinds",
+          "files"
+        ],
+        "title": "ActivePack",
+        "type": "object"
+      },
       "Chart": {
         "additionalProperties": false,
         "properties": {
@@ -68,6 +178,65 @@
           "label"
         ],
         "title": "Choice",
+        "type": "object"
+      },
+      "ConformanceSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "packs": {
+            "items": {
+              "$ref": "#/components/schemas/ActivePack-Input"
+            },
+            "maxItems": 10,
+            "title": "Packs",
+            "type": "array"
+          },
+          "reports": {
+            "default": "public",
+            "description": "Who may read conformance reports",
+            "enum": [
+              "public",
+              "admin"
+            ],
+            "title": "Reports",
+            "type": "string"
+          }
+        },
+        "title": "ConformanceSettings",
+        "type": "object"
+      },
+      "ConformanceSettingsView": {
+        "additionalProperties": false,
+        "properties": {
+          "isDefault": {
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "packs": {
+            "items": {
+              "$ref": "#/components/schemas/ActivePack-Output"
+            },
+            "maxItems": 10,
+            "title": "Packs",
+            "type": "array"
+          },
+          "reports": {
+            "default": "public",
+            "description": "Who may read conformance reports",
+            "enum": [
+              "public",
+              "admin"
+            ],
+            "title": "Reports",
+            "type": "string"
+          }
+        },
+        "required": [
+          "packs",
+          "reports",
+          "isDefault"
+        ],
+        "title": "ConformanceSettingsView",
         "type": "object"
       },
       "EntriesInfoView": {
@@ -349,6 +518,54 @@
         ],
         "title": "EntryPermit",
         "type": "string"
+      },
+      "EntryReport": {
+        "properties": {
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "packs": {
+            "items": {
+              "$ref": "#/components/schemas/PackSummary"
+            },
+            "title": "Packs",
+            "type": "array"
+          },
+          "problems": {
+            "description": "The most frequent problems, worst first",
+            "items": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "records": {
+            "description": "Records of the FDP the last validation saw",
+            "title": "Records",
+            "type": "integer"
+          },
+          "validatedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validatedat"
+          }
+        },
+        "required": [
+          "entry",
+          "records",
+          "validatedAt",
+          "packs",
+          "problems"
+        ],
+        "title": "EntryReport",
+        "type": "object"
       },
       "EntryUpdateRequest": {
         "description": "The reference sends ``permit``; ``options`` is an addition. Either may be left out.",
@@ -931,6 +1148,82 @@
         "title": "FilterRequest",
         "type": "object"
       },
+      "FindingView": {
+        "properties": {
+          "component": {
+            "title": "Component",
+            "type": "string"
+          },
+          "focusNode": {
+            "title": "Focusnode",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "severity": {
+            "enum": [
+              "violation",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shape"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "severity",
+          "focusNode",
+          "path",
+          "component",
+          "shape",
+          "message",
+          "value"
+        ],
+        "title": "FindingView",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1251,6 +1544,160 @@
         "title": "PackFileView",
         "type": "object"
       },
+      "PackResult": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingView"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "infos": {
+            "title": "Infos",
+            "type": "integer"
+          },
+          "pack": {
+            "title": "Pack",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "conforms",
+              "violations",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "validatedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validatedat"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "violations": {
+            "title": "Violations",
+            "type": "integer"
+          },
+          "warnings": {
+            "title": "Warnings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pack",
+          "version",
+          "variant",
+          "status",
+          "violations",
+          "warnings",
+          "infos",
+          "error",
+          "validatedAt",
+          "findings"
+        ],
+        "title": "PackResult",
+        "type": "object"
+      },
+      "PackSummary": {
+        "properties": {
+          "conforms": {
+            "title": "Conforms",
+            "type": "integer"
+          },
+          "errors": {
+            "description": "Records that could not be validated",
+            "title": "Errors",
+            "type": "integer"
+          },
+          "lastValidated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastvalidated"
+          },
+          "pack": {
+            "description": "The pack's id",
+            "title": "Pack",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records validated against the pack",
+            "title": "Records",
+            "type": "integer"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "violations": {
+            "description": "Records with violations",
+            "title": "Violations",
+            "type": "integer"
+          },
+          "withWarnings": {
+            "description": "Records with warnings",
+            "title": "Withwarnings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pack",
+          "version",
+          "records",
+          "conforms",
+          "violations",
+          "errors",
+          "withWarnings",
+          "lastValidated"
+        ],
+        "title": "PackSummary",
+        "type": "object"
+      },
       "PackView": {
         "properties": {
           "appliesTo": {
@@ -1540,6 +1987,89 @@
         "title": "PingSettings",
         "type": "object"
       },
+      "Problem": {
+        "properties": {
+          "component": {
+            "description": "The SHACL constraint component, without its namespace",
+            "title": "Component",
+            "type": "string"
+          },
+          "example": {
+            "description": "IRI of a record with this problem",
+            "title": "Example",
+            "type": "string"
+          },
+          "findings": {
+            "title": "Findings",
+            "type": "integer"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One of the messages of this problem",
+            "title": "Message"
+          },
+          "pack": {
+            "title": "Pack",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "records": {
+            "description": "Records with this problem",
+            "title": "Records",
+            "type": "integer"
+          },
+          "severity": {
+            "enum": [
+              "violation",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shape"
+          }
+        },
+        "required": [
+          "pack",
+          "severity",
+          "path",
+          "component",
+          "shape",
+          "message",
+          "findings",
+          "records",
+          "example"
+        ],
+        "title": "Problem",
+        "type": "object"
+      },
       "PropertySettings-Input": {
         "additionalProperties": false,
         "properties": {
@@ -1584,6 +2114,164 @@
           "hidden"
         ],
         "title": "PropertySettings",
+        "type": "object"
+      },
+      "RecordPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecordStatus"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "RecordPage",
+        "type": "object"
+      },
+      "RecordReport": {
+        "properties": {
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "iri": {
+            "title": "Iri",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "publicId": {
+            "title": "Publicid",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PackResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "publicId",
+          "iri",
+          "kind",
+          "entry",
+          "title",
+          "results"
+        ],
+        "title": "RecordReport",
+        "type": "object"
+      },
+      "RecordStatus": {
+        "properties": {
+          "infos": {
+            "title": "Infos",
+            "type": "integer"
+          },
+          "iri": {
+            "title": "Iri",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "pack": {
+            "title": "Pack",
+            "type": "string"
+          },
+          "publicId": {
+            "title": "Publicid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "conforms",
+              "violations",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "validatedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validatedat"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          },
+          "violations": {
+            "title": "Violations",
+            "type": "integer"
+          },
+          "warnings": {
+            "title": "Warnings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "publicId",
+          "iri",
+          "kind",
+          "title",
+          "pack",
+          "status",
+          "violations",
+          "warnings",
+          "infos",
+          "variant",
+          "validatedAt"
+        ],
+        "title": "RecordStatus",
         "type": "object"
       },
       "RegisterRequest": {
@@ -2199,18 +2887,18 @@
         "title": "TriggerRequest",
         "type": "object"
       },
-      "ValidateRequest": {
+      "ValidateAccepted": {
         "properties": {
-          "query": {
-            "maxLength": 50000,
-            "title": "Query",
+          "scheduled": {
+            "description": "`all` or the FDP's uuid",
+            "title": "Scheduled",
             "type": "string"
           }
         },
         "required": [
-          "query"
+          "scheduled"
         ],
-        "title": "ValidateRequest",
+        "title": "ValidateAccepted",
         "type": "object"
       },
       "ValidationError": {
@@ -2386,6 +3074,39 @@
           "updatedAt"
         ],
         "title": "WebhookView",
+        "type": "object"
+      },
+      "fdpindex__api__conformance__ValidateRequest": {
+        "properties": {
+          "entry": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One FDP; all when absent",
+            "title": "Entry"
+          }
+        },
+        "title": "ValidateRequest",
+        "type": "object"
+      },
+      "fdpindex__api__sparql__ValidateRequest": {
+        "properties": {
+          "query": {
+            "maxLength": 50000,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "ValidateRequest",
         "type": "object"
       }
     }
@@ -2567,6 +3288,50 @@
         ]
       }
     },
+    "/index/conformance/entries/{entry_id}": {
+      "get": {
+        "description": "Per active pack, the FDP's records by status, and the most frequent problems with an example record.",
+        "operationId": "get_entry_report_index_conformance_entries__entry_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "An FDP's conformance report",
+        "tags": [
+          "Conformance"
+        ]
+      }
+    },
     "/index/conformance/packs": {
       "get": {
         "description": "The packs this index can validate harvested records against: bundled (DCAT-AP, HealthDCAT-AP, Health-RI core) and the operator's.",
@@ -2588,6 +3353,342 @@
           }
         },
         "summary": "SHACL profile packs",
+        "tags": [
+          "Conformance"
+        ]
+      }
+    },
+    "/index/conformance/records": {
+      "get": {
+        "description": "Records validated against one pack, most violations first. `path`, `component` and `severity` keep the records with that problem.",
+        "operationId": "list_records_index_conformance_records_get",
+        "parameters": [
+          {
+            "description": "A pack id; the first active pack by default",
+            "in": "query",
+            "name": "pack",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "A pack id; the first active pack by default",
+              "title": "Pack"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entry",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entry"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "conforms",
+                    "violations",
+                    "error"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2048,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "component",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Component"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "violation",
+                    "warning",
+                    "info"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Records and their conformance",
+        "tags": [
+          "Conformance"
+        ]
+      }
+    },
+    "/index/conformance/records/{public_id}": {
+      "get": {
+        "description": "One record's results per pack, with up to 50 findings each. The id is the search's resource id.",
+        "operationId": "get_record_index_conformance_records__public_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "public_id",
+            "required": true,
+            "schema": {
+              "title": "Public Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A record's findings",
+        "tags": [
+          "Conformance"
+        ]
+      }
+    },
+    "/index/conformance/settings": {
+      "delete": {
+        "description": "DCAT-AP 3.0.1 only, reports public.",
+        "operationId": "reset_settings_index_conformance_settings_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformanceSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset the conformance settings",
+        "tags": [
+          "Conformance"
+        ]
+      },
+      "get": {
+        "description": "The packs validated against, in order, and who may read reports.",
+        "operationId": "get_settings_index_conformance_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformanceSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Conformance settings",
+        "tags": [
+          "Conformance"
+        ]
+      },
+      "put": {
+        "description": "Records are validated again in the background where a pack, its files or its kinds changed; results of packs no longer listed are removed.",
+        "operationId": "put_settings_index_conformance_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConformanceSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformanceSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change the conformance settings",
+        "tags": [
+          "Conformance"
+        ]
+      }
+    },
+    "/index/conformance/validate": {
+      "post": {
+        "description": "Validate every record of one FDP, or of all, again, even if nothing changed.",
+        "operationId": "validate_index_conformance_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fdpindex__api__conformance__ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate again",
         "tags": [
           "Conformance"
         ]
@@ -4828,7 +5929,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ValidateRequest"
+                "$ref": "#/components/schemas/fdpindex__api__sparql__ValidateRequest"
               }
             }
           },

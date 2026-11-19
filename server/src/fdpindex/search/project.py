@@ -31,7 +31,7 @@ import hashlib
 import json
 import math
 import re
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
@@ -441,6 +441,35 @@ def _literal_rank(node: Node) -> int:
     return 2
 
 
+def find_subject(node_iri: str, graph: Graph) -> URIRef | None:
+    """The resource a harvested node describes: its IRI, else the single typed subject."""
+    base = node_iri.split("#")[0]
+    for candidate in (node_iri, base, base.rstrip("/"), base.rstrip("/") + "/"):
+        ref = URIRef(candidate)
+        if (ref, None, None) in graph:
+            return ref
+    typed = sorted({s for s in graph.subjects(RDF.type, None) if isinstance(s, URIRef)}, key=str)
+    return typed[0] if len(typed) == 1 else None
+
+
+def kind_classifier(profile: Profile) -> Callable[[Iterable[str]], Kind]:
+    """The kind of a resource from its types: the profile's ``types``, first match wins."""
+    kind_types: list[tuple[Kind, frozenset[str]]] = [
+        (kind, frozenset(profile.expand(c) for c in profile.types.get(kind, [])))
+        for kind in KINDS
+        if kind in profile.types
+    ]
+
+    def kind_of(types: Iterable[str]) -> Kind:
+        present = set(types)
+        for kind, iris in kind_types:
+            if present & iris:
+                return kind
+        return "other"
+
+    return kind_of
+
+
 class _NodeGraph:
     """One harvested node: its graph and the resource subject."""
 
@@ -451,15 +480,7 @@ class _NodeGraph:
         self.subject = self._find_subject()
 
     def _find_subject(self) -> URIRef | None:
-        base = self.node_iri.split("#")[0]
-        for candidate in (self.node_iri, base, base.rstrip("/"), base.rstrip("/") + "/"):
-            ref = URIRef(candidate)
-            if (ref, None, None) in self.graph:
-                return ref
-        typed = sorted(
-            {s for s in self.graph.subjects(RDF.type, None) if isinstance(s, URIRef)}, key=str
-        )
-        return typed[0] if len(typed) == 1 else None
+        return find_subject(self.node_iri, self.graph)
 
     def objects(self, path: tuple[str, ...]) -> Iterator[Node]:
         assert self.subject is not None
@@ -498,18 +519,7 @@ class _Projector:
             for name, spec in profile.fields.items()
         }
         self.capture_paths = [profile.path_iris(p) for p in profile.capture.paths]
-        self.kind_types: list[tuple[Kind, frozenset[str]]] = [
-            (kind, frozenset(profile.expand(c) for c in profile.types.get(kind, [])))
-            for kind in KINDS
-            if kind in profile.types
-        ]
-
-    def kind_of(self, types: Iterable[str]) -> Kind:
-        present = set(types)
-        for kind, iris in self.kind_types:
-            if present & iris:
-                return kind
-        return "other"
+        self.kind_of = kind_classifier(profile)
 
     def resource(self, node: _NodeGraph, entry_uuid: str) -> tuple[ResourceRow, list[LabelRow]]:
         assert node.subject is not None

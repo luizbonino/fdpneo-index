@@ -156,6 +156,8 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_SEARCH_RATE_PER_MINUTE` | `120` | Searches per minute per anonymous address |
 | `FDPINDEX_SEARCH_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `5`, `30` | Statement timeout per search |
 | `FDPINDEX_VOCAB_FILE` | the bundled `search/vocab.json` | Another label pack, written by `fdpindex vocab update --output …`: labels of EU authority table codes, SPDX licences and DCAT/DC/FOAF/ADMS terms, in several languages, and the GeoNames, lexvo and ISO 3166 names of each country |
+| `FDPINDEX_CONFORMANCE_ENABLED` | `true` | Check harvested records against SHACL profiles in the background, with reports per FDP and per record |
+| `FDPINDEX_CONFORMANCE_WORKERS` | CPUs less one, at most 4 | Processes running the checks; `0` runs them in the server's process |
 | `FDPINDEX_CONFORMANCE_PACKS` | — | A directory of your own SHACL profile packs (`<id>/<version>/pack.yaml`), beside the bundled DCAT-AP 3.0.1, HealthDCAT-AP Release 8 and Health-RI core v2.0.3; see [docs/administering.md](docs/administering.md#conformance-packs) |
 | `FDPINDEX_SEARCH_EMBEDDINGS` | `off` | `local` turns on semantic search (hybrid ranking by meaning and words). Needs the `semantic` extra, pgvector and a model; see [docs/semantic-search.md](docs/semantic-search.md) |
 | `FDPINDEX_EMBEDDINGS_MODEL_DIR` | — | Where `fdpindex embeddings download` put the model |

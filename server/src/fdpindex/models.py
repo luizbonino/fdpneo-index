@@ -404,3 +404,73 @@ class ConceptLabel(Base):
     kind: Mapped[str] = mapped_column(String(8), primary_key=True)
     lang: Mapped[str] = mapped_column(String(32), primary_key=True)
     label: Mapped[str] = mapped_column(String(512), primary_key=True)
+
+
+# --- conformance (TASKS 11.3, conformance design §4) --------------------------------
+
+
+class ConformanceResult(Base):
+    """A record's validation against one pack: status and complete counts."""
+
+    __tablename__ = "conformance_result"
+
+    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True)
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), nullable=False
+    )
+    record_iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    # The search projection's id of the record's resource (search/project.py public_id).
+    public_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    pack: Mapped[str] = mapped_column(String(64), nullable=False)
+    pack_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    # The pack's files and the deployment's choice of them: a change validates again.
+    pack_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    variant: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # conforms|violations|error
+    violations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    warnings: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    infos: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    validated_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("entry_uuid", "record_iri", "pack", name="uq_conformance_result_record"),
+        Index("ix_conformance_result_entry_pack", "entry_uuid", "pack", "status"),
+        Index("ix_conformance_result_public_id", "public_id"),
+    )
+
+
+class ConformanceFinding(Base):
+    """One SHACL result of a record against a pack; at most 50 per result."""
+
+    __tablename__ = "conformance_finding"
+
+    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True)
+    result_id: Mapped[int] = mapped_column(
+        BigId, ForeignKey("conformance_result.id", ondelete="CASCADE"), nullable=False
+    )
+    severity: Mapped[str] = mapped_column(String(16), nullable=False)
+    focus_node: Mapped[str] = mapped_column(String(2048), nullable=False)
+    path: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    component: Mapped[str] = mapped_column(String(128), nullable=False)
+    shape: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    message: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    value: Mapped[str | None] = mapped_column(String(256), nullable=True)
+
+    __table_args__ = (Index("ix_conformance_finding_result", "result_id"),)
+
+
+class ConformanceEntryState(Base):
+    """What validation last saw of an entry: compared to find work after a restart."""
+
+    __tablename__ = "conformance_entry_state"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)  # of its nodes
+    settings_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # packs in use
+    records: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    validated_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)

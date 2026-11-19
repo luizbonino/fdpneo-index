@@ -25,12 +25,12 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, Protocol
 
 from pyshacl import validate as shacl_validate  # pyright: ignore[reportUnknownVariableType]
-from rdflib import RDF, Graph, Literal as RdfLiteral, Namespace, URIRef
+from rdflib import RDF, BNode, Graph, Literal as RdfLiteral, Namespace, URIRef
 
 from fdpindex.conformance.vocabularies import VocabularySet, bundled
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
     from rdflib.term import Node
 
@@ -78,7 +78,14 @@ class Outcome:
 
 
 class Validator(Protocol):
-    def validate(self, record: Graph, pack: Pack, *, root: str | None = None) -> Outcome: ...
+    def validate(
+        self,
+        record: Graph,
+        pack: Pack,
+        *,
+        root: str | None = None,
+        files: Sequence[str] | None = None,
+    ) -> Outcome: ...
 
 
 def repair(shapes: Graph) -> int:
@@ -126,6 +133,14 @@ def _text(graph: Graph, node: Node, predicate: URIRef) -> str | None:
     return str((english or values)[0])
 
 
+def _authored_message(shapes: Graph, shape: Node | None) -> str | None:
+    """The shape's own ``sh:message``. pySHACL's generated messages ("Less than 1 values
+    on <…>->dct:title") repeat the path and constraint, which are stored apart."""
+    if shape is None:
+        return None
+    return _text(shapes, shape, SH.message)
+
+
 def _named_shape(shapes: Graph, shape: Node | None) -> str | None:
     """The shape, or for an anonymous property shape the named shape that holds it."""
     if shape is None:
@@ -155,21 +170,21 @@ class ShaclValidator:
     def __init__(
         self,
         vocabularies: Callable[[str], VocabularySet] = bundled,
-        enabled: dict[str, list[str]] | None = None,
     ) -> None:
         self._vocabularies = vocabularies
-        self._enabled = enabled or {}  # pack key → enabled file paths, overriding defaults
-        self._shapes: dict[tuple[str, str, str | None], Graph] = {}
+        self._shapes: dict[tuple[str, str, str | None, tuple[str, ...] | None], Graph] = {}
         self._lock = threading.Lock()
 
-    def shapes(self, pack: Pack, variant: str | None) -> Graph:
-        key = (pack.key, pack.digest, variant)
+    def shapes(self, pack: Pack, variant: str | None, files: Sequence[str] | None = None) -> Graph:
+        """The shapes of a pack's variant; ``files`` replaces the manifest's defaults."""
+        chosen = tuple(sorted(files)) if files is not None else None
+        key = (pack.key, pack.digest, variant, chosen)
         with self._lock:
             cached = self._shapes.get(key)
             if cached is not None:
                 return cached
             graph = Graph()
-            for file in pack.files_for(variant, self._enabled.get(pack.key)):
+            for file in pack.files_for(variant, chosen):
                 graph.parse(pack.directory / file.path, format="turtle")
             repair(graph)
             self._shapes[key] = graph
@@ -184,10 +199,17 @@ class ShaclValidator:
                 data.add(triple)
         return data
 
-    def validate(self, record: Graph, pack: Pack, *, root: str | None = None) -> Outcome:
+    def validate(
+        self,
+        record: Graph,
+        pack: Pack,
+        *,
+        root: str | None = None,
+        files: Sequence[str] | None = None,
+    ) -> Outcome:
         variant = pack.variant_for(record, root)
         try:
-            shapes = self.shapes(pack, variant)
+            shapes = self.shapes(pack, variant, files)
             data = self.data_graph(record, pack)
             _conforms, report, _text_report = shacl_validate(  # pyright: ignore[reportUnknownVariableType]
                 data,
@@ -203,7 +225,22 @@ class ShaclValidator:
         except Exception as err:
             return Outcome(status="error", variant=variant, error=_clip(str(err), MAX_MESSAGE))
         assert isinstance(report, Graph)
-        return self._outcome(report, shapes, own=set(record.subjects()), variant=variant, root=root)
+        return self._outcome(
+            report, shapes, own=self.judged(record, pack), variant=variant, root=root
+        )
+
+    def judged(self, record: Graph, pack: Pack) -> set[Node]:
+        """The record's subjects, less the vocabulary concepts it describes in passing.
+
+        An FDP may label an EU concept inline (``<…/language/ENG> rdfs:label "English"``);
+        the concept is the vocabulary's, not a resource the FDP publishes.
+        """
+        known = [self._vocabularies(v) for v in pack.manifest.vocabularies]
+        return {
+            s
+            for s in record.subjects()
+            if not (isinstance(s, URIRef) and any(v.knows(s) for v in known))
+        }
 
     def _outcome(
         self, report: Graph, shapes: Graph, *, own: set[Node], variant: str | None, root: str | None
@@ -230,8 +267,13 @@ class ShaclValidator:
                     path=_path(shapes, report.value(result, SH.resultPath)),
                     component=_local(report.value(result, SH.sourceConstraintComponent)),
                     shape=_named_shape(shapes, report.value(result, SH.sourceShape)),
-                    message=_clip(_text(report, result, SH.resultMessage), MAX_MESSAGE),
-                    value=_clip(None if value is None else str(value), MAX_VALUE),
+                    message=_clip(
+                        _authored_message(shapes, report.value(result, SH.sourceShape)),
+                        MAX_MESSAGE,
+                    ),
+                    value=None
+                    if value is None or isinstance(value, BNode)
+                    else _clip(str(value), MAX_VALUE),
                 )
             )
         found.sort(key=lambda f: (_ORDER[f.severity], f.focus_node != root, f.path or ""))

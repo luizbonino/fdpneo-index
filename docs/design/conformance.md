@@ -191,6 +191,32 @@ packs/dcat-ap/3.0.1/
 - **Errors** (a pack that does not parse, a record that times out after
   10 s) are a status of their own, `error`, never a silent pass.
 
+**As built (11.3, 2026-11-19).**
+
+- `ConformanceService` follows the search indexer instead of event-table
+  jobs: harvest notifications, a debounced loop, and
+  `conformance_entry_state` (the entry's node fingerprint and a hash of the
+  packs in use) compared at start-up, so an interrupted pass resumes on its
+  own. Per record and pack, a new result only when the record's content
+  hash (its nodes' hashes) or the pack's digest (its files and the
+  deployment's choice of them) changed.
+- Worker processes (`spawn`; `FDPINDEX_CONFORMANCE_WORKERS`, default the
+  CPUs less one, at most four; `0` in a thread), 25 records per call, a
+  budget of 10 s per record per call; on overrun the call's records are
+  `error` and the workers replaced.
+- Two more rules on what is judged, found on live FDPs: EU vocabulary
+  concepts a record describes in passing are not judged, and only messages
+  the shapes' authors wrote are kept (pySHACL's generated ones repeat the
+  path and constraint, stored apart).
+- **On live FDPs** (the 122 active or inactive FDPs of
+  home.fairdatapoint.org, 2026-11-19): 61 harvested, 2 272 records, 6 616
+  validations against the three packs in about 4.5 minutes on three
+  workers while harvesting. DCAT-AP 3.0.1: 93 % of FDP roots and 91 % of
+  services conform, 26 % of datasets, 4.5 % of catalogues. The most common
+  DCAT-AP violations are `dct:hasVersion` as a literal (805 datasets, where
+  DCAT-AP 3 wants an IRI) and `dct:language` from the Library of Congress
+  ISO 639-1 list instead of the EU language table (35 FDPs).
+
 ## 4. Results
 
 ```sql

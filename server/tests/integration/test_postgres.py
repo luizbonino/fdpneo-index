@@ -10,7 +10,7 @@ from typing import Any, ClassVar
 import httpx
 import pytest
 from alembic import command
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from testcontainers.community.postgres import PostgresContainer
 
 from fdpindex.cli import alembic_config
@@ -467,3 +467,61 @@ async def test_semantic_search_finds_meaning_the_words_miss(
         SearchParams(q="tumour", types=["catalog"], semantic="only", facets=[])
     )
     assert all(h["type"] == "catalog" for h in beta_only["hits"])
+
+
+async def test_conformance_in_worker_processes(
+    index: tuple[IndexService, JobRunner, FakeNetwork, object],
+) -> None:
+    """Validation in spawned workers, results and reports on PostgreSQL (TASKS 11.3)."""
+    from fdpindex.conformance.packs import discover
+    from fdpindex.conformance.reports import entry_report, record_page
+    from fdpindex.conformance.service import ConformanceService
+    from fdpindex.conformance.settings import ConformanceSettingsService
+    from fdpindex.conformance.workers import ValidationPool
+    from fdpindex.models import ConformanceResult, IndexEntry
+    from fdpindex.search.profile_store import ProfileStore
+
+    service, jobs, network, extra = index
+    factory, _ = extra  # type: ignore[misc]
+    async with factory() as session:  # type: ignore[operator]
+        await session.execute(delete(ConformanceResult))
+        await session.commit()
+    network.standard_fdp()
+    outcome = await service.accept_ping(
+        "https://fdp.example.org",
+        remote_addr="203.0.113.9",
+        method="POST",
+        path="/",
+        headers={},
+        body="{}",
+    )
+    service.after_trigger(outcome.event_id)
+    await jobs.drain()
+    profile = await ProfileStore(factory).effective()  # type: ignore[arg-type]
+    settings = ConformanceSettingsService(factory, discover())  # type: ignore[arg-type]
+    conformance = ConformanceService(factory, settings, lambda: profile, ValidationPool(2))  # type: ignore[arg-type]
+    try:
+        await conformance.sync_once()
+    finally:
+        await conformance.stop()
+    async with factory() as session:  # type: ignore[operator]
+        entry = await session.scalar(select(IndexEntry.uuid))
+        assert entry is not None
+        report = await entry_report(session, entry, [("dcat-ap", "3.0.1")])
+        page = await record_page(
+            session,
+            entry_id=entry,
+            pack="dcat-ap",
+            status="violations",
+            path=None,
+            component=None,
+            severity="violation",
+            offset=0,
+            limit=10,
+        )
+    assert report.records == 3  # root, catalogue, dataset
+    assert report.packs[0].records == 3
+    # The test FDP's catalogue and dataset lack descriptions (DCAT-AP mandatory).
+    assert report.packs[0].violations >= 2
+    assert report.problems and report.problems[0].severity == "violation"
+    assert page.total == report.packs[0].violations

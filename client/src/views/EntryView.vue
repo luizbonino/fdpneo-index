@@ -12,6 +12,7 @@ import StateBadge from "@/components/StateBadge.vue";
 import PermitBadge from "@/components/PermitBadge.vue";
 import StatusHelp from "@/components/StatusHelp.vue";
 import EventTimeline from "@/components/EventTimeline.vue";
+import ConformanceReport from "@/components/conformance/ConformanceReport.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
 
 const props = defineProps<{ uuid: string }>();
@@ -313,6 +314,8 @@ async function remove() {
           }}</pre>
         </template>
       </section>
+
+      <ConformanceReport v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />
     </template>
   </div>
 </template>

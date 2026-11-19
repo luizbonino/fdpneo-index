@@ -89,6 +89,9 @@ class VocabularySet:
                 vocabulary.about.setdefault(s, []).append((s, p, o))
         return vocabulary
 
+    def knows(self, iri: URIRef) -> bool:
+        return iri in self.about
+
     def __len__(self) -> int:
         return sum(len(v) for v in self.about.values())
 

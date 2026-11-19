@@ -18,6 +18,9 @@ os.environ["FDPINDEX_SPARQL_ENABLED"] = "false"
 # The search indexer runs a background loop; on the shared in-memory SQLite connection
 # it would interleave with the test's own transactions. Search tests enable it.
 os.environ["FDPINDEX_SEARCH_ENABLED"] = "false"
+# Likewise the conformance loop; validation runs in a thread, not worker processes.
+os.environ["FDPINDEX_CONFORMANCE_ENABLED"] = "false"
+os.environ["FDPINDEX_CONFORMANCE_WORKERS"] = "0"
 
 from fdpindex.config import Settings  # noqa: E402
 from fdpindex.db import create_schema, make_engine, make_session_factory  # noqa: E402

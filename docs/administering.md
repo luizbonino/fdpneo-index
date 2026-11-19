@@ -107,24 +107,46 @@ of individuals, typical ages, health category, coding systems, and Yes/No
 filters such as "Concerns personal data"); nothing changes until you save.
 See [search-and-sparql.md](search-and-sparql.md#the-search-profile).
 
-## Conformance packs
+## Conformance
 
-The index carries SHACL *profile packs*, the rules metadata is checked
-against (TASKS Phase 11; validating every harvested record is next):
+The index checks every harvested record against SHACL *profiles* in the
+background, after each harvest, and only the records that changed. A
+record is a catalogue, dataset, series or data service (or the FDP's own
+description) with the blank nodes and inline descriptions of its page; a
+dataset's record includes its distributions. A record **conforms** to a
+profile when it has no violations; warnings are recommendations.
 
-| Pack | Applies to | Notes |
+| Profile | Applies to | Notes |
 |---|---|---|
-| `dcat-ap@3.0.1` | FDP roots, catalogues, datasets, series, services | SEMIC's shapes; recommended properties are warnings |
+| `dcat-ap@3.0.1` | FDP roots, catalogues, datasets, series, services | SEMIC's shapes; recommended properties are warnings. **On by default** |
 | `healthdcat-ap@release-8` | datasets, series | a draft release; the shapes follow the dataset's `dct:accessRights` (public, restricted, non-public) |
 | `health-ri-core@2.0.3` | catalogues, datasets, series, services | the Dutch Health-RI v2 model |
 
-`GET /index/conformance/packs` lists them with their files. The range
-checks (`range.ttl`) of DCAT-AP and HealthDCAT-AP are off by default: they
-need every value's class, and the EU vocabularies type their concepts as
-`skos:Concept` only, so correct values would fail.
+**Settings → Conformance** chooses the profiles and who may read the
+reports: everyone (the default, like the metadata they describe) or
+administrators only. Changing the profiles checks every FDP again in the
+background; **Check every FDP again** forces it. The API
+(`/index/conformance/settings`) also narrows a profile to some kinds of
+record and chooses its files: the range checks (`range.ttl`) of DCAT-AP and
+HealthDCAT-AP are off by default, because they need every value's class
+and the EU vocabularies type their concepts as `skos:Concept` only, so
+correct values would fail.
 
-Check a file against a pack without the index, the way the index will
-check a harvested record:
+**Reports.** An FDP's page has a **Conformance** section: per profile, its
+records and how many conform, and the most frequent problems; **Show
+records** lists the records with a problem, each linking to the
+resource's page, whose own **Conformance** section lists its findings.
+The API: `GET /index/conformance/entries/{uuid}`, `GET
+/index/conformance/records?entry=…&pack=…&status=…` (and `path`,
+`component`, `severity` for one problem), `GET
+/index/conformance/records/{id}`.
+
+What the checks do not judge: descriptions on other pages of the FDP (a
+publisher with its own page is not part of the dataset's record), and EU
+vocabulary concepts an FDP describes in passing.
+
+**Check a file** against a profile without the index, the way the index
+checks a harvested record:
 
 ```sh
 docker compose -f deploy/compose.yaml --env-file deploy/.env run --rm \
@@ -133,7 +155,7 @@ docker compose -f deploy/compose.yaml --env-file deploy/.env run --rm \
 ```
 
 It prints the violations, warnings and infos, and exits with 1 when there
-are violations. **Your own packs** go in a directory named by
+are violations. **Your own profiles** go in a directory named by
 `FDPINDEX_CONFORMANCE_PACKS`, one folder per pack and version
 (`my-rules/1.0/pack.yaml` beside the shapes files; the bundled packs under
 `server/src/fdpindex/conformance/packs/` are examples). `fdpindex conformance

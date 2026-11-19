@@ -32,9 +32,11 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 3/8 | – | 5 | 🔹 Started | 11.3 to 11.7 |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 4/8 | – | 4 | 🔹 Started | 11.4 to 11.7 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **106/115** | **–** | **9** | | |
+| 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 0/6 | – | 6 | ⬜ Not started | All six |
+| 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 0/9 | – | 9 | ⬜ Not started | All nine |
+| **Total** | | **107/130** | **–** | **23** | | |
 
 ## Phase 0 — Foundations
 
@@ -197,9 +199,9 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 
 ### Phase 11 — Conformance and republication
 
-- [x] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile — *`docs/design/conformance.md`, agreed 2026-11-19 (who may see reports still open; public until decided)*
+- [x] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile — *`docs/design/conformance.md`, agreed 2026-11-19 (reports public by default, a setting makes them admin-only)*
 - [x] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types — *DCAT-AP 3.0.1, HealthDCAT-AP Release 8 (per access level) and Health-RI core v2.0.3, with the EU vocabulary facts their checks need; operator packs; `fdpindex conformance validate|packs|fetch|vocabularies`; `GET /index/conformance/packs`*
-- [ ] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page)
+- [x] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page) — *done: background validation in worker processes, incremental by record content hash and pack digest (migration 0014); reports per FDP and per record (API, FDP page, resource page); Settings → Conformance (profiles, reports public or admin-only); tried on the FDPs of home.fairdatapoint.org (61 FDPs, 2 272 records, 6 616 validations in about 4.5 minutes)*
 - [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default
 - [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)
 - [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
@@ -213,3 +215,33 @@ Design note for review: `docs/design/sources.md` (connector protocol, DCAT endpo
 - [ ] 12.1 A connector protocol (probe, enumerate, fetch) with the FDP tree walk as its first implementation; traversal declared as data (navigation SHACL) instead of code
 - [ ] 12.2 DCAT-AP sources: a dereferenceable endpoint or a dump file
 - [ ] 12.3 CKAN and Molgenis bridges
+
+## Phase 13 — Internationalisation
+
+The client has vue-i18n with English only (`client/src/i18n/en.ts`, about
+700 lines of messages); metadata is already shown in the reader's language
+with a fallback order (8.5, 11.8). This phase makes the interface itself
+multilingual.
+
+- [ ] 13.1 Audit: every user-visible string of the client through vue-i18n (no concatenated sentences; plurals with ICU rules; dates, numbers and durations through `Intl`); a list of server texts that reach people (error details, OpenSearch description, catalogue feed titles, webhook test payloads), translated or deliberately English
+- [ ] 13.2 Locale switching: a language menu, the browser's language by default, the choice remembered; `<html lang>` follows it; layout checked with long strings (a pseudo-locale) and with logical CSS properties so a right-to-left language is possible later
+- [ ] 13.3 First translations, one file per locale, and a check in CI that no locale misses a key — *which languages first is to be decided (proposal: Dutch, German, French, Spanish, Italian, Portuguese)*
+- [ ] 13.4 Texts administrators write, per language: the index's name and description, saved searches' titles, featured searches (facet labels and help already are)
+- [ ] 13.5 One language setting for both: the interface language picks the metadata language by default (the search's `lang`), with the fallback order as now
+- [ ] 13.6 Tests: every locale renders every page without missing keys (unit), screenshots per locale of the main pages (e2e), axe in a second locale
+
+## Phase 14 — Documentation
+
+Today's documentation is a set of Markdown files under `docs/` written as
+features landed. This phase organises it by audience and publishes it.
+
+- [ ] 14.1 Structure and site: a documentation plan by audience, built as a static site in CI (for example MkDocs) and published with each release, versioned
+- [ ] 14.2 Guide for people searching: search, filters, temporal and spatial coverage, copies, saved searches, resource pages, the SPARQL page, with screenshots refreshed by a script
+- [ ] 14.3 Guide for data holders: registering an FDP, what the index harvests and how often, why metadata looks as it does in search, conformance reports and how to fix common problems, the catalogue feed
+- [ ] 14.4 Guide for administrators: approvals, settings, search profile and filters, conformance settings, webhooks, saved and featured searches (from today's `administering.md`)
+- [ ] 14.5 Deployment and operations: Compose and container images, a configuration reference generated from the settings class, upgrades and migrations, backup and restore, monitoring, security hardening (from `deploying.md` and `operations.md`)
+- [ ] 14.6 API and integration: the OpenAPI reference rendered, worked examples (curl, Python) for search, SPARQL, OpenSearch, the catalogue feed and OAI-PMH, the reference index's API for existing clients
+- [ ] 14.7 Agents and MCP: connecting an agent through `fdp-mcp`'s index mode, the tools and what they return, example sessions (after 11.7)
+- [ ] 14.8 Translations of the guide for people searching, in Phase 13's languages (optional, once the interface is translated)
+- [ ] 14.9 Documentation checks in CI: links, commands and API examples run against a test index, screenshots up to date
+

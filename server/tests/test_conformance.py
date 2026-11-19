@@ -274,3 +274,26 @@ def test_bundled_eu_vocabulary() -> None:
     skos = "http://www.w3.org/2004/02/skos/core#inScheme"
     schemes = {str(o) for _, p, o in eu.about[URIRef(f"{EU}language/NLD")] if str(p) == skos}
     assert f"{EU}language" in schemes
+
+
+def test_vocabulary_concepts_described_inline_are_not_judged(
+    packs: Packs, validator: ShaclValidator
+) -> None:
+    # The FDP labels the EU language inline; DCAT-AP's skos:Concept shape (which wants a
+    # skos:prefLabel) must not count that against the record.
+    record = dataset(f'<{EU}language/ENG> <http://www.w3.org/2000/01/rdf-schema#label> "English" .')
+    outcome = validator.validate(record, packs["dcat-ap@3.0.1"], root=DS)
+    assert outcome.status == "conforms", outcome.findings
+    assert all(not f.focus_node.startswith(EU) for f in outcome.findings)
+
+
+def test_only_authored_messages_are_kept(packs: Packs, validator: ShaclValidator) -> None:
+    record = dataset()
+    record.remove((URIRef(DS), URIRef("http://purl.org/dc/terms/description"), None))
+    outcome = validator.validate(record, packs["healthdcat-ap@release-8"], root=DS)
+    messages = {f.path: f.message for f in outcome.findings}
+    # HealthDCAT-AP writes its own message here; pySHACL's generated ones are dropped.
+    assert messages["http://healthdataportal.eu/ns/health#hdab"] == (
+        "Each dcat:Dataset must have exactly one healthdcatap:hdab"
+    )
+    assert all(m is None or "Less than 1 values" not in m for m in messages.values())

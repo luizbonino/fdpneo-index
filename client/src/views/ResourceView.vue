@@ -15,6 +15,7 @@ import { LOCAL_FIELDS, RDF_FORMATS, searchApi, type ValueView } from "@/search/a
 import { encodeQuery } from "@/sparql/history";
 import { isLinkable } from "@/sparql/results";
 import StateBadge from "@/components/StateBadge.vue";
+import RecordConformance from "@/components/conformance/RecordConformance.vue";
 import { absoluteTime, formatPeriod, relativeTime } from "@/utils/format";
 
 const props = defineProps<{ id: string }>();
@@ -312,6 +313,8 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
           </section>
         </aside>
       </div>
+
+      <RecordConformance :id="id" :iri="r.iri" />
 
       <section class="card">
         <details @toggle="showTriples = ($event.target as HTMLDetailsElement).open">

@@ -99,6 +99,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/conformance/entries/{entry_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * An FDP's conformance report
+     * @description Per active pack, the FDP's records by status, and the most frequent problems with an example record.
+     */
+    get: operations["get_entry_report_index_conformance_entries__entry_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/conformance/packs": {
     parameters: {
       query?: never;
@@ -113,6 +133,94 @@ export interface paths {
     get: operations["list_packs_index_conformance_packs_get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/records": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Records and their conformance
+     * @description Records validated against one pack, most violations first. `path`, `component` and `severity` keep the records with that problem.
+     */
+    get: operations["list_records_index_conformance_records_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/records/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A record's findings
+     * @description One record's results per pack, with up to 50 findings each. The id is the search's resource id.
+     */
+    get: operations["get_record_index_conformance_records__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Conformance settings
+     * @description The packs validated against, in order, and who may read reports.
+     */
+    get: operations["get_settings_index_conformance_settings_get"];
+    /**
+     * Change the conformance settings
+     * @description Records are validated again in the background where a pack, its files or its kinds changed; results of packs no longer listed are removed.
+     */
+    put: operations["put_settings_index_conformance_settings_put"];
+    post?: never;
+    /**
+     * Reset the conformance settings
+     * @description DCAT-AP 3.0.1 only, reports public.
+     */
+    delete: operations["reset_settings_index_conformance_settings_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Validate again
+     * @description Validate every record of one FDP, or of all, again, even if nothing changed.
+     */
+    post: operations["validate_index_conformance_validate_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -899,6 +1007,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** ActivePack */
+    "ActivePack-Input": {
+      /**
+       * Files
+       * @description Files validated against; null for the pack's defaults
+       */
+      files?: string[] | null;
+      /**
+       * Key
+       * @description id@version, as GET /index/conformance/packs lists it
+       */
+      key: string;
+      /**
+       * Kinds
+       * @description Record kinds validated; null for the pack's own
+       */
+      kinds?:
+        ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+    };
+    /** ActivePack */
+    "ActivePack-Output": {
+      /**
+       * Files
+       * @description Files validated against; null for the pack's defaults
+       */
+      files: string[] | null;
+      /**
+       * Key
+       * @description id@version, as GET /index/conformance/packs lists it
+       */
+      key: string;
+      /**
+       * Kinds
+       * @description Record kinds validated; null for the pack's own
+       */
+      kinds:
+        ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+    };
     /** Chart */
     Chart: {
       /** Label */
@@ -924,6 +1070,32 @@ export interface components {
       label: string;
       /** Value */
       value: string;
+    };
+    /** ConformanceSettings */
+    ConformanceSettings: {
+      /** Packs */
+      packs?: components["schemas"]["ActivePack-Input"][];
+      /**
+       * Reports
+       * @description Who may read conformance reports
+       * @default public
+       * @enum {string}
+       */
+      reports: "public" | "admin";
+    };
+    /** ConformanceSettingsView */
+    ConformanceSettingsView: {
+      /** Isdefault */
+      isDefault: boolean;
+      /** Packs */
+      packs: components["schemas"]["ActivePack-Output"][];
+      /**
+       * Reports
+       * @description Who may read conformance reports
+       * @default public
+       * @enum {string}
+       */
+      reports: "public" | "admin";
     };
     /** EntriesInfoView */
     EntriesInfoView: {
@@ -1015,6 +1187,25 @@ export interface components {
      * @enum {string}
      */
     EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
+    /** EntryReport */
+    EntryReport: {
+      /** Entry */
+      entry: string;
+      /** Packs */
+      packs: components["schemas"]["PackSummary"][];
+      /**
+       * Problems
+       * @description The most frequent problems, worst first
+       */
+      problems: components["schemas"]["Problem"][];
+      /**
+       * Records
+       * @description Records of the FDP the last validation saw
+       */
+      records: number;
+      /** Validatedat */
+      validatedAt: string | null;
+    };
     /**
      * EntryUpdateRequest
      * @description The reference sends ``permit``; ``options`` is an addition. Either may be left out.
@@ -1268,6 +1459,26 @@ export interface components {
       /** Values */
       values?: string[] | null;
     };
+    /** FindingView */
+    FindingView: {
+      /** Component */
+      component: string;
+      /** Focusnode */
+      focusNode: string;
+      /** Message */
+      message: string | null;
+      /** Path */
+      path: string | null;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "violation" | "warning" | "info";
+      /** Shape */
+      shape: string | null;
+      /** Value */
+      value: string | null;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1404,6 +1615,66 @@ export interface components {
       /** Variant */
       variant: string | null;
     };
+    /** PackResult */
+    PackResult: {
+      /** Error */
+      error: string | null;
+      /** Findings */
+      findings: components["schemas"]["FindingView"][];
+      /** Infos */
+      infos: number;
+      /** Pack */
+      pack: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "conforms" | "violations" | "error";
+      /** Validatedat */
+      validatedAt: string | null;
+      /** Variant */
+      variant: string | null;
+      /** Version */
+      version: string;
+      /** Violations */
+      violations: number;
+      /** Warnings */
+      warnings: number;
+    };
+    /** PackSummary */
+    PackSummary: {
+      /** Conforms */
+      conforms: number;
+      /**
+       * Errors
+       * @description Records that could not be validated
+       */
+      errors: number;
+      /** Lastvalidated */
+      lastValidated: string | null;
+      /**
+       * Pack
+       * @description The pack's id
+       */
+      pack: string;
+      /**
+       * Records
+       * @description Records validated against the pack
+       */
+      records: number;
+      /** Version */
+      version: string | null;
+      /**
+       * Violations
+       * @description Records with violations
+       */
+      violations: number;
+      /**
+       * Withwarnings
+       * @description Records with warnings
+       */
+      withWarnings: number;
+    };
     /** PackView */
     PackView: {
       /** Appliesto */
@@ -1512,6 +1783,42 @@ export interface components {
       /** Validduration */
       validDuration: string;
     };
+    /** Problem */
+    Problem: {
+      /**
+       * Component
+       * @description The SHACL constraint component, without its namespace
+       */
+      component: string;
+      /**
+       * Example
+       * @description IRI of a record with this problem
+       */
+      example: string;
+      /** Findings */
+      findings: number;
+      /**
+       * Message
+       * @description One of the messages of this problem
+       */
+      message: string | null;
+      /** Pack */
+      pack: string;
+      /** Path */
+      path: string | null;
+      /**
+       * Records
+       * @description Records with this problem
+       */
+      records: number;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "violation" | "warning" | "info";
+      /** Shape */
+      shape: string | null;
+    };
     /** PropertySettings */
     "PropertySettings-Input": {
       /**
@@ -1539,6 +1846,56 @@ export interface components {
        * @default true
        */
       visitors: boolean;
+    };
+    /** RecordPage */
+    RecordPage: {
+      /** Items */
+      items: components["schemas"]["RecordStatus"][];
+      /** Total */
+      total: number;
+    };
+    /** RecordReport */
+    RecordReport: {
+      /** Entry */
+      entry: string;
+      /** Iri */
+      iri: string;
+      /** Kind */
+      kind: string;
+      /** Publicid */
+      publicId: string;
+      /** Results */
+      results: components["schemas"]["PackResult"][];
+      /** Title */
+      title: string | null;
+    };
+    /** RecordStatus */
+    RecordStatus: {
+      /** Infos */
+      infos: number;
+      /** Iri */
+      iri: string;
+      /** Kind */
+      kind: string;
+      /** Pack */
+      pack: string;
+      /** Publicid */
+      publicId: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "conforms" | "violations" | "error";
+      /** Title */
+      title: string | null;
+      /** Validatedat */
+      validatedAt: string | null;
+      /** Variant */
+      variant: string | null;
+      /** Violations */
+      violations: number;
+      /** Warnings */
+      warnings: number;
     };
     /** RegisterRequest */
     RegisterRequest: {
@@ -1797,10 +2154,13 @@ export interface components {
       /** Clienturl */
       clientUrl: string;
     };
-    /** ValidateRequest */
-    ValidateRequest: {
-      /** Query */
-      query: string;
+    /** ValidateAccepted */
+    ValidateAccepted: {
+      /**
+       * Scheduled
+       * @description `all` or the FDP's uuid
+       */
+      scheduled: string;
     };
     /** ValidationError */
     ValidationError: {
@@ -1879,6 +2239,19 @@ export interface components {
        * Format: uuid
        */
       uuid: string;
+    };
+    /** ValidateRequest */
+    fdpindex__api__conformance__ValidateRequest: {
+      /**
+       * Entry
+       * @description One FDP; all when absent
+       */
+      entry?: string | null;
+    };
+    /** ValidateRequest */
+    fdpindex__api__sparql__ValidateRequest: {
+      /** Query */
+      query: string;
     };
   };
   responses: never;
@@ -2059,6 +2432,37 @@ export interface operations {
       };
     };
   };
+  get_entry_report_index_conformance_entries__entry_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryReport"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_packs_index_conformance_packs_get: {
     parameters: {
       query?: never;
@@ -2075,6 +2479,182 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PackView"][];
+        };
+      };
+    };
+  };
+  list_records_index_conformance_records_get: {
+    parameters: {
+      query?: {
+        /** @description A pack id; the first active pack by default */
+        pack?: string | null;
+        entry?: string | null;
+        status?: ("conforms" | "violations" | "error") | null;
+        path?: string | null;
+        component?: string | null;
+        severity?: ("violation" | "warning" | "info") | null;
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RecordPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_record_index_conformance_records__public_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RecordReport"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_settings_index_conformance_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+    };
+  };
+  put_settings_index_conformance_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConformanceSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_settings_index_conformance_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+    };
+  };
+  validate_index_conformance_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["fdpindex__api__conformance__ValidateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ValidateAccepted"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };
@@ -3481,7 +4061,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ValidateRequest"];
+        "application/json": components["schemas"]["fdpindex__api__sparql__ValidateRequest"];
       };
     };
     responses: {

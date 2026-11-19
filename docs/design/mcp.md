@@ -1,6 +1,6 @@
 # An MCP server for the index — proposal
 
-- Status: **agreed 2026-11-19** (option A, `open_fdp`); built after conformance shows in search results (question 3).
+- Status: **agreed 2026-11-19** (option A, `open_fdp`); **built 2026-11-19** on fdp-mcp branch `feat/index-mode`, ADR-0018 amended on fdpneo-server branch `docs/adr-0018-index-mode` (not pushed). The index tools that would collide with FDP-level ones are named `index_search` and `index_sparql_query`; `get_conformance` was added.
 - Date: 2026-11-19
 - Context: FDPneo ADR-0018 (the FDP-level bridge `fdp-mcp`, a sidecar) and
   its agent-consumption vision, increment C ("Index-level MCP: source

@@ -1203,6 +1203,174 @@
         "title": "Library",
         "type": "object"
       },
+      "PackFileView": {
+        "properties": {
+          "enabled": {
+            "description": "Validated against by default",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "shapes",
+              "vocabulary",
+              "recommended",
+              "deprecated",
+              "range"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          }
+        },
+        "required": [
+          "path",
+          "role",
+          "variant",
+          "enabled",
+          "note"
+        ],
+        "title": "PackFileView",
+        "type": "object"
+      },
+      "PackView": {
+        "properties": {
+          "appliesTo": {
+            "items": {
+              "enum": [
+                "fdp",
+                "catalog",
+                "dataset",
+                "series",
+                "service",
+                "distribution",
+                "other"
+              ],
+              "type": "string"
+            },
+            "title": "Appliesto",
+            "type": "array"
+          },
+          "bundled": {
+            "title": "Bundled",
+            "type": "boolean"
+          },
+          "description": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Description",
+            "type": "object"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/PackFileView"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "description": "id@version",
+            "title": "Key",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "publisher": {
+            "title": "Publisher",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the shapes come from",
+            "title": "Source"
+          },
+          "specification": {
+            "description": "The specification's IRI (dct:conformsTo)",
+            "title": "Specification",
+            "type": "string"
+          },
+          "title": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Title",
+            "type": "object"
+          },
+          "variantProperty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variantproperty"
+          },
+          "variants": {
+            "description": "Shapes chosen per record, by `variantProperty`",
+            "items": {
+              "type": "string"
+            },
+            "title": "Variants",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "id",
+          "version",
+          "title",
+          "description",
+          "publisher",
+          "licence",
+          "specification",
+          "source",
+          "appliesTo",
+          "variants",
+          "variantProperty",
+          "bundled",
+          "files"
+        ],
+        "title": "PackView",
+        "type": "object"
+      },
       "Parameter": {
         "additionalProperties": false,
         "properties": {
@@ -2396,6 +2564,32 @@
         "summary": "Client Config",
         "tags": [
           "Service"
+        ]
+      }
+    },
+    "/index/conformance/packs": {
+      "get": {
+        "description": "The packs this index can validate harvested records against: bundled (DCAT-AP, HealthDCAT-AP, Health-RI core) and the operator's.",
+        "operationId": "list_packs_index_conformance_packs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PackView"
+                  },
+                  "title": "Response List Packs Index Conformance Packs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "SHACL profile packs",
+        "tags": [
+          "Conformance"
         ]
       }
     },

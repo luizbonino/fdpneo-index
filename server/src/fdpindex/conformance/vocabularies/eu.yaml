@@ -1,0 +1,57 @@
+# The vocabulary triples the packs' shapes need (conformance design §2): which
+# scheme each EU concept is in, what it is typed, and the class hierarchies of
+# the ontologies DCAT-AP uses, so that skos:inScheme and sh:class checks pass
+# on correct values. Validation adds, per record, only the triples about the
+# IRIs the record uses (eu.nt.gz is never stored with harvested metadata).
+#
+# Taken from the files the HealthDCAT-AP Release 8 validator preloads (its
+# owlImportMapping), at a pinned commit; `fdpindex conformance vocabularies`
+# downloads them and writes eu.nt.gz. schema.org is left out (DCAT-AP's
+# shapes do not need it).
+id: eu
+title: {en: EU vocabularies and the DCAT-AP ontologies}
+source:
+  url: https://code.europa.eu/healthdataeu/healthdcat-ap/-/tree/cd7841fcb98bedbc567364e27ae0d8740fde84cd/public/releases/release-8/html/shacl/HealthDCAT-AP_validator/config/rdf-validator/ehds/catalogue
+  download: https://code.europa.eu/healthdataeu/healthdcat-ap/-/raw/cd7841fcb98bedbc567364e27ae0d8740fde84cd/public/releases/release-8/html/shacl/HealthDCAT-AP_validator/config/rdf-validator/ehds/catalogue/
+output: eu.nt.gz
+keep:
+  - http://www.w3.org/1999/02/22-rdf-syntax-ns#type
+  - http://www.w3.org/2004/02/skos/core#inScheme
+  - http://www.w3.org/2000/01/rdf-schema#subClassOf
+files:
+  # EU authority tables (Publications Office, CC BY 4.0)
+  - access-right.rdf
+  - continents.rdf
+  - corporatebodies.rdf
+  - countries.rdf
+  - data-theme.rdf
+  - dataset-types.rdf
+  - distribution-status.rdf
+  - filetypes.rdf
+  - frequencies.rdf
+  - languages.rdf
+  - places.rdf
+  - planned-availability.rdf
+  # HealthData@EU tables (DG SANTE, CC BY 4.0)
+  - coding-system.rdf
+  - health-activity.rdf
+  - health-theme.rdf
+  - healthcategories.rdf
+  - publisher-type.rdf
+  - standard.rdf
+  # ADMS licence and publisher types (SEMIC)
+  - ADMS_SKOS_v1.00.rdf
+  # Ontologies: class hierarchies only
+  - adms.ttl
+  - csvw.ttl
+  - dcat2.ttl
+  - dqv.ttl
+  - dublin_core_terms.ttl
+  - eli.rdf
+  - index.rdf
+  - locn.ttl
+  - m8g.ttl
+  - ns.ttl
+  - prov-o.ttl
+  - spdx-ontology.owl.rdf
+  - time.ttl

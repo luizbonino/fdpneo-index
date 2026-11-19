@@ -1,0 +1,19 @@
+# The Health-RI core metadata model v2.0.3 (the Dutch national health data
+# infrastructure), its SHACL shapes copied unchanged (SHA256SUMS lists them).
+id: health-ri-core
+version: 2.0.3
+title: {en: Health-RI core v2.0.3}
+description:
+  en: >-
+    The Health-RI v2 metadata model for catalogues, datasets, dataset series,
+    data services and distributions, built on DCAT-AP 3 and HealthDCAT-AP.
+publisher: Health-RI
+licence: https://creativecommons.org/licenses/by/4.0/
+specification: https://github.com/Health-RI/health-ri-metadata/tree/v2.0.3
+source:
+  url: https://github.com/Health-RI/health-ri-metadata/tree/v2.0.3/Formalisation(shacl)/Core/ValidationShape
+  download: https://raw.githubusercontent.com/Health-RI/health-ri-metadata/534b0d071b4136aaba6b2808f9927099956c3a7c/Formalisation(shacl)/Core/ValidationShape/
+appliesTo: [catalog, dataset, series, service]
+vocabularies: [eu]
+files:
+  - {path: HRI-Datamodel-shapes.ttl, role: shapes}

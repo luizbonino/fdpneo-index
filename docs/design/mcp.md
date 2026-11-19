@@ -1,6 +1,6 @@
 # An MCP server for the index — proposal
 
-- Status: **option A agreed 2026-11-19**; built after conformance shows in search results (question 3). Question 2 is open.
+- Status: **agreed 2026-11-19** (option A, `open_fdp`); built after conformance shows in search results (question 3).
 - Date: 2026-11-19
 - Context: FDPneo ADR-0018 (the FDP-level bridge `fdp-mcp`, a sidecar) and
   its agent-consumption vision, increment C ("Index-level MCP: source
@@ -89,6 +89,6 @@ index).
    results?
 
 **Answers (2026-11-19).** 1: A, an index mode of `fdp-mcp`. 3: wait until
-search results report conformance. 2: open (switching a session's FDP with
-`open_fdp`, or naming the FDP on every FDP-level call).
+search results report conformance. 2: `open_fdp` switches the session's
+FDP-level tools to an FDP the index lists.
 

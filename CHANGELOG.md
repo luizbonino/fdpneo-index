@@ -36,5 +36,10 @@ The first release will contain:
 - **Concept labels** from Wikidata, ROR, OLS and RDF vocabularies, off by
   default (ADR-0006).
 - **SPARQL** endpoint and page: editor, builder, example library, charts.
+- **Conformance packs**: the SHACL shapes of DCAT-AP 3.0.1, HealthDCAT-AP
+  Release 8 (per access level) and Health-RI core v2.0.3, bundled as data
+  with the EU vocabulary facts their checks need; operator packs from a
+  directory; `fdpindex conformance validate` checks a file offline, and
+  `GET /index/conformance/packs` lists them.
 - **Operations**: Compose stack with an optional Keycloak profile, trusted
   reverse proxy, backup and restore (docs/operations.md).

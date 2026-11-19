@@ -32,9 +32,9 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 2/8 | – | 6 | 🔹 Started | 11.2 to 11.7 |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 3/8 | – | 5 | 🔹 Started | 11.3 to 11.7 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **105/115** | **–** | **10** | | |
+| **Total** | | **106/115** | **–** | **9** | | |
 
 ## Phase 0 — Foundations
 
@@ -198,7 +198,7 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 ### Phase 11 — Conformance and republication
 
 - [x] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile — *`docs/design/conformance.md`, agreed 2026-11-19 (who may see reports still open; public until decided)*
-- [ ] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types
+- [x] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types — *DCAT-AP 3.0.1, HealthDCAT-AP Release 8 (per access level) and Health-RI core v2.0.3, with the EU vocabulary facts their checks need; operator packs; `fdpindex conformance validate|packs|fetch|vocabularies`; `GET /index/conformance/packs`*
 - [ ] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page)
 - [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default
 - [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)

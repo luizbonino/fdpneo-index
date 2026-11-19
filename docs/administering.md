@@ -107,6 +107,40 @@ of individuals, typical ages, health category, coding systems, and Yes/No
 filters such as "Concerns personal data"); nothing changes until you save.
 See [search-and-sparql.md](search-and-sparql.md#the-search-profile).
 
+## Conformance packs
+
+The index carries SHACL *profile packs*, the rules metadata is checked
+against (TASKS Phase 11; validating every harvested record is next):
+
+| Pack | Applies to | Notes |
+|---|---|---|
+| `dcat-ap@3.0.1` | FDP roots, catalogues, datasets, series, services | SEMIC's shapes; recommended properties are warnings |
+| `healthdcat-ap@release-8` | datasets, series | a draft release; the shapes follow the dataset's `dct:accessRights` (public, restricted, non-public) |
+| `health-ri-core@2.0.3` | catalogues, datasets, series, services | the Dutch Health-RI v2 model |
+
+`GET /index/conformance/packs` lists them with their files. The range
+checks (`range.ttl`) of DCAT-AP and HealthDCAT-AP are off by default: they
+need every value's class, and the EU vocabularies type their concepts as
+`skos:Concept` only, so correct values would fail.
+
+Check a file against a pack without the index, the way the index will
+check a harvested record:
+
+```sh
+docker compose -f deploy/compose.yaml --env-file deploy/.env run --rm \
+  -v "$PWD/dataset.ttl:/tmp/dataset.ttl:ro" server \
+  fdpindex conformance validate /tmp/dataset.ttl --pack healthdcat-ap
+```
+
+It prints the violations, warnings and infos, and exits with 1 when there
+are violations. **Your own packs** go in a directory named by
+`FDPINDEX_CONFORMANCE_PACKS`, one folder per pack and version
+(`my-rules/1.0/pack.yaml` beside the shapes files; the bundled packs under
+`server/src/fdpindex/conformance/packs/` are examples). `fdpindex conformance
+packs` lists every pack and checks its files against its `SHA256SUMS`;
+`fdpindex conformance fetch my-rules` downloads a pack's files again from the
+`source.download` its manifest names.
+
 ## Webhooks
 
 **Webhooks** sends a signed POST to an address of yours when something

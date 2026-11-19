@@ -265,3 +265,16 @@ def test_admin_names_stay_out_of_public_event_summaries(api: Api) -> None:
     events = api.client.get(f"/index/entries/{uuid}").json()["events"]
     outcomes = [e["outcome"] for e in events if e["type"] == "AdminTrigger"]
     assert outcomes == ["Triggered by an administrator"]
+
+
+def test_conformance_packs(api: Api) -> None:
+    response = api.client.get("/index/conformance/packs")
+    assert response.status_code == 200
+    packs = {p["key"]: p for p in response.json()}
+    assert set(packs) == {"dcat-ap@3.0.1", "healthdcat-ap@release-8", "health-ri-core@2.0.3"}
+    health = packs["healthdcat-ap@release-8"]
+    assert health["variants"] == ["public", "restricted", "non-public"]
+    assert health["variantProperty"] == "http://purl.org/dc/terms/accessRights"
+    assert health["appliesTo"] == ["dataset", "series"]
+    ranges = [f for f in packs["dcat-ap@3.0.1"]["files"] if f["role"] == "range"]
+    assert ranges and not ranges[0]["enabled"]

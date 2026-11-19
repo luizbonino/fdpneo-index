@@ -18,11 +18,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fdpindex import __version__
+from fdpindex.api.conformance import router as conformance_router
 from fdpindex.api.routes import router
 from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.config import Settings, get_settings
+from fdpindex.conformance.packs import discover as discover_packs
 from fdpindex.db import create_schema, make_engine, make_session_factory
 from fdpindex.errors import register_exception_handlers
 from fdpindex.health import HealthScheduler
@@ -180,6 +182,7 @@ def create_app(
             )
 
         app.state.config = config
+        app.state.conformance_packs = discover_packs(config.conformance_packs)
         app.state.session_factory = factory
         app.state.jobs = jobs
         app.state.settings_service = settings_service
@@ -240,6 +243,7 @@ def create_app(
     app.include_router(router)
     app.include_router(sparql_router)
     app.include_router(search_router)
+    app.include_router(conformance_router)
     return app
 
 

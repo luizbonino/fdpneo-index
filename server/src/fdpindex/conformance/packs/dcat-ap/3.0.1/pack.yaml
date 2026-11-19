@@ -1,0 +1,34 @@
+# DCAT-AP 3.0.1, the SHACL shapes as SEMIC publishes them (copied unchanged;
+# SHA256SUMS lists them). `fdpindex conformance fetch` downloads them again.
+id: dcat-ap
+version: 3.0.1
+title: {en: DCAT-AP 3.0.1}
+description:
+  en: >-
+    The DCAT Application Profile for data portals in Europe: the mandatory
+    properties, value types and EU vocabularies, and the recommended
+    properties as warnings.
+publisher: SEMIC, European Commission
+licence: https://creativecommons.org/licenses/by/4.0/
+specification: https://semiceu.github.io/DCAT-AP/releases/3.0.1/
+source:
+  url: https://github.com/SEMICeu/DCAT-AP/tree/3.0.1/releases/3.0.1/html/shacl
+  download: https://raw.githubusercontent.com/SEMICeu/DCAT-AP/21f43cee5d61aa29e729e2e9193fc697f7b63861/releases/3.0.1/html/shacl/
+appliesTo: [fdp, catalog, dataset, series, service]
+vocabularies: [eu]
+files:
+  - path: shapes.ttl
+    role: shapes
+  - path: mdr-vocabularies.shape.ttl
+    role: vocabulary
+  - path: shapes_recommended.ttl
+    role: recommended
+  - path: deprecateduris.ttl
+    role: deprecated
+  - path: range.ttl
+    role: range
+    enabled: false
+    note: >-
+      Off by default: its sh:class checks need the class of every value, and
+      the EU vocabularies type their concepts as skos:Concept only, so correct
+      values (an access right, a language) would fail without RDFS inference.

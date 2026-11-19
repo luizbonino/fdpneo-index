@@ -99,6 +99,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/conformance/packs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * SHACL profile packs
+     * @description The packs this index can validate harvested records against: bundled (DCAT-AP, HealthDCAT-AP, Health-RI core) and the operator's.
+     */
+    get: operations["list_packs_index_conformance_packs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/entries": {
     parameters: {
       query?: never;
@@ -1365,6 +1385,74 @@ export interface components {
       /** Groups */
       groups: string[];
     };
+    /** PackFileView */
+    PackFileView: {
+      /**
+       * Enabled
+       * @description Validated against by default
+       */
+      enabled: boolean;
+      /** Note */
+      note: string;
+      /** Path */
+      path: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "shapes" | "vocabulary" | "recommended" | "deprecated" | "range";
+      /** Variant */
+      variant: string | null;
+    };
+    /** PackView */
+    PackView: {
+      /** Appliesto */
+      appliesTo: (
+        "fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other"
+      )[];
+      /** Bundled */
+      bundled: boolean;
+      /** Description */
+      description: {
+        [key: string]: string;
+      };
+      /** Files */
+      files: components["schemas"]["PackFileView"][];
+      /** Id */
+      id: string;
+      /**
+       * Key
+       * @description id@version
+       */
+      key: string;
+      /** Licence */
+      licence: string;
+      /** Publisher */
+      publisher: string;
+      /**
+       * Source
+       * @description Where the shapes come from
+       */
+      source: string | null;
+      /**
+       * Specification
+       * @description The specification's IRI (dct:conformsTo)
+       */
+      specification: string;
+      /** Title */
+      title: {
+        [key: string]: string;
+      };
+      /** Variantproperty */
+      variantProperty: string | null;
+      /**
+       * Variants
+       * @description Shapes chosen per record, by `variantProperty`
+       */
+      variants: string[];
+      /** Version */
+      version: string;
+    };
     /** Parameter */
     Parameter: {
       /** Choices */
@@ -1967,6 +2055,26 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ServiceInfo"];
+        };
+      };
+    };
+  };
+  list_packs_index_conformance_packs_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PackView"][];
         };
       };
     };

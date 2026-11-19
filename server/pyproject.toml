@@ -47,6 +47,8 @@ dependencies = [
   "typer>=0.12",
   "pyoxigraph>=0.5.13,<0.6",
   "pyyaml>=6.0.2",
+  # Conformance (Phase 11): SHACL validation of harvested records, pure Python.
+  "pyshacl>=0.30",
 ]
 
 [project.optional-dependencies]

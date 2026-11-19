@@ -1,0 +1,48 @@
+# HealthDCAT-AP Release 8 (a draft specification, 2026-05), the shapes of the
+# EU's HealthData@EU validator, copied unchanged (SHA256SUMS lists them).
+# Its shapes import DCAT-AP 3.0.0; catalogue/ holds the validator's copy of
+# those files, which disables some DCAT-AP constraints for health datasets.
+id: healthdcat-ap
+version: release-8
+title: {en: HealthDCAT-AP Release 8}
+description:
+  en: >-
+    The health extension of DCAT-AP for the European Health Data Space, with
+    shapes per access level of the dataset (public, restricted, non-public).
+    Release 8 is still a draft.
+publisher: DG SANTE, European Commission
+licence: https://creativecommons.org/licenses/by/4.0/
+specification: https://healthdataeu.pages.code.europa.eu/healthdcat-ap/releases/release-8/
+source:
+  url: https://code.europa.eu/healthdataeu/healthdcat-ap/-/tree/cd7841fcb98bedbc567364e27ae0d8740fde84cd/public/releases/release-8/html/shacl/HealthDCAT-AP_validator/config/rdf-validator/ehds
+  download: https://code.europa.eu/healthdataeu/healthdcat-ap/-/raw/cd7841fcb98bedbc567364e27ae0d8740fde84cd/public/releases/release-8/html/shacl/HealthDCAT-AP_validator/config/rdf-validator/ehds/
+appliesTo: [dataset, series]
+vocabularies: [eu]
+# The validator offers one set of shapes per access level; a record gets the
+# set its dct:accessRights names, and the public set when it names none.
+variants:
+  property: http://purl.org/dc/terms/accessRights
+  default: public
+  values:
+    public: [http://publications.europa.eu/resource/authority/access-right/PUBLIC]
+    restricted: [http://publications.europa.eu/resource/authority/access-right/RESTRICTED]
+    non-public: [http://publications.europa.eu/resource/authority/access-right/NON_PUBLIC]
+files:
+  - {path: shapes/public-shapes.ttl, role: shapes, variant: public}
+  - {path: shapes/restricted-shapes.ttl, role: shapes, variant: restricted}
+  - {path: shapes/non-public-shapes.ttl, role: shapes, variant: non-public}
+  - {path: catalogue/shapes.ttl, role: shapes, note: "DCAT-AP 3.0.0, imported by the shapes above"}
+  - {path: controlled-vocabularies/mdr-vocabularies.shape.ttl, role: vocabulary}
+  - {path: recommended/public-shapes_recommended.ttl, role: recommended, variant: public}
+  - {path: recommended/restricted-shapes_recommended.ttl, role: recommended, variant: restricted}
+  - {path: recommended/non-public-shapes_recommended.ttl, role: recommended, variant: non-public}
+  - {path: catalogue/shapes_recommended.ttl, role: recommended, note: "DCAT-AP 3.0.0, imported by the files above"}
+  - {path: deprecated/deprecateduris.ttl, role: deprecated}
+  - path: ranges/range.ttl
+    role: range
+    enabled: false
+    note: >-
+      Off by default, as in the DCAT-AP pack: it imports DCAT-AP's range
+      checks, which fail on correct EU vocabulary values without RDFS
+      inference.
+  - {path: catalogue/range.ttl, role: range, enabled: false, note: "DCAT-AP 3.0.0, imported by ranges/range.ttl"}

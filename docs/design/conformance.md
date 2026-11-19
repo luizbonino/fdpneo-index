@@ -1,6 +1,6 @@
 # Conformance and republication — design
 
-- Status: **agreed 2026-11-19, except question 3** (who may see reports, §9). Becomes ADR-0007.
+- Status: **agreed 2026-11-19** (§9). Becomes ADR-0007.
 - Date: 2026-11-19
 - Scope: Phase 11 of `TASKS.md`. Validating harvested records against SHACL
   profile packs (11.2, 11.3), how strict each surface is (11.4), republishing
@@ -101,8 +101,9 @@ packs/dcat-ap/3.0.1/
     split by concern: `shapes.ttl` (existence, cardinality, literal ranges),
     `range.ttl` (`sh:class` on objects), `mdr-vocabularies.shape.ttl` (values
     from the EU vocabularies), `shapes_recommended.ttl`, and
-    `deprecateduris.ttl`. The pack uses the first three as violations and
-    the recommended file as warnings.
+    `deprecateduris.ttl`. The pack uses `shapes.ttl`, the vocabulary
+    shapes, the recommended file (its own warnings) and the deprecated
+    URIs; `range.ttl` is off by default (see "As built").
   - **HealthDCAT-AP Release 8** (`code.europa.eu/healthdataeu/healthdcat-ap`,
     the release `data.health.europa.eu/healthdcat-ap/releases/latest/`
     points to; a draft specification dated 2026-05). Its shapes come per
@@ -125,8 +126,49 @@ packs/dcat-ap/3.0.1/
   `skos:inScheme` and `sh:class` on concepts of the EU vocabularies, so they
   pass only when those concepts' triples are loaded. A pack ships the
   vocabulary triples it needs (the EU tables are a few MB as N-Triples;
-  `fdpindex vocab update` already fetches them for labels). They are loaded
-  as pySHACL's `ont_graph`, next to the record, never stored with it.
+  `fdpindex vocab update` already fetches them for labels). They are added
+  to the record for validation, never stored with it.
+
+**As built (11.2, 2026-11-19).**
+
+- Packs live in `fdpindex/conformance/packs/<id>/<version>/`, with
+  `pack.yaml` (files with a role: `shapes`, `vocabulary`, `recommended`,
+  `deprecated`, `range`; `enabled: false` for files off by default;
+  `variants`), the files as downloaded, and `SHA256SUMS`. `fdpindex
+  conformance fetch` downloads them from the pinned source; the bundled
+  copies are byte-identical to it.
+- **HealthDCAT-AP R8** is taken from the HealthData@EU validator's
+  configuration (commit `cd7841f`): per access level, the shapes, the
+  recommended shapes, the vocabulary shapes and the deprecated URIs, plus
+  the validator's own copy of the DCAT-AP 3.0.0 files its shapes import
+  (`catalogue/`), which disables some DCAT-AP constraints for health
+  datasets. The validator's `graph-guard.ttl` (a submitted file must
+  contain a dataset) is left out: the index validates records, not files.
+- **Vocabularies**: one set, `eu`, built by `fdpindex conformance
+  vocabularies` from the files that validator preloads (EU authority
+  tables, HealthData@EU tables, ADMS, and the DCAT, DC, FOAF, vCard, PROV,
+  OWL-Time, LOCN, DQV, CSVW, ELI, SPDX and m8g ontologies; schema.org left
+  out): only `rdf:type`, `skos:inScheme` and `rdfs:subClassOf` between
+  IRIs, 41 700 triples, 155 KB gzipped. Per record, the validator adds the
+  triples about the IRIs the record uses, followed transitively (a concept,
+  its scheme, the scheme's type; a class, its superclasses), at most 2 000.
+  This replaces pySHACL's `ont_graph`, which would copy the whole set into
+  every validation.
+- **Only the record is judged**: results whose focus node is not a subject
+  of the record are dropped (DCAT-AP requires a `skos:prefLabel` on every
+  `skos:Concept`, and the added vocabulary triples carry none), and results
+  nested in `sh:detail` are not counted.
+- **Range checks off by default** in both EU packs: the EU tables type
+  their concepts as `skos:Concept` only, so `sh:class dct:RightsStatement`
+  on `dct:accessRights` (and the like) fails on correct values without
+  RDFS inference. A deployment can switch the files on.
+- **One repair**: a `sh:property` whose shape has no `sh:path` is evaluated
+  as `sh:node`, as the EU validator's engine (TopBraid SHACL) does; pySHACL
+  refuses such shapes and HealthDCAT-AP R8 has one (the
+  `hasStructuredData` → `hasVariables` rule).
+- **Cost** (pySHACL 0.40, one dataset record): 6 ms (Health-RI), 9 ms
+  (DCAT-AP), 17 ms (HealthDCAT-AP); 0.4 s once per process to read the
+  vocabulary set.
 
 ## 3. Validation
 
@@ -318,8 +360,8 @@ search, and a **Conformance** section in Settings (packs, surfaces).
    one node deep as a pack option.
 
 **Answers.** 1 agreed (pySHACL). 2: bundle HealthDCAT-AP Release 8 as the
-example, although it is still a draft. 3: open; the reports are built
-with a setting for who may see them, public until decided. 4 to 7 agreed
+example, although it is still a draft. 3: public by default, with a
+setting that makes them admin-only. 4 to 7 agreed
 (lenient feed by default, strict in the EHDS profile; quality certificates
 shown now; records do not follow other nodes; OAI-PMH with the feed).
 

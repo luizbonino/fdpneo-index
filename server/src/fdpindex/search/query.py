@@ -762,7 +762,8 @@ class SearchService:
                     for b in result["buckets"]
                     if needle in b["value"].lower() or needle in str(b["label"]).lower()
                 ]
-            result["buckets"] = result["buckets"][: max(1, min(size, 1000))]
+            if not tree:  # a tree needs every concept to place the others
+                result["buckets"] = result["buckets"][: max(1, min(size, 1000))]
             if tree:
                 groups = await self._groups()
                 parents = await concept_parents(session, groups)
@@ -1408,6 +1409,9 @@ class SearchService:
             "fdps": {"total": len(entries), "byState": dict(states)},
             "facets": self._facet_views(settings),
             "properties": {"visitors": settings.properties.visitors},
+            # Languages offered for titles and labels: those of the label pack.
+            "languages": LANGUAGES,
+            "defaultLanguage": settings.default_language,
             "fields": {
                 name: {"label": spec.label, "kind": spec.kind}
                 for name, spec in self.profile.fields.items()
@@ -1717,6 +1721,7 @@ def _tree(buckets: list[dict[str, Any]], parents: Mapping[str, list[str]]) -> li
     return order(roots)
 
 
+LANGUAGES = ["en", "nl", "de", "fr", "es", "it", "pt", "sv", "da", "fi"]
 SUGGEST_TITLES = 5
 SUGGEST_VALUES = 6
 

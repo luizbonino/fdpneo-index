@@ -1479,6 +1479,13 @@
       "SearchSettings": {
         "additionalProperties": false,
         "properties": {
+          "defaultLanguage": {
+            "default": "en",
+            "description": "Language of titles and labels when the reader's browser states none",
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$",
+            "title": "Defaultlanguage",
+            "type": "string"
+          },
           "facets": {
             "anyOf": [
               {
@@ -1504,6 +1511,13 @@
       "SearchSettingsView": {
         "additionalProperties": false,
         "properties": {
+          "defaultLanguage": {
+            "default": "en",
+            "description": "Language of titles and labels when the reader's browser states none",
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$",
+            "title": "Defaultlanguage",
+            "type": "string"
+          },
           "facets": {
             "anyOf": [
               {
@@ -1530,6 +1544,7 @@
         "required": [
           "facets",
           "properties",
+          "defaultLanguage",
           "isDefault"
         ],
         "title": "SearchSettingsView",

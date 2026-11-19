@@ -85,11 +85,15 @@ def _limit(request: Request, caller: Principal) -> None:
 
 
 def _language(request: Request, lang: str | None) -> str:
+    """``lang``, else the browser's first language, else the index's default (TASKS 8.7)."""
     if lang:
         return lang[:16]
     accept = request.headers.get("accept-language", "")
     first = accept.split(",", 1)[0].split(";", 1)[0].strip()
-    return first[:16] if first and first != "*" else "en"
+    if first and first != "*":
+        return first[:16]
+    service: SearchService | None = getattr(request.app.state, "search", None)
+    return service.search_settings.default_language if service is not None else "en"
 
 
 def _date(name: str, value: str | None, *, end: bool = False) -> datetime | None:

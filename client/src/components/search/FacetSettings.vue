@@ -35,6 +35,14 @@ const PLACEMENTS: Placement[] = ["main", "more", "hidden"];
 const rows = ref<FacetSetting[]>([]);
 const visitors = ref(true);
 const hidden = ref("");
+const defaultLanguage = ref("en");
+const languages = computed(() => {
+  const names = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
+  return (landing.data.value?.languages ?? ["en"]).map((code) => ({
+    code,
+    name: names.of(code) ?? code,
+  }));
+});
 const saving = ref(false);
 const adding = ref(false);
 const error = ref("");
@@ -52,6 +60,7 @@ function load(settings: SearchSettings) {
   ];
   visitors.value = settings.properties.visitors;
   hidden.value = settings.properties.hidden.join("\n");
+  defaultLanguage.value = settings.defaultLanguage;
 }
 watch(
   () => [stored.data.value, landing.data.value] as const,
@@ -102,6 +111,7 @@ async function save() {
           .map((line) => line.trim())
           .filter(Boolean),
       },
+      defaultLanguage: defaultLanguage.value,
     });
     client.setQueryData(["search-settings"], saved);
     await client.invalidateQueries({ queryKey: ["search-landing"] });
@@ -234,6 +244,16 @@ async function reset() {
         placeholder="http://xmlns.com/foaf/0.1/mbox"
       />
       <span class="help">{{ t("searchSettings.hiddenHelp") }}</span>
+    </div>
+
+    <div class="field">
+      <label for="default-language">{{ t("searchSettings.defaultLanguage") }}</label>
+      <select id="default-language" v-model="defaultLanguage" class="input select">
+        <option v-for="language in languages" :key="language.code" :value="language.code">
+          {{ language.name }}
+        </option>
+      </select>
+      <span class="help">{{ t("searchSettings.defaultLanguageHelp") }}</span>
     </div>
 
     <p v-if="error" class="notice error">{{ error }}</p>

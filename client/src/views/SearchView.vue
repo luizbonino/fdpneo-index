@@ -158,7 +158,40 @@ onMounted(() => {
   }
 });
 
-const params = computed(() => apiParams(state.value, { facets: requested.value, highlight: true }));
+// The language of titles, descriptions and labels (TASKS 8.7): the browser's unless the
+// reader picks one; remembered in this browser.
+const LANG_KEY = "fdpindex.search.lang";
+function storedLang(): string {
+  try {
+    return localStorage.getItem(LANG_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+const contentLang = ref(storedLang());
+watch(contentLang, (value) => {
+  try {
+    if (value) localStorage.setItem(LANG_KEY, value);
+    else localStorage.removeItem(LANG_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+});
+const languageNames = computed(() => {
+  const names = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
+  return (landing.data.value?.languages ?? []).map((code) => ({
+    code,
+    name: names.of(code) ?? code,
+  }));
+});
+
+const params = computed(() =>
+  apiParams(state.value, {
+    facets: requested.value,
+    highlight: true,
+    lang: contentLang.value || undefined,
+  }),
+);
 const results = useQuery({
   queryKey: computed(() => ["search", params.value.toString(), session.isAdmin]),
   queryFn: () => searchApi.search(params.value),
@@ -317,6 +350,7 @@ const counters = computed(() => {
     <form class="searchbar" role="search" @submit.prevent="submit">
       <SuggestBox
         v-model="text"
+        :lang="contentLang || undefined"
         :types="addTypes"
         @submit="submit"
         @value="pickValue"
@@ -510,6 +544,19 @@ const counters = computed(() => {
             <button type="button" class="btn sm filters-button" @click="filtersOpen = true">
               {{ filterCount ? t("search.filtersCount", { n: filterCount }) : t("search.filters") }}
             </button>
+            <label v-if="languageNames.length" class="row">
+              <span class="muted small">{{ t("search.language") }}</span>
+              <select v-model="contentLang" class="input select">
+                <option value="">{{ t("search.languageAuto") }}</option>
+                <option
+                  v-for="language in languageNames"
+                  :key="language.code"
+                  :value="language.code"
+                >
+                  {{ language.name }}
+                </option>
+              </select>
+            </label>
             <label class="row">
               <span class="muted small">{{ t("search.sort") }}</span>
               <select

@@ -304,7 +304,12 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** All buckets of one facet */
+    /**
+     * All buckets of one facet
+     * @description All buckets of one facet. With `tree=true` for a field with a hierarchy
+     *     (Subject): `tree`, nested by broader concepts, each counting resources tagged
+     *     with it or anything narrower; filter on them with `<field>^`.
+     */
     get: operations["facet_index_search_facets_get"];
     put?: never;
     post?: never;
@@ -1358,6 +1363,12 @@ export interface components {
     /** SearchSettings */
     SearchSettings: {
       /**
+       * Defaultlanguage
+       * @description Language of titles and labels when the reader's browser states none
+       * @default en
+       */
+      defaultLanguage: string;
+      /**
        * Facets
        * @description Ordered facets; null for the profile's
        */
@@ -1366,6 +1377,12 @@ export interface components {
     };
     /** SearchSettingsView */
     SearchSettingsView: {
+      /**
+       * Defaultlanguage
+       * @description Language of titles and labels when the reader's browser states none
+       * @default en
+       */
+      defaultLanguage: string;
       /**
        * Facets
        * @description Ordered facets; null for the profile's
@@ -2099,6 +2116,7 @@ export interface operations {
         contains?: string;
         size?: number;
         lang?: string | null;
+        tree?: boolean;
       };
       header?: never;
       path?: never;

@@ -74,6 +74,12 @@ class SearchSettings(_Camel):
         default=None, description="Ordered facets; null for the profile's"
     )
     properties: PropertySettings = Field(default_factory=PropertySettings)
+    default_language: str = Field(
+        default="en",
+        alias="defaultLanguage",
+        pattern=r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$",
+        description="Language of titles and labels when the reader's browser states none",
+    )
 
     @field_validator("facets")
     @classmethod
@@ -144,6 +150,8 @@ class SearchSettingsService:
         self._profile = profile  # the current profile: an administrator may change it
         self._cached: tuple[float, SearchSettings] | None = None
         self.version = 0  # bumped on every change; part of cache keys
+        # Kept at hand for picking a request's language without a database read.
+        self.default_language = "en"
 
     async def get(self) -> SearchSettings:
         cached = self._cached
@@ -153,6 +161,7 @@ class SearchSettingsService:
             row = await session.get(IndexSettingsRow, _ROW_ID)
         settings = SearchSettings() if row is None else SearchSettings.model_validate(row.value)
         self._cached = (time.monotonic(), settings)
+        self.default_language = settings.default_language
         return settings
 
     async def view(self) -> SearchSettingsView:
@@ -169,6 +178,7 @@ class SearchSettingsService:
                 row.value = payload
                 row.updated_at = utcnow()
         self._cached = (time.monotonic(), settings)
+        self.default_language = settings.default_language
         self.version += 1
         return _view(settings)
 
@@ -179,6 +189,7 @@ class SearchSettingsService:
                 await session.delete(row)
         settings = SearchSettings()
         self._cached = (time.monotonic(), settings)
+        self.default_language = settings.default_language
         self.version += 1
         return _view(settings)
 
@@ -187,5 +198,6 @@ def _view(settings: SearchSettings) -> SearchSettingsView:
     return SearchSettingsView(
         facets=settings.facets,
         properties=settings.properties,
+        defaultLanguage=settings.default_language,
         isDefault=settings == SearchSettings(),
     )

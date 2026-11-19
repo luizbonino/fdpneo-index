@@ -310,6 +310,9 @@ export const en = {
     hidden: "Properties visitors may not use",
     hiddenHelp:
       "One IRI per line; one ending in / or # covers a whole vocabulary. Filters listed above stay open to everyone.",
+    defaultLanguage: "Default language of titles and labels",
+    defaultLanguageHelp:
+      "Used when a reader's browser states no language; readers can also choose one on the search page.",
     save: "Save filters",
     saved: "Search filters saved.",
     resetConfirm: "Restore the default search filters?",
@@ -593,6 +596,8 @@ export const en = {
     results: "No results | 1 result | {n} results",
     took: "in {ms} ms",
     sort: "Sort",
+    language: "Metadata in",
+    languageAuto: "Your browser's language",
     sorts: {
       relevance: "Best match",
       modified: "Recently updated",

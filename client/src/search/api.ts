@@ -171,6 +171,7 @@ export interface ProfileView {
 export interface SearchSettings {
   facets: FacetSetting[] | null;
   properties: { visitors: boolean; hidden: string[] };
+  defaultLanguage: string;
   isDefault?: boolean;
 }
 
@@ -181,6 +182,9 @@ export interface Landing {
   facets: FacetInfo[];
   /** Whether visitors may add filters on any property. */
   properties: { visitors: boolean };
+  /** Languages offered for titles and labels, and the index's default. */
+  languages: string[];
+  defaultLanguage: string;
   fields: Record<string, { label: Record<string, string>; kind: string }>;
   cards: Partial<Record<Kind, string[]>>;
   indexing: { pending: number };
@@ -254,7 +258,6 @@ export const searchApi = {
       query.delete(key);
     query.set("field", field);
     query.set("tree", "true");
-    query.set("size", "1000");
     return request<{ tree: TreeNode[]; filter: string; approximate?: boolean }>(
       `/index/search/facets?${query}`,
     );
@@ -277,7 +280,11 @@ export const searchApi = {
   saveSettings: (settings: SearchSettings) =>
     request<SearchSettings>("/index/search/settings", {
       method: "PUT",
-      body: { facets: settings.facets, properties: settings.properties },
+      body: {
+        facets: settings.facets,
+        properties: settings.properties,
+        defaultLanguage: settings.defaultLanguage,
+      },
     }),
   profile: () => request<ProfileView>("/index/search/profile"),
   saveProfile: (overlay: Record<string, unknown>) =>

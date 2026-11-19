@@ -1134,3 +1134,21 @@ async def test_identical_titles_are_one_suggestion(
         )
     result = await search.suggest("cohort da", types=["dataset"])
     assert {"kind": "query", "text": "Cohort data", "count": 2} in result["suggestions"]
+
+
+def test_the_index_default_language_applies_without_a_browser_preference(api: Api) -> None:
+    def theme_labels(headers: dict[str, str] | None = None) -> set[str]:
+        body = api.client.get(
+            "/index/search", params={"facets": "theme", "type": "dataset"}, headers=headers
+        ).json()
+        return {b["label"] for b in body["facets"]["theme"]["buckets"]}
+
+    assert "Health" in theme_labels()
+    saved = api.client.put("/index/search/settings", json={"defaultLanguage": "de"}, headers=ADMIN)
+    assert saved.status_code == 200, saved.text
+    assert "Gesundheit" in theme_labels()
+    assert "Gezondheid" in theme_labels({"Accept-Language": "nl-NL,nl;q=0.9"})
+    landing = api.client.get("/index/search/landing").json()
+    assert landing["defaultLanguage"] == "de" and "nl" in landing["languages"]
+    bad = api.client.put("/index/search/settings", json={"defaultLanguage": "x"}, headers=ADMIN)
+    assert bad.status_code in {400, 422}

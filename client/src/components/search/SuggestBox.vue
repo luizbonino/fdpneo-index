@@ -10,7 +10,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { searchApi, type Suggestion } from "@/search/api";
 
-const props = defineProps<{ types: string[]; lang?: string }>();
+const props = defineProps<{ types: string[]; lang?: string | undefined }>();
 const text = defineModel<string>({ required: true });
 const emit = defineEmits<{
   submit: [];

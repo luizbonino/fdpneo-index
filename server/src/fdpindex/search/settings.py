@@ -23,6 +23,8 @@ from fdpindex.db import utcnow
 from fdpindex.models import IndexSettingsRow
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from fdpindex.search.profile import Profile
@@ -133,9 +135,13 @@ def effective_facets(settings: SearchSettings, profile: Profile) -> list[FacetSe
 class SearchSettingsService:
     """Reads (cached for a few seconds) and writes the search settings row."""
 
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession], profile: Profile) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        profile: Callable[[], Profile],
+    ) -> None:
         self._session_factory = session_factory
-        self._profile = profile
+        self._profile = profile  # the current profile: an administrator may change it
         self._cached: tuple[float, SearchSettings] | None = None
         self.version = 0  # bumped on every change; part of cache keys
 
@@ -153,7 +159,7 @@ class SearchSettingsService:
         return _view(await self.get())
 
     async def update(self, settings: SearchSettings) -> SearchSettingsView:
-        settings.check(self._profile)
+        settings.check(self._profile())
         payload = settings.model_dump(mode="json", by_alias=True)
         async with self._session_factory() as session, session.begin():
             row = await session.get(IndexSettingsRow, _ROW_ID)

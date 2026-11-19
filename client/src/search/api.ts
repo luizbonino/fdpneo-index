@@ -135,6 +135,14 @@ export interface FacetSetting {
   help: Record<string, string>;
 }
 
+/** `GET`/`PUT /index/search/profile` (administrators): the profile and the overlay on it. */
+export interface ProfileView {
+  hash: string;
+  profile: { fields: Record<string, { kind: string; facet?: string | null }> };
+  overlay: Record<string, unknown> | null;
+  indexing: boolean;
+}
+
 /** `GET`/`PUT /index/search/settings` (administrators). */
 export interface SearchSettings {
   facets: FacetSetting[] | null;
@@ -230,6 +238,10 @@ export const searchApi = {
       method: "PUT",
       body: { facets: settings.facets, properties: settings.properties },
     }),
+  profile: () => request<ProfileView>("/index/search/profile"),
+  saveProfile: (overlay: Record<string, unknown>) =>
+    request<ProfileView>("/index/search/profile", { method: "PUT", body: overlay }),
+  resetProfile: () => request<ProfileView>("/index/search/profile", { method: "DELETE" }),
   resetSettings: () => request<SearchSettings>("/index/search/settings", { method: "DELETE" }),
   resource: (id: string, lang?: string) =>
     request<ResourceDetail>(

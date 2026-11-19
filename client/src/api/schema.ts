@@ -353,11 +353,24 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** The search profile */
+    /**
+     * The search profile
+     * @description The profile in use, and the administrator's overlay on the bundled one (if any).
+     */
     get: operations["profile_index_search_profile_get"];
-    put?: never;
+    /**
+     * Change the search profile
+     * @description Store an overlay on the bundled profile, as JSON or YAML; every entry is re-projected.
+     *
+     *     Sections: `prefixes`, `fields` (a field by name replaces or adds one,
+     *     `null` removes one), `types`, `normalise` (entries added), `cards`,
+     *     `landing`, `capture`. A new field with `facet: main` or `more` is a
+     *     facet and a filter at once; its counts appear as entries are projected.
+     */
+    put: operations["put_profile_index_search_profile_put"];
     post?: never;
-    delete?: never;
+    /** Restore the bundled search profile */
+    delete: operations["delete_profile_index_search_profile_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -2149,6 +2162,50 @@ export interface operations {
     };
   };
   profile_index_search_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  put_profile_index_search_profile_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  delete_profile_index_search_profile_delete: {
     parameters: {
       query?: never;
       header?: never;

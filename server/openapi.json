@@ -2848,7 +2848,29 @@
       }
     },
     "/index/search/profile": {
+      "delete": {
+        "operationId": "delete_profile_index_search_profile_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Profile Index Search Profile Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Restore the bundled search profile",
+        "tags": [
+          "Search"
+        ]
+      },
       "get": {
+        "description": "The profile in use, and the administrator's overlay on the bundled one (if any).",
         "operationId": "profile_index_search_profile_get",
         "responses": {
           "200": {
@@ -2865,6 +2887,28 @@
           }
         },
         "summary": "The search profile",
+        "tags": [
+          "Search"
+        ]
+      },
+      "put": {
+        "description": "Store an overlay on the bundled profile, as JSON or YAML; every entry is re-projected.\n\nSections: `prefixes`, `fields` (a field by name replaces or adds one,\n`null` removes one), `types`, `normalise` (entries added), `cards`,\n`landing`, `capture`. A new field with `facet: main` or `more` is a\nfacet and a filter at once; its counts appear as entries are projected.",
+        "operationId": "put_profile_index_search_profile_put",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Put Profile Index Search Profile Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Change the search profile",
         "tags": [
           "Search"
         ]

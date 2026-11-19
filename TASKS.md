@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-81 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
+82 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -27,14 +27,14 @@ task are listed in the last column.
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 5/5 | – | – | ✅ Done | – |
 | 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 9/9 | – | – | ✅ Done | – |
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 4/4 | – | – | ✅ Done | – |
-| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 15/16 | 1 | – | 🟡 Mostly done | Profile `PUT`/`DELETE` (6.12) |
+| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 3/13 | 1 | 9 | 🔹 Started | All but 8.6, 8.10 and 8.13 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
-| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 1 | 7 | 🔹 Started | All but 9.9 (done with 6.15) and the capture part of 9.2 (done with 8.13) |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 2 | 6 | 🔹 Started | All but 9.9 (done), and the capture of 9.2 and profile facets of 9.3 (done with 8.13 and 6.12) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **81/115** | **3** | **31** | | |
+| **Total** | | **82/115** | **3** | **30** | | |
 
 ## Phase 0 — Foundations
 
@@ -132,7 +132,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 6.9 Search repository: filters (named fields, dates, fdp, fdpState), text condition, ranking per §4, sorting, offset paging, facet counts with the facet cache, `statement_timeout`; unit tests on SQLite, ranking and FTS tests on PostgreSQL — *done except the facet cache*
 - [x] 6.10 `GET` / `POST /index/search` (JSON), `GET /index/search/resources/{id}` (JSON, Turtle, JSON-LD, N-Triples), `GET /index/search/facets`, `GET /index/search/landing`; parameter validation and caps; anonymous visibility; OpenAPI snapshot and contract tests — *done except `POST /index/search` (it carries the path filters of 9.2)*
 - [x] 6.11 Rate limit for anonymous search and suggest (in-memory token bucket, trusted proxy IP as for pings)
-- [~] 6.12 Admin: `GET`/`PUT`/`DELETE /index/search/profile`, `POST /index/search/reindex`, `GET /index/search/stats` (rows, lag, completeness per FDP) — *`GET` profile, reindex and stats done; `PUT`/`DELETE` profile pending*
+- [x] 6.12 Admin: `GET`/`PUT`/`DELETE /index/search/profile`, `POST /index/search/reindex`, `GET /index/search/stats` (rows, lag, completeness per FDP) — *done: the profile is the bundled one plus an administrator's overlay (JSON or YAML; fields replaced, added or removed; prefixes, types, normalise, cards, landing, capture), validated as a whole, applied at run time with a re-projection; Settings → Search profile*
 - [x] 6.13 Client: `/search` route, `SearchView.vue`, `SearchBox.vue`, `FacetGroup.vue` (with ⓘ help, Clear, Show more, numeric and boolean groups), `ResourceCard.vue` (key-fields footer), landing strip with counters and the hierarchy explainer, URL state, type tabs, mobile bottom sheet, states; `useSearch()` composable; unit tests; "Search this FDP's metadata" on the entry page — *done; suggestions in the search box come with 8.2*
 - [x] 6.14 Client: resource detail page `/search/r/{id}` as a label/value table with language switch, labelled IRIs, parent chain, distributions, raw triples, Turtle / JSON-LD / N-Triples download buttons
 - [x] 6.15 Performance check on a synthetic corpus (1 000 entries × 2 000 nodes, generated from the fixture graphs): `EXPLAIN ANALYZE` of the main query shapes, documented numbers and the `maintenance_work_mem` advice in the operator documentation — *done: `server/bench/search_bench.py`, results and advice in [docs/search-performance.md](docs/search-performance.md); fixes in migration 0004 and `search/query.py` (facets from `search_value` alone, matched-id facets with sampling above 50 000, bounded ranking, sort indexes, an in-process facet cache, `random_page_cost` per search). Open: first queries on a cold cache with phrases or very common words take several seconds*
@@ -175,7 +175,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 
 - [ ] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery`
 - [~] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats` — *capture done with 8.13 (IRIs and short literals one step from the resource, `p:<hash>` with `search_property`, `GET /index/search/properties` with counts); two-step paths, typed operators and `POST /index/search` open*
-- [ ] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker
+- [~] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker — *done with 6.12 as overlay fields (a field with `facet` is a filter under its own name, labelled in the client); `f.` prefixes were not needed; the SPARQL builder's picker still names predicates, not profile fields*
 - [ ] 9.4 Keyset `cursor` paging for non-relevance sorts
 - [ ] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation
 - [ ] 9.6 (see 11.5) `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test

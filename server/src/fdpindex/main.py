@@ -31,7 +31,7 @@ from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
 from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
-from fdpindex.search.profile import default_profile
+from fdpindex.search.profile_store import ProfileStore
 from fdpindex.search.query import SearchService
 from fdpindex.service import IndexService
 from fdpindex.settings import SettingsService
@@ -188,7 +188,7 @@ def create_app(
         app.state.data_rate = RateLimiter(30)  # anonymous harvested-data downloads per minute
         sparql = await _start_sparql(config, factory, settings_service, index)
         app.state.sparql = sparql
-        search = _start_search(
+        search = await _start_search(
             config, factory, settings_service, index, http, resolver or system_resolver
         )
         app.state.search = search
@@ -240,7 +240,7 @@ def create_app(
     return app
 
 
-def _start_search(
+async def _start_search(
     config: Settings,
     factory: async_sessionmaker[AsyncSession],
     settings_service: SettingsService,
@@ -250,7 +250,8 @@ def _start_search(
 ) -> SearchService | None:
     if not config.search_enabled:
         return None
-    indexer = SearchIndexer(factory, default_profile())
+    # The bundled profile with an administrator's changes, if any (TASKS 6.12).
+    indexer = SearchIndexer(factory, await ProfileStore(factory).effective())
     index.add_listener(indexer.notify)
     indexer.start()
     log.info("search_started", profile=indexer.profile.hash[:12])

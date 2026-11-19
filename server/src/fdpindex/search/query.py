@@ -75,6 +75,7 @@ from fdpindex.models import (
 )
 from fdpindex.search.concepts import concept_stats
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
+from fdpindex.search.profile_store import ProfileStore
 from fdpindex.search.project import (
     SIMPLE_CONFIG,
     bucket_label,
@@ -328,14 +329,14 @@ class SearchService:
         self._session_factory = session_factory
         self._settings = settings
         self.indexer = indexer
-        self.profile = indexer.profile
+        self.profiles = ProfileStore(session_factory)
         self.search_settings = search_settings or SearchSettingsService(
-            session_factory, indexer.profile
+            session_factory, lambda: indexer.profile
         )
         self._properties: dict[tuple[Any, ...], tuple[float, int, list[dict[str, Any]]]] = {}
         self._timeout = timeout_seconds
         self._admin_timeout = admin_timeout_seconds
-        self._landing: tuple[tuple[int, int], float, dict[str, Any]] | None = None
+        self._landing: tuple[tuple[int, int, str], float, dict[str, Any]] | None = None
         self._facet_cache_seconds = facet_cache_seconds
         self._sample_above = sample_above
         self._sample_size = sample_size
@@ -371,6 +372,22 @@ class SearchService:
         # Read with the threshold, once per request: the expiry policy may hide entries.
         self._hide_expired = settings.expiry.enabled and settings.expiry.hide
         return utcnow() - settings.ping.valid_duration
+
+    async def change_profile(self, overlay: dict[str, Any] | None) -> Profile:
+        """Store an administrator's overlay (``None`` removes it) and re-project everything."""
+        profile = await (
+            self.profiles.save(overlay) if overlay is not None else self.profiles.delete()
+        )
+        if profile.hash != self.profile.hash:
+            self.indexer.set_profile(profile)
+            self._facet_cache.clear()
+            self._properties.clear()
+        return profile
+
+    @property
+    def profile(self) -> Profile:
+        """The indexer's: an administrator may change it at run time (TASKS 6.12)."""
+        return self.indexer.profile
 
     # --- facet names ---------------------------------------------------------------
 
@@ -1227,7 +1244,7 @@ class SearchService:
     async def landing(self) -> dict[str, Any]:
         """Counters per kind and FDP state, the facet descriptions and card fields (cached)."""
         cached = self._landing
-        version = (self.indexer.generation, self.search_settings.version)
+        version = (self.indexer.generation, self.search_settings.version, self.profile.hash)
         if cached is not None and cached[0] == version and time.monotonic() - cached[1] < 60:
             return cached[2]
         settings = await self.search_settings.get()

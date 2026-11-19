@@ -153,6 +153,10 @@ class ConceptResolver:
 
     # --- loop -----------------------------------------------------------------
 
+    def set_profile(self, profile: Profile) -> None:
+        """The concept fields of a changed profile (TASKS 6.12)."""
+        self._fields = concept_fields(profile)
+
     def start(self) -> None:
         if self._task is None:
             self._task = asyncio.create_task(self._run(), name="concept-resolver")

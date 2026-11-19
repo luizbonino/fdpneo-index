@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
 
+import yaml
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
@@ -32,6 +33,7 @@ from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.errors import BadRequest, IndexServiceError, RateLimited
 from fdpindex.search.profile import KINDS, Kind
+from fdpindex.search.profile_store import ProfileError
 from fdpindex.search.project import parse_datetime
 from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService
 from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
@@ -346,7 +348,57 @@ class ReindexRequest(BaseModel):
     dependencies=[Depends(require_admin)],
 )
 async def profile(service: Search) -> dict[str, Any]:
-    return {"hash": service.profile.hash, "profile": service.profile.model_dump(mode="json")}
+    """The profile in use, and the administrator's overlay on the bundled one (if any)."""
+    return await _profile_view(service)
+
+
+async def _profile_view(service: SearchService) -> dict[str, Any]:
+    return {
+        "hash": service.profile.hash,
+        "profile": service.profile.model_dump(mode="json"),
+        "overlay": await service.profiles.overlay(),
+        "indexing": not service.indexer.idle.is_set(),
+    }
+
+
+@router.put(
+    "/index/search/profile",
+    summary="Change the search profile",
+    dependencies=[Depends(require_admin)],
+)
+async def put_profile(request: Request, service: Search) -> dict[str, Any]:
+    """Store an overlay on the bundled profile, as JSON or YAML; every entry is re-projected.
+
+    Sections: `prefixes`, `fields` (a field by name replaces or adds one,
+    `null` removes one), `types`, `normalise` (entries added), `cards`,
+    `landing`, `capture`. A new field with `facet: main` or `more` is a
+    facet and a filter at once; its counts appear as entries are projected.
+    """
+    raw = await request.body()
+    try:
+        if "yaml" in request.headers.get("content-type", ""):
+            overlay = yaml.safe_load(raw.decode("utf-8")) or {}
+        else:
+            overlay = json.loads(raw or b"{}")
+    except (ValueError, yaml.YAMLError) as err:
+        raise BadRequest(f"Not JSON or YAML: {err}") from err
+    if not isinstance(overlay, dict):
+        raise BadRequest("The profile overlay is an object")
+    try:
+        await service.change_profile(overlay)  # pyright: ignore[reportUnknownArgumentType]
+    except ProfileError as err:
+        raise BadRequest(f"Invalid profile: {err}") from err
+    return await _profile_view(service)
+
+
+@router.delete(
+    "/index/search/profile",
+    summary="Restore the bundled search profile",
+    dependencies=[Depends(require_admin)],
+)
+async def delete_profile(service: Search) -> dict[str, Any]:
+    await service.change_profile(None)
+    return await _profile_view(service)
 
 
 @router.post(

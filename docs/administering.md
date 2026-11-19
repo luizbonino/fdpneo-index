@@ -89,6 +89,11 @@ address** shows which pattern matches.
 
 These are stored as `/index/search/settings` and need no re-indexing.
 
+**Settings → Search profile (advanced)** changes which predicates feed
+which fields, and can define new ones; a new field with `facet` is a new
+filter. It re-indexes every FDP in the background. See
+[search-and-sparql.md](search-and-sparql.md#the-search-profile).
+
 ## Webhooks
 
 **Webhooks** sends a signed POST to an address of yours when something

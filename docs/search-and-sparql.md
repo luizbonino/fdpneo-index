@@ -35,10 +35,28 @@ values and literals up to 100 characters), which is what lets visitors add a
 filter on any property. `capture.properties: false` in the profile turns
 that off; it roughly halves the size of `search_value`.
 
-Changing the bundled profile, in a release, re-projects every entry once in
-the background. A per-index profile (`PUT /index/search/profile`) is not
-built yet (TASKS 6.12); which filters the page shows, and in what order,
-is a setting instead: [administering.md](administering.md#search-filters).
+Administrators change the profile of their index with an *overlay* on the
+bundled one (`PUT /index/search/profile`, JSON or YAML, or **Settings →
+Search profile**): a field by name replaces or adds one, `null` removes
+one, and `prefixes`, `types`, `normalise`, `cards`, `landing` and
+`capture` can be changed too. Because it is an overlay, the index still
+receives the bundled profile's improvements in later releases. For example,
+a filter on the version an FDP declares:
+
+```yaml
+fields:
+  fdpVersion:
+    kind: literal
+    paths: [dcat:version, dct:hasVersion]
+    facet: more
+    label: {en: FDP version}
+```
+
+A change, in a release or by an administrator, re-projects every entry
+once in the background; search answers from the old rows meanwhile, and
+new filters fill in as entries are done. `DELETE /index/search/profile`
+restores the bundled profile. Which filters the page shows, and in what
+order, is a separate setting: [administering.md](administering.md#search-filters).
 
 ## Limits
 

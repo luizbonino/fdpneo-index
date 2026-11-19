@@ -961,3 +961,101 @@ async def test_theme_names_in_other_languages_are_found(search: SearchService) -
     german = await search.search(SearchParams(types=["dataset"], lang="de", facets=["theme"]))
     labels = {b["label"] for b in german["facets"]["theme"]["buckets"]}
     assert "Gesundheit" in labels
+
+
+# --- administrator's profile (TASKS 6.12, 9.3) ---------------------------------------------
+
+
+def test_an_overlay_adds_replaces_and_removes_fields() -> None:
+    from fdpindex.search.profile_store import ProfileError, merge
+
+    base = default_profile()
+    merged = merge(
+        base,
+        {
+            "prefixes": {"ex": "https://example.org/ns#"},
+            "fields": {
+                "fdpVersion": {
+                    "kind": "literal",
+                    "paths": ["dct:hasVersion"],
+                    "facet": "more",
+                    "label": {"en": "FDP version"},
+                },
+                "records": None,
+            },
+            "normalise": {"format": {"vcf": "https://example.org/formats/VCF"}},
+        },
+    )
+    assert merged.fields["fdpVersion"].facet == "more"
+    assert "records" not in merged.fields
+    assert merged.normalise["format"]["vcf"] == "https://example.org/formats/VCF"
+    assert merged.normalise["format"]["csv"] == base.normalise["format"]["csv"]  # kept
+    assert merged.hash != base.hash
+    with pytest.raises(ProfileError, match="unknown profile section"):
+        merge(base, {"extensions": {}})
+    with pytest.raises(ProfileError, match="unknown prefix"):
+        merge(base, {"fields": {"x": {"kind": "iri", "paths": ["nope:x"]}}})
+    with pytest.raises(ProfileError, match="text field 'title'"):
+        merge(base, {"fields": {"title": None}})
+
+
+async def test_a_changed_profile_reprojects_and_offers_the_new_facet(
+    search: SearchService,
+) -> None:
+    overlay = {
+        "fields": {
+            "fdpVersion": {
+                "kind": "literal",
+                "paths": ["dct:hasVersion"],
+                "facet": "main",
+                "label": {"en": "FDP version"},
+            }
+        }
+    }
+    with pytest.raises(BadRequest):
+        await search.search(SearchParams(facets=["fdpVersion"]))
+    await search.change_profile(overlay)
+    assert "fdpVersion" in search.profile.facets
+    await search.indexer.sync_once()
+    result = await search.search(SearchParams(types=["fdp"], facets=["fdpVersion"]))
+    assert {b["value"] for b in result["facets"]["fdpVersion"]["buckets"]} == {"1.17.2"}
+    filtered = await search.search(SearchParams(filters={"fdpVersion": ["1.17.2"]}))
+    assert [h["title"] for h in filtered["hits"]] == ["Beta FDP"]
+    landing = await search.landing()
+    assert any(f["name"] == "fdpVersion" for f in landing["facets"])
+    assert await search.profiles.overlay() == overlay
+    # Removing the overlay restores the bundled profile.
+    await search.change_profile(None)
+    assert "fdpVersion" not in search.profile.facets
+    assert await search.profiles.overlay() is None
+
+
+def test_the_profile_over_http(api: Api) -> None:
+    assert api.client.put("/index/search/profile", json={}).status_code == 401
+    yaml_body = (
+        "fields:\n  fdpVersion:\n    kind: literal\n    paths: [dct:hasVersion]\n    facet: more\n"
+    )
+    saved = api.client.put(
+        "/index/search/profile",
+        content=yaml_body,
+        headers={**ADMIN, "Content-Type": "application/yaml"},
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["overlay"]["fields"]["fdpVersion"]["facet"] == "more"
+    assert "fdpVersion" in saved.json()["profile"]["fields"]
+    bad = api.client.put(
+        "/index/search/profile", json={"fields": {"x": {"kind": "nope"}}}, headers=ADMIN
+    )
+    assert bad.status_code == 400
+    assert "Invalid profile" in bad.json()["message"]
+    assert (
+        api.client.put(
+            "/index/search/profile",
+            content=b"[1, 2]",
+            headers={**ADMIN, "Content-Type": "application/json"},
+        ).status_code
+        == 400
+    )
+    restored = api.client.delete("/index/search/profile", headers=ADMIN)
+    assert restored.json()["overlay"] is None
+    assert "fdpVersion" not in restored.json()["profile"]["fields"]

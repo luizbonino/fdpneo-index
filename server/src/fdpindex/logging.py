@@ -44,6 +44,9 @@ def configure_logging(environment: Literal["development", "production"]) -> None
     # Driver chatter drowns everything else at DEBUG.
     for name in ("aiosqlite", "asyncio", "httpcore", "httpx"):
         logging.getLogger(name).setLevel(logging.INFO)
+    # rdflib warns, with a traceback, about every typed literal whose text does not fit its
+    # datatype (""^^xsd:integer): harvested metadata has many, and they are kept as text.
+    logging.getLogger("rdflib.term").setLevel(logging.ERROR)
     for name in _UVICORN_LOGGERS:
         logger = logging.getLogger(name)
         logger.handlers = []

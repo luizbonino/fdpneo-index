@@ -9,7 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from fdpindex.durations import format_duration, parse_duration
-from fdpindex.harvest import harvest
+from fdpindex.harvest import harvest, serialise
 from fdpindex.outbound import OutboundClient, OutboundError
 from fdpindex.rdf import extract_repository_metadata, parse_rdf
 from fdpindex.settings import IndexSettings, default_settings
@@ -360,3 +360,22 @@ async def test_a_harvest_stops_at_its_byte_budget(network: FakeNetwork) -> None:
         )
         result = await harvest(client, FDP, timeout_seconds=5, max_nodes=100, max_bytes=10)
     assert result.limit_reached and len(result.nodes) == 1
+
+
+def test_serialise_keeps_literals_with_line_separator_characters_whole() -> None:
+    from rdflib import Graph, Literal, URIRef
+
+    graph = Graph()
+    text = "Osnovana baza sadr\u00c3\u0085i, line\u2028separator, form\x0cfeed"
+    graph.add(
+        (
+            URIRef("https://fdp.example.org/d"),
+            URIRef("http://purl.org/dc/terms/title"),
+            Literal(text),
+        )
+    )
+    stored = serialise(graph, "https://fdp.example.org/d")
+    assert stored.ntriples.count("\n") == 1
+    again = Graph()
+    again.parse(data=stored.ntriples, format="nt")
+    assert str(next(iter(again))[2]) == text

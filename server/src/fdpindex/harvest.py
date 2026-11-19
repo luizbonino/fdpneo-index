@@ -132,7 +132,10 @@ def serialise(graph: Graph, node_iri: str) -> HarvestedGraph:
     scoped = Graph()
     for triple in to_canonical_graph(graph):
         scoped.add(tuple(_scoped(term, scope) for term in triple))  # pyright: ignore[reportArgumentType]
-    lines = sorted(line for line in scoped.serialize(format="nt").splitlines() if line.strip())
+    # Split on "\n" only: N-Triples ends lines with it, while str.splitlines() also breaks
+    # on characters a literal may hold raw (U+0085, U+2028, form feed), which cut the
+    # literal in two (found on a live FDP whose text was double-encoded UTF-8).
+    lines = sorted(line for line in scoped.serialize(format="nt").split("\n") if line.strip())
     text = "\n".join(lines) + ("\n" if lines else "")
     return HarvestedGraph(
         node_iri=node_iri, ntriples=text, content_hash=hashlib.sha256(text.encode()).hexdigest()

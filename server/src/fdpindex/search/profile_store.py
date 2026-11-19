@@ -19,6 +19,8 @@ old rows meanwhile. Stored as the third row of ``index_settings``.
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
+from importlib import resources
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -40,6 +42,28 @@ OVERLAY_KEYS = frozenset(
 
 class ProfileError(ValueError):
     """The overlay is not acceptable; the message says why."""
+
+
+@dataclass(frozen=True)
+class Example:
+    """A bundled overlay to start from (``search/examples/<name>.yaml``, TASKS 8.5)."""
+
+    name: str
+    title: str
+    text: str
+
+
+EXAMPLE_TITLES = {"healthdcat-ap": "HealthDCAT-AP"}
+
+
+def examples() -> list[Example]:
+    folder = resources.files("fdpindex.search").joinpath("examples")
+    found: list[Example] = []
+    for item in sorted(folder.iterdir(), key=lambda i: i.name):
+        if item.name.endswith(".yaml"):
+            name = item.name.removesuffix(".yaml")
+            found.append(Example(name, EXAMPLE_TITLES.get(name, name), item.read_text("utf-8")))
+    return found
 
 
 def merge(base: Profile, overlay: dict[str, Any]) -> Profile:

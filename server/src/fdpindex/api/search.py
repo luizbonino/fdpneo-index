@@ -10,7 +10,8 @@
 * ``GET /index/search/labels``: labels for IRIs.
 * ``GET /index/search/properties``: properties found in the harvested
   metadata, for facets on any property (``prop:<IRI>`` as facet and filter).
-* Administrators: ``GET /index/search/profile``, ``POST …/reindex``, ``GET …/stats``,
+* Administrators: ``GET /index/search/profile`` (and ``…/examples/{name}``, bundled
+  overlays such as HealthDCAT-AP), ``POST …/reindex``, ``GET …/stats``,
   ``GET``/``PUT``/``DELETE …/settings`` (default facets, property facets).
 
 Anonymous callers see resources of accepted entries only and are rate
@@ -21,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 from datetime import UTC, date, datetime
 from typing import Annotated, Any
 from uuid import UUID
@@ -31,10 +33,10 @@ from pydantic import BaseModel, Field
 
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
-from fdpindex.errors import BadRequest, IndexServiceError, RateLimited
+from fdpindex.errors import BadRequest, IndexServiceError, NotFound, RateLimited
 from fdpindex.search.period import parse_day
 from fdpindex.search.profile import KINDS, Kind
-from fdpindex.search.profile_store import ProfileError
+from fdpindex.search.profile_store import ProfileError, examples
 from fdpindex.search.project import parse_datetime
 from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService
 from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
@@ -132,12 +134,14 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         )
         if query.getlist(name)
     }
+    number_fields = [n for n, spec in service.profile.fields.items() if spec.kind == "number"]
     unknown = [
         key
         for key in query
         if key not in RESERVED
         and key not in filters
         and not any(key in (f"{r}From", f"{r}To") for r in (*RANGES, "temporal"))
+        and not any(key in (f"{n}Min", f"{n}Max") for n in number_fields)
     ]
     if unknown:
         raise BadRequest(f"Unknown parameter: {', '.join(sorted(unknown))}")
@@ -161,6 +165,14 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         if query.get("temporalFrom") or query.get("temporalTo")
         else None
     )
+    numbers = {
+        name: (
+            _float(f"{name}Min", query.get(f"{name}Min")),
+            _float(f"{name}Max", query.get(f"{name}Max")),
+        )
+        for name in number_fields
+        if query.get(f"{name}Min") or query.get(f"{name}Max")
+    }
     facets = query.get("facets")
     params = SearchParams(
         q=query.get("q", ""),
@@ -169,6 +181,7 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
         filters=filters,
         ranges=ranges,
         temporal=temporal,
+        numbers=numbers,
         fdp_state=query.get("fdpState") or None,
         lang=lang,
         sort=query.get("sort", ""),
@@ -180,6 +193,18 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
     if facets is not None:
         params.facets = [] if facets == "none" else [f for f in facets.split(",") if f]
     return params
+
+
+def _float(name: str, value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        number = float(value)
+    except ValueError as err:
+        raise BadRequest(f"{name}: not a number") from err
+    if not math.isfinite(number):
+        raise BadRequest(f"{name}: not a number")
+    return number
 
 
 def _int(value: str | None, default: int, name: str) -> int:
@@ -209,6 +234,7 @@ async def search(
     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
     dates; a resource matches when its temporal coverage overlaps the period),
+    `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
     `fdpState=ACTIVE`, `sort`, `page`, `size`,
     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
     each hit has `highlight`: its title and description as text segments with
@@ -421,7 +447,28 @@ async def _profile_view(service: SearchService) -> dict[str, Any]:
         "profile": service.profile.model_dump(mode="json"),
         "overlay": await service.profiles.overlay(),
         "indexing": not service.indexer.idle.is_set(),
+        "examples": [{"name": e.name, "title": e.title} for e in examples()],
     }
+
+
+@router.get(
+    "/index/search/profile/examples/{name}",
+    summary="A bundled example overlay",
+    dependencies=[Depends(require_admin)],
+)
+async def profile_example(name: str) -> dict[str, Any]:
+    """An overlay to start from (`healthdcat-ap`: HealthDCAT-AP's number, yes/no,
+    vocabulary and agent fields): as YAML with its comments, and as an object. Apply
+    it with `PUT /index/search/profile`."""
+    for example in examples():
+        if example.name == name:
+            return {
+                "name": example.name,
+                "title": example.title,
+                "yaml": example.text,
+                "overlay": yaml.safe_load(example.text),
+            }
+    raise NotFound(f"No example profile named {name}")
 
 
 @router.put(

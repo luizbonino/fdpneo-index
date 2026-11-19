@@ -40,6 +40,7 @@ import {
   fromQuery,
   isFiltered,
   removeChip,
+  setNumber,
   removeFacet,
   toQuery,
   toggle,
@@ -262,6 +263,13 @@ const labelCache = computed(() => {
 });
 function chipLabel(chip: Chip): string {
   if (chip.name === "fdpState") return t("search.onlyActive");
+  if (chip.range) {
+    const [min, max] = chip.value.split("..");
+    return `${facetTitle(chip.name)}: ${min || "…"} – ${max || "…"}`;
+  }
+  if (data.value?.facets[chip.name]?.kind === "boolean") {
+    return `${facetTitle(chip.name)}: ${chip.value === "true" ? t("search.yes") : t("search.no")}`;
+  }
   if (chip.name === "temporal") {
     const [from, to] = chip.value.split("..");
     const period = formatPeriod({ start: from || null, end: to || null }, t);
@@ -456,9 +464,12 @@ const counters = computed(() => {
           :more="data?.facets[facet.name]?.more ?? false"
           :approximate="data?.facets[facet.name]?.approximate ?? false"
           :selected="selected(facet.name)"
+          :kind="data?.facets[facet.name]?.kind"
+          :range="state.numbers[facet.name]"
           @toggle="(value) => go(toggle(state, facet.name, value))"
           @clear="go(clearFacet(state, facet.name))"
           @more="dialogFacet = facet.name"
+          @range="(end, value) => go(setNumber(state, facet.name, end, value))"
         />
         <button
           v-for="facet in mainFacets.filter((f) => f.hierarchy)"
@@ -568,9 +579,12 @@ const counters = computed(() => {
             :more="data?.facets[facet.name]?.more ?? false"
             :approximate="data?.facets[facet.name]?.approximate ?? false"
             :selected="selected(facet.name)"
+            :kind="data?.facets[facet.name]?.kind"
+            :range="state.numbers[facet.name]"
             @toggle="(value) => go(toggle(state, facet.name, value))"
             @clear="go(clearFacet(state, facet.name))"
             @more="dialogFacet = facet.name"
+            @range="(end, value) => go(setNumber(state, facet.name, end, value))"
           />
         </template>
         <button

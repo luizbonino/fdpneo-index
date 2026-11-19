@@ -26,6 +26,8 @@ The first release will contain:
 - **Spatial coverage**: a country is one filter value whether an FDP names
   it by the EU authority table, GeoNames, lexvo or an ISO code; continents
   are labelled in ten languages.
+- **Number and Yes/No filters** from the profile, with ranges of your own,
+  and a bundled **HealthDCAT-AP** extension to load in Settings.
 - **Concept labels** from Wikidata, ROR, OLS and RDF vocabularies, off by
   default (ADR-0006).
 - **SPARQL** endpoint and page: editor, builder, example library, charts.

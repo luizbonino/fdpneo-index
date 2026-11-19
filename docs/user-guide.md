@@ -62,6 +62,11 @@ the results; click it to remove it.
   the page's address, so a shared link carries them, and this browser
   remembers them. **Remove** takes one away.
 
+Number filters, such as **Number of records**, count results in ranges
+and also take a lowest and a highest value of your own. Yes/No filters say
+whether a resource states something at all (for example whether it
+concerns personal data, on indexes that use the HealthDCAT-AP filters).
+
 **Dates** narrows by when a resource was issued or last modified. **Period
 covered** finds data whose temporal coverage overlaps the years you give:
 type a year (`2010`), a month (`2010-05`) or a date (`2010-05-31`), or

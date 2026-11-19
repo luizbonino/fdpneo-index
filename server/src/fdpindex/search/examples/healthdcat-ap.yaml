@@ -1,0 +1,101 @@
+# HealthDCAT-AP as an extension of the bundled search profile (TASKS 8.5).
+#
+# An overlay: apply it with `PUT /index/search/profile` (YAML or JSON), or
+# **Settings → Search profile → Load the HealthDCAT-AP example**. The index then
+# re-projects every entry in the background; the new filters fill in as it goes.
+#
+# Property IRIs follow HealthDCAT-AP Release 8
+# (https://data.health.europa.eu/healthdcat-ap/releases/release-8/).
+# It shows each kind of field an extension can add:
+#
+#   number   counts and ages, counted in buckets and filterable by range
+#   boolean  "presence" facets: whether a dataset states a property at all
+#   iri      controlled vocabularies (health categories, coding systems)
+#   agent    the health data access body
+#   literal  searchable text (code values, population coverage)
+
+prefixes:
+  dcatap: "http://data.europa.eu/r5r/"
+  dpv: "https://w3id.org/dpv#"
+
+fields:
+  individuals:
+    kind: number
+    paths: [healthdcatap:numberOfUniqueIndividuals]
+    facet: more
+    buckets: [100, 1000, 10000, 100000, 1000000]
+    label: {en: Number of individuals, nl: Aantal personen}
+    help: {en: "How many distinct people the data are about, as the data holder states it."}
+  minAge:
+    kind: number
+    paths: [healthdcatap:minTypicalAge]
+    facet: more
+    buckets: [2, 12, 18, 65]
+    label: {en: Youngest typical age}
+    help: {en: "The minimum typical age of the population in the dataset, in years."}
+  maxAge:
+    kind: number
+    paths: [healthdcatap:maxTypicalAge]
+    facet: more
+    buckets: [2, 12, 18, 65]
+    label: {en: Oldest typical age}
+    help: {en: "The maximum typical age of the population in the dataset, in years."}
+  healthCategory:
+    kind: iri
+    paths: [healthdcatap:healthCategory]
+    facet: main
+    weight: B
+    label: {en: Health category}
+    help:
+      en: >-
+        The categories of electronic health data of the European Health Data
+        Space (EHDS Article 51), such as electronic health records or registries.
+  healthTheme:
+    kind: iri
+    paths: [healthdcatap:healthTheme]
+    facet: more
+    weight: B
+    label: {en: Health theme}
+  codingSystem:
+    kind: iri
+    paths: [healthdcatap:hasCodingSystem]
+    facet: more
+    label: {en: Coding system}
+    help: {en: "Terminologies the data are coded in, such as ICD-10 or SNOMED CT."}
+  codeValues:
+    kind: literal
+    paths: [healthdcatap:hasCodeValues]
+    weight: D
+    label: {en: Code values}
+  populationCoverage:
+    kind: literal
+    paths: [healthdcatap:populationCoverage]
+    weight: C
+    label: {en: Population coverage}
+  hdab:
+    kind: agent
+    paths: [healthdcatap:hdab]
+    facet: more
+    label: {en: Health data access body}
+  legislation:
+    kind: iri
+    paths: [dcatap:applicableLegislation]
+    facet: more
+    label: {en: Applicable legislation}
+  hasAnalytics:
+    kind: boolean
+    paths: [healthdcatap:analytics]
+    presence: true
+    facet: more
+    label: {en: Has analytics}
+    help: {en: "Whether the dataset links an analytics distribution: reports, quality measures or summary statistics."}
+  personalData:
+    kind: boolean
+    paths: [dpv:hasPersonalData]
+    presence: true
+    facet: more
+    label: {en: Concerns personal data}
+    help: {en: "Whether the dataset lists the categories of personal data it holds (DPV)."}
+
+cards:
+  dataset: [publisher, healthCategory, individuals]

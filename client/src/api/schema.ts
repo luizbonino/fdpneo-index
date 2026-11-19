@@ -285,6 +285,7 @@ export interface paths {
      *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
      *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
      *     dates; a resource matches when its temporal coverage overlaps the period),
+     *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
      *     `fdpState=ACTIVE`, `sort`, `page`, `size`,
      *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
      *     each hit has `highlight`: its title and description as text segments with
@@ -380,6 +381,28 @@ export interface paths {
     post?: never;
     /** Restore the bundled search profile */
     delete: operations["delete_profile_index_search_profile_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/profile/examples/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A bundled example overlay
+     * @description An overlay to start from (`healthdcat-ap`: HealthDCAT-AP's number, yes/no,
+     *     vocabulary and agent fields): as YAML with its comments, and as an object. Apply
+     *     it with `PUT /index/search/profile`.
+     */
+    get: operations["profile_example_index_search_profile_examples__name__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2266,6 +2289,39 @@ export interface operations {
           "application/json": {
             [key: string]: unknown;
           };
+        };
+      };
+    };
+  };
+  profile_example_index_search_profile_examples__name__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

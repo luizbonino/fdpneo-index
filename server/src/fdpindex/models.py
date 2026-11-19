@@ -277,6 +277,8 @@ class SearchValue(Base):
     field: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(String(512), primary_key=True)
     lang: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # A number field's value as a number, for range filters (TASKS 8.5).
+    value_num: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Copies of the resource's, so facet counts over a type or an FDP need no join (0004).
     kind: Mapped[str] = mapped_column(String(16), nullable=False)
     entry_uuid: Mapped[UUID] = mapped_column(nullable=False)

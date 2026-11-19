@@ -285,6 +285,10 @@ export const en = {
     overlay: "Changes (JSON)",
     help: "Sections: prefixes, fields, types, normalise, cards, landing, capture. A field with facet main or more is a new filter. Empty: no changes.",
     example: "Show an example",
+    load: "Load the {name} example",
+    loadConfirm:
+      "Replace the changes in the editor with the {name} example? Nothing is saved until you save.",
+    loaded: "{name} example loaded. Review it, then save to re-index.",
     save: "Save and re-index",
     saved: "Profile saved; re-indexing.",
     reset: "Restore the bundled profile",
@@ -600,6 +604,14 @@ export const en = {
       to: "To year",
       invalid: "Use a year (2010), a month (2010-05) or a date (2010-05-31).",
       chip: "Covers {period}",
+    },
+    yes: "Yes",
+    no: "No",
+    number: {
+      min: "Lowest {name}",
+      max: "Highest {name}",
+      minShort: "Min",
+      maxShort: "Max",
     },
     period: {
       range: "{from} – {to}",

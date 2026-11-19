@@ -74,6 +74,8 @@ export interface Bucket {
 }
 
 export interface FacetResult {
+  /** Number facets count ranges; boolean facets are a yes/no pair (TASKS 8.5). */
+  kind?: "number" | "boolean";
   buckets: Bucket[];
   more: boolean;
   /** Counted on a sample of a large result set and scaled up. */
@@ -172,6 +174,8 @@ export interface ProfileView {
   profile: { fields: Record<string, { kind: string; facet?: string | null }> };
   overlay: Record<string, unknown> | null;
   indexing: boolean;
+  /** Bundled overlays to start from (TASKS 8.5). */
+  examples?: { name: string; title: string }[];
 }
 
 /** `GET`/`PUT /index/search/settings` (administrators). */
@@ -299,6 +303,10 @@ export const searchApi = {
   saveProfile: (overlay: Record<string, unknown>) =>
     request<ProfileView>("/index/search/profile", { method: "PUT", body: overlay }),
   resetProfile: () => request<ProfileView>("/index/search/profile", { method: "DELETE" }),
+  profileExample: (name: string) =>
+    request<{ name: string; title: string; yaml: string; overlay: Record<string, unknown> }>(
+      `/index/search/profile/examples/${encodeURIComponent(name)}`,
+    ),
   resetSettings: () => request<SearchSettings>("/index/search/settings", { method: "DELETE" }),
   resource: (id: string, lang?: string) =>
     request<ResourceDetail>(

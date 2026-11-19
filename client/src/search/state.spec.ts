@@ -9,6 +9,7 @@ import {
   isFiltered,
   removeChip,
   removeFacet,
+  setNumber,
   toQuery,
   toggle,
   type SearchState,
@@ -40,6 +41,7 @@ describe("search URL state", () => {
       filters: { theme: [HEAL, "x"], keyword: ["lungs"] },
       fdp: ["u1"],
       dates: { modified: { from: "2024-01-01", to: "" } },
+      numbers: {},
       active: true,
       sort: "modified",
       page: 3,
@@ -57,6 +59,20 @@ describe("search URL state", () => {
     expect(PERIOD_BOUND.test("2010-05-31")).toBe(true);
     expect(PERIOD_BOUND.test("2010-13")).toBe(false);
     expect(PERIOD_BOUND.test("10")).toBe(false);
+  });
+
+  it("keeps number bounds of facets as <name>Min/<name>Max", () => {
+    const state = fromQuery({ recordsMin: "100", recordsMax: "lots", otherMin: "1" }, ["records"]);
+    expect(state.numbers).toEqual({ records: { min: "100", max: "" } });
+    expect(apiParams(state).get("recordsMin")).toBe("100");
+    const chip = chips(state)[0]!;
+    expect(chip).toEqual({ name: "records", value: "100..", range: true });
+    expect(removeChip(state, chip).numbers).toEqual({});
+    expect(setNumber(state, "records", "max", "500").numbers.records).toEqual({
+      min: "100",
+      max: "500",
+    });
+    expect(setNumber(state, "records", "min", "").numbers).toEqual({});
   });
 
   it("falls back on bad values", () => {

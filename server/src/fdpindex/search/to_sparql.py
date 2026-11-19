@@ -350,6 +350,17 @@ def to_sparql(
         wanted = [v for v in values if not v.startswith("!")]
         unwanted = [v[1:] for v in values if v.startswith("!")]
         pattern = f"?resource {path} {var}"
+        if spec.kind == "boolean" and spec.presence:
+            # "No" is the property's absence (TASKS 8.5).
+            allowed = {"true", "false"} & set(wanted or ("true", "false"))
+            allowed -= set(unwanted)
+            if allowed == {"true"}:
+                graph.append(_exists(pattern, "true"))
+            elif allowed == {"false"}:
+                graph.append(_exists(pattern, "true", negated=True))
+            elif not allowed:
+                graph.append("FILTER(false)")
+            continue
         if spec.equivalents:
             # The index stores a group of equivalent concepts as one; the store has each.
             wanted = [m for v in wanted for m in w_equivalents.get(v, [v])]
@@ -359,6 +370,18 @@ def to_sparql(
         if unwanted:
             condition = _value_condition(w, spec, unwanted, var)
             graph.append(_exists(pattern, condition, negated=True))
+
+    # Number fields within bounds (TASKS 8.5).
+    for name, (low, high) in sorted(params.numbers.items()):
+        if name not in profile.fields:
+            continue
+        w.used.setdefault("xsd", PREFIXES["xsd"])
+        var = f"?{re.sub(r'[^A-Za-z0-9]', '', name)}Number"
+        number = f"xsd:double(STR({var}))"
+        checks = [f"{number} >= {low!r}"] if low is not None else []
+        checks += [f"{number} <= {high!r}"] if high is not None else []
+        pattern = f"?resource {w.path(profile.fields[name])} {var}"
+        graph.append(_exists(pattern, " && ".join(checks) or "true"))
 
     # Date ranges, by day.
     for name, (low, high) in sorted(params.ranges.items()):

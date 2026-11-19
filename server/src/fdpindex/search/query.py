@@ -222,6 +222,8 @@ class SearchParams:
     ranges: dict[str, tuple[datetime | None, datetime | None]] = field(default_factory=lambda: {})
     # Temporal coverage overlapping these days (TASKS 8.3); None: no such filter.
     temporal: tuple[date | None, date | None] | None = None
+    # Number fields within bounds, inclusive (TASKS 8.5): ``recordsMin``/``recordsMax``.
+    numbers: dict[str, tuple[float | None, float | None]] = field(default_factory=lambda: {})
     fdp_state: str | None = None
     lang: str = "en"
     sort: str = ""
@@ -254,6 +256,12 @@ class SearchParams:
         for name in self.facets:
             if name not in facets and name not in {"type", "fdp"}:
                 raise BadRequest(f"Unknown facet: {name}")
+        for name, (low, high) in self.numbers.items():
+            spec = profile.fields.get(name)
+            if spec is None or spec.kind != "number":
+                raise BadRequest(f"Not a number field: {name}")
+            if low is not None and high is not None and low > high:
+                raise BadRequest(f"{name}Min is above {name}Max")
         if len(self.facets) > MAX_FACETS:
             raise BadRequest(f"At most {MAX_FACETS} facets")
         if not 1 <= self.size <= MAX_SIZE:
@@ -504,6 +512,9 @@ class SearchService:
                 conditions.append(_has(name, wanted, scope.id))
             if unwanted:
                 conditions.append(not_(_has(name, unwanted, scope.id)))
+        for name, (low, high) in params.numbers.items():
+            if name != skip:
+                conditions.append(_in_range(name, low, high, scope.id))
         columns = {"issued": res.issued, "modified": res.modified, "harvested": res.harvested_at}
         for name, (low, high) in params.ranges.items():
             column = columns[name]
@@ -885,6 +896,7 @@ class SearchService:
             found = {str(value): int(n) for value, n in extra}
             buckets.extend((v, found.get(v, 0)) for v in missing)
         result = {
+            **self._facet_kind(name),
             "buckets": await self._bucket_views(session, name, buckets, labels, threshold),
             "more": len(rows) > size,
         }
@@ -1039,6 +1051,7 @@ class SearchService:
             (v, scaled(counted[v]) if counted.get(v) else 0) for v in selected if v not in shown
         )
         result: dict[str, Any] = {
+            **self._facet_kind(name),
             "buckets": await self._bucket_views(session, name, buckets, labels, threshold),
             "more": len(rows) > size,
         }
@@ -1057,6 +1070,7 @@ class SearchService:
         if not self._light(params) or self._facet_cache_seconds <= 0:
             return None
         filters = tuple(sorted((k, tuple(sorted(v))) for k, v in params.filters.items() if v))
+        numbers = tuple(sorted(params.numbers.items()))
         return (
             self.indexer.generation,
             self._hide_expired,
@@ -1067,6 +1081,7 @@ class SearchService:
             tuple(sorted(str(u) for u in params.fdps)),
             params.fdp_state,
             filters,
+            numbers,
         )
 
     def _cached(self, key: tuple[Any, ...]) -> Any | None:
@@ -1120,9 +1135,24 @@ class SearchService:
             return views
         spec = self.profile.fields.get(name)
         if spec is not None and spec.kind == "number":
-            return [{"value": v, "label": bucket_label(v), "count": n} for v, n in buckets]
+            # In order of the ranges, not of their counts.
+            ordered = sorted(buckets, key=lambda b: _bucket_start(b[0]))
+            return [{"value": v, "label": bucket_label(v), "count": n} for v, n in ordered]
+        if spec is not None and spec.kind == "boolean":
+            ordered = sorted(buckets, key=lambda b: b[0] != "true")
+            return [
+                {"value": v, "label": "Yes" if v == "true" else "No", "count": n}
+                for v, n in ordered
+            ]
         await labels.load({v for v, _ in buckets})
         return [{"value": v, "label": labels.get(v), "count": n} for v, n in buckets]
+
+    def _facet_kind(self, name: str) -> dict[str, str]:
+        """``{"kind": "number" | "boolean"}`` for facets the client draws differently."""
+        spec = self.profile.fields.get(name)
+        return (
+            {"kind": spec.kind} if spec is not None and spec.kind in {"number", "boolean"} else {}
+        )
 
     async def _hits(
         self,
@@ -1800,6 +1830,27 @@ def curie(iri: str) -> str | None:
 
 def _rows(result: Any) -> list[tuple[int, str, UUID]]:
     return [(int(rid), str(kind), entry) for rid, kind, entry in result]
+
+
+def _in_range(
+    name: str, low: float | None, high: float | None, resource_id: Any
+) -> ColumnElement[bool]:
+    value = aliased(SearchValue)
+    conditions = [value.resource_id == resource_id, value.field == name]
+    if low is not None:
+        conditions.append(value.value_num >= low)
+    if high is not None:
+        conditions.append(value.value_num <= high)
+    return exists().where(*conditions)
+
+
+def _bucket_start(key: str) -> float:
+    """``100..1000`` → 100; ``..100`` → -inf: the order of number buckets."""
+    low = key.partition("..")[0]
+    try:
+        return float(low) if low else float("-inf")
+    except ValueError:
+        return float("inf")
 
 
 def _has(name: str, values: list[str], resource_id: Any) -> ColumnElement[bool]:

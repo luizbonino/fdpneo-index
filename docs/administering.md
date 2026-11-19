@@ -91,8 +91,11 @@ These are stored as `/index/search/settings` and need no re-indexing.
 
 **Settings → Search profile (advanced)** changes which predicates feed
 which fields, and can define new ones; a new field with `facet` is a new
-filter. It re-indexes every FDP in the background. See
-[search-and-sparql.md](search-and-sparql.md#the-search-profile).
+filter. It re-indexes every FDP in the background. **Load the HealthDCAT-AP
+example** fills the editor with ready filters for health metadata (numbers
+of individuals, typical ages, health category, coding systems, and Yes/No
+filters such as "Concerns personal data"); nothing changes until you save.
+See [search-and-sparql.md](search-and-sparql.md#the-search-profile).
 
 ## Webhooks
 

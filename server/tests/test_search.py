@@ -1213,3 +1213,96 @@ def test_the_index_default_language_applies_without_a_browser_preference(api: Ap
     assert landing["defaultLanguage"] == "de" and "nl" in landing["languages"]
     bad = api.client.put("/index/search/settings", json={"defaultLanguage": "x"}, headers=ADMIN)
     assert bad.status_code in {400, 422}
+
+
+# --- number and yes/no fields: the HealthDCAT-AP example (TASKS 8.5) -------------------
+
+
+def _healthdcat() -> dict[str, Any]:
+    import yaml
+
+    from fdpindex.search.profile_store import examples
+
+    example = next(e for e in examples() if e.name == "healthdcat-ap")
+    return yaml.safe_load(example.text)
+
+
+def test_numbers_keep_their_value_and_absence_is_no() -> None:
+    from fdpindex.search.profile_store import merge
+
+    profile = merge(default_profile(), _healthdcat())
+    rows = {r.iri: r for r in project_entry("alpha", nodes(ALPHA), profile).resources}
+    d1, d2 = rows[f"{ALPHA}/dataset/d1"], rows[f"{ALPHA}/dataset/d2"]
+
+    def values(row: Any, name: str) -> set[tuple[str, float | None]]:
+        return {(v.value, v.num) for v in row.values if v.field == name}
+
+    assert values(d1, "individuals") == {("1000..10000", 1200.0)}
+    assert values(d2, "individuals") == {("..100", 40.0)}
+    assert values(d1, "minAge") == {("18..65", 18.0)}
+    assert values(d1, "hasAnalytics") == {("true", None)}
+    # A presence field is "false" where the property is absent, so "No" counts.
+    assert values(d2, "hasAnalytics") == {("false", None)}
+    assert values(d2, "personalData") == {("true", None)}
+    assert values(d1, "personalData") == {("false", None)}
+
+
+async def test_number_ranges_and_yes_no_facets(search: SearchService) -> None:
+    await search.change_profile(_healthdcat())
+    await search.indexer.sync_once()
+    result = await search.search(
+        SearchParams(types=["dataset"], facets=["individuals", "personalData"])
+    )
+    individuals = result["facets"]["individuals"]
+    assert individuals["kind"] == "number"
+    # Buckets in the order of their ranges, not their counts.
+    assert [b["label"] for b in individuals["buckets"]] == ["under 100", "1,000 to 10,000"]
+    personal = result["facets"]["personalData"]
+    assert personal["kind"] == "boolean"
+    assert [(b["value"], b["label"], b["count"]) for b in personal["buckets"]] == [
+        ("true", "Yes", 1),
+        ("false", "No", 2),
+    ]
+
+    async def titles(**kwargs: Any) -> set[str]:
+        found = await search.search(SearchParams(types=["dataset"], facets=[], **kwargs))
+        return {h["title"] for h in found["hits"]}
+
+    assert await titles(numbers={"individuals": (100.0, None)}) == {"Breast cancer registry"}
+    assert await titles(numbers={"individuals": (None, 40.0)}) == {"Lung function tests"}
+    assert await titles(numbers={"individuals": (41.0, 1199.0)}) == set()
+    assert await titles(filters={"personalData": ["false"]}) == {
+        "Breast cancer registry",
+        "Genome cohort",
+    }
+    # The same as SPARQL: a range on the numbers, "No" as the property's absence.
+    for kwargs in (
+        {"numbers": {"individuals": (100.0, None)}},
+        {"filters": {"personalData": ["false"]}},
+        {"filters": {"hasAnalytics": ["true"]}},
+    ):
+        params: dict[str, Any] = {"types": ["dataset"], **kwargs}
+        expected = {h["iri"] for h in (await search.search(SearchParams(**params)))["hits"]}
+        translated = await search.sparql(SearchParams(**params))
+        assert set(_sparql(translated["query"])) == expected, kwargs
+    with pytest.raises(BadRequest):
+        await search.search(SearchParams(numbers={"keyword": (1.0, None)}))
+    with pytest.raises(BadRequest):
+        await search.search(SearchParams(numbers={"individuals": (10.0, 1.0)}))
+
+
+def test_number_ranges_and_examples_over_http(api: Api) -> None:
+    found = api.client.get("/index/search", params={"recordsMin": "1000", "facets": "records"})
+    assert [h["title"] for h in found.json()["hits"]] == ["Breast cancer registry"]
+    assert found.json()["facets"]["records"]["kind"] == "number"
+    assert api.client.get("/index/search", params={"recordsMax": "lots"}).status_code == 400
+    assert api.client.get("/index/search", params={"keywordMin": "1"}).status_code == 400
+    assert api.client.get("/index/search/profile/examples/healthdcat-ap").status_code == 401
+    example = api.client.get("/index/search/profile/examples/healthdcat-ap", headers=ADMIN)
+    assert example.status_code == 200
+    assert "healthdcatap:numberOfUniqueIndividuals" in example.json()["yaml"]
+    assert example.json()["overlay"]["fields"]["individuals"]["kind"] == "number"
+    listed = api.client.get("/index/search/profile", headers=ADMIN).json()["examples"]
+    assert listed == [{"name": "healthdcat-ap", "title": "HealthDCAT-AP"}]
+    missing = api.client.get("/index/search/profile/examples/nope", headers=ADMIN)
+    assert missing.status_code == 404

@@ -28,6 +28,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import math
 import re
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
@@ -73,7 +74,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 7
+PROJECTION_VERSION = 8
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -126,6 +127,7 @@ class Value:
     field: str
     value: str
     lang: str | None = None
+    num: float | None = None  # a number field's value; ``value`` is its bucket
 
 
 @dataclass
@@ -171,7 +173,10 @@ class ResourceRow:
             "landing": self.landing_page,
             "issued": self.issued.isoformat() if self.issued else None,
             "modified": self.modified.isoformat() if self.modified else None,
-            "values": sorted((v.field, v.value, v.lang or "") for v in self.values),
+            "values": sorted(
+                (v.field, v.value, v.lang or "", *(() if v.num is None else (v.num,)))
+                for v in self.values
+            ),
             "segments": self.segments,
             "parent": self.parent_iri,
             "catalog": self.catalog_iri,
@@ -645,8 +650,10 @@ def found_values(
     for item in found:
         value: str | None = None
         lang: str | None = None
+        num: float | None = None
         if spec.kind == "number":
-            value = _bucket(item, spec.buckets or [])
+            num = _number(item)
+            value = _bucket(num, spec.buckets or []) if num is not None else None
         elif spec.kind == "boolean":
             if spec.presence:
                 value = "true"
@@ -676,19 +683,26 @@ def found_values(
             if named is not None:
                 value = _clean(str(named), MAX_VALUE_CHARS)
         if value:
-            out.append(Value(name, value[:MAX_VALUE_CHARS], lang))
+            out.append(Value(name, value[:MAX_VALUE_CHARS], lang, num))
         if len(out) >= MAX_VALUES_PER_FIELD:
             break
+    if spec.kind == "boolean" and spec.presence and not out:
+        # Absent: an explicit "false", so "No" counts and filters like any value.
+        out.append(Value(name, "false"))
     return out
 
 
-def _bucket(item: Node, buckets: list[float]) -> str | None:
+def _number(item: Node) -> float | None:
     if not isinstance(item, Literal):
         return None
     try:
-        number = float(str(item))
+        number = float(str(item).strip())
     except ValueError:
         return None
+    return number if math.isfinite(number) else None
+
+
+def _bucket(number: float, buckets: list[float]) -> str:
     lower: float | None = None
     for bound in sorted(buckets):
         if number < bound:

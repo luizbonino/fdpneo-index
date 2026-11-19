@@ -67,6 +67,21 @@ fields:
     label: {en: FDP version}
 ```
 
+Fields of kind `number` count their values in the `buckets` given and are
+filtered by range too (`<field>Min`, `<field>Max`, for example
+`recordsMin=1000`). Fields of kind `boolean` are a Yes/No filter; with
+`presence: true`, Yes means the property is stated at all and No that it is
+not.
+
+**HealthDCAT-AP** comes as a ready overlay
+(`server/src/fdpindex/search/examples/healthdcat-ap.yaml`, Release 8 IRIs):
+numbers of individuals and typical ages, health category and theme, coding
+systems, the health data access body, applicable legislation, and Yes/No
+filters for an analytics distribution and for personal data. Load it under
+**Settings → Search profile → Load the HealthDCAT-AP example**, review it,
+and save; or `GET /index/search/profile/examples/healthdcat-ap` and `PUT`
+its `overlay`.
+
 A change, in a release or by an administrator, re-projects every entry
 once in the background; search answers from the old rows meanwhile, and
 new filters fill in as entries are done. `DELETE /index/search/profile`

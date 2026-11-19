@@ -2,7 +2,8 @@
 /**
  * Administrators: changes to the search profile, as an overlay on the bundled
  * one (`PUT /index/search/profile`). Adding a field with `facet` makes a new
- * filter; saving re-projects every entry in the background.
+ * filter; saving re-projects every entry in the background. A bundled example
+ * (HealthDCAT-AP) can be loaded into the editor to start from (TASKS 8.5).
  */
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -86,6 +87,28 @@ async function reset() {
 function example() {
   text.value = JSON.stringify(EXAMPLE, null, 2);
 }
+
+const loading = ref("");
+async function load(name: string, title: string) {
+  if (
+    text.value.trim() &&
+    !(await confirm(t("profile.loadConfirm", { name: title }), {
+      confirmLabel: t("profile.load", { name: title }),
+    }))
+  )
+    return;
+  loading.value = name;
+  error.value = "";
+  try {
+    const found = await searchApi.profileExample(name);
+    text.value = JSON.stringify(found.overlay, null, 2);
+    toast(t("profile.loaded", { name: title }));
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : (err as Error).message;
+  } finally {
+    loading.value = "";
+  }
+}
 </script>
 
 <template>
@@ -126,6 +149,16 @@ function example() {
         {{ t("profile.reset") }}
       </button>
       <button type="button" class="btn ghost" @click="example">{{ t("profile.example") }}</button>
+      <button
+        v-for="item in profile.data.value?.examples ?? []"
+        :key="item.name"
+        type="button"
+        class="btn ghost"
+        :disabled="loading === item.name"
+        @click="load(item.name, item.title)"
+      >
+        {{ t("profile.load", { name: item.title }) }}
+      </button>
       <span class="spacer" />
       <button type="button" class="btn primary" :disabled="saving" @click="save">
         {{ t("profile.save") }}

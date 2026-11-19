@@ -62,6 +62,9 @@ PAGES: dict[str, str] = {
     dcat:startDate "2010-01-01"^^xsd:date ; dcat:endDate "2015-12-31"^^xsd:date ] ;
   dcat:contactPoint [ vcard:fn "Data desk" ; vcard:hasEmail <mailto:desk@alpha.example> ] ;
   healthdcatap:numberOfRecords 2500 ;
+  healthdcatap:numberOfUniqueIndividuals 1200 ;
+  healthdcatap:minTypicalAge 18 ;
+  healthdcatap:analytics <{ALPHA}/files/report.pdf> ;
   dcat:distribution <{ALPHA}/distribution/x1>, <{ALPHA}/distribution/x2> .
 <https://ror.org/alpha> foaf:name "Alpha University" .
 """,
@@ -87,6 +90,8 @@ PAGES: dict[str, str] = {
   dct:accessRights <{EU}access-right/RESTRICTED> ;
   dct:temporal [ <http://schema.org/startDate> "2018"^^xsd:gYear ] ;
   dct:spatial <http://www.geonames.org/2750405/>, <https://sws.geonames.org/2759794/> ;
+  healthdcatap:numberOfUniqueIndividuals "40"^^xsd:nonNegativeInteger ;
+  <https://w3id.org/dpv#hasPersonalData> <https://w3id.org/dpv/dpv-pd#Age> ;
   dct:modified "2025-03-01"^^xsd:date .
 """,
     BETA: f"""

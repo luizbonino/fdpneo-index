@@ -49,6 +49,8 @@ VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 HEALTH = Namespace("http://healthdataportal.eu/ns/health#")
 LDP = Namespace("http://www.w3.org/ns/ldp#")
 SCHEMA = Namespace("http://schema.org/")
+DPV = Namespace("https://w3id.org/dpv#")
+HDEU = "https://hdeu-dcat.data.health.europa.eu/resource/authority/"
 TIME = Namespace("http://www.w3.org/2006/time#")
 DCAT3 = Namespace("http://www.w3.org/ns/dcat#")  # rdflib's DCAT lacks dcat:version
 
@@ -655,6 +657,8 @@ class FdpBuilder:
         g.add((contact, VCARD.hasEmail, URIRef(f"mailto:data-office@{self.slug}.{DOMAIN}")))
         if topic.theme == "HEAL" and rng.random() < 0.6:
             g.add((node, HEALTH.numberOfRecords, Literal(people, datatype=XSD.integer)))
+        if topic.theme == "HEAL":
+            self._health(g, node, iri, people)
         if rng.random() < 0.3:
             g.add(
                 (
@@ -701,6 +705,30 @@ class FdpBuilder:
             g.add((node, DCTERMS.spatial, Literal(self.country)))
         if rng.random() < 0.1:
             g.add((node, DCTERMS.spatial, URIRef("https://sws.geonames.org/6255148/")))
+
+    @staticmethod
+    def _health(g: Graph, node: URIRef, iri: str, people: int) -> None:
+        """HealthDCAT-AP statements for the bundled example profile (TASKS 8.5)."""
+        rng = random.Random(f"{iri}#health")
+        nonneg = XSD.nonNegativeInteger
+        if rng.random() < 0.7:
+            individuals = max(1, int(people * rng.uniform(0.2, 0.9)))
+            g.add((node, HEALTH.numberOfUniqueIndividuals, Literal(individuals, datatype=nonneg)))
+        if rng.random() < 0.6:
+            low, high = rng.choice([(0, 17), (18, 65), (18, 99), (65, 99), (40, 75)])
+            g.add((node, HEALTH.minTypicalAge, Literal(low, datatype=nonneg)))
+            g.add((node, HEALTH.maxTypicalAge, Literal(high, datatype=nonneg)))
+        if rng.random() < 0.4:
+            g.add((node, HEALTH.healthCategory, URIRef(f"{HDEU}healthcategories/EHRS")))
+        for system in rng.sample(["ICD-10", "SNOMED-CT"], rng.randint(0, 2)):
+            g.add((node, HEALTH.hasCodingSystem, URIRef(f"{HDEU}coding-system/{system}")))
+        if rng.random() < 0.3:
+            g.add((node, HEALTH.analytics, URIRef(f"{iri}/analytics")))
+        if rng.random() < 0.5:
+            for category in rng.sample(["Age", "Gender", "HealthRecord"], rng.randint(1, 3)):
+                g.add(
+                    (node, DPV.hasPersonalData, URIRef(f"https://w3id.org/dpv/dpv-pd#{category}"))
+                )
 
     @staticmethod
     def _temporal(g: Graph, node: URIRef, iri: str, start: int, end: int) -> None:

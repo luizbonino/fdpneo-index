@@ -331,6 +331,7 @@ class SearchIndexer:
                     "field": v.field,
                     "value": v.value,
                     "lang": v.lang,
+                    "value_num": v.num,
                     "kind": row.kind,
                     "entry_uuid": entry_id,
                 }

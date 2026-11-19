@@ -92,7 +92,7 @@ from fdpindex.search.settings import (
     is_property_iri,
 )
 from fdpindex.search.to_sparql import to_sparql
-from fdpindex.search.vocab import bundled_label
+from fdpindex.search.vocab import BUNDLED, bundled_label, bundled_labels
 from fdpindex.service import api_state
 from fdpindex.sparql.labels import humanize
 from fdpindex.sparql.prefixes import PREFIXES
@@ -1439,6 +1439,137 @@ class SearchService:
             for iri, count in rows
         ]
 
+    async def suggest(
+        self, text: str, *, types: list[Kind], lang: str = "en", admin: bool = False
+    ) -> dict[str, Any]:
+        """Suggestions while typing (TASKS 8.2): resources by title, and filter values.
+
+        Titles match anywhere (trigram index on PostgreSQL), most similar first.
+        Values are keywords that start with the text, and subjects, themes and
+        publishers whose name (harvested, resolved or bundled) starts with it,
+        each with the number of resources that have it.
+        """
+        needle = " ".join(text.split())[:100]
+        if len(needle) < 2:
+            return {"query": needle, "suggestions": []}
+        lowered = needle.lower()
+        pattern = _like(lowered)
+        await self._threshold()  # reads the expiry policy: hidden entries stay hidden
+        settings_fields = [f for f in ("subject", "theme", "publisher") if f in self.profile.fields]
+
+        async def work(session: AsyncSession, postgres: bool) -> dict[str, Any]:
+            visible = [E.permit == EntryPermit.ACCEPTED]
+            if self._hide_expired:
+                visible.append(E.expired_at.is_(None))
+            title_match = func.lower(R.title).like(f"%{pattern}%", escape="\\")
+            order: list[Any] = [R.completeness.desc(), R.id]
+            if postgres:
+                order = [func.similarity(R.title, needle).desc(), *order]
+            resources = (
+                await session.scalars(
+                    select(R)
+                    .join(E, E.uuid == R.entry_uuid)
+                    .where(*visible, R.kind.in_(types), title_match)
+                    .order_by(*order)
+                    .limit(SUGGEST_TITLES * 8)
+                )
+            ).all()
+            # The same title in several FDPs (each its own "Dementia data" catalog) is
+            # one suggestion: a phrase search for it, with how many there are.
+            groups: dict[str, list[SearchResource]] = {}
+            for resource in resources:
+                groups.setdefault(resource.title.lower(), []).append(resource)
+            suggestions: list[dict[str, Any]] = [
+                {
+                    "kind": "resource",
+                    "id": group[0].public_id,
+                    "title": group[0].title,
+                    "type": group[0].kind,
+                }
+                if len(group) == 1
+                else {"kind": "query", "text": group[0].title, "count": len(group)}
+                for group in list(groups.values())[:SUGGEST_TITLES]
+            ]
+            count = func.count(func.distinct(V.resource_id)).label("n")
+            keyword_rows = (
+                await session.execute(
+                    select(V.value, count)
+                    .join(E, E.uuid == V.entry_uuid)
+                    .where(
+                        *visible,
+                        V.field == "keyword",
+                        V.kind.in_(types),
+                        V.value.like(f"{pattern}%", escape="\\"),
+                    )
+                    .group_by(V.value)
+                    .order_by(count.desc(), V.value)
+                    .limit(SUGGEST_VALUES)
+                )
+            ).all()
+            values: list[dict[str, Any]] = [
+                {
+                    "kind": "value",
+                    "field": "keyword",
+                    "value": str(v),
+                    "label": str(v),
+                    "count": int(n),
+                }
+                for v, n in keyword_rows
+            ]
+            # Concepts by name: harvested labels, resolved labels, the bundled pack.
+            named: dict[str, str] = {}
+            label_like = func.lower(SearchLabel.label).like(f"{pattern}%", escape="\\")
+            for iri, label in (
+                await session.execute(
+                    select(SearchLabel.iri, SearchLabel.label)
+                    .join(E, E.uuid == SearchLabel.entry_uuid)
+                    .where(*visible, label_like)
+                    .limit(200)
+                )
+            ).all():
+                named.setdefault(str(iri), str(label))
+            concept_like = func.lower(ConceptLabel.label).like(f"{pattern}%", escape="\\")
+            for iri, label in (
+                await session.execute(
+                    select(ConceptLabel.iri, ConceptLabel.label).where(concept_like).limit(200)
+                )
+            ).all():
+                named.setdefault(str(iri), str(label))
+            for iri, labels in bundled_matches(lowered):
+                named.setdefault(iri, labels)
+            if named and settings_fields:
+                concept_rows = (
+                    await session.execute(
+                        select(V.field, V.value, count)
+                        .join(E, E.uuid == V.entry_uuid)
+                        .where(
+                            *visible,
+                            V.field.in_(settings_fields),
+                            V.kind.in_(types),
+                            V.value.in_(list(named)[:400]),
+                        )
+                        .group_by(V.field, V.value)
+                        .order_by(count.desc(), V.value)
+                        .limit(SUGGEST_VALUES)
+                    )
+                ).all()
+                labels = Labels(session, lang)
+                await labels.load({str(v) for _, v, _ in concept_rows})
+                values += [
+                    {
+                        "kind": "value",
+                        "field": str(field),
+                        "value": str(value),
+                        "label": labels.get(str(value)),
+                        "count": int(n),
+                    }
+                    for field, value, n in concept_rows
+                ]
+            values.sort(key=lambda v: (-int(v["count"]), str(v["label"]).lower()))
+            return {"query": needle, "suggestions": suggestions + values[:SUGGEST_VALUES]}
+
+        return await self._run(admin, work)
+
     async def labels(self, iris: list[str], lang: str) -> dict[str, str]:
         async with self._session_factory() as session:
             labels = Labels(session, lang)
@@ -1482,6 +1613,25 @@ class SearchService:
                 for uuid, url, n, avg in per_entry
             ],
         }
+
+
+SUGGEST_TITLES = 5
+SUGGEST_VALUES = 6
+
+
+def _like(text: str) -> str:
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def bundled_matches(prefix: str) -> list[tuple[str, str]]:
+    """Bundled labels (any language) that start with ``prefix``: (IRI, label)."""
+    out: list[tuple[str, str]] = []
+    for iri in BUNDLED:
+        for label in bundled_labels(iri).values():
+            if label.lower().startswith(prefix):
+                out.append((iri, label))
+                break
+    return out[:200]
 
 
 START, STOP = "\x02", "\x03"

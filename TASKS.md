@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-83 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
+84 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -29,12 +29,12 @@ task are listed in the last column.
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 4/4 | – | – | ✅ Done | – |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
-| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 4/13 | 1 | 8 | 🔹 Started | Suggestions (8.2), temporal (8.3) and spatial (8.4) facets, numeric and boolean facets (8.5), multilingual display (8.7), duplicates (8.8), keyboard and screen-reader pass (8.9), merged and hierarchical subjects (8.11, 8.12) |
+| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 5/13 | 1 | 7 | 🔹 Started | Temporal (8.3) and spatial (8.4) facets, numeric and boolean facets (8.5), multilingual display (8.7), duplicates (8.8), keyboard and screen-reader pass (8.9), merged and hierarchical subjects (8.11, 8.12) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 2 | 6 | 🔹 Started | All but 9.9 (done), and the capture of 9.2 and profile facets of 9.3 (done with 8.13 and 6.12) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **83/115** | **3** | **29** | | |
+| **Total** | | **84/115** | **3** | **28** | | |
 
 ## Phase 0 — Foundations
 
@@ -158,7 +158,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 ### Phase 8 — Richer discovery
 
 - [x] 8.1 Snippets with `ts_headline` (`highlight=true`), server-side escaping, client rendering from tokens — *done: title and the description's best fragments as `{text, match}` segments (stemmed on PostgreSQL, word prefixes elsewhere), control characters stripped so marks cannot be forged; `<mark>` in result cards*
-- [ ] 8.2 Autocomplete `GET /index/search/suggest` (prefix on `search_value`, trigram on titles) and the combobox in the client
+- [x] 8.2 Autocomplete `GET /index/search/suggest` (prefix on `search_value`, trigram on titles) and the combobox in the client — *done: titles by trigram similarity (identical titles across FDPs folded into one phrase search), keywords by prefix, subjects, themes and publishers by harvested, resolved or bundled names in any language, with counts; an ARIA combobox (arrow keys, Enter, Escape) that applies a value as a filter*
 - [ ] 8.3 Temporal coverage: `dct:temporal` with `dcat:`, `schema:` and `time:` forms, literal ranges; `temporalFrom`/`temporalTo`; range inputs in the client
 - [ ] 8.4 Spatial facet from `dct:spatial` IRIs with labels (EU country/place/continent, GeoNames via the bundled pack)
 - [ ] 8.5 Numeric-range and boolean facet kinds end to end (`value_num`, buckets, yes/no groups), with a bundled HealthDCAT-AP extension profile as the worked example

@@ -284,7 +284,9 @@ export interface paths {
      *     (see `/index/search/properties`). Also `type`, `fdp`,
      *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
      *     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
-     *     `facets` (comma-separated, or `none`) and `facetSize`.
+     *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
+     *     each hit has `highlight`: its title and description as text segments with
+     *     the matching words marked (`{"text", "match"}`), never HTML.
      */
     get: operations["search_index_search_get"];
     put?: never;
@@ -499,6 +501,27 @@ export interface paths {
     };
     /** Projection statistics */
     get: operations["stats_index_search_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/suggest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Suggestions while typing
+     * @description Resources whose title contains `q`, and filter values (keywords, subjects, themes,
+     *     publishers) whose name starts with it, with counts. At least two characters.
+     */
+    get: operations["suggest_index_search_suggest_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2458,6 +2481,41 @@ export interface operations {
           "application/json": {
             [key: string]: unknown;
           };
+        };
+      };
+    };
+  };
+  suggest_index_search_suggest_get: {
+    parameters: {
+      query?: {
+        q?: string;
+        type?: string[] | null;
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

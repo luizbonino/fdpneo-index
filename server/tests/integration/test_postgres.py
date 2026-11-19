@@ -267,6 +267,9 @@ async def test_search_stems_folds_accents_and_ranks(
     assert {"text": "registry", "match": True} in hit["highlight"]["title"]
     assert any(s["match"] and s["text"] == "Biopsies" for s in hit["highlight"]["description"])
     assert "fullDescription" not in hit
+    # Suggestions use the trigram index and similarity (TASKS 8.2).
+    suggested = await search.suggest("cancer reg", types=["dataset"])
+    assert suggested["suggestions"][0]["title"] == "Breast cancer registry"
 
 
 async def test_large_searches_count_facets_on_a_sample(

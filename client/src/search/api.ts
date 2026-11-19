@@ -120,6 +120,12 @@ export function propertyLabel(name: string): string {
   return words ? words[0]!.toUpperCase() + words.slice(1).toLowerCase() : iri;
 }
 
+/** `GET /index/search/suggest`: what the search box offers while typing. */
+export type Suggestion =
+  | { kind: "resource"; id: string; title: string; type: Kind }
+  | { kind: "query"; text: string; count: number }
+  | { kind: "value"; field: string; value: string; label: string; count: number };
+
 /** `GET /index/search/properties`: what the "add a filter" picker offers. */
 export interface PropertyInfo {
   name: string;
@@ -234,6 +240,12 @@ export const searchApi = {
   },
   sparql: (params: URLSearchParams) => request<SearchSparql>(`/index/search/sparql?${params}`),
   landing: () => request<Landing>("/index/search/landing"),
+  suggest: (q: string, types: string[], lang?: string) => {
+    const query = new URLSearchParams({ q });
+    for (const type of types) query.append("type", type);
+    if (lang) query.set("lang", lang);
+    return request<{ query: string; suggestions: Suggestion[] }>(`/index/search/suggest?${query}`);
+  },
   properties: (types: string[], contains = "") => {
     const query = new URLSearchParams();
     for (const type of types) query.append("type", type);

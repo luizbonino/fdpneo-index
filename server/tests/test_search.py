@@ -1081,3 +1081,56 @@ def test_control_characters_cannot_forge_marks() -> None:
     segments = _segments(_mark_prefixes(text, ["registry"]))
     assert [s["text"] for s in segments if s["match"]] == ["registry"]
     assert START not in "".join(s["text"] for s in segments)
+
+
+# --- suggestions (TASKS 8.2) -----------------------------------------------------------------
+
+
+async def test_suggestions_offer_titles_and_filter_values(search: SearchService) -> None:
+    result = await search.suggest("regis", types=["dataset"])
+    kinds = {(s["kind"], s.get("title") or s.get("label")) for s in result["suggestions"]}
+    assert ("resource", "Breast cancer registry") in kinds
+    assert ("value", "registry") in kinds
+    # Themes by their bundled names, in any language, labelled in the reader's.
+    health = await search.suggest("gezond", types=["dataset"], lang="en")
+    theme = next(s for s in health["suggestions"] if s.get("field") == "theme")
+    assert theme == {
+        "kind": "value",
+        "field": "theme",
+        "value": f"{EU}data-theme/HEAL",
+        "label": "Health",
+        "count": 2,
+    }
+    # Publishers by their harvested names.
+    alpha = await search.suggest("alpha uni", types=["dataset"])
+    assert any(
+        s.get("field") == "publisher" and s["value"] == "https://ror.org/alpha"
+        for s in alpha["suggestions"]
+    )
+    assert (await search.suggest("a", types=["dataset"]))["suggestions"] == []
+    odd = await search.suggest("100%_\\", types=["dataset"])
+    assert odd["suggestions"] == []
+
+
+def test_suggestions_over_http(api: Api) -> None:
+    response = api.client.get("/index/search/suggest", params={"q": "genom"})
+    assert response.status_code == 200, response.text
+    titles = [s["title"] for s in response.json()["suggestions"] if s["kind"] == "resource"]
+    assert "Genome cohort" in titles
+    assert (
+        api.client.get("/index/search/suggest", params={"q": "x", "type": "nope"}).status_code
+        == 400
+    )
+
+
+async def test_identical_titles_are_one_suggestion(
+    search: SearchService, services: Services
+) -> None:
+    async with services.session_factory() as session, session.begin():
+        await session.execute(
+            update(SearchResource)
+            .where(SearchResource.title.in_(["Lung function tests", "Genome cohort"]))
+            .values(title="Cohort data")
+        )
+    result = await search.suggest("cohort da", types=["dataset"])
+    assert {"kind": "query", "text": "Cohort data", "count": 2} in result["suggestions"]

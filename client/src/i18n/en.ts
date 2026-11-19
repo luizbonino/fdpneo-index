@@ -554,6 +554,16 @@ export const en = {
     remove: "Remove",
     removeFacet: "Remove the filter {name}",
     noValues: "No values in these results.",
+    suggest: {
+      label: "Suggestions",
+      titles: "Titles",
+      fields: {
+        keyword: "Keyword",
+        subject: "Subject",
+        theme: "Theme",
+        publisher: "Publisher",
+      },
+    },
     addFacet: {
       button: "+ Add a filter",
       title: "Add a filter",

@@ -47,6 +47,7 @@ import {
 import FacetGroup from "@/components/search/FacetGroup.vue";
 import FacetDialog from "@/components/search/FacetDialog.vue";
 import AddFacetDialog from "@/components/search/AddFacetDialog.vue";
+import SuggestBox from "@/components/search/SuggestBox.vue";
 import ResourceCard from "@/components/search/ResourceCard.vue";
 import HelpTip from "@/components/HelpTip.vue";
 import { useServiceInfo } from "@/composables/queries";
@@ -114,6 +115,13 @@ const addTypes = computed(() => {
   return type === "dataset" ? ["dataset", "series"] : [type];
 });
 const presentFacets = computed(() => [...facetNames.value, ...state.value.added]);
+/** A suggested filter value: applied, and the words that found it cleared. */
+function pickValue(field: string, value: string) {
+  const next = { ...state.value, q: "" };
+  text.value = "";
+  go(next.filters[field]?.includes(value) ? { ...next, page: 1 } : toggle(next, field, value));
+}
+
 function add(name: string) {
   go(addFacet(state.value, name));
 }
@@ -297,18 +305,13 @@ const counters = computed(() => {
     </header>
 
     <form class="searchbar" role="search" @submit.prevent="submit">
-      <label class="box">
-        <span class="visually-hidden">{{ t("search.placeholder") }}</span>
-        <input
-          v-model="text"
-          class="input"
-          type="search"
-          name="q"
-          maxlength="512"
-          :placeholder="t('search.placeholder')"
-          autocomplete="off"
-        />
-      </label>
+      <SuggestBox
+        v-model="text"
+        :types="addTypes"
+        @submit="submit"
+        @value="pickValue"
+        @resource="(id) => router.push({ name: 'resource', params: { id } })"
+      />
       <button class="btn primary" type="submit">{{ t("search.submit") }}</button>
     </form>
     <p class="muted small hint">{{ t("search.syntax") }}</p>
@@ -603,15 +606,6 @@ const counters = computed(() => {
 .searchbar {
   display: flex;
   gap: var(--fair-space-2);
-}
-.searchbar .box {
-  flex: 1;
-  min-width: 0;
-}
-.searchbar .input {
-  width: 100%;
-  font-size: 1.05rem;
-  padding-block: 10px;
 }
 .hint {
   margin: var(--fair-space-1) 0 var(--fair-space-3);

@@ -283,6 +283,28 @@ async def labels(
     return await service.labels(iri, _language(request, lang))
 
 
+@router.get("/index/search/suggest", summary="Suggestions while typing")
+async def suggest(
+    request: Request,
+    service: Search,
+    caller: Caller,
+    q: str = "",
+    type: Annotated[list[str] | None, Query()] = None,
+    lang: str | None = None,
+) -> dict[str, Any]:
+    """Resources whose title contains `q`, and filter values (keywords, subjects, themes,
+    publishers) whose name starts with it, with counts. At least two characters."""
+    _limit(request, caller)
+    kinds = [t for v in type or [] for t in v.split(",") if t]
+    unknown = [t for t in kinds if t not in KINDS]
+    if unknown:
+        raise BadRequest(f"Unknown type: {', '.join(unknown)}")
+    wanted: list[Kind] = [t for t in KINDS if t in kinds] or list(DEFAULT_TYPES)
+    return await service.suggest(
+        q, types=wanted, lang=_language(request, lang), admin=caller.is_admin
+    )
+
+
 @router.get("/index/search/properties", summary="Properties to add as facets")
 async def properties(
     request: Request,

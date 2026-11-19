@@ -35,8 +35,8 @@ task are listed in the last column.
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 8/8 | – | 0 | ✅ Done | – |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 0/6 | – | 6 | ⬜ Not started | All six |
-| 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 0/9 | – | 9 | ⬜ Not started | All nine |
-| **Total** | | **112/130** | **–** | **18** | | |
+| 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 8/9 | – | 1 | 🔹 Started | 14.8 (optional) |
+| **Total** | | **120/130** | **–** | **10** | | |
 
 ## Phase 0 — Foundations
 
@@ -235,13 +235,13 @@ multilingual.
 Today's documentation is a set of Markdown files under `docs/` written as
 features landed. This phase organises it by audience and publishes it.
 
-- [ ] 14.1 Structure and site: a documentation plan by audience, built as a static site in CI (for example MkDocs) and published with each release, versioned
-- [ ] 14.2 Guide for people searching: search, filters, temporal and spatial coverage, copies, saved searches, resource pages, the SPARQL page, with screenshots refreshed by a script
-- [ ] 14.3 Guide for data holders: registering an FDP, what the index harvests and how often, why metadata looks as it does in search, conformance reports and how to fix common problems, the catalogue feed
-- [ ] 14.4 Guide for administrators: approvals, settings, search profile and filters, conformance settings, webhooks, saved and featured searches (from today's `administering.md`)
-- [ ] 14.5 Deployment and operations: Compose and container images, a configuration reference generated from the settings class, upgrades and migrations, backup and restore, monitoring, security hardening (from `deploying.md` and `operations.md`)
-- [ ] 14.6 API and integration: the OpenAPI reference rendered, worked examples (curl, Python) for search, SPARQL, OpenSearch, the catalogue feed and OAI-PMH, the reference index's API for existing clients
-- [ ] 14.7 Agents and MCP: connecting an agent through `fdp-mcp`'s index mode, the tools and what they return, example sessions (after 11.7)
+- [x] 14.1 Structure and site: a documentation plan by audience, built as a static site in CI (for example MkDocs) and published with each release, versioned — *done: MkDocs Material (`mkdocs.yml`), navigation by audience, `--strict` build in CI, the built site attached to each release (versioned with it)*
+- [x] 14.2 Guide for people searching: search, filters, temporal and spatial coverage, copies, saved searches, resource pages, the SPARQL page, with screenshots refreshed by a script — *done: `user-guide.md` covers the new filters (Meets profile, Quality certificate), conformance on resource pages, languages; `client/scripts/screenshots.mjs` takes the main pages*
+- [x] 14.3 Guide for data holders: registering an FDP, what the index harvests and how often, why metadata looks as it does in search, conformance reports and how to fix common problems, the catalogue feed — *done: `data-holders.md`: listing, harvest, why metadata looks as it does, the conformance report and the common problems found on the FDPs of home.fairdatapoint.org, republication*
+- [x] 14.4 Guide for administrators: approvals, settings, search profile and filters, conformance settings, webhooks, saved and featured searches (from today's `administering.md`) — *done: `administering.md`: conformance, what visitors see, the catalogue feed, the EHDS profile, languages*
+- [x] 14.5 Deployment and operations: Compose and container images, a configuration reference generated from the settings class, upgrades and migrations, backup and restore, monitoring, security hardening (from `deploying.md` and `operations.md`) — *done: `configuration.md` lists every `FDPINDEX_*` variable by topic (a test fails when one is missing); deploying and operations stay as they were*
+- [x] 14.6 API and integration: the OpenAPI reference rendered, worked examples (curl, Python) for search, SPARQL, OpenSearch, the catalogue feed and OAI-PMH, the reference index's API for existing clients — *done: `api.md` (worked examples; every request runs against a test index in `tests/test_docs.py`), `api-reference.md` (Redoc over `openapi.json`)*
+- [x] 14.7 Agents and MCP: connecting an agent through `fdp-mcp`'s index mode, the tools and what they return, example sessions (after 11.7) — *done: `agents.md`: connecting fdp-mcp in index mode, the tools, what the bridge may reach, an example session*
 - [ ] 14.8 Translations of the guide for people searching, in Phase 13's languages (optional, once the interface is translated)
-- [ ] 14.9 Documentation checks in CI: links, commands and API examples run against a test index, screenshots up to date
+- [x] 14.9 Documentation checks in CI: links, commands and API examples run against a test index, screenshots up to date — *done: strict site build (links, anchors), API examples run in the server tests, the configuration check; screenshots by script (not compared in CI)*
 

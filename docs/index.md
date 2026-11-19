@@ -18,6 +18,7 @@ FDPs and clients work with it unchanged.
 | **Run** an index: install, configure, back up, upgrade | [Deploying](deploying.md), [Configuration](configuration.md), [Operations](operations.md) |
 | Replace a **Java FDP's index** | [Replacing a Java FDP's index](java-fdp.md) |
 | **Integrate**: search, SPARQL, the DCAT-AP feed, OAI-PMH from your code | [API examples](api.md) and the [API reference](api-reference.md) |
+| Let **AI agents** use the index | [Agents and MCP](agents.md) |
 | Understand **why** it works as it does | The decisions (ADRs) and design notes under *Decisions and design* |
 
 ## What it does

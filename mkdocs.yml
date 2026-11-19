@@ -67,6 +67,7 @@ nav:
   - API and integration:
       - Examples: api.md
       - Reference: api-reference.md
+      - Agents and MCP: agents.md
   - Decisions and design:
       - adr/0001-standalone-index-service.md
       - adr/0002-harvested-metadata-and-outbound-safety.md

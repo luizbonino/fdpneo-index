@@ -22,7 +22,7 @@ import {
 import SuggestInput from "./SuggestInput.vue";
 
 const model = defineModel<BuilderModel>({ required: true });
-defineProps<{ schema: SparqlSchema | null; busy: boolean }>();
+const props = defineProps<{ schema: SparqlSchema | null; busy: boolean }>();
 const emit = defineEmits<{ run: [query: string]; edit: [query: string] }>();
 
 const { t } = useI18n();
@@ -47,6 +47,21 @@ const OPERATORS: Operator[] = [
   "greater",
   "less",
 ];
+
+// Properties that feed a field of the search page come first, named as there.
+const fieldProperties = computed(() =>
+  (props.schema?.properties ?? [])
+    .filter((p) => p.fields?.length)
+    .map((p) => ({
+      ...p,
+      name: (p.fields ?? []).map((f) => f.label).join(" · "),
+      help: (p.fields ?? []).find((f) => f.help)?.help ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name)),
+);
+const otherProperties = computed(() =>
+  (props.schema?.properties ?? []).filter((p) => !p.fields?.length),
+);
 
 const query = computed(() => {
   try {
@@ -166,14 +181,21 @@ const valueType = (operator: Operator) =>
             :value="c.property"
             @change="setCondition(index, { property: ($event.target as HTMLSelectElement).value })"
           >
-            <option
-              v-for="p in schema?.properties ?? []"
-              :key="p.iri"
-              :value="p.iri"
-              :title="p.iri"
-            >
-              {{ p.label }} ({{ p.curie }}) · {{ p.count.toLocaleString() }}
-            </option>
+            <optgroup v-if="fieldProperties.length" :label="t('sparql.builder.indexFields')">
+              <option
+                v-for="p in fieldProperties"
+                :key="p.iri"
+                :value="p.iri"
+                :title="p.help ? `${p.help} (${p.iri})` : p.iri"
+              >
+                {{ p.name }} ({{ p.curie }}) · {{ p.count.toLocaleString() }}
+              </option>
+            </optgroup>
+            <optgroup :label="t('sparql.builder.otherProperties')">
+              <option v-for="p in otherProperties" :key="p.iri" :value="p.iri" :title="p.iri">
+                {{ p.label }} ({{ p.curie }}) · {{ p.count.toLocaleString() }}
+              </option>
+            </optgroup>
           </select>
         </label>
         <label class="field">

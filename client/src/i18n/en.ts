@@ -403,6 +403,8 @@ export const en = {
     },
     builder: {
       lead: "Build a query step by step. The SPARQL updates as you go; open it in the editor to go further.",
+      indexFields: "Fields of this index",
+      otherProperties: "Other properties",
       find: "What are you looking for?",
       type: "Resource type",
       anything: "Anything",

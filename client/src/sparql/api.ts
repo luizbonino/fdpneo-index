@@ -18,6 +18,8 @@ export interface SchemaTerm {
   curie: string;
   label: string;
   count: number;
+  /** The search fields this property feeds (TASKS 9.3): named as on the search page. */
+  fields?: { name: string; label: string; help: string | null }[];
 }
 export interface SchemaGraph {
   iri: string;

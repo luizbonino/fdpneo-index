@@ -180,6 +180,17 @@ class Profile(BaseModel):
             if spec.hierarchy and spec.facet is not None
         }
 
+    def fields_by_property(self) -> dict[str, list[tuple[str, SearchField]]]:
+        """The fields each predicate feeds directly (one-step paths): for naming
+        properties by the index's own fields, as the SPARQL builder does (TASKS 9.3)."""
+        found: dict[str, list[tuple[str, SearchField]]] = {}
+        for name, spec in self.fields.items():
+            for path in spec.paths:
+                steps = self.path_iris(path)
+                if len(steps) == 1:
+                    found.setdefault(steps[0], []).append((name, spec))
+        return found
+
     @property
     def hash(self) -> str:
         return profile_hash(self)

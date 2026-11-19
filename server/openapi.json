@@ -4148,7 +4148,7 @@
     },
     "/index/sparql/schema": {
       "get": {
-        "description": "Classes and properties in the data (with counts), named graphs, and known prefixes.",
+        "description": "Classes and properties in the data (with counts), named graphs, and known prefixes.\n\nA property that feeds a field of the search profile carries `fields` (name,\nlabel, help): the builder names it as the search page does.",
         "operationId": "sparql_schema_index_sparql_schema_get",
         "responses": {
           "200": {

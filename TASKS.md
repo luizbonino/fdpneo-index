@@ -30,11 +30,11 @@ task are listed in the last column.
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 16/16 | – | – | ✅ Done | – |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
-| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 3/9 | 1 | 5 | 🔹 Started | The builder's picker of 9.3; 9.4 to 9.8 |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 4/9 | – | 5 | 🔹 Started | 9.4 to 9.8 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **94/115** | **1** | **20** | | |
+| **Total** | | **95/115** | **–** | **20** | | |
 
 ## Phase 0 — Foundations
 
@@ -175,7 +175,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 
 - [x] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery` — *done: `title:`/`description:` restrict the words to that text (`ts_filter` on the weighted vectors), any IRI, agent or literal field of the profile is a prefix that becomes a filter on the values it names (IRI, code, label in any language; names by substring; DOIs in any spelling); `-field:x` excludes; echoed as `query.fields`; in "Show as SPARQL" too*
 - [x] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats` — *done: capture with 8.13; two-step paths listed in `capture.paths`; `POST /index/search` with `eq`/`in`/`not`, `prefix`/`contains`/`exists`/`missing`, `gte`/`lte`/`between` (dates, numbers) and `overlaps` (temporal), 400 naming the filter; typed tests in "Show as SPARQL"; predicate frequency overall and per FDP in the stats. `intersects` waits for 9.8*
-- [~] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker — *done with 6.12 as overlay fields (a field with `facet` is a filter under its own name, labelled in the client); `f.` prefixes were not needed; the SPARQL builder's picker still names predicates, not profile fields*
+- [x] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker — *done: overlay fields with 6.12 (a field with `facet` is a filter under its own name); `f.` prefixes were not needed; `/index/sparql/schema` marks properties with the profile fields they feed, and the builder lists them first under "Fields of this index" with the fields' labels and help*
 - [ ] 9.4 Keyset `cursor` paging for non-relevance sorts
 - [ ] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation
 - [ ] 9.6 (see 11.5) `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test

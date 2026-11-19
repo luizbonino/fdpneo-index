@@ -627,3 +627,35 @@ def test_sparql_can_be_switched_off(network: FakeNetwork) -> None:
     with TestClient(app) as client:
         assert client.get("/index/sparql").status_code == 404
         assert client.get("/index/config").json()["sparql"] is None
+
+
+def test_schema_names_properties_by_profile_fields(network: FakeNetwork, tmp_path: Path) -> None:
+    config = Settings(
+        database_url="sqlite+aiosqlite://",
+        worker_concurrency=1,
+        sparql_enabled=True,
+        sparql_dir=tmp_path / "sparql",
+        sparql_workers=1,
+        sparql_worker_max_mb=0,
+        search_enabled=True,
+    )
+    app = create_app(
+        config,
+        transport=httpx.MockTransport(network.handler),
+        resolver=public_resolver,
+        create_tables=True,
+        configure_logs=False,
+        run_scheduler=False,
+    )
+    with TestClient(app) as client:
+        api = Api(client, app)
+        api.client.post("/", json={"clientUrl": FDP})
+        api.settle()
+        schema = api.client.get("/index/sparql/schema").json()
+    properties = {p["curie"]: p for p in schema["properties"]}
+    title = properties["dct:title"]["fields"][0]
+    assert (title["name"], title["label"]) == ("title", "Title")
+    # dcat:theme feeds two fields of the bundled profile.
+    if "dcat:theme" in properties:
+        assert {f["name"] for f in properties["dcat:theme"]["fields"]} >= {"theme", "subject"}
+    assert "fields" not in properties.get("rdf:type", {})

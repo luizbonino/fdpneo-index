@@ -13,6 +13,7 @@ get the longer time budget.
 
 from __future__ import annotations
 
+import re
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -199,12 +200,36 @@ async def sparql_validate(
 
 
 @router.get("/index/sparql/schema")
-async def sparql_schema(service: Sparql) -> dict[str, Any]:
-    """Classes and properties in the data (with counts), named graphs, and known prefixes."""
+async def sparql_schema(request: Request, service: Sparql) -> dict[str, Any]:
+    """Classes and properties in the data (with counts), named graphs, and known prefixes.
+
+    A property that feeds a field of the search profile carries `fields` (name,
+    label, help): the builder names it as the search page does."""
     try:
-        return await service.schema()
+        schema = await service.schema()
     except QueryFailed as err:
         raise SparqlError(err.message, err.status) from err
+    search = getattr(request.app.state, "search", None)
+    if search is None:
+        return schema
+    feeds = search.profile.fields_by_property()
+    properties: list[dict[str, Any]] = []
+    for term in schema["properties"]:
+        fields = feeds.get(term["iri"], [])
+        if fields:
+            term = {
+                **term,
+                "fields": [
+                    {
+                        "name": name,
+                        "label": spec.label.get("en") or _readable(name),
+                        "help": spec.help.get("en"),
+                    }
+                    for name, spec in fields
+                ],
+            }
+        properties.append(term)
+    return {**schema, "properties": properties}
 
 
 @router.get("/index/sparql/suggest")
@@ -289,3 +314,8 @@ async def sparql_example_run(
 ) -> Response:
     """Run an example with parameters; results as for ``/index/sparql``."""
     return await _run(service, request, caller, _expand(service, example_id, body), fmt=format)
+
+
+def _readable(name: str) -> str:
+    """A field name for people: ``accessRights`` → "Access rights"."""
+    return re.sub(r"(?<!^)(?=[A-Z])", " ", name).capitalize()

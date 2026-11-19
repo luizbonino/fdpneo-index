@@ -707,6 +707,9 @@ export interface paths {
     /**
      * Sparql Schema
      * @description Classes and properties in the data (with counts), named graphs, and known prefixes.
+     *
+     *     A property that feeds a field of the search profile carries `fields` (name,
+     *     label, help): the builder names it as the search page does.
      */
     get: operations["sparql_schema_index_sparql_schema_get"];
     put?: never;

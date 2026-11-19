@@ -178,6 +178,27 @@ packs` lists every pack and checks its files against its `SHA256SUMS`;
 `fdpindex conformance fetch my-rules` downloads a pack's files again from the
 `source.download` its manifest names.
 
+## An index for the European Health Data Space
+
+`FDPINDEX_DEPLOYMENT_PROFILE=ehds` starts the index with defaults for
+health metadata, all of which stay settings you can change, and **Reset to
+defaults** returns to:
+
+- **Conformance**: HealthDCAT-AP Release 8 and DCAT-AP 3.0.1 checked, in
+  that order; the catalogue feed republishes only records that conform to
+  HealthDCAT-AP (Regulation (EU) 2025/327, Articles 77 and 79), the rest of
+  the index shows everything.
+- **Search**: the HealthDCAT-AP extension (the example under **Settings →
+  Search profile**): health category, numbers of individuals, typical
+  ages, coding systems, health data access body, and **Quality
+  certificate**, a filter and a line on dataset cards for datasets whose
+  holder states a `dqv:QualityCertificate`, with the certificate documents
+  on the resource's page.
+
+EHDS Article 78's quality and utility label is expected to be expressed as
+such a certificate; until its implementing act is out, the index shows
+what data holders state and does not check certificates.
+
 ## The catalogue feed
 
 The index republishes what it harvested as a DCAT-AP catalogue, for

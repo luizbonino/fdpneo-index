@@ -32,11 +32,11 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 9/9 | – | – | ✅ Done | – |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 6/8 | – | 2 | 🔹 Started | 11.6, 11.7 |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 7/8 | – | 1 | 🔹 Started | 11.7 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 0/6 | – | 6 | ⬜ Not started | All six |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 0/9 | – | 9 | ⬜ Not started | All nine |
-| **Total** | | **110/130** | **–** | **20** | | |
+| **Total** | | **111/130** | **–** | **19** | | |
 
 ## Phase 0 — Foundations
 
@@ -204,7 +204,7 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 - [x] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page) — *done: background validation in worker processes, incremental by record content hash and pack digest (migration 0014); reports per FDP and per record (API, FDP page, resource page); Settings → Conformance (profiles, reports public or admin-only); tried on the FDPs of home.fairdatapoint.org (61 FDPs, 2 272 records, 6 616 validations in about 4.5 minutes)*
 - [x] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default — *done: `surfaces` in the conformance settings (search, SPARQL, directory, feed), a "Meets profile" filter and card line in search, "What visitors see" in Settings; the feed applies it in 11.5*
 - [x] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6) — *done: `GET /index/catalog` (DCAT-AP, Hydra paging, four RDF formats), `/index/catalog/records/{id}`, OAI-PMH at `/index/oai` (`dcat_ap`), the feed's minimum conformance; validated against DCAT-AP 3.0.1 in a test*
-- [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
+- [x] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages — *done: `FDPINDEX_DEPLOYMENT_PROFILE=ehds` (HealthDCAT-AP then DCAT-AP checked, feed strict on HealthDCAT-AP, the HealthDCAT-AP search extension by default); quality certificates as a filter, a card line and on resource pages*
 - [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches — *`docs/design/mcp.md`: an index mode of `fdp-mcp` (agreed); built once search results report conformance*
 - [x] 11.8 Configurable language fallback order for titles, descriptions and labels — *done: `languageFallback` in the search settings (default `en`): the reader's language, untagged text, then these languages in order, then any; for titles, descriptions, harvested, resolved and bundled labels; "Fallback languages" in Settings*
 

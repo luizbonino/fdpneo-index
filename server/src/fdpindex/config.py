@@ -102,6 +102,10 @@ class Settings(BaseSettings):
     # background. Packs: the bundled DCAT-AP, HealthDCAT-AP and Health-RI ones, and an
     # operator's directory of <id>/<version>/pack.yaml. Workers: processes running
     # pySHACL; -1 for the CPUs less one (at most four), 0 for a thread of this process.
+    # A bundle of defaults for a kind of index (TASKS 11.6): "ehds" checks HealthDCAT-AP and
+    # DCAT-AP, republishes only HealthDCAT-AP records, and starts the search from the
+    # HealthDCAT-AP extension. Administrators can still change each setting.
+    deployment_profile: Literal["default", "ehds"] = "default"
     # The catalogue feed (TASKS 11.5): the harvested metadata republished as DCAT-AP at
     # /index/catalog and over OAI-PMH at /index/oai. Needs search (the projection lists
     # the records). The catalogue's own description:

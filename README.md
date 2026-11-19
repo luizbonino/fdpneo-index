@@ -156,6 +156,7 @@ per-address rate limit. They are configurable, and administrators get more
 | `FDPINDEX_SEARCH_RATE_PER_MINUTE` | `120` | Searches per minute per anonymous address |
 | `FDPINDEX_SEARCH_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `5`, `30` | Statement timeout per search |
 | `FDPINDEX_VOCAB_FILE` | the bundled `search/vocab.json` | Another label pack, written by `fdpindex vocab update --output …`: labels of EU authority table codes, SPDX licences and DCAT/DC/FOAF/ADMS terms, in several languages, and the GeoNames, lexvo and ISO 3166 names of each country |
+| `FDPINDEX_DEPLOYMENT_PROFILE` | `default` | `ehds` for a European Health Data Space index: HealthDCAT-AP and DCAT-AP checked, a catalogue feed of HealthDCAT-AP records only, the HealthDCAT-AP search extension (health categories, numbers of individuals, quality certificates). Defaults only: every setting stays the administrator's |
 | `FDPINDEX_CATALOG_ENABLED` | `true` | The catalogue feed: the harvested metadata republished as DCAT-AP at `/index/catalog` and over OAI-PMH at `/index/oai` (needs search) |
 | `FDPINDEX_CATALOG_TITLE`, `…_DESCRIPTION` | `FDPneo Index`, a sentence | The feed catalogue's `dct:title` and `dct:description`, and the OAI-PMH repository name |
 | `FDPINDEX_CATALOG_PUBLISHER`, `…_PUBLISHER_URL` | the title, — | The catalogue's publisher: a name, and an IRI when it has one |

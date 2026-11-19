@@ -49,7 +49,9 @@ const keyFields = computed(() =>
       if (!values.length) return null;
       const text = values
         .slice(0, 3)
-        .map((v) => v.label)
+        .map((v) =>
+          v.value === "true" ? t("search.yes") : v.value === "false" ? t("search.no") : v.label,
+        )
         .join(", ");
       return { name, text: values.length > 3 ? `${text} +${values.length - 3}` : text };
     })

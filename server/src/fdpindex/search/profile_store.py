@@ -104,6 +104,20 @@ def merge(base: Profile, overlay: dict[str, Any]) -> Profile:
         raise ProfileError(str(err)) from err
 
 
+# The deployment profile's overlay (TASKS 11.6), used while no administrator has stored
+# one: ``FDPINDEX_DEPLOYMENT_PROFILE=ehds`` starts from the HealthDCAT-AP example.
+_default_overlay: dict[str, Any] | None = None
+
+
+def set_default_overlay(overlay: dict[str, Any] | None) -> None:
+    global _default_overlay
+    _default_overlay = overlay
+
+
+def default_overlay() -> dict[str, Any] | None:
+    return copy.deepcopy(_default_overlay)
+
+
 class ProfileStore:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
@@ -111,7 +125,7 @@ class ProfileStore:
     async def overlay(self) -> dict[str, Any] | None:
         async with self._session_factory() as session:
             row = await session.get(IndexSettingsRow, _ROW_ID)
-        return dict(row.value) if row is not None else None
+        return dict(row.value) if row is not None else default_overlay()
 
     async def effective(self) -> Profile:
         """The bundled profile with the stored overlay; the bundled one if the overlay no
@@ -141,4 +155,5 @@ class ProfileStore:
             row = await session.get(IndexSettingsRow, _ROW_ID)
             if row is not None:
                 await session.delete(row)
-        return default_profile()
+        overlay = default_overlay()
+        return merge(default_profile(), overlay) if overlay else default_profile()

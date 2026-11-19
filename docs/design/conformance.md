@@ -359,6 +359,19 @@ certificates as the label is an assumption to confirm (§9, question 5). The
 index shows them as a badge on result cards and the resource page and as a
 facet. It does not compute or verify them.
 
+**As built (11.6, 2026-11-19).** `FDPINDEX_DEPLOYMENT_PROFILE` (`default`,
+`ehds`) chooses a bundle of defaults (`fdpindex/deployment.py`): the
+conformance settings used while no administrator has stored any (and
+restored by "reset"), and the search overlay used while none is stored. The
+EHDS bundle checks HealthDCAT-AP then DCAT-AP (the feed names the first
+profile a record meets), makes the feed strict on HealthDCAT-AP, and
+starts from the HealthDCAT-AP example overlay, which gained
+`qualityCertified` (a Yes/No main facet on `dqv:hasQualityAnnotation`,
+shown on dataset cards) and `qualityCertificate` (the certificates'
+`oa:hasBody`). On live FDPs the annotations come as
+`dqv:QualityCertificate` with `oa:hasBody`, `oa:hasTarget` and
+`oa:motivatedBy dqv:qualityAssessment`.
+
 Regulation (EU) 2025/327: Art. 77 (dataset descriptions and catalogue),
 Art. 78 (the label), Art. 79 (the EU dataset catalogue). The implementing
 acts on the minimum elements of a dataset description (Art. 77(4)) and on

@@ -31,6 +31,7 @@ from fdpindex.conformance.service import ConformanceService
 from fdpindex.conformance.settings import ConformanceSettingsService
 from fdpindex.conformance.workers import ValidationPool, default_workers
 from fdpindex.db import create_schema, make_engine, make_session_factory
+from fdpindex.deployment import deployment_profile
 from fdpindex.errors import register_exception_handlers
 from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
@@ -38,7 +39,7 @@ from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
 from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
-from fdpindex.search.profile_store import ProfileStore
+from fdpindex.search.profile_store import ProfileStore, set_default_overlay
 from fdpindex.search.query import SearchService
 from fdpindex.search.semantic import SemanticIndex
 from fdpindex.service import IndexService
@@ -127,6 +128,8 @@ def create_app(
 ) -> FastAPI:
     """Build the app. The keyword arguments exist for tests (an in-memory database, a mocked network)."""
     config = config or get_settings()
+    deployment = deployment_profile(config.deployment_profile)
+    set_default_overlay(deployment.search_overlay())
     if configure_logs:
         configure_logging(config.environment)
 
@@ -204,7 +207,9 @@ def create_app(
         )
         app.state.search = search
         app.state.search_rate = RateLimiter(config.search_rate_per_minute)
-        conformance_settings = ConformanceSettingsService(factory, app.state.conformance_packs)
+        conformance_settings = ConformanceSettingsService(
+            factory, app.state.conformance_packs, deployment.conformance
+        )
         app.state.conformance_settings = conformance_settings
         conformance = await _start_conformance(
             config, factory, index, search, conformance_settings, sparql

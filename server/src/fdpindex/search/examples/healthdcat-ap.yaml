@@ -17,6 +17,8 @@
 prefixes:
   dcatap: "http://data.europa.eu/r5r/"
   dpv: "https://w3id.org/dpv#"
+  dqv: "http://www.w3.org/ns/dqv#"
+  oa: "http://www.w3.org/ns/oa#"
 
 fields:
   individuals:
@@ -96,6 +98,22 @@ fields:
     facet: more
     label: {en: Concerns personal data}
     help: {en: "Whether the dataset lists the categories of personal data it holds (DPV)."}
+  # Quality certificates (dqv:hasQualityAnnotation, a dqv:QualityCertificate whose
+  # oa:hasBody is the certificate). EHDS Article 78's quality and utility label is
+  # expected to be expressed this way once its implementing act is out; the index
+  # shows what the data holder states and does not check certificates.
+  qualityCertified:
+    kind: boolean
+    paths: [dqv:hasQualityAnnotation]
+    presence: true
+    facet: main
+    label: {en: Quality certificate}
+    help: {en: "Whether the data holder states a quality certificate for the dataset (dqv:QualityCertificate). The index shows what is stated; it does not check certificates."}
+  qualityCertificate:
+    kind: iri
+    paths: [dqv:hasQualityAnnotation/oa:hasBody]
+    literals: false
+    label: {en: Quality certificate document}
 
 cards:
-  dataset: [publisher, healthCategory, individuals]
+  dataset: [publisher, healthCategory, individuals, qualityCertified, conformance]

@@ -122,10 +122,15 @@ class ConformanceSettingsService:
     """Reads (cached for a few seconds) and writes the conformance settings row."""
 
     def __init__(
-        self, session_factory: async_sessionmaker[AsyncSession], packs: dict[str, Pack]
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        packs: dict[str, Pack],
+        defaults: ConformanceSettings | None = None,
     ) -> None:
         self._session_factory = session_factory
         self.packs = packs
+        # The deployment profile's defaults (TASKS 11.6); "reset" returns to them.
+        self.defaults = defaults if defaults is not None else ConformanceSettings()
         self._cached: tuple[float, ConformanceSettings] | None = None
         self.version = 0
 
@@ -136,7 +141,9 @@ class ConformanceSettingsService:
         async with self._session_factory() as session:
             row = await session.get(IndexSettingsRow, _ROW_ID)
         settings = (
-            ConformanceSettings() if row is None else ConformanceSettings.model_validate(row.value)
+            self.defaults.model_copy(deep=True)
+            if row is None
+            else ConformanceSettings.model_validate(row.value)
         )
         # A pack an operator removed since is skipped, not an error.
         settings.packs = [p for p in settings.packs if p.key in self.packs]
@@ -148,7 +155,7 @@ class ConformanceSettingsService:
         return settings
 
     async def view(self) -> ConformanceSettingsView:
-        return _view(await self.get())
+        return _view(await self.get(), self.defaults)
 
     async def update(self, settings: ConformanceSettings) -> ConformanceSettingsView:
         settings.check(self.packs)
@@ -162,23 +169,23 @@ class ConformanceSettingsService:
                 row.updated_at = utcnow()
         self._cached = (time.monotonic(), settings)
         self.version += 1
-        return _view(settings)
+        return _view(settings, self.defaults)
 
     async def reset(self) -> ConformanceSettingsView:
         async with self._session_factory() as session, session.begin():
             row = await session.get(IndexSettingsRow, _ROW_ID)
             if row is not None:
                 await session.delete(row)
-        settings = ConformanceSettings()
+        settings = self.defaults.model_copy(deep=True)
         self._cached = (time.monotonic(), settings)
         self.version += 1
-        return _view(settings)
+        return _view(settings, self.defaults)
 
 
-def _view(settings: ConformanceSettings) -> ConformanceSettingsView:
+def _view(settings: ConformanceSettings, defaults: ConformanceSettings) -> ConformanceSettingsView:
     return ConformanceSettingsView(
         packs=settings.packs,
         reports=settings.reports,
         surfaces=settings.surfaces,
-        isDefault=settings == ConformanceSettings(),
+        isDefault=settings == defaults,
     )

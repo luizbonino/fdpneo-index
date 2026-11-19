@@ -53,6 +53,9 @@ The first release will contain:
   `/index/catalog` (Hydra paging) and over OAI-PMH at `/index/oai`, one
   catalogue record per resource with links back to its FDP, for
   aggregators such as data.europa.eu.
+- **EHDS deployment profile** (`FDPINDEX_DEPLOYMENT_PROFILE=ehds`):
+  HealthDCAT-AP checked first, a feed of HealthDCAT-AP records only, and the
+  HealthDCAT-AP search extension, now with quality certificates.
 
 ### Fixed
 

@@ -120,8 +120,12 @@ The SPARQL page offers three ways in:
   as "Datasets by theme", "Datasets by licence" or "FDPs by country". No SPARQL needed.
 - **Builder**: choose a type, add conditions with suggestions from the
   data, choose a list or a count; the SPARQL updates as you go.
-- **Editor**: write SPARQL with autocompletion of the classes, properties
-  and prefixes in the data, and inline validation. Ctrl/Cmd+Enter runs it.
+- **Editor**: write SPARQL with suggestions that fit where you are:
+  prefixes after `PREFIX`, the properties in the data where a property
+  goes, classes after `a`, functions and variables inside `FILTER( )` and
+  `BIND( )`, and `ORDER BY`, `LIMIT` and the like after the pattern.
+  Mistakes are marked as you type; `{ }` blocks fold. Ctrl/Cmd+Enter runs
+  the query.
 
 Results show as a table, as a chart when they have a category and a
 number, or raw, and download as CSV, TSV, JSON or Turtle. Recent queries

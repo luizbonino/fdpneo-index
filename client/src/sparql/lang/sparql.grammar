@@ -1,0 +1,219 @@
+// SPARQL 1.1 Query (https://www.w3.org/TR/sparql11-query/#grammar) for the editor
+// (TASKS 10.4): SELECT, ASK, CONSTRUCT and DESCRIBE, with property paths, subqueries,
+// VALUES, aggregates, EXISTS and every built-in call. Keywords are case-insensitive
+// (tokens.ts). It follows the specification's structure; where it is more
+// permissive (a repeated "." between triples), the server's parser stays the judge.
+//
+// Regenerate parser.ts and parser.terms.ts with `npm run grammar`.
+
+@top Query { Prologue (SelectQuery | ConstructQuery | DescribeQuery | AskQuery) ValuesClause? }
+
+@precedence {
+  pathmod,
+  path @left,
+  prefix,
+  times @left,
+  plus @left,
+  compare @left,
+  and @left,
+  or @left
+}
+
+Prologue { (BaseDecl | PrefixDecl)* }
+BaseDecl { BASE IriRef }
+PrefixDecl { PREFIX PrefixedName IriRef }
+
+SelectQuery { SelectClause DatasetClause* WhereClause SolutionModifier }
+SubSelect { SelectClause WhereClause SolutionModifier ValuesClause? }
+SelectClause { SELECT (DISTINCT | REDUCED)? (SelectItem+ | Star) }
+SelectItem { Var | "(" expression AS Var ")" }
+Star { "*" }
+
+ConstructQuery {
+  CONSTRUCT (
+    ConstructTemplate DatasetClause* WhereClause SolutionModifier |
+    DatasetClause* WHERE "{" triplesBlock? "}" SolutionModifier
+  )
+}
+ConstructTemplate { "{" triplesBlock? "}" }
+
+DescribeQuery { DESCRIBE (varOrIri+ | Star) DatasetClause* WhereClause? SolutionModifier }
+
+AskQuery { ASK DatasetClause* WhereClause SolutionModifier }
+
+DatasetClause { FROM NAMED? iri }
+WhereClause { WHERE? GroupGraphPattern }
+
+SolutionModifier { GroupClause? HavingClause? OrderClause? limitOffset? }
+GroupClause { GROUP BY GroupCondition+ }
+GroupCondition { BuiltInCall | FunctionCall | "(" expression (AS Var)? ")" | Var }
+HavingClause { HAVING constraint+ }
+OrderClause { ORDER BY OrderCondition+ }
+OrderCondition { (ASC | DESC) BrackettedExpression | constraint | Var }
+limitOffset { LimitClause OffsetClause? | OffsetClause LimitClause? }
+LimitClause { LIMIT Number }
+OffsetClause { OFFSET Number }
+
+ValuesClause { VALUES dataBlock }
+InlineData { VALUES dataBlock }
+dataBlock { InlineDataOneVar | InlineDataFull }
+InlineDataOneVar { Var "{" dataBlockValue* "}" }
+InlineDataFull { (Nil | "(" Var+ ")") "{" (DataRow | Nil)* "}" }
+DataRow { "(" dataBlockValue+ ")" }
+dataBlockValue { iri | RdfLiteral | NumericLiteral | BooleanLiteral | UNDEF }
+
+GroupGraphPattern { "{" (SubSelect | groupBody) "}" }
+groupBody { triplesBlock? (graphPatternNotTriples "."? triplesBlock?)* }
+triplesBlock { TriplesSameSubject ("." TriplesSameSubject?)* }
+graphPatternNotTriples {
+  GroupOrUnionGraphPattern |
+  OptionalGraphPattern |
+  MinusGraphPattern |
+  GraphGraphPattern |
+  ServiceGraphPattern |
+  Filter |
+  Bind |
+  InlineData
+}
+GroupOrUnionGraphPattern { GroupGraphPattern (UNION GroupGraphPattern)* }
+OptionalGraphPattern { OPTIONAL GroupGraphPattern }
+MinusGraphPattern { MINUS GroupGraphPattern }
+GraphGraphPattern { GRAPH varOrIri GroupGraphPattern }
+ServiceGraphPattern { SERVICE SILENT? varOrIri GroupGraphPattern }
+Filter { FILTER constraint }
+Bind { BIND "(" expression AS Var ")" }
+
+constraint { BrackettedExpression | BuiltInCall | FunctionCall | ExistsFunc | NotExistsFunc }
+
+// Triples, with property paths (a superset of the plain triples of templates).
+TriplesSameSubject { varOrTerm PropertyList | triplesNode PropertyList? }
+PropertyList { verb ObjectList (";" (verb ObjectList)?)* }
+verb { Path | Var }
+ObjectList { graphNode ("," graphNode)* }
+graphNode { varOrTerm | triplesNode }
+triplesNode { Collection | BlankNodePropertyList }
+Collection { "(" graphNode+ ")" }
+BlankNodePropertyList { "[" PropertyList "]" }
+
+Path { pathSequence (!path "|" pathSequence)* }
+pathSequence { pathEltOrInverse (!path "/" pathEltOrInverse)* }
+pathEltOrInverse { PathElt | InversePath }
+InversePath { "^" PathElt }
+PathElt { pathPrimary (!pathmod PathMod)? }
+PathMod { "?" | "*" | "+" }
+pathPrimary { iri | A | NegatedPropertySet | "(" Path ")" }
+NegatedPropertySet { "!" (pathOneInPropertySet | "(" (pathOneInPropertySet ("|" pathOneInPropertySet)*)? ")") }
+pathOneInPropertySet { iri | A | "^" (iri | A) }
+
+varOrTerm { Var | graphTerm }
+varOrIri { Var | iri }
+graphTerm { iri | RdfLiteral | NumericLiteral | BooleanLiteral | BlankNode | Nil }
+BlankNode { BlankNodeLabel | "[" "]" }
+Nil { "(" ")" }
+
+// Expressions.
+expression {
+  BinaryExpression |
+  UnaryExpression |
+  BrackettedExpression |
+  BuiltInCall |
+  FunctionCall |
+  iri |
+  RdfLiteral |
+  Number |
+  BooleanLiteral |
+  Var |
+  Aggregate |
+  ExistsFunc |
+  NotExistsFunc
+}
+BrackettedExpression { "(" expression ")" }
+UnaryExpression { !prefix ("!" | "+" | "-") expression }
+BinaryExpression {
+  expression !or LogicOp<"||"> expression |
+  expression !and LogicOp<"&&"> expression |
+  expression !compare CompareOp expression |
+  expression !compare NOT? IN ExpressionList |
+  expression !plus ArithOp<"+" | "-"> expression |
+  expression !times ArithOp<"*" | "/"> expression
+}
+CompareOp { "=" | "!=" | "<" | ">" | "<=" | ">=" }
+LogicOp<op> { op }
+ArithOp<op> { op }
+ExpressionList { Nil | "(" expression ("," expression)* ")" }
+
+BuiltInCall { FunctionName ArgList }
+FunctionName { Word }
+FunctionCall { iri ArgList }
+ArgList { Nil | "(" DISTINCT? expression ("," expression)* ")" }
+ExistsFunc { EXISTS GroupGraphPattern }
+NotExistsFunc { NOT EXISTS GroupGraphPattern }
+Aggregate {
+  (COUNT | SUM | MIN | MAX | AVG | SAMPLE) "(" DISTINCT? (Star | expression) ")" |
+  GROUP_CONCAT "(" DISTINCT? expression (";" SEPARATOR "=" String)? ")"
+}
+
+// Terms.
+iri { IriRef | PrefixedName }
+RdfLiteral { String (LangTag | "^^" iri)? }
+NumericLiteral { ("+" | "-")? Number }
+BooleanLiteral { TRUE | FALSE }
+
+@external specialize { Word } keyword from "./tokens" {
+  BASE, PREFIX, SELECT, DISTINCT, REDUCED, AS, CONSTRUCT, WHERE, DESCRIBE, ASK, FROM,
+  NAMED, GROUP, BY, HAVING, ORDER, ASC, DESC, LIMIT, OFFSET, VALUES, UNDEF, UNION,
+  OPTIONAL, MINUS, GRAPH, SERVICE, SILENT, FILTER, BIND, EXISTS, NOT, IN, COUNT, SUM,
+  MIN, MAX, AVG, SAMPLE, GROUP_CONCAT, SEPARATOR, TRUE, FALSE, A
+}
+
+@skip { space | Comment }
+
+@tokens {
+  space { $[ \t\r\n]+ }
+  Comment { "#" ![\n]* }
+
+  IriRef { "<" ![<>"{}|^`\\\u0000- ]* ">" }
+
+  pnCharsBase { $[A-Za-zÀ-ÖØ-öø-˿Ͱ-ͽͿ-῿‌-‍⁰-↏Ⰰ-⿯、-퟿豈-﷏ﷰ-�] }
+  pnChars { pnCharsBase | $[0-9_\-·̀-ͯ‿-⁀] }
+  percent { "%" $[0-9A-Fa-f] $[0-9A-Fa-f] }
+  localEscape { "\\" $[_~.\-!$&'()*+,;=/?#@%] }
+  localChar { pnChars | ":" | percent | localEscape }
+  pnPrefix { pnCharsBase (pnChars | "." pnChars)* }
+  pnLocal { (pnCharsBase | $[0-9_:] | percent | localEscape) (localChar | "." localChar)* }
+  PrefixedName { pnPrefix? ":" pnLocal? }
+
+  BlankNodeLabel { "_:" (pnCharsBase | $[0-9_]) (pnChars | "." pnChars)* }
+
+  Var { $[?$] (pnCharsBase | $[0-9_·̀-ͯ‿-⁀])+ }
+
+  Word { $[A-Za-z_] $[A-Za-z0-9_]* }
+
+  LangTag { "@" $[a-zA-Z]+ ("-" $[a-zA-Z0-9]+)* }
+
+  exponent { $[eE] $[+\-]? $[0-9]+ }
+  Number {
+    $[0-9]+ ("." $[0-9]* exponent? | exponent)? |
+    "." $[0-9]+ exponent?
+  }
+
+  echar { "\\" $[tbnrf\\"'] | "\\u" $[0-9A-Fa-f] $[0-9A-Fa-f] $[0-9A-Fa-f] $[0-9A-Fa-f] }
+  String {
+    "'" (!['\\\n\r] | echar)* "'" |
+    '"' (!["\\\n\r] | echar)* '"' |
+    "'''" (("'" | "''")? (!['\\] | echar))* "'''" |
+    '"""' (('"' | '""')? (!["\\] | echar))* '"""'
+  }
+
+  "(" ")" "{" "}" "[" "]" "," ";" "." "*" "+" "-" "/" "|" "^" "^^" "!" "?"
+  "=" "!=" "<" ">" "<=" ">=" "||" "&&"
+
+  @precedence { Number, "." }
+  @precedence { BlankNodeLabel, PrefixedName, Word }
+  @precedence { PrefixedName, Word }
+  @precedence { Var, "?" }
+  @precedence { IriRef, "<=", "<" }
+  @precedence { "^^", "^" }
+}
+
+@detectDelim

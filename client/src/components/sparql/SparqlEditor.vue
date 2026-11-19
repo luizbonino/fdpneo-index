@@ -2,12 +2,15 @@
 /**
  * The SPARQL editor (CodeMirror 6, search design §2.2.4).
  *
- * - SPARQL highlighting (the legacy stream mode), themed from the FAIR tokens,
- *   so it follows light and dark mode.
- * - Autocomplete from the data: classes and properties with labels and counts
- *   (from /index/sparql/schema), prefixes, keywords, the query's variables and
- *   the FDP graphs. Picking `dcat:…` adds the PREFIX line when it is missing.
- * - Inline validation: the server's gate, debounced, with line and column.
+ * - SPARQL 1.1 from a Lezer grammar (TASKS 10.4): highlighting, folding of
+ *   { … } blocks, indentation, and syntax errors marked as you type; themed from
+ *   the FAIR tokens, so it follows light and dark mode.
+ * - Completion that knows where the cursor is (src/sparql/lang/context): prefixes
+ *   after PREFIX, properties where a predicate goes, classes after `a`, functions
+ *   and variables in expressions, the clauses that may follow WHERE { … }. Terms
+ *   come from the data (classes and properties with labels and counts, from
+ *   /index/sparql/schema); picking `dcat:…` adds the PREFIX line when missing.
+ * - Inline validation: the parse tree at once, then the server's gate, debounced.
  * - Ctrl/Cmd+Enter runs the query.
  */
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -22,8 +25,10 @@ import {
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import {
   HighlightStyle,
-  StreamLanguage,
   bracketMatching,
+  foldGutter,
+  foldKeymap,
+  indentOnInput,
   syntaxHighlighting,
 } from "@codemirror/language";
 import {
@@ -35,9 +40,10 @@ import {
   type CompletionResult,
 } from "@codemirror/autocomplete";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
-import { sparql } from "@codemirror/legacy-modes/mode/sparql";
 import { tags } from "@lezer/highlight";
 import { sparqlApi, type SparqlSchema } from "@/sparql/api";
+import { sparqlSupport, syntaxErrors } from "@/sparql/lang";
+import { FUNCTIONS, KEYWORDS, place, variables } from "@/sparql/lang/context";
 import { KNOWN_PREFIXES } from "@/sparql/results";
 
 const props = defineProps<{
@@ -50,55 +56,6 @@ const emit = defineEmits<{ "update:modelValue": [value: string]; run: [] }>();
 
 const host = ref<HTMLDivElement>();
 let view: EditorView | null = null;
-
-const KEYWORDS = [
-  "SELECT",
-  "DISTINCT",
-  "WHERE",
-  "FILTER",
-  "OPTIONAL",
-  "GRAPH",
-  "UNION",
-  "MINUS",
-  "VALUES",
-  "BIND",
-  "AS",
-  "GROUP BY",
-  "ORDER BY",
-  "DESC",
-  "ASC",
-  "LIMIT",
-  "OFFSET",
-  "HAVING",
-  "COUNT",
-  "SAMPLE",
-  "GROUP_CONCAT",
-  "MIN",
-  "MAX",
-  "AVG",
-  "SUM",
-  "CONSTRUCT",
-  "DESCRIBE",
-  "ASK",
-  "PREFIX",
-  "NOT EXISTS",
-  "EXISTS",
-  "CONTAINS",
-  "LCASE",
-  "UCASE",
-  "STR",
-  "LANG",
-  "LANGMATCHES",
-  "REGEX",
-  "STRSTARTS",
-  "STRENDS",
-  "BOUND",
-  "COALESCE",
-  "IF",
-  "IN",
-  "DATATYPE",
-  "YEAR",
-];
 
 function prefixes(): Record<string, string> {
   return props.schema?.prefixes ?? KNOWN_PREFIXES;
@@ -130,13 +87,55 @@ function termOption(curie: string, label: string, count: number, kind: string): 
   };
 }
 
+function prefixOption(prefix: string): Completion {
+  return {
+    label: `${prefix}:`,
+    type: "namespace",
+    detail: prefixes()[prefix] ?? "",
+    boost: -5,
+    apply: (editor, _c, from, to) => {
+      const extra = prefixChange(editor.state.doc.toString(), prefix);
+      const insert = `${prefix}:`;
+      editor.dispatch({
+        changes: extra ? [{ from, to, insert }, extra] : [{ from, to, insert }],
+        selection: { anchor: from + insert.length + (extra ? extra.insert.length : 0) },
+      });
+    },
+  };
+}
+
+function termOptions(text: string, kinds: ("class" | "property")[], boost = 0): Completion[] {
+  const options: Completion[] = [];
+  for (const kind of kinds) {
+    const terms = kind === "class" ? props.schema?.classes : props.schema?.properties;
+    for (const term of terms ?? []) {
+      if (!term.curie.includes(":") || term.curie.startsWith("http")) continue;
+      const name = term.fields?.map((f) => f.label).join(" · ") ?? term.label;
+      if (
+        term.curie.toLowerCase().startsWith(text) ||
+        (!text.includes(":") && name.toLowerCase().includes(text))
+      ) {
+        const option = termOption(term.curie, name, term.count, kind);
+        options.push({ ...option, boost: (option.boost ?? 0) + boost });
+      }
+    }
+  }
+  return options;
+}
+
+function keywordOptions(words: string[], text: string, boost = -10): Completion[] {
+  return words
+    .filter((w) => w.toLowerCase().startsWith(text))
+    .map((w) => ({ label: w, type: "keyword", boost }));
+}
+
 function complete(context: CompletionContext): CompletionResult | null {
+  const doc = context.state.doc.toString();
   const variable = context.matchBefore(/[?$][\w]*/);
   if (variable) {
-    const names = new Set(context.state.doc.toString().match(/[?$][A-Za-z_]\w*/g) ?? []);
     return {
       from: variable.from,
-      options: [...names].map((n) => ({ label: n, type: "variable" })),
+      options: variables(doc).map((n) => ({ label: n, type: "variable" })),
       validFor: /^[?$]\w*$/,
     };
   }
@@ -152,53 +151,92 @@ function complete(context: CompletionContext): CompletionResult | null {
     };
   }
   const word = context.matchBefore(/[\w-]+:?[\w.-]*/);
-  if (!word || (word.from === word.to && !context.explicit)) return null;
-  const text = word.text.toLowerCase();
-  const options: Completion[] = [];
-  const terms = [
-    ...(props.schema?.classes ?? []).map((t) => ({ ...t, kind: "class" })),
-    ...(props.schema?.properties ?? []).map((t) => ({ ...t, kind: "property" })),
-  ];
-  for (const term of terms) {
-    if (!term.curie.includes(":") || term.curie.startsWith("http")) continue;
-    if (
-      term.curie.toLowerCase().startsWith(text) ||
-      (!text.includes(":") && term.label.toLowerCase().includes(text))
-    ) {
-      options.push(termOption(term.curie, term.label, term.count, term.kind));
-    }
-  }
-  if (!text.includes(":")) {
-    for (const prefix of Object.keys(prefixes())) {
-      if (prefix.startsWith(text)) {
-        options.push({
-          label: `${prefix}:`,
-          type: "namespace",
-          detail: prefixes()[prefix] ?? "",
-          apply: (editor, _c, from, to) => {
-            const extra = prefixChange(editor.state.doc.toString(), prefix);
-            const insert = `${prefix}:`;
-            editor.dispatch({
-              changes: extra ? [{ from, to, insert }, extra] : [{ from, to, insert }],
-              selection: { anchor: from + insert.length + (extra ? extra.insert.length : 0) },
-            });
-          },
-        });
+  if (!word && !context.explicit) return null;
+  const from = word?.from ?? context.pos;
+  const text = (word?.text ?? "").toLowerCase();
+  if (from === context.pos && !context.explicit) return null;
+  const where = place(doc.slice(0, from));
+  const vars = variables(doc).map((n) => ({ label: n, type: "variable", boost: 5 }));
+  const prefixOptions = text.includes(":")
+    ? []
+    : Object.keys(prefixes())
+        .filter((p) => p.startsWith(text))
+        .map(prefixOption);
+  let options: Completion[] = [];
+  switch (where.kind) {
+    case "prefix":
+      options = Object.entries(prefixes())
+        .filter(([p]) => p.startsWith(text))
+        .map(([p, ns]) => ({ label: `${p}: <${ns}>`, type: "namespace", detail: "PREFIX" }));
+      break;
+    case "start":
+    case "modifier":
+    case "projection":
+      options = [...keywordOptions(KEYWORDS[where.kind], text, 0), ...vars];
+      if (where.kind === "projection") {
+        options.push(...functionOptions(text).filter((o) => AGGREGATES.has(o.label)));
       }
-    }
-    for (const keyword of KEYWORDS) {
-      if (keyword.toLowerCase().startsWith(text)) {
-        options.push({ label: keyword, type: "keyword", boost: -10 });
-      }
-    }
+      break;
+    case "expression":
+      options = [...functionOptions(text), ...vars, ...keywordOptions(KEYWORDS.expression, text)];
+      options.push(...termOptions(text, ["property", "class"], -20), ...prefixOptions);
+      break;
+    case "subject":
+      // The query's variables first: a new triple usually reuses one.
+      options = [
+        ...vars.map((v) => ({ ...v, boost: 90 })),
+        ...keywordOptions(KEYWORDS.subject, text, 0),
+        ...termOptions(text, ["class"], -20),
+        ...prefixOptions,
+      ];
+      break;
+    case "verb":
+      options = [
+        ...termOptions(text, ["property"], 10),
+        ...keywordOptions(KEYWORDS.verb, text, 99),
+        ...vars.map((v) => ({ ...v, boost: -10 })),
+        ...prefixOptions,
+      ];
+      break;
+    case "object":
+      options = where.classes
+        ? [...termOptions(text, ["class"], 10), ...vars, ...prefixOptions]
+        : [
+            ...vars,
+            ...termOptions(text, ["class", "property"], -10),
+            ...keywordOptions(KEYWORDS.object, text),
+            ...prefixOptions,
+          ];
+      break;
   }
-  return { from: word.from, options, validFor: /^[\w-]*:?[\w.-]*$/ };
+  return { from, options, validFor: /^[\w-]*:?[\w.-]*$/ };
+}
+
+const AGGREGATES = new Set(["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE", "GROUP_CONCAT"]);
+
+function functionOptions(text: string): Completion[] {
+  return FUNCTIONS.filter(([name]) => name.toLowerCase().startsWith(text)).map(([name, args]) => ({
+    label: name,
+    type: "function",
+    detail: args,
+    apply: name.includes("EXISTS") ? `${name} {  }` : `${name}(`,
+  }));
 }
 
 const validate = linter(
   async (editor): Promise<Diagnostic[]> => {
     const text = editor.state.doc.toString();
     if (!text.trim()) return [];
+    // The parse tree first: a syntax error needs no round trip.
+    const local = syntaxErrors(editor.state);
+    if (local.length) {
+      return local.slice(0, 1).map((e) => ({
+        from: e.from,
+        to: e.to,
+        severity: "error" as const,
+        message: "Syntax error here",
+      }));
+    }
     try {
       const result = await sparqlApi.validate(text);
       if (result.ok) return [];
@@ -229,6 +267,11 @@ const highlight = HighlightStyle.define([
   { tag: [tags.comment], color: "var(--fair-text-muted)", fontStyle: "italic" },
   { tag: [tags.url, tags.link, tags.meta], color: "var(--fair-node-darker, var(--fair-text))" },
   { tag: tags.operator, color: "var(--fair-text-strong)" },
+  {
+    tag: [tags.function(tags.variableName), tags.function(tags.keyword)],
+    color: "var(--tool-accent)",
+  },
+  { tag: tags.attributeName, color: "var(--fair-text-muted)" },
 ]);
 
 const theme = EditorView.theme({
@@ -273,7 +316,9 @@ function extensions(): Extension[] {
     highlightActiveLine(),
     bracketMatching(),
     closeBrackets(),
-    StreamLanguage.define(sparql),
+    foldGutter(),
+    indentOnInput(),
+    sparqlSupport(),
     syntaxHighlighting(highlight),
     autocompletion({ override: [complete], activateOnTyping: true }),
     validate,
@@ -292,6 +337,7 @@ function extensions(): Extension[] {
       },
       indentWithTab,
       ...completionKeymap,
+      ...foldKeymap,
       ...historyKeymap,
       ...defaultKeymap,
     ]),

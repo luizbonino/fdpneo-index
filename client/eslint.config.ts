@@ -14,6 +14,8 @@ export default defineConfigWithVueTs(
       "**/coverage/**",
       "**/node_modules/**",
       "src/api/schema.ts",
+      "src/sparql/lang/parser.ts",
+      "src/sparql/lang/parser.terms.ts",
       "tests/e2e/**",
       "playwright.config.ts",
     ],

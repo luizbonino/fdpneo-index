@@ -69,16 +69,32 @@ from fdpindex.models import (
     IndexEntry,
     SearchEntryState,
     SearchLabel,
+    SearchProperty,
     SearchResource,
     SearchValue,
 )
 from fdpindex.search.concepts import concept_stats
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
-from fdpindex.search.project import SIMPLE_CONFIG, bucket_label, pick_language, ts_config
+from fdpindex.search.project import (
+    SIMPLE_CONFIG,
+    bucket_label,
+    is_property_field,
+    pick_language,
+    property_field,
+    ts_config,
+)
+from fdpindex.search.settings import (
+    PROPERTY_FACET,
+    SearchSettings,
+    SearchSettingsService,
+    effective_facets,
+    is_property_iri,
+)
 from fdpindex.search.to_sparql import to_sparql
 from fdpindex.search.vocab import bundled_label
 from fdpindex.service import api_state
 from fdpindex.sparql.labels import humanize
+from fdpindex.sparql.prefixes import PREFIXES
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -168,7 +184,8 @@ SORTS = ("relevance", "modified", "issued", "title", "harvested")
 MAX_Q = 512
 MAX_SIZE = 100
 MAX_WINDOW = 10_000
-MAX_FACETS = 12
+MAX_FACETS = 24
+PROPERTY_LIST_SECONDS = 300
 MAX_FACET_SIZE = 50
 MAX_FILTER_VALUES = 50
 KIND_BOOST = {
@@ -201,10 +218,12 @@ class SearchParams:
     sort: str = ""
     page: int = 0
     size: int = 20
-    facets: list[str] = field(default_factory=lambda: list(DEFAULT_FACETS))
+    # None: the index's default facets (search settings); names as in the API.
+    facets: list[str] | None = None
     facet_size: int = 20
 
-    def validate(self, profile: Profile) -> None:
+    def validate(self, profile: Profile, properties: frozenset[str] = frozenset()) -> None:
+        """Check the parameters; ``properties`` are the ``p:`` fields resolved for this request."""
         self.q = self.q.strip()
         if len(self.q) > MAX_Q:
             raise BadRequest(f"q is longer than {MAX_Q} characters")
@@ -213,7 +232,9 @@ class SearchParams:
             raise BadRequest(f"Unknown type: {', '.join(unknown)}")
         if not self.types:
             self.types = list(DEFAULT_TYPES)
-        facets = set(profile.facets)
+        facets = set(profile.facets) | properties
+        if self.facets is None:
+            self.facets = list(DEFAULT_FACETS)
         for name, values in self.filters.items():
             if name not in facets:
                 raise BadRequest(f"Unknown filter: {name}")
@@ -302,14 +323,19 @@ class SearchService:
         sample_above: int = SAMPLE_ABOVE,
         sample_size: int = SAMPLE_SIZE,
         max_page_percent: float = MAX_PAGE_PERCENT,
+        search_settings: SearchSettingsService | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
         self.indexer = indexer
         self.profile = indexer.profile
+        self.search_settings = search_settings or SearchSettingsService(
+            session_factory, indexer.profile
+        )
+        self._properties: dict[tuple[Any, ...], tuple[float, int, list[dict[str, Any]]]] = {}
         self._timeout = timeout_seconds
         self._admin_timeout = admin_timeout_seconds
-        self._landing: tuple[int, float, dict[str, Any]] | None = None
+        self._landing: tuple[tuple[int, int], float, dict[str, Any]] | None = None
         self._facet_cache_seconds = facet_cache_seconds
         self._sample_above = sample_above
         self._sample_size = sample_size
@@ -342,6 +368,50 @@ class SearchService:
     async def _threshold(self) -> datetime:
         settings = await self._settings.get()
         return utcnow() - settings.ping.valid_duration
+
+    # --- facet names ---------------------------------------------------------------
+
+    async def _prepare(self, params: SearchParams, *, admin: bool) -> dict[str, str]:
+        """Resolve facet names and validate; returns ``p:`` field → API name (``prop:<IRI>``).
+
+        Without ``facets``, the index's main facets apply (search settings).
+        Property facets are open to visitors unless switched off or hidden; a
+        property an administrator made a facet is open to everyone.
+        """
+        settings = await self.search_settings.get()
+        if params.facets is None:
+            params.facets = [
+                "type",
+                *(
+                    f.name
+                    for f in effective_facets(settings, self.profile)
+                    if f.placement == "main"
+                ),
+            ]
+        names: dict[str, str] = {}
+
+        def resolve(name: str) -> str:
+            if not name.startswith(PROPERTY_FACET):
+                return name
+            iri = name.removeprefix(PROPERTY_FACET)
+            if not is_property_iri(iri):
+                raise BadRequest(f"Not a property IRI: {iri[:100]}")
+            if not admin and not self._open(settings, name, iri):
+                raise BadRequest(f"Facets on {iri} are not offered on this index")
+            key = property_field(iri)
+            names[key] = name
+            return key
+
+        params.filters = {resolve(k): v for k, v in params.filters.items()}
+        params.facets = [resolve(n) for n in params.facets]
+        params.validate(self.profile, frozenset(names))
+        return names
+
+    @staticmethod
+    def _open(settings: SearchSettings, name: str, iri: str) -> bool:
+        if any(f.name == name for f in settings.facets or []):
+            return True
+        return settings.properties.visitors and not settings.hides(iri)
 
     # --- conditions --------------------------------------------------------------
 
@@ -492,7 +562,8 @@ class SearchService:
     # --- search -------------------------------------------------------------------
 
     async def search(self, params: SearchParams, *, admin: bool = False) -> dict[str, Any]:
-        params.validate(self.profile)
+        names = await self._prepare(params, admin=admin)
+        assert params.facets is not None
         threshold = await self._threshold()
         started = time.perf_counter()
 
@@ -502,7 +573,7 @@ class SearchService:
             exact_ids: list[int] | None = None
             if postgres and not self._light(params):
                 matches = _Matches()
-                if "type" in params.facets:
+                if "type" in (params.facets or []):
                     # The type facet's matches (every kind), when few, give the search's own
                     # too; when many, they are sampled like the search's own, after it.
                     await self._ids(session, params, threshold, matches, "type", probe=True)
@@ -547,8 +618,9 @@ class SearchService:
             hits = await self._hits(
                 session, rows, params, threshold, labels, scored=score is not None
             )
+            assert params.facets is not None
             facets = {
-                name: await self._facet(
+                names.get(name, name): await self._facet(
                     session,
                     params,
                     name,
@@ -564,7 +636,7 @@ class SearchService:
                 "query": {
                     "q": params.q,
                     "types": params.types,
-                    "filters": params.filters,
+                    "filters": {names.get(k, k): v for k, v in params.filters.items()},
                     "fdp": [str(u) for u in params.fdps],
                     "lang": params.lang,
                     "sort": params.sort or ("relevance" if params.q else "modified,desc"),
@@ -592,10 +664,10 @@ class SearchService:
         admin: bool = False,
     ) -> dict[str, Any]:
         """One facet's buckets beyond the top ones, for the "show more" dialog."""
+        params.facets = [name]
+        await self._prepare(params, admin=admin)
+        name = params.facets[0]
         params.facets = []
-        params.validate(self.profile)
-        if name not in self.profile.facets and name not in {"type", "fdp"}:
-            raise BadRequest(f"Unknown facet: {name}")
         threshold = await self._threshold()
 
         async def work(session: AsyncSession, postgres: bool) -> dict[str, Any]:
@@ -626,7 +698,8 @@ class SearchService:
     async def sparql(self, params: SearchParams, *, admin: bool = False) -> dict[str, Any]:
         """The search as a SPARQL query over the store (``search.to_sparql``)."""
         params.facets = []
-        params.validate(self.profile)
+        names = await self._prepare(params, admin=admin)
+        properties = {key: name.removeprefix(PROPERTY_FACET) for key, name in names.items()}
         graphs: dict[UUID, str] = {}
         if params.fdps:
             async with self._session_factory() as session:
@@ -635,7 +708,9 @@ class SearchService:
                     # Anonymous callers learn the address of accepted FDPs only.
                     query = query.where(E.permit == EntryPermit.ACCEPTED)
                 graphs = {uuid: str(url) for uuid, url in (await session.execute(query)).all()}
-        return to_sparql(params, self.profile, graphs, default_types=DEFAULT_TYPES)
+        return to_sparql(
+            params, self.profile, graphs, default_types=DEFAULT_TYPES, properties=properties
+        )
 
     async def _facet(
         self,
@@ -835,7 +910,9 @@ class SearchService:
             rows = sorted(counter.items(), key=lambda item: (-item[1], item[0]))[: size + 1]
             counted = dict(counter)
         else:
-            wanted = any_(bindparam(f"ids_{name}", found.ids, type_=ARRAY(BigInteger)))
+            wanted = any_(
+                bindparam(f"ids_{re.sub(r'\W', '_', name)}", found.ids, type_=ARRAY(BigInteger))
+            )
             count = func.count().label("n")
             query = select(V.value, count).where(V.field == name, V.resource_id == wanted)
             rows = [
@@ -933,8 +1010,8 @@ class SearchService:
                     }
                 )
             return views
-        spec = self.profile.fields[name]
-        if spec.kind == "number":
+        spec = self.profile.fields.get(name)
+        if spec is not None and spec.kind == "number":
             return [{"value": v, "label": bucket_label(v), "count": n} for v, n in buckets]
         await labels.load({v for v, _ in buckets})
         return [{"value": v, "label": labels.get(v), "count": n} for v, n in buckets]
@@ -1031,6 +1108,8 @@ class SearchService:
     ) -> dict[str, list[dict[str, Any]]]:
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for value in values:
+            if is_property_field(value.field):
+                continue  # captured properties: the harvested triples show them
             spec = self.profile.fields.get(value.field)
             label = (
                 bucket_label(value.value)
@@ -1142,12 +1221,10 @@ class SearchService:
     async def landing(self) -> dict[str, Any]:
         """Counters per kind and FDP state, the facet descriptions and card fields (cached)."""
         cached = self._landing
-        if (
-            cached is not None
-            and cached[0] == self.indexer.generation
-            and time.monotonic() - cached[1] < 60
-        ):
+        version = (self.indexer.generation, self.search_settings.version)
+        if cached is not None and cached[0] == version and time.monotonic() - cached[1] < 60:
             return cached[2]
+        settings = await self.search_settings.get()
         threshold = await self._threshold()
         async with self._session_factory() as session:
             kinds = dict(
@@ -1179,17 +1256,8 @@ class SearchService:
             "counters": {kind: int(kinds.get(kind, 0)) for kind in KINDS},
             "landing": list(self.profile.landing.counters),
             "fdps": {"total": len(entries), "byState": dict(states)},
-            "facets": [
-                {
-                    "name": name,
-                    "label": spec.label,
-                    "help": spec.help,
-                    "group": spec.facet,
-                    "kind": spec.kind,
-                }
-                for name, spec in self.profile.fields.items()
-                if spec.facet is not None
-            ],
+            "facets": self._facet_views(settings),
+            "properties": {"visitors": settings.properties.visitors},
             "fields": {
                 name: {"label": spec.label, "kind": spec.kind}
                 for name, spec in self.profile.fields.items()
@@ -1198,8 +1266,97 @@ class SearchService:
             "cards": self.profile.cards,
             "indexing": {"pending": pending},
         }
-        self._landing = (self.indexer.generation, time.monotonic(), result)
+        self._landing = (version, time.monotonic(), result)
         return result
+
+    def _facet_views(self, settings: SearchSettings) -> list[dict[str, Any]]:
+        """The facets in display order with their group (``main`` or ``more``); hidden left out."""
+        views: list[dict[str, Any]] = []
+        for facet in effective_facets(settings, self.profile):
+            if facet.placement == "hidden":
+                continue
+            view: dict[str, Any] = {"name": facet.name, "group": facet.placement}
+            spec = self.profile.fields.get(facet.name)
+            if spec is not None:
+                view |= {"label": spec.label, "help": spec.help, "kind": spec.kind}
+            elif facet.name == "fdp":
+                view |= {"label": {}, "help": {}, "kind": "fdp"}
+            else:
+                iri = facet.name.removeprefix(PROPERTY_FACET)
+                view |= {
+                    "label": {"en": humanize(iri)},
+                    "help": {},
+                    "kind": "property",
+                    "property": iri,
+                    "curie": curie(iri),
+                }
+            view["label"] = {**view["label"], **facet.label}
+            view["help"] = {**view["help"], **facet.help}
+            views.append(view)
+        return views
+
+    async def properties(
+        self, types: list[Kind], *, admin: bool = False, contains: str = ""
+    ) -> dict[str, Any]:
+        """Captured properties with the number of resources of ``types`` that have them.
+
+        For the "add a facet" picker. Visitors see the properties open to them;
+        counts are kept for a few minutes.
+        """
+        settings = await self.search_settings.get()
+        if not admin and not settings.properties.visitors:
+            listed = []
+        else:
+            key = (tuple(sorted(types)), admin)
+            cached = self._properties.get(key)
+            if cached is not None and (
+                cached[1] == self.indexer.generation
+                or time.monotonic() - cached[0] < PROPERTY_LIST_SECONDS
+            ):
+                listed = cached[2]
+            else:
+                listed = await self._run(
+                    True, lambda session, _: self._count_properties(session, types)
+                )
+                self._properties[key] = (time.monotonic(), self.indexer.generation, listed)
+            if not admin:
+                listed = [p for p in listed if self._open(settings, p["name"], p["property"])]
+        needle = contains.strip().lower()
+        if needle:
+            listed = [
+                p for p in listed if needle in p["property"].lower() or needle in p["label"].lower()
+            ]
+        return {"visitors": settings.properties.visitors, "properties": listed}
+
+    async def _count_properties(
+        self, session: AsyncSession, types: list[Kind]
+    ) -> list[dict[str, Any]]:
+        n = func.count(func.distinct(V.resource_id)).label("n")
+        rows = (
+            await session.execute(
+                select(SearchProperty.iri, n)
+                .select_from(V)
+                .join(SearchProperty, SearchProperty.field == V.field)
+                .join(E, E.uuid == V.entry_uuid)
+                .where(
+                    V.field.startswith("p:"),
+                    V.kind.in_(types),
+                    E.permit == EntryPermit.ACCEPTED,
+                )
+                .group_by(SearchProperty.iri)
+                .order_by(n.desc(), SearchProperty.iri)
+            )
+        ).all()
+        return [
+            {
+                "name": PROPERTY_FACET + str(iri),
+                "property": str(iri),
+                "curie": curie(str(iri)),
+                "label": humanize(str(iri)),
+                "resources": int(count),
+            }
+            for iri, count in rows
+        ]
 
     async def labels(self, iris: list[str], lang: str) -> dict[str, str]:
         async with self._session_factory() as session:
@@ -1246,6 +1403,19 @@ class SearchService:
         }
 
 
+def curie(iri: str) -> str | None:
+    """``dct:title`` for a property in a well-known namespace, else None."""
+    best = max(
+        (prefix for prefix, namespace in PREFIXES.items() if iri.startswith(namespace)),
+        key=lambda prefix: len(PREFIXES[prefix]),
+        default=None,
+    )
+    if best is None:
+        return None
+    local = iri[len(PREFIXES[best]) :]
+    return f"{best}:{local}" if re.fullmatch(r"[A-Za-z_][\w.-]*", local) else None
+
+
 def _rows(result: Any) -> list[tuple[int, str, UUID]]:
     return [(int(rid), str(kind), entry) for rid, kind, entry in result]
 
@@ -1262,7 +1432,9 @@ async def _values(session: AsyncSession, ids: list[int]) -> dict[int, list[Searc
     found: dict[int, list[SearchValue]] = defaultdict(list)
     for start in range(0, len(ids), 500):
         for value in await session.scalars(
-            select(V).where(V.resource_id.in_(ids[start : start + 500])).order_by(V.field, V.value)
+            select(V)
+            .where(V.resource_id.in_(ids[start : start + 500]), ~V.field.startswith("p:"))
+            .order_by(V.field, V.value)
         ):
             found[value.resource_id].append(value)
     return found

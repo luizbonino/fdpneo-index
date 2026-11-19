@@ -291,6 +291,15 @@ class SearchLabel(Base):
     __table_args__ = (Index("ix_search_label_iri", "iri"),)
 
 
+class SearchProperty(Base):
+    """A captured property: the ``p:`` key of its ``search_value`` rows and its IRI."""
+
+    __tablename__ = "search_property"
+
+    field: Mapped[str] = mapped_column(String(64), primary_key=True)
+    iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+
+
 class SearchEntryState(Base):
     """What the projection last saw of an entry: compared to find work after a restart."""
 

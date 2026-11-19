@@ -239,7 +239,9 @@ export interface paths {
      *
      *     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
      *     `license`, `accessRights`, …) is a repeatable parameter; values within a
-     *     field are ORed, fields are ANDed, `!value` excludes. Also `type`, `fdp`,
+     *     field are ORed, fields are ANDed, `!value` excludes. Any property found in
+     *     the harvested metadata is a facet and filter too, named `prop:<IRI>`
+     *     (see `/index/search/properties`). Also `type`, `fdp`,
      *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
      *     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
      *     `facets` (comma-separated, or `none`) and `facetSize`.
@@ -321,6 +323,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/search/properties": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Properties to add as facets
+     * @description Properties of the harvested metadata, with the number of resources that have them.
+     *
+     *     Each is a facet and a filter named `prop:<IRI>` on `/index/search`.
+     *     Values are IRIs and short literals, one step from the resource. Visitors
+     *     see the properties the index offers (`visitors` false: none).
+     */
+    get: operations["properties_index_search_properties_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/search/reindex": {
     parameters: {
       query?: never;
@@ -356,6 +382,32 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search settings */
+    get: operations["get_search_settings_index_search_settings_get"];
+    /**
+     * Change the search settings
+     * @description Default facets (order, `main`/`more`/`hidden`, labels) and property facets.
+     *
+     *     `facets` lists profile facets, `fdp` and `prop:<IRI>`; facets left out keep
+     *     the profile's place after the listed ones. `properties.visitors` lets
+     *     visitors add facets on any property, except those in `properties.hidden`.
+     */
+    put: operations["put_search_settings_index_search_settings_put"];
+    post?: never;
+    /** Restore the default search settings */
+    delete: operations["delete_search_settings_index_search_settings_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -813,6 +865,56 @@ export interface components {
         [key: string]: string;
       };
     };
+    /** FacetSetting */
+    "FacetSetting-Input": {
+      /** Help */
+      help?: {
+        [key: string]: string;
+      };
+      /**
+       * Label
+       * @description Per language; overrides
+       */
+      label?: {
+        [key: string]: string;
+      };
+      /**
+       * Name
+       * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
+       */
+      name: string;
+      /**
+       * Placement
+       * @default main
+       * @enum {string}
+       */
+      placement: "main" | "more" | "hidden";
+    };
+    /** FacetSetting */
+    "FacetSetting-Output": {
+      /** Help */
+      help: {
+        [key: string]: string;
+      };
+      /**
+       * Label
+       * @description Per language; overrides
+       */
+      label: {
+        [key: string]: string;
+      };
+      /**
+       * Name
+       * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
+       */
+      name: string;
+      /**
+       * Placement
+       * @default main
+       * @enum {string}
+       */
+      placement: "main" | "more" | "hidden";
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -977,6 +1079,34 @@ export interface components {
       /** Validduration */
       validDuration: string;
     };
+    /** PropertySettings */
+    "PropertySettings-Input": {
+      /**
+       * Hidden
+       * @description Property IRIs, or namespaces ending in / or #, visitors may not use
+       */
+      hidden?: string[];
+      /**
+       * Visitors
+       * @description Visitors may add facets on any captured property
+       * @default true
+       */
+      visitors: boolean;
+    };
+    /** PropertySettings */
+    "PropertySettings-Output": {
+      /**
+       * Hidden
+       * @description Property IRIs, or namespaces ending in / or #, visitors may not use
+       */
+      hidden: string[];
+      /**
+       * Visitors
+       * @description Visitors may add facets on any captured property
+       * @default true
+       */
+      visitors: boolean;
+    };
     /** ReindexRequest */
     ReindexRequest: {
       /**
@@ -1015,6 +1145,26 @@ export interface components {
       rateLimitWait: string;
       /** Timeout */
       timeout: string;
+    };
+    /** SearchSettings */
+    SearchSettings: {
+      /**
+       * Facets
+       * @description Ordered facets; null for the profile's
+       */
+      facets?: components["schemas"]["FacetSetting-Input"][] | null;
+      properties?: components["schemas"]["PropertySettings-Input"];
+    };
+    /** SearchSettingsView */
+    SearchSettingsView: {
+      /**
+       * Facets
+       * @description Ordered facets; null for the profile's
+       */
+      facets: components["schemas"]["FacetSetting-Output"][] | null;
+      /** Isdefault */
+      isDefault: boolean;
+      properties: components["schemas"]["PropertySettings-Output"];
     };
     /** ServiceInfo */
     ServiceInfo: {
@@ -1759,6 +1909,40 @@ export interface operations {
       };
     };
   };
+  properties_index_search_properties_get: {
+    parameters: {
+      query?: {
+        type?: string[] | null;
+        contains?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   reindex_index_search_reindex_post: {
     parameters: {
       query?: never;
@@ -1828,6 +2012,79 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_search_settings_index_search_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
+        };
+      };
+    };
+  };
+  put_search_settings_index_search_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_search_settings_index_search_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
         };
       };
     };

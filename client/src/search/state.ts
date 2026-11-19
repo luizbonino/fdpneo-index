@@ -4,11 +4,13 @@
  * shared, bookmarked and restored with back and forward.
  *
  * Route query (`?q=&type=&theme=…&page=`) ⇄ `SearchState` ⇄ API parameters.
- * Pages are 1-based in the URL and 0-based in the API.
+ * Pages are 1-based in the URL and 0-based in the API. Filters a reader added
+ * on any property are `facet=prop:<IRI>` (repeatable), their values
+ * `prop:<IRI>=value` like any other filter.
  */
 
 import type { LocationQuery, LocationQueryRaw } from "vue-router";
-import { KINDS, type Kind } from "./api";
+import { KINDS, isPropertyFacet, type Kind } from "./api";
 
 /** The tabs under the search box; other kinds (distribution, series) are reachable by URL. */
 export const TYPE_TABS = ["", "dataset", "catalog", "service", "fdp"] as const;
@@ -26,6 +28,8 @@ export interface SearchState {
   active: boolean;
   sort: string;
   page: number;
+  /** Property facets the reader added (`prop:<IRI>`), in the order added. */
+  added: string[];
 }
 
 type QueryValue = LocationQuery[string] | undefined;
@@ -43,10 +47,15 @@ function one(value: QueryValue): string {
 export function fromQuery(query: LocationQuery, facets: string[]): SearchState {
   const type = one(query.type) as TypeTab;
   const filters: Record<string, string[]> = {};
-  for (const name of facets) {
+  const properties = Object.keys(query).filter(isPropertyFacet);
+  for (const name of new Set([...facets, ...properties])) {
     const values = list(query[name]);
     if (values.length) filters[name] = values;
   }
+  // A filter on a property shows its facet, added or not.
+  const added = [...new Set([...list(query.facet).filter(isPropertyFacet), ...properties])].filter(
+    (name) => !facets.includes(name),
+  );
   const dates: SearchState["dates"] = {};
   for (const name of DATE_FIELDS) {
     const from = one(query[`${name}From`]);
@@ -63,6 +72,7 @@ export function fromQuery(query: LocationQuery, facets: string[]): SearchState {
     active: one(query.fdpState) === "ACTIVE",
     sort: (SORTS as readonly string[]).includes(one(query.sort)) ? one(query.sort) : "",
     page: Number.isFinite(page) && page > 0 ? page : 1,
+    added,
   };
 }
 
@@ -82,6 +92,7 @@ export function toQuery(state: SearchState): LocationQueryRaw {
   if (state.active) query.fdpState = "ACTIVE";
   if (state.sort) query.sort = state.sort;
   if (state.page > 1) query.page = String(state.page);
+  if (state.added.length) query.facet = [...state.added];
   return query;
 }
 
@@ -113,6 +124,24 @@ export function apiParams(
 
 function sortParam(sort: string): string {
   return sort === "title" ? "title,asc" : sort === "relevance" ? "relevance" : `${sort},desc`;
+}
+
+/** Add a facet on a property; adding one already there changes nothing. */
+export function addFacet(state: SearchState, name: string): SearchState {
+  return state.added.includes(name) ? state : { ...state, added: [...state.added, name] };
+}
+
+/** Remove an added facet and its filter. */
+export function removeFacet(state: SearchState, name: string): SearchState {
+  const filters = { ...state.filters };
+  const filtered = name in filters;
+  delete filters[name];
+  return {
+    ...state,
+    filters,
+    added: state.added.filter((n) => n !== name),
+    page: filtered ? 1 : state.page,
+  };
 }
 
 /** Add or remove one value of a facet; the result starts on page 1. */

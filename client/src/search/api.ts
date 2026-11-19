@@ -79,11 +79,67 @@ export interface SearchResult {
 }
 
 export interface FacetInfo {
+  /** A profile field, `fdp`, or `prop:<IRI>` for a property facet. */
   name: string;
   label: Record<string, string>;
   help: Record<string, string>;
   group: "main" | "more";
   kind: string;
+  /** Property facets: the property and its prefixed name, when it has one. */
+  property?: string;
+  curie?: string | null;
+}
+
+/** Facets on any property of the harvested metadata are named `prop:<IRI>`. */
+export const PROPERTY_FACET = "prop:";
+
+export function isPropertyFacet(name: string): boolean {
+  return name.startsWith(PROPERTY_FACET);
+}
+
+/** A readable name for a property facet from its IRI: `…/terms/accessRights` → "Access rights". */
+export function propertyLabel(name: string): string {
+  const iri = name.startsWith(PROPERTY_FACET) ? name.slice(PROPERTY_FACET.length) : name;
+  const local =
+    iri
+      .replace(/[/#]+$/, "")
+      .split(/[/#:]/)
+      .pop() || iri;
+  const words = local
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  return words ? words[0]!.toUpperCase() + words.slice(1).toLowerCase() : iri;
+}
+
+/** `GET /index/search/properties`: what the "add a filter" picker offers. */
+export interface PropertyInfo {
+  name: string;
+  property: string;
+  curie: string | null;
+  label: string;
+  resources: number;
+}
+
+export interface PropertyList {
+  visitors: boolean;
+  properties: PropertyInfo[];
+}
+
+export type Placement = "main" | "more" | "hidden";
+
+export interface FacetSetting {
+  name: string;
+  placement: Placement;
+  label: Record<string, string>;
+  help: Record<string, string>;
+}
+
+/** `GET`/`PUT /index/search/settings` (administrators). */
+export interface SearchSettings {
+  facets: FacetSetting[] | null;
+  properties: { visitors: boolean; hidden: string[] };
+  isDefault?: boolean;
 }
 
 export interface Landing {
@@ -91,6 +147,8 @@ export interface Landing {
   landing: Kind[];
   fdps: { total: number; byState: Record<string, number> };
   facets: FacetInfo[];
+  /** Whether visitors may add filters on any property. */
+  properties: { visitors: boolean };
   fields: Record<string, { label: Record<string, string>; kind: string }>;
   cards: Partial<Record<Kind, string[]>>;
   indexing: { pending: number };
@@ -160,6 +218,19 @@ export const searchApi = {
   },
   sparql: (params: URLSearchParams) => request<SearchSparql>(`/index/search/sparql?${params}`),
   landing: () => request<Landing>("/index/search/landing"),
+  properties: (types: string[], contains = "") => {
+    const query = new URLSearchParams();
+    for (const type of types) query.append("type", type);
+    if (contains) query.set("contains", contains);
+    return request<PropertyList>(`/index/search/properties?${query}`);
+  },
+  settings: () => request<SearchSettings>("/index/search/settings"),
+  saveSettings: (settings: SearchSettings) =>
+    request<SearchSettings>("/index/search/settings", {
+      method: "PUT",
+      body: { facets: settings.facets, properties: settings.properties },
+    }),
+  resetSettings: () => request<SearchSettings>("/index/search/settings", { method: "DELETE" }),
   resource: (id: string, lang?: string) =>
     request<ResourceDetail>(
       `/index/search/resources/${encodeURIComponent(id)}${lang ? `?lang=${encodeURIComponent(lang)}` : ""}`,

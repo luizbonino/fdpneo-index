@@ -2,7 +2,8 @@
 /**
  * One facet: a fieldset of checkboxes with counts, an ⓘ explanation, Clear,
  * and "Show more" (the dialog over every value). The first buckets show at
- * once; the rest of the page's buckets behind "Show all".
+ * once; the rest of the page's buckets behind "Show all". A facet the reader
+ * added (`removable`) shows even without values, with Remove.
  */
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -18,8 +19,10 @@ const props = defineProps<{
   selected: string[];
   more: boolean;
   approximate?: boolean;
+  removable?: boolean;
+  subtitle?: string | null | undefined;
 }>();
-const emit = defineEmits<{ toggle: [value: string]; clear: []; more: [] }>();
+const emit = defineEmits<{ toggle: [value: string]; clear: []; more: []; remove: [] }>();
 const { t } = useI18n();
 
 const FIRST = 6;
@@ -35,14 +38,31 @@ const hidden = computed(() => props.buckets.length - visible.value.length);
 </script>
 
 <template>
-  <fieldset v-if="buckets.length || selected.length" class="facet">
+  <fieldset v-if="buckets.length || selected.length || removable" class="facet">
     <legend class="head">
-      <span class="title">{{ title }}</span>
+      <span class="title">
+        {{ title }}
+        <code v-if="subtitle" class="subtitle">{{ subtitle }}</code>
+      </span>
       <HelpTip v-if="help" :title="title" :text="help" />
-      <button v-if="selected.length" type="button" class="link" @click="emit('clear')">
-        {{ t("search.clear") }}
-      </button>
+      <span class="end">
+        <button v-if="selected.length" type="button" class="link" @click="emit('clear')">
+          {{ t("search.clear") }}
+        </button>
+        <button
+          v-if="removable"
+          type="button"
+          class="link"
+          :aria-label="t('search.removeFacet', { name: title })"
+          @click="emit('remove')"
+        >
+          {{ t("search.remove") }}
+        </button>
+      </span>
     </legend>
+    <p v-if="removable && !buckets.length && !selected.length" class="none">
+      {{ t("search.noValues") }}
+    </p>
     <ul>
       <li v-for="bucket in visible" :key="bucket.value">
         <label class="option" :title="bucket.value">
@@ -95,8 +115,21 @@ const hidden = computed(() => props.buckets.length - visible.value.length);
   font-weight: 600;
   font-size: var(--fair-text-sm);
 }
-.head .link {
+.end {
   margin-left: auto;
+  display: flex;
+}
+.subtitle {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fair-text-xs, 0.75rem);
+  color: var(--fair-text-muted);
+  overflow-wrap: anywhere;
+}
+.none {
+  margin: var(--fair-space-1) 0 0;
+  font-size: var(--fair-text-sm);
+  color: var(--fair-text-muted);
 }
 ul {
   list-style: none;

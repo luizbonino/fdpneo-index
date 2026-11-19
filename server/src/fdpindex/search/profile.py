@@ -4,9 +4,9 @@ A YAML document validated here. The bundled default covers DCAT 2/3,
 DCAT-AP, FDP-O, r3d, FOAF and vCard; ``profile_hash`` identifies a version,
 so rows built by an older profile are re-projected.
 
-Deviation from the design: administrator overrides (``PUT
-/index/search/profile``) and raw predicate capture come later (TASKS 6.12,
-9.2); the profile is the bundled one until then.
+Deviation from the design: administrator overrides of the profile (``PUT
+/index/search/profile``, TASKS 6.12) come later; which facets show, in what
+order, is an index setting instead (:mod:`fdpindex.search.settings`).
 """
 
 from __future__ import annotations
@@ -57,6 +57,21 @@ class SearchField(BaseModel):
     help: dict[str, str] = PydanticField(default_factory=dict)
 
 
+class Capture(BaseModel):
+    """Raw capture of every property of a resource, for facets on any property (TASKS 9.2).
+
+    One step from the resource: IRI objects, and literals up to
+    ``literal_max_chars`` that are strings, language-tagged or booleans
+    (dates and numbers make poor facet values). ``rdf:type`` is the type facet.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    properties: bool = True
+    literal_max_chars: int = PydanticField(default=100, ge=0, le=512)
+    max_values: int = PydanticField(default=50, ge=1, le=200)
+
+
 class Landing(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -72,6 +87,7 @@ class Profile(BaseModel):
     fields: dict[str, SearchField]
     cards: dict[Kind, list[str]] = PydanticField(default_factory=lambda: {})
     landing: Landing = PydanticField(default_factory=Landing)
+    capture: Capture = PydanticField(default_factory=Capture)
     normalise: dict[str, dict[str, str]] = PydanticField(default_factory=dict)
 
     @model_validator(mode="after")

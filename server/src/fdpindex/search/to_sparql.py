@@ -103,6 +103,13 @@ class _Writer:
         return "|".join(self.iri(self.profile.expand(c)) for c in NAME_PATH.split("|"))
 
 
+def _property_field(iri: str) -> SearchField:
+    """A captured property as a field: its IRI values and literals, one step from the resource."""
+    from fdpindex.search.profile import SearchField
+
+    return SearchField(kind="iri", paths=[f"<{iri}>"])
+
+
 def raw_forms(value: str, table: Mapping[str, str]) -> set[str]:
     """Every lower-cased form of a stored value that ``normalise`` folds into it."""
     forms = {value.lower()}
@@ -221,12 +228,15 @@ def to_sparql(
     graphs: Mapping[UUID, str],
     *,
     default_types: Iterable[str],
+    properties: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """``{"query", "prefixes", "approximation"}`` for validated search parameters.
 
     ``graphs`` maps the requested FDPs (``params.fdps``) to their graph names
     (client URLs); FDPs missing from it match nothing, as in the search.
+    ``properties`` maps the ``p:`` fields of property facets to their IRIs.
     """
+    properties = properties or {}
     w = _Writer(profile)
     graph: list[str] = []
     outer: list[str] = []
@@ -250,7 +260,7 @@ def to_sparql(
 
     # Named fields: values ORed within a field, fields ANDed, "!value" excludes.
     for index, (name, values) in enumerate(sorted(params.filters.items()), start=1):
-        spec = profile.fields[name]
+        spec = profile.fields.get(name) or _property_field(properties[name])
         path = w.path(spec, rollup=spec.rollup)
         var = f"?{re.sub(r'[^A-Za-z0-9]', '', name)}{index}"
         wanted = [v for v in values if not v.startswith("!")]

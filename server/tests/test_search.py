@@ -17,6 +17,7 @@ from sqlalchemy import func, select, update
 
 from fdpindex.auth import token_digest
 from fdpindex.config import Settings
+from fdpindex.errors import BadRequest
 from fdpindex.main import create_app
 from fdpindex.models import EntryPermit, IndexEntry, SearchLabel, SearchResource, SearchValue
 from fdpindex.search.indexer import SearchIndexer
@@ -777,3 +778,178 @@ def test_the_search_as_sparql_over_http(api: Api) -> None:
     assert body["prefixes"]["dcat"] == "http://www.w3.org/ns/dcat#"
     assert "SELECT ?resource" in body["query"]
     assert api.client.get("/index/search/sparql", params={"nope": "x"}).status_code == 400
+
+
+# --- facets on any property, and the index's default facets (TASKS 8.13) ---------------
+
+DCT = "http://purl.org/dc/terms/"
+DCAT_NS = "http://www.w3.org/ns/dcat#"
+ACCESS = f"prop:{DCT}accessRights"
+KEYWORD = f"prop:{DCAT_NS}keyword"
+
+
+def test_every_property_is_captured_with_short_values() -> None:
+    from fdpindex.search.project import property_field
+
+    projection = project_entry("alpha", nodes(ALPHA), default_profile())
+    d1 = next(r for r in projection.resources if r.iri == f"{ALPHA}/dataset/d1")
+    captured = {(v.field, v.value) for v in d1.values if v.field.startswith("p:")}
+    assert (property_field(f"{DCT}language"), "en") in captured
+    assert (property_field(f"{DCAT_NS}keyword"), "Cancer") in captured
+    # https folded as everywhere; dates, numbers and blank nodes are not facet values.
+    assert (property_field(f"{DCT}accessRights"), f"{EU}access-right/PUBLIC") in captured
+    fields = {f for f, _ in captured}
+    assert property_field(f"{DCT}issued") not in fields
+    assert property_field(f"{DCAT_NS}contactPoint") not in fields
+    assert property_field("http://www.w3.org/1999/02/22-rdf-syntax-ns#type") not in fields
+    assert projection.properties[property_field(f"{DCT}language")] == f"{DCT}language"
+
+
+def test_capture_can_be_switched_off() -> None:
+    data = default_profile().model_dump(mode="json")
+    data["capture"]["properties"] = False
+    import yaml
+
+    profile = load_profile(yaml.safe_dump(data))
+    projection = project_entry("alpha", nodes(ALPHA), profile)
+    assert not any(v.field.startswith("p:") for r in projection.resources for v in r.values)
+    assert profile.hash != default_profile().hash
+
+
+async def test_a_property_is_a_facet_and_a_filter(search: SearchService) -> None:
+    result = await search.search(
+        SearchParams(types=["dataset"], facets=[KEYWORD, ACCESS], filters={KEYWORD: ["cancer"]})
+    )
+    assert [h["title"] for h in result["hits"]] == ["Lung function tests"]
+    keywords = {b["value"]: b["count"] for b in result["facets"][KEYWORD]["buckets"]}
+    assert keywords == {"Cancer": 1, "cancer": 1, "registry": 1, "lungs": 1, "genomics": 1}
+    access = result["facets"][ACCESS]["buckets"]
+    assert {b["label"] for b in access} == {"Restricted"}  # labelled like any IRI
+    assert result["query"]["filters"] == {KEYWORD: ["cancer"]}
+    # Hits do not carry the captured values; the resource's triples show them.
+    assert not any(k.startswith("p:") for h in result["hits"] for k in h["values"])
+    more = await search.facet(SearchParams(types=["dataset"]), KEYWORD, contains="lung")
+    assert [b["value"] for b in more["buckets"]] == ["lungs"]
+
+
+async def test_properties_are_listed_with_their_counts(search: SearchService) -> None:
+    listed = await search.properties(["dataset"])
+    by_iri = {p["property"]: p for p in listed["properties"]}
+    assert by_iri[f"{DCAT_NS}keyword"]["resources"] == 3
+    assert by_iri[f"{DCAT_NS}keyword"]["curie"] == "dcat:keyword"
+    assert by_iri[f"{DCAT_NS}keyword"]["label"] == "Keyword"
+    assert by_iri[f"{DCAT_NS}keyword"]["name"] == KEYWORD
+    found = await search.properties(["dataset"], contains="access")
+    assert [p["curie"] for p in found["properties"]] == ["dct:accessRights"]
+
+
+async def test_visitors_get_the_properties_the_index_offers(search: SearchService) -> None:
+    from fdpindex.search.settings import FacetSetting, PropertySettings, SearchSettings
+
+    await search.search_settings.update(
+        SearchSettings(properties=PropertySettings(hidden=[DCAT_NS]))
+    )
+    with pytest.raises(BadRequest, match="not offered"):
+        await search.search(SearchParams(facets=[KEYWORD]))
+    assert (await search.search(SearchParams(facets=[KEYWORD]), admin=True))["facets"][KEYWORD]
+    listed = {p["property"] for p in (await search.properties(["dataset"]))["properties"]}
+    assert f"{DCT}language" in listed and f"{DCAT_NS}keyword" not in listed
+    # Off for visitors, except the properties an administrator made facets.
+    await search.search_settings.update(
+        SearchSettings(
+            facets=[FacetSetting(name=ACCESS, placement="more", label={"en": "Access"})],
+            properties=PropertySettings(visitors=False),
+        )
+    )
+    assert (await search.properties(["dataset"]))["properties"] == []
+    await search.search(SearchParams(facets=[ACCESS]))
+    with pytest.raises(BadRequest, match="not offered"):
+        await search.search(SearchParams(filters={f"prop:{DCT}language": ["en"]}))
+    with pytest.raises(BadRequest, match="Not a property IRI"):
+        await search.search(SearchParams(facets=["prop:not an iri"]), admin=True)
+
+
+async def test_administrators_set_the_default_facets(search: SearchService) -> None:
+    from fdpindex.search.settings import FacetSetting, SearchSettings
+
+    landing = await search.landing()
+    names = [f["name"] for f in landing["facets"]]
+    assert names[:3] == ["keyword", "theme", "subject"] and "fdp" in names
+    assert landing["properties"] == {"visitors": True}
+    await search.search_settings.update(
+        SearchSettings(
+            facets=[
+                FacetSetting(name="publisher", placement="main", label={"en": "Who"}),
+                FacetSetting(name=ACCESS, placement="main"),
+                FacetSetting(name="theme", placement="hidden"),
+                FacetSetting(name="keyword", placement="more"),
+            ]
+        )
+    )
+    landing = await search.landing()
+    facets = {f["name"]: f for f in landing["facets"]}
+    assert [f["name"] for f in landing["facets"]][:2] == ["publisher", ACCESS]
+    assert "theme" not in facets and facets["keyword"]["group"] == "more"
+    assert facets["publisher"]["label"]["en"] == "Who"
+    assert facets[ACCESS]["kind"] == "property" and facets[ACCESS]["curie"] == "dct:accessRights"
+    # Facets the setting leaves out keep the profile's place after the listed ones.
+    assert {"subject", "format", "fdp"} <= set(facets)
+    # A search without `facets` counts the main ones.
+    result = await search.search(SearchParams())
+    assert ACCESS in result["facets"] and "theme" not in result["facets"]
+    assert "keyword" not in result["facets"] and "type" in result["facets"]
+    with pytest.raises(ValueError, match="unknown facet"):
+        await search.search_settings.update(SearchSettings(facets=[FacetSetting(name="nope")]))
+    await search.search_settings.reset()
+    assert next(f["name"] for f in (await search.landing())["facets"]) == "keyword"
+
+
+async def test_a_property_filter_as_sparql_finds_the_same_resources(
+    search: SearchService,
+) -> None:
+    params: dict[str, Any] = {
+        "types": ["dataset"],
+        "filters": {KEYWORD: ["lungs"], ACCESS: [f"!{EU}access-right/PUBLIC"]},
+    }
+    found = await search.search(SearchParams(size=100, facets=[], **params))
+    expected = {h["iri"] for h in found["hits"]}
+    assert expected == {f"{ALPHA}/dataset/d2"}
+    translated = await search.sparql(SearchParams(**params))
+    assert f"<{DCAT_NS}keyword>" in translated["query"] or "dcat:keyword" in translated["query"]
+    assert set(_sparql(translated["query"])) == expected
+
+
+def test_property_facets_and_settings_over_http(api: Api) -> None:
+    response = api.client.get(
+        "/index/search", params=[(KEYWORD, "lungs"), ("facets", f"theme,{KEYWORD}")]
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["totalResults"] == 1
+    assert KEYWORD in response.json()["facets"]
+    listed = api.client.get("/index/search/properties", params={"type": "dataset"}).json()
+    assert any(p["name"] == KEYWORD for p in listed["properties"])
+    assert api.client.get("/index/search/properties", params={"type": "nope"}).status_code == 400
+    assert api.client.get("/index/search/settings").status_code == 401
+    assert api.client.put("/index/search/settings", json={}).status_code == 401
+    body = {"facets": [{"name": "keyword", "placement": "main"}], "properties": {"visitors": False}}
+    saved = api.client.put("/index/search/settings", json=body, headers=ADMIN)
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["isDefault"] is False
+    assert api.client.get("/index/search", params={"facets": KEYWORD}).status_code == 400
+    landing = api.client.get("/index/search/landing").json()
+    assert landing["facets"][0]["name"] == "keyword" and landing["properties"]["visitors"] is False
+    bad = api.client.put(
+        "/index/search/settings", json={"facets": [{"name": "nope"}]}, headers=ADMIN
+    )
+    assert bad.status_code == 400
+    reset = api.client.delete("/index/search/settings", headers=ADMIN)
+    assert reset.json()["isDefault"] is True
+
+
+def test_titles_and_descriptions_are_not_captured() -> None:
+    from fdpindex.search.project import property_field
+
+    projection = project_entry("alpha", nodes(ALPHA), default_profile())
+    fields = {v.field for r in projection.resources for v in r.values}
+    assert property_field(f"{DCT}title") not in fields
+    assert property_field(f"{DCT}description") not in fields

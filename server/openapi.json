@@ -550,6 +550,89 @@
         "title": "ExampleRequest",
         "type": "object"
       },
+      "FacetSetting-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "help": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Help",
+            "type": "object"
+          },
+          "label": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Per language; overrides",
+            "title": "Label",
+            "type": "object"
+          },
+          "name": {
+            "description": "A facet field of the profile, `fdp`, or `prop:<IRI>`",
+            "title": "Name",
+            "type": "string"
+          },
+          "placement": {
+            "default": "main",
+            "enum": [
+              "main",
+              "more",
+              "hidden"
+            ],
+            "title": "Placement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FacetSetting",
+        "type": "object"
+      },
+      "FacetSetting-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "help": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Help",
+            "type": "object"
+          },
+          "label": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Per language; overrides",
+            "title": "Label",
+            "type": "object"
+          },
+          "name": {
+            "description": "A facet field of the profile, `fdp`, or `prop:<IRI>`",
+            "title": "Name",
+            "type": "string"
+          },
+          "placement": {
+            "default": "main",
+            "enum": [
+              "main",
+              "more",
+              "hidden"
+            ],
+            "title": "Placement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "placement",
+          "label",
+          "help"
+        ],
+        "title": "FacetSetting",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -973,6 +1056,52 @@
         "title": "PingSettings",
         "type": "object"
       },
+      "PropertySettings-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "hidden": {
+            "description": "Property IRIs, or namespaces ending in / or #, visitors may not use",
+            "items": {
+              "type": "string"
+            },
+            "title": "Hidden",
+            "type": "array"
+          },
+          "visitors": {
+            "default": true,
+            "description": "Visitors may add facets on any captured property",
+            "title": "Visitors",
+            "type": "boolean"
+          }
+        },
+        "title": "PropertySettings",
+        "type": "object"
+      },
+      "PropertySettings-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "hidden": {
+            "description": "Property IRIs, or namespaces ending in / or #, visitors may not use",
+            "items": {
+              "type": "string"
+            },
+            "title": "Hidden",
+            "type": "array"
+          },
+          "visitors": {
+            "default": true,
+            "description": "Visitors may add facets on any captured property",
+            "title": "Visitors",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "visitors",
+          "hidden"
+        ],
+        "title": "PropertySettings",
+        "type": "object"
+      },
       "ReindexRequest": {
         "properties": {
           "entry": {
@@ -1063,6 +1192,65 @@
           "timeout"
         ],
         "title": "RetrievalSettings",
+        "type": "object"
+      },
+      "SearchSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "facets": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetSetting-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ordered facets; null for the profile's",
+            "title": "Facets"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/PropertySettings-Input"
+          }
+        },
+        "title": "SearchSettings",
+        "type": "object"
+      },
+      "SearchSettingsView": {
+        "additionalProperties": false,
+        "properties": {
+          "facets": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FacetSetting-Output"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ordered facets; null for the profile's",
+            "title": "Facets"
+          },
+          "isDefault": {
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/PropertySettings-Output"
+          }
+        },
+        "required": [
+          "facets",
+          "properties",
+          "isDefault"
+        ],
+        "title": "SearchSettingsView",
         "type": "object"
       },
       "ServiceInfo": {
@@ -2051,7 +2239,7 @@
     },
     "/index/search": {
       "get": {
-        "description": "Faceted search over every accepted FDP's harvested DCAT metadata.\n\nFilters: every facet field (`theme`, `keyword`, `publisher`, `format`,\n`license`, `accessRights`, \u2026) is a repeatable parameter; values within a\nfield are ORed, fields are ANDed, `!value` excludes. Also `type`, `fdp`,\n`issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,\n`harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,\n`facets` (comma-separated, or `none`) and `facetSize`.",
+        "description": "Faceted search over every accepted FDP's harvested DCAT metadata.\n\nFilters: every facet field (`theme`, `keyword`, `publisher`, `format`,\n`license`, `accessRights`, \u2026) is a repeatable parameter; values within a\nfield are ORed, fields are ANDed, `!value` excludes. Any property found in\nthe harvested metadata is a facet and filter too, named `prop:<IRI>`\n(see `/index/search/properties`). Also `type`, `fdp`,\n`issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,\n`harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,\n`facets` (comma-separated, or `none`) and `facetSize`.",
         "operationId": "search_index_search_get",
         "parameters": [
           {
@@ -2307,6 +2495,71 @@
         ]
       }
     },
+    "/index/search/properties": {
+      "get": {
+        "description": "Properties of the harvested metadata, with the number of resources that have them.\n\nEach is a facet and a filter named `prop:<IRI>` on `/index/search`.\nValues are IRIs and short literals, one step from the resource. Visitors\nsee the properties the index offers (`visitors` false: none).",
+        "operationId": "properties_index_search_properties_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contains",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Contains",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Properties Index Search Properties Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Properties to add as facets",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/index/search/reindex": {
       "post": {
         "operationId": "reindex_index_search_reindex_post",
@@ -2429,6 +2682,86 @@
           }
         },
         "summary": "One resource",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/index/search/settings": {
+      "delete": {
+        "operationId": "delete_search_settings_index_search_settings_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Restore the default search settings",
+        "tags": [
+          "Search"
+        ]
+      },
+      "get": {
+        "operationId": "get_search_settings_index_search_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Search settings",
+        "tags": [
+          "Search"
+        ]
+      },
+      "put": {
+        "description": "Default facets (order, `main`/`more`/`hidden`, labels) and property facets.\n\n`facets` lists profile facets, `fdp` and `prop:<IRI>`; facets left out keep\nthe profile's place after the listed ones. `properties.visitors` lets\nvisitors add facets on any property, except those in `properties.hidden`.",
+        "operationId": "put_search_settings_index_search_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change the search settings",
         "tags": [
           "Search"
         ]

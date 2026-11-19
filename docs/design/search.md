@@ -691,6 +691,17 @@ types:
   …
 ```
 
+- **Built (TASKS 8.13, part of 9.2):** the capture keeps IRI objects and
+  literals up to 100 characters (strings, language-tagged, booleans; not
+  dates or numbers) one step from the resource, except `rdf:type` and the
+  title and description predicates. Rows are `p:<24 hex digits of the
+  property IRI's SHA-256>`, so `field` stays short; `search_property` maps
+  keys to IRIs. In the API the facet and filter are `prop:<IRI>`, and
+  `GET /index/search/properties` lists the properties with the number of
+  resources that have them (cached a few minutes). At 150 synthetic FDPs the
+  capture added 280 000 rows to 282 000. Which facets the page shows, and
+  whether visitors may add property facets, is an index setting
+  (`/index/search/settings`), not a profile change: no re-projection.
 - `GET /index/search/stats` (admin) reports predicate frequency per FDP from
   the raw capture (`field LIKE 'p:%'`), so an administrator sees which
   extension predicates occur before promoting one to a facet.

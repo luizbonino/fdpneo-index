@@ -8,7 +8,10 @@
   harvested triples as Turtle, JSON-LD or N-Triples.
 * ``GET /index/search/landing``: counters, facet descriptions, card fields.
 * ``GET /index/search/labels``: labels for IRIs.
-* Administrators: ``GET /index/search/profile``, ``POST …/reindex``, ``GET …/stats``.
+* ``GET /index/search/properties``: properties found in the harvested
+  metadata, for facets on any property (``prop:<IRI>`` as facet and filter).
+* Administrators: ``GET /index/search/profile``, ``POST …/reindex``, ``GET …/stats``,
+  ``GET``/``PUT``/``DELETE …/settings`` (default facets, property facets).
 
 Anonymous callers see resources of accepted entries only and are rate
 limited per address; the reference ``/index/*`` contract is untouched.
@@ -28,8 +31,10 @@ from pydantic import BaseModel, Field
 from fdpindex.api.routes import PREFIXES, RDF_TYPES, _negotiate
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.errors import BadRequest, IndexServiceError, RateLimited
+from fdpindex.search.profile import KINDS, Kind
 from fdpindex.search.project import parse_datetime
-from fdpindex.search.query import SearchParams, SearchService
+from fdpindex.search.query import DEFAULT_TYPES, SearchParams, SearchService
+from fdpindex.search.settings import PROPERTY_FACET, SearchSettings, SearchSettingsView
 
 router = APIRouter(tags=["Search"])
 
@@ -99,7 +104,9 @@ def _params(request: Request, service: SearchService, lang: str) -> SearchParams
     query = request.query_params
     filters = {
         name: [v for v in query.getlist(name) if v]
-        for name in service.profile.facets
+        for name in dict.fromkeys(
+            [*service.profile.facets, *(k for k in query if k.startswith(PROPERTY_FACET))]
+        )
         if query.getlist(name)
     }
     unknown = [
@@ -163,7 +170,9 @@ async def search(
 
     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
     `license`, `accessRights`, …) is a repeatable parameter; values within a
-    field are ORed, fields are ANDed, `!value` excludes. Also `type`, `fdp`,
+    field are ORed, fields are ANDed, `!value` excludes. Any property found in
+    the harvested metadata is a facet and filter too, named `prop:<IRI>`
+    (see `/index/search/properties`). Also `type`, `fdp`,
     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
     `harvestedFrom`/`harvestedTo`, `fdpState=ACTIVE`, `sort`, `page`, `size`,
     `facets` (comma-separated, or `none`) and `facetSize`.
@@ -266,6 +275,65 @@ async def labels(
     if len(iri) > 100:
         raise BadRequest("At most 100 IRIs")
     return await service.labels(iri, _language(request, lang))
+
+
+@router.get("/index/search/properties", summary="Properties to add as facets")
+async def properties(
+    request: Request,
+    service: Search,
+    caller: Caller,
+    type: Annotated[list[str] | None, Query()] = None,
+    contains: str = "",
+) -> dict[str, Any]:
+    """Properties of the harvested metadata, with the number of resources that have them.
+
+    Each is a facet and a filter named `prop:<IRI>` on `/index/search`.
+    Values are IRIs and short literals, one step from the resource. Visitors
+    see the properties the index offers (`visitors` false: none).
+    """
+    _limit(request, caller)
+    kinds = [t for v in type or [] for t in v.split(",") if t]
+    unknown = [t for t in kinds if t not in KINDS]
+    if unknown:
+        raise BadRequest(f"Unknown type: {', '.join(unknown)}")
+    wanted: list[Kind] = [t for t in KINDS if t in kinds] or list(DEFAULT_TYPES)
+    return await service.properties(wanted, admin=caller.is_admin, contains=contains[:100])
+
+
+@router.get(
+    "/index/search/settings",
+    summary="Search settings",
+    dependencies=[Depends(require_admin)],
+)
+async def get_search_settings(service: Search) -> SearchSettingsView:
+    return await service.search_settings.view()
+
+
+@router.put(
+    "/index/search/settings",
+    summary="Change the search settings",
+    dependencies=[Depends(require_admin)],
+)
+async def put_search_settings(service: Search, body: SearchSettings) -> SearchSettingsView:
+    """Default facets (order, `main`/`more`/`hidden`, labels) and property facets.
+
+    `facets` lists profile facets, `fdp` and `prop:<IRI>`; facets left out keep
+    the profile's place after the listed ones. `properties.visitors` lets
+    visitors add facets on any property, except those in `properties.hidden`.
+    """
+    try:
+        return await service.search_settings.update(body)
+    except ValueError as err:
+        raise BadRequest(str(err)) from err
+
+
+@router.delete(
+    "/index/search/settings",
+    summary="Restore the default search settings",
+    dependencies=[Depends(require_admin)],
+)
+async def delete_search_settings(service: Search) -> SearchSettingsView:
+    return await service.search_settings.reset()
 
 
 class ReindexRequest(BaseModel):

@@ -6,19 +6,31 @@
  * are read from and written to the route, so back, forward, reload and
  * shared links all work. Facet counts are disjunctive (a facet ignores its
  * own selection), so a reader sees what a second value would add.
+ *
+ * Which facets show, in what order, is the index's setting (landing). A
+ * reader may add filters on any property of the harvested metadata
+ * (`facet=prop:<IRI>` in the URL, remembered in the browser).
  */
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { ApiError } from "@/api/client";
 import { session } from "@/auth/session";
 import { toast } from "@/composables/feedback";
-import { LOCAL_FIELDS, searchApi, type Kind } from "@/search/api";
+import {
+  LOCAL_FIELDS,
+  PROPERTY_FACET,
+  isPropertyFacet,
+  propertyLabel,
+  searchApi,
+  type Kind,
+} from "@/search/api";
 import {
   DATE_FIELDS,
   SORTS,
   TYPE_TABS,
+  addFacet,
   apiParams,
   chips,
   clearAll,
@@ -26,6 +38,7 @@ import {
   fromQuery,
   isFiltered,
   removeChip,
+  removeFacet,
   toQuery,
   toggle,
   type Chip,
@@ -33,10 +46,12 @@ import {
 } from "@/search/state";
 import FacetGroup from "@/components/search/FacetGroup.vue";
 import FacetDialog from "@/components/search/FacetDialog.vue";
+import AddFacetDialog from "@/components/search/AddFacetDialog.vue";
 import ResourceCard from "@/components/search/ResourceCard.vue";
 import HelpTip from "@/components/HelpTip.vue";
 import { useServiceInfo } from "@/composables/queries";
 import { encodeQuery } from "@/sparql/history";
+import { curie } from "@/sparql/results";
 
 const route = useRoute();
 const router = useRouter();
@@ -82,9 +97,53 @@ const mainFacets = computed(() => facetInfo.value.filter((f) => f.group === "mai
 const moreFacets = computed(() => facetInfo.value.filter((f) => f.group === "more"));
 const requested = computed(() => {
   const more = moreFacets.value
-    .filter((f) => showMoreFacets.value || (state.value.filters[f.name]?.length ?? 0) > 0)
+    .filter((f) => showMoreFacets.value || selected(f.name).length > 0)
     .map((f) => f.name);
-  return ["type", ...mainFacets.value.map((f) => f.name), "fdp", ...more];
+  return ["type", ...mainFacets.value.map((f) => f.name), ...state.value.added, ...more];
+});
+
+// --- filters the reader adds on any property -------------------------------------------
+
+const canAddFacets = computed(
+  () => !!landing.data.value && (landing.data.value.properties.visitors || session.isAdmin),
+);
+const adding = ref(false);
+const addTypes = computed(() => {
+  const type = state.value.type;
+  if (!type) return [];
+  return type === "dataset" ? ["dataset", "series"] : [type];
+});
+const presentFacets = computed(() => [...facetNames.value, ...state.value.added]);
+function add(name: string) {
+  go(addFacet(state.value, name));
+}
+
+// Added facets are remembered in this browser and come back on a search without any.
+const REMEMBER = "fdpindex.search.addedFacets";
+watch(
+  () => state.value.added,
+  (added) => {
+    try {
+      if (added.length) localStorage.setItem(REMEMBER, JSON.stringify(added));
+      else localStorage.removeItem(REMEMBER);
+    } catch {
+      /* storage unavailable: nothing to remember */
+    }
+  },
+);
+onMounted(() => {
+  if (route.query.facet !== undefined) return;
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(REMEMBER) ?? "[]");
+    const names = Array.isArray(stored)
+      ? stored.filter((n): n is string => typeof n === "string" && isPropertyFacet(n))
+      : [];
+    if (names.length) {
+      void router.replace({ query: { ...route.query, facet: names } });
+    }
+  } catch {
+    /* nothing remembered */
+  }
 });
 
 const params = computed(() => apiParams(state.value, { facets: requested.value }));
@@ -104,7 +163,13 @@ function facetTitle(name: string): string {
   if (name === "fdp") return t("search.fdpFacet");
   if (name === "type") return t("search.typeFacet");
   const info = facetInfo.value.find((f) => f.name === name);
-  return label(info?.label, name);
+  return label(info?.label, isPropertyFacet(name) ? propertyLabel(name) : name);
+}
+function facetSubtitle(name: string): string | null {
+  if (!isPropertyFacet(name)) return null;
+  const info = facetInfo.value.find((f) => f.name === name);
+  const iri = name.slice(PROPERTY_FACET.length);
+  return info?.curie ?? curie(iri) ?? iri;
 }
 function fieldLabel(name: string): string {
   if (LOCAL_FIELDS.has(name)) return t(`search.fields.${name}`);
@@ -319,6 +384,7 @@ const counters = computed(() => {
           :key="facet.name"
           :name="facet.name"
           :title="facetTitle(facet.name)"
+          :subtitle="facetSubtitle(facet.name)"
           :help="facetHelp(facet.name)"
           :buckets="data?.facets[facet.name]?.buckets ?? []"
           :more="data?.facets[facet.name]?.more ?? false"
@@ -329,17 +395,29 @@ const counters = computed(() => {
           @more="dialogFacet = facet.name"
         />
         <FacetGroup
-          name="fdp"
-          :title="facetTitle('fdp')"
-          :help="facetHelp('fdp')"
-          :buckets="data?.facets.fdp?.buckets ?? []"
-          :more="data?.facets.fdp?.more ?? false"
-          :approximate="data?.facets.fdp?.approximate ?? false"
-          :selected="state.fdp"
-          @toggle="(value) => go(toggle(state, 'fdp', value))"
-          @clear="go(clearFacet(state, 'fdp'))"
-          @more="dialogFacet = 'fdp'"
+          v-for="name in state.added"
+          :key="name"
+          :name="name"
+          :title="facetTitle(name)"
+          :subtitle="facetSubtitle(name)"
+          :buckets="data?.facets[name]?.buckets ?? []"
+          :more="data?.facets[name]?.more ?? false"
+          :approximate="data?.facets[name]?.approximate ?? false"
+          :selected="selected(name)"
+          removable
+          @toggle="(value) => go(toggle(state, name, value))"
+          @clear="go(clearFacet(state, name))"
+          @more="dialogFacet = name"
+          @remove="go(removeFacet(state, name))"
         />
+        <button
+          v-if="canAddFacets"
+          type="button"
+          class="btn ghost sm add-facet"
+          @click="adding = true"
+        >
+          {{ t("search.addFacet.button") }}
+        </button>
 
         <fieldset class="dates">
           <legend>{{ t("search.dates") }}</legend>
@@ -507,6 +585,13 @@ const counters = computed(() => {
       :selected="selected(dialogFacet)"
       @toggle="(value) => dialogFacet && go(toggle(state, dialogFacet, value))"
       @close="dialogFacet = null"
+    />
+    <AddFacetDialog
+      v-if="adding"
+      :types="addTypes"
+      :present="presentFacets"
+      @add="add"
+      @close="adding = false"
     />
   </div>
 </template>
@@ -679,8 +764,12 @@ const counters = computed(() => {
   padding-inline: 6px;
   font-size: var(--fair-text-sm);
 }
-.more-facets {
+.more-facets,
+.add-facet {
   margin-top: var(--fair-space-2);
+}
+.add-facet {
+  display: block;
 }
 .results {
   min-width: 0;

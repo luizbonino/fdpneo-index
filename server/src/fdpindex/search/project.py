@@ -16,8 +16,10 @@ Deviations from the design, all deliberate:
 * IRIs are not stripped of trailing slashes (licence IRIs carry one by
   definition); only the scheme of the EU authority tables and Creative
   Commons IRIs is folded to ``http``.
-* Raw predicate capture (``p:`` values), temporal and spatial columns and
-  ``dedup_key`` come with Phases 8 and 9.
+* Temporal and spatial columns and ``dedup_key`` come with Phases 8 and 9.
+* Raw capture stores every property of a resource as ``p:<key>`` values,
+  where the key is a hash of the property IRI (``property_field``): the
+  ``field`` column is short, and ``search_property`` maps keys back.
 """
 
 from __future__ import annotations
@@ -69,7 +71,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 3
+PROJECTION_VERSION = 5
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -235,6 +237,30 @@ class LabelRow:
 class EntryProjection:
     resources: list[ResourceRow]
     labels: list[LabelRow]
+    # Captured properties: field key (``p:…``) to property IRI.
+    properties: dict[str, str] = field(default_factory=lambda: {})
+
+
+PROPERTY_PREFIX = "p:"
+# Datatypes kept by the raw capture: strings and booleans; dates and numbers are not facets.
+_CAPTURED_DATATYPES = {
+    None,
+    "http://www.w3.org/2001/XMLSchema#string",
+    "http://www.w3.org/2001/XMLSchema#boolean",
+    "http://www.w3.org/2001/XMLSchema#anyURI",
+    "http://www.w3.org/2001/XMLSchema#token",
+    "http://www.w3.org/2001/XMLSchema#normalizedString",
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+}
+
+
+def property_field(iri: str) -> str:
+    """The ``search_value.field`` of a captured property: ``p:`` and 24 hex digits."""
+    return PROPERTY_PREFIX + hashlib.sha256(iri.encode()).hexdigest()[:24]
+
+
+def is_property_field(name: str) -> bool:
+    return name.startswith(PROPERTY_PREFIX)
 
 
 def public_id(entry_uuid: str, iri: str) -> str:
@@ -361,6 +387,15 @@ class _NodeGraph:
 class _Projector:
     def __init__(self, profile: Profile) -> None:
         self.profile = profile
+        self.properties: dict[str, str] = {}
+        # Titles and descriptions are searched as text; as facet values they are noise.
+        self.text_predicates = frozenset(
+            path[0]
+            for spec in profile.fields.values()
+            if spec.kind == "text"
+            for path in (profile.path_iris(p) for p in spec.paths)
+            if len(path) == 1
+        )
         self.paths: dict[str, list[tuple[str, ...]]] = {
             name: [profile.path_iris(p) for p in spec.paths]
             for name, spec in profile.fields.items()
@@ -410,6 +445,8 @@ class _Projector:
                 landing = next((str(v) for v in found if isinstance(v, URIRef)), None)
             else:
                 values.extend(found_values(name, spec, found, self.profile, node))
+        if self.profile.capture.properties:
+            values.extend(self._capture(node))
         title_pick = pick_language(texts["title"])
         fallback = title_pick is None
         title = title_pick[1] if title_pick else _tail(str(subject))
@@ -439,6 +476,44 @@ class _Projector:
         if fallback:
             row.facts["titleFallback"] = True
         return row, _labels(node)
+
+    def _capture(self, node: _NodeGraph) -> list[Value]:
+        """Every property of the resource with an IRI or a short literal value.
+
+        Left out: ``rdf:type`` (the type facet) and the predicates of the title
+        and description fields (searched as text).
+        """
+        assert node.subject is not None
+        capture = self.profile.capture
+        per_property: dict[str, int] = {}
+        out: list[Value] = []
+        for predicate, item in sorted(node.graph.predicate_objects(node.subject)):  # pyright: ignore[reportArgumentType]
+            if (
+                predicate == RDF.type
+                or not isinstance(predicate, URIRef)
+                or str(predicate) in self.text_predicates
+            ):
+                continue
+            iri = str(predicate)
+            if len(iri) > 2048:
+                continue
+            value: str | None = None
+            if isinstance(item, URIRef):
+                value = canonical_iri(str(item))
+            elif isinstance(item, Literal):
+                datatype = str(item.datatype) if item.datatype else None
+                text = str(item).strip()
+                if datatype in _CAPTURED_DATATYPES and 0 < len(text) <= capture.literal_max_chars:
+                    value = _clean(text, capture.literal_max_chars)
+            if not value or len(value) > MAX_VALUE_CHARS:
+                continue
+            key = property_field(iri)
+            if per_property.get(key, 0) >= capture.max_values:
+                continue
+            per_property[key] = per_property.get(key, 0) + 1
+            self.properties[key] = iri
+            out.append(Value(key, value))
+        return out
 
     def _field(
         self, node: _NodeGraph, name: str, spec: SearchField, segments: list[tuple[str, str, str]]
@@ -623,7 +698,7 @@ def project_entry(
     _roll_up(rows, profile)
     for row in rows.values():
         row.completeness = _completeness(row)
-    return EntryProjection(list(rows.values()), list(labels.values()))
+    return EntryProjection(list(rows.values()), list(labels.values()), projector.properties)
 
 
 def _link(rows: dict[str, ResourceRow]) -> None:

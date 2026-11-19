@@ -30,6 +30,7 @@ from fdpindex.models import (
     IndexEntry,
     SearchEntryState,
     SearchLabel,
+    SearchProperty,
     SearchResource,
     SearchValue,
 )
@@ -325,6 +326,7 @@ class SearchIndexer:
                         )
                         .execution_options(synchronize_session=False)
                     )
+            await _register_properties(session, projection.properties)
             await session.execute(delete(SearchLabel).where(SearchLabel.entry_uuid == entry_id))
             labels = [
                 {"entry_uuid": entry_id, "iri": label.iri, "lang": label.lang, "label": label.label}
@@ -353,6 +355,21 @@ class SearchIndexer:
         if written:
             self.generation += 1
         return written
+
+
+async def _register_properties(session: AsyncSession, properties: dict[str, str]) -> None:
+    """Record the IRIs of captured property keys not seen before (one projection at a time)."""
+    keys = sorted(properties)
+    known: set[str] = set()
+    for chunk in _chunks(keys):
+        known.update(
+            await session.scalars(
+                select(SearchProperty.field).where(SearchProperty.field.in_(chunk))
+            )
+        )
+    new = [{"field": key, "iri": properties[key]} for key in keys if key not in known]
+    for chunk in _chunks(new):
+        await session.execute(insert(SearchProperty), list(chunk))
 
 
 def _columns(row: ResourceRow, row_hash: str, now: Any, *, postgres: bool) -> dict[str, Any]:

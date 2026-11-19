@@ -77,10 +77,12 @@ harvested), `PENDING` (waiting, hidden) and `REJECTED` (hidden, not harvested).
 | `GET` / `PUT` / `DELETE /index/settings` | admin | Settings; `DELETE` resets |
 | `POST /index/admin/trigger`, `/trigger-all` | admin | Retrieve (and harvest) now |
 | `/index/webhooks`, `POST /index/admin/ping-webhook` | admin | Manage and test webhooks |
-| `GET /index/search` | anyone† | Faceted search over all harvested metadata: words, phrases, `or`, `-word`; every facet field (`theme`, `keyword`, `publisher`, `format`, `license`, `accessRights`, …) as a repeatable filter, `!value` to exclude; `type`, `fdp`, date ranges, `fdpState=ACTIVE`, `sort`, `page`, `size`, `facets` |
+| `GET /index/search` | anyone† | Faceted search over all harvested metadata: words, phrases, `or`, `-word`; every facet field (`theme`, `subject`, `keyword`, `publisher`, `format`, `license`, `accessRights`, …) as a repeatable filter, `!value` to exclude; any property of the harvested metadata as `prop:<IRI>` (facet and filter); `type`, `fdp`, date ranges, `fdpState=ACTIVE`, `sort`, `page`, `size`, `facets` |
 | `GET /index/search/facets`, `GET …/resources/{id}`, `GET …/landing`, `GET …/labels` | anyone† | All values of one facet; one resource as JSON or its harvested triples (Turtle, JSON-LD, N-Triples); counters and facet descriptions; labels for IRIs |
+| `GET /index/search/properties` | anyone† | Properties found in the harvested metadata, with how many resources have them: what a visitor can add as a filter (`prop:<IRI>`), unless the administrator switched that off or hid the property |
 | `GET /index/search/sparql` | anyone† | The same search as a SPARQL query (same parameters), with the parts SPARQL can only approximate (full text, ranking, day-precision dates) listed and commented in the query |
 | `GET /index/search/profile`, `POST …/reindex`, `GET …/stats` | admin | The search profile; re-project harvested metadata; rows and completeness per FDP |
+| `GET`/`PUT`/`DELETE /index/search/settings` | admin | The search page's default facets (order; main, under "more filters", or hidden; labels), properties as default facets, and whether visitors may add filters on any property |
 | `GET` / `POST /index/sparql` | anyone† | SPARQL 1.1 Protocol over all harvested metadata; without `query`, the service description |
 | `POST /index/sparql/validate`, `GET …/schema`, `GET …/suggest`, `POST …/labels` | anyone† | Editor support: validation with line and column, classes and properties with counts, value suggestions, labels |
 | `GET /index/sparql/examples`, `POST …/{id}/expand`, `POST …/{id}/run` | anyone† | The query library |

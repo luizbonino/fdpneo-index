@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-67 of 114 tasks are done and 5 are in progress (19 November 2026). "Done"
+68 of 115 tasks are done and 6 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -29,12 +29,12 @@ task are listed in the last column.
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 1/4 | – | 3 | 🔹 Started (decided 19 Nov) | Running next to FDPneo (5.1), documentation here (5.2), Java index guidance (5.3) |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
-| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, polish | 2/12 | 1 | 9 | 🔹 Started | All but 8.6 and 8.10 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
-| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | – | 8 | 🔹 Started | All but 9.9 (done with 6.15) |
+| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 3/13 | 1 | 9 | 🔹 Started | All but 8.6, 8.10 and 8.13 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
+| 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 1 | 7 | 🔹 Started | All but 9.9 (done with 6.15) and the capture part of 9.2 (done with 8.13) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **67/114** | **5** | **42** | | |
+| **Total** | | **68/115** | **6** | **41** | | |
 
 ## Phase 0 — Foundations
 
@@ -169,11 +169,12 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 8.10 Theme and Subject facets split by vocabulary: Theme holds the EU data themes, Subject every other concept (MeSH, Wikidata, EDAM …), from `dcat:theme` and `dct:subject` alike; profile option `namespaces` / `exclude` — *done*
 - [ ] 8.11 One Subject entry per topic across vocabularies: merge concepts linked by `skos:exactMatch` or Wikidata's MeSH ID (P486)
 - [ ] 8.12 Subject as a hierarchy in the client, from the broader concepts the resolver stores
+- [x] 8.13 Facets chosen by readers and administrators: visitors add a filter on any property of the harvested metadata ("+ Add a filter", `prop:<IRI>`, kept in the URL and remembered in the browser); administrators set the default facets (order; main, more or hidden; labels), make properties default facets, and decide whether visitors may add filters and on which properties (`GET`/`PUT`/`DELETE /index/search/settings`, Settings page) — *done*
 
 ### Phase 9 — Expert and machine access
 
 - [ ] 9.1 Field prefixes in `q` (`title:`, `keyword:`, `publisher:`, `theme:`, `identifier:`) parsed before `websearch_to_tsquery`
-- [ ] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats`
+- [~] 9.2 Raw predicate capture (`capture.iri_objects`) into `search_value` as `p:<path>`, `path` filters with typed operators on `POST /index/search`, predicate frequencies in `/index/search/stats` — *capture done with 8.13 (IRIs and short literals one step from the resource, `p:<hash>` with `search_property`, `GET /index/search/properties` with counts); two-step paths, typed operators and `POST /index/search` open*
 - [ ] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker
 - [ ] 9.4 Keyset `cursor` paging for non-relevance sorts
 - [ ] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation

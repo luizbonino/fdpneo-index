@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  addFacet,
   apiParams,
   chips,
   clearAll,
   fromQuery,
   isFiltered,
   removeChip,
+  removeFacet,
   toQuery,
   toggle,
   type SearchState,
@@ -40,6 +42,7 @@ describe("search URL state", () => {
       active: true,
       sort: "modified",
       page: 3,
+      added: [],
     });
     expect(fromQuery(toQuery(state) as never, FACETS)).toEqual(state);
   });
@@ -75,5 +78,21 @@ describe("search URL state", () => {
     state = toggle(state, "theme", HEAL);
     expect(state.filters).toEqual({});
     expect(isFiltered(clearAll(state))).toBe(false);
+  });
+
+  it("keeps added property facets and their filters in the URL", () => {
+    const language = "prop:http://purl.org/dc/terms/language";
+    const type = "prop:http://purl.org/dc/terms/type";
+    let state = fromQuery({ facet: [language, "theme"], [type]: "Text" }, FACETS);
+    expect(state.added).toEqual([language, type]);
+    expect(state.filters).toEqual({ [type]: ["Text"] });
+    expect(fromQuery(toQuery(state) as never, FACETS)).toEqual(state);
+    expect(apiParams(state).getAll(type)).toEqual(["Text"]);
+    expect(addFacet(state, language)).toBe(state);
+    state = { ...state, page: 3 };
+    expect(removeFacet(state, language)).toMatchObject({ added: [type], page: 3 });
+    expect(removeFacet(state, type)).toMatchObject({ added: [language], filters: {}, page: 1 });
+    // A property facet the index offers by default is not an added one.
+    expect(fromQuery({ facet: language }, [...FACETS, language]).added).toEqual([]);
   });
 });

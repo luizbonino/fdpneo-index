@@ -46,6 +46,9 @@ The first release will contain:
   FDP's page (most frequent problems, the records that have them), findings
   on each resource's page, and settings for the profiles and who may read
   reports (public by default).
+- **Conformance in search and per surface**: a "Meets profile" filter and
+  card line, and a minimum per surface (search, SPARQL, the list of FDPs,
+  the catalogue feed) that shows visitors only conforming records.
 
 ### Fixed
 

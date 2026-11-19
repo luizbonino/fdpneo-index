@@ -132,6 +132,21 @@ HealthDCAT-AP are off by default, because they need every value's class
 and the EU vocabularies type their concepts as `skos:Concept` only, so
 correct values would fail.
 
+**What visitors see.** By default every harvested record is shown
+everywhere, with its conformance as information: the search has a
+**Meets profile** filter and result cards say which profiles a dataset
+meets. **Settings → Conformance → What visitors see** can show visitors
+only what conforms to one of the checked profiles, per place:
+
+| Place | Strict means |
+|---|---|
+| Search | hits and filter counts are records with no violations of the profile; records not checked yet are left out too |
+| SPARQL | the store leaves out the pages of records that were checked and do not conform (pages not checked yet, and distributions, stay) |
+| List of FDPs | only FDPs whose own description conforms; an FDP's page stays reachable by link |
+| Catalogue feed | only conforming records are republished (see below) |
+
+Administrators always see everything.
+
 **Reports.** An FDP's page has a **Conformance** section: per profile, its
 records and how many conform, and the most frequent problems; **Show
 records** lists the records with a problem, each linking to the

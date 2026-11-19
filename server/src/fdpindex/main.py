@@ -204,7 +204,9 @@ def create_app(
         app.state.search_rate = RateLimiter(config.search_rate_per_minute)
         conformance_settings = ConformanceSettingsService(factory, app.state.conformance_packs)
         app.state.conformance_settings = conformance_settings
-        conformance = await _start_conformance(config, factory, index, search, conformance_settings)
+        conformance = await _start_conformance(
+            config, factory, index, search, conformance_settings, sparql
+        )
         app.state.conformance = conformance
         if resume_on_startup:
             await index.resume_unfinished()
@@ -264,6 +266,7 @@ async def _start_conformance(
     index: IndexService,
     search: SearchService | None,
     settings: ConformanceSettingsService,
+    sparql: SparqlService | None = None,
 ) -> ConformanceService | None:
     if not config.conformance_enabled:
         return None
@@ -280,6 +283,17 @@ async def _start_conformance(
     workers = config.conformance_workers if config.conformance_workers >= 0 else default_workers()
     service = ConformanceService(factory, settings, profile, ValidationPool(workers))
     index.add_listener(service.notify)
+    # Conformance reaches the other surfaces (TASKS 11.4): search values and the search
+    # minimum, the SPARQL store's minimum, and the public directory.
+    if search is not None:
+        search.indexer.conformance_specs = service.specs
+        search.conformance_minimum = lambda: service.minimum_specification("search")
+        service.listeners.append(search.indexer.touch)
+    if sparql is not None and sparql.sync is not None:
+        sparql.sync.conformance_minimum = lambda: service.minimum("sparql")
+        service.listeners.append(sparql.sync.touch)
+        service.settings_listeners.append(sparql.sync.reconcile)
+    index.directory_condition = service.directory_condition
     service.start()
     log.info("conformance_started", packs=len(settings.packs), workers=workers)
     return service

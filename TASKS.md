@@ -32,11 +32,11 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 4/8 | – | 4 | 🔹 Started | 11.4 to 11.7 |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 5/8 | – | 3 | 🔹 Started | 11.5 to 11.7 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 0/6 | – | 6 | ⬜ Not started | All six |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 0/9 | – | 9 | ⬜ Not started | All nine |
-| **Total** | | **107/130** | **–** | **23** | | |
+| **Total** | | **108/130** | **–** | **22** | | |
 
 ## Phase 0 — Foundations
 
@@ -202,7 +202,7 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 - [x] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile — *`docs/design/conformance.md`, agreed 2026-11-19 (reports public by default, a setting makes them admin-only)*
 - [x] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types — *DCAT-AP 3.0.1, HealthDCAT-AP Release 8 (per access level) and Health-RI core v2.0.3, with the EU vocabulary facts their checks need; operator packs; `fdpindex conformance validate|packs|fetch|vocabularies`; `GET /index/conformance/packs`*
 - [x] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page) — *done: background validation in worker processes, incremental by record content hash and pack digest (migration 0014); reports per FDP and per record (API, FDP page, resource page); Settings → Conformance (profiles, reports public or admin-only); tried on the FDPs of home.fairdatapoint.org (61 FDPs, 2 272 records, 6 616 validations in about 4.5 minutes)*
-- [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default
+- [x] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default — *done: `surfaces` in the conformance settings (search, SPARQL, directory, feed), a "Meets profile" filter and card line in search, "What visitors see" in Settings; the feed applies it in 11.5*
 - [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)
 - [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
 - [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches — *`docs/design/mcp.md`: an index mode of `fdp-mcp` (agreed); built once search results report conformance*
@@ -225,7 +225,7 @@ multilingual.
 
 - [ ] 13.1 Audit: every user-visible string of the client through vue-i18n (no concatenated sentences; plurals with ICU rules; dates, numbers and durations through `Intl`); a list of server texts that reach people (error details, OpenSearch description, catalogue feed titles, webhook test payloads), translated or deliberately English
 - [ ] 13.2 Locale switching: a language menu, the browser's language by default, the choice remembered; `<html lang>` follows it; layout checked with long strings (a pseudo-locale) and with logical CSS properties so a right-to-left language is possible later
-- [ ] 13.3 First translations, one file per locale, and a check in CI that no locale misses a key — *which languages first is to be decided (proposal: Dutch, German, French, Spanish, Italian, Portuguese)*
+- [ ] 13.3 First translations, one file per locale, and a check in CI that no locale misses a key — *first languages agreed 2026-11-19: Dutch, German, French, Spanish, Italian, Portuguese (with English)*
 - [ ] 13.4 Texts administrators write, per language: the index's name and description, saved searches' titles, featured searches (facet labels and help already are)
 - [ ] 13.5 One language setting for both: the interface language picks the metadata language by default (the search's `lang`), with the fallback order as now
 - [ ] 13.6 Tests: every locale renders every page without missing keys (unit), screenshots per locale of the main pages (e2e), axe in a second locale

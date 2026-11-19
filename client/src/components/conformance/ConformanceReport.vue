@@ -263,6 +263,9 @@ h3 {
 .message {
   overflow-wrap: anywhere;
 }
+.records a {
+  text-decoration: underline;
+}
 .records {
   margin: var(--fair-space-2) 0 0 var(--fair-space-6);
   display: grid;

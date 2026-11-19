@@ -40,7 +40,7 @@ from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
     from sqlalchemy.orm import InstrumentedAttribute
@@ -193,6 +193,9 @@ class IndexService:
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_waiting: dict[UUID, set[UUID]] = {}
         self._listeners: list[Callable[[IndexChange], None]] = []
+        # Set when conformance runs (TASKS 11.4): a condition on IndexEntry that public
+        # lists add, or None when the directory shows every FDP.
+        self.directory_condition: Callable[[], Awaitable[ColumnElement[bool] | None]] | None = None
 
     def add_listener(self, listener: Callable[[IndexChange], None]) -> None:
         self._listeners.append(listener)
@@ -1140,10 +1143,18 @@ class IndexService:
         return EntryPage(items=items, total=int(total or 0), page=page, size=size)
 
     async def _public_conditions(self, public: bool) -> list[ColumnElement[bool]]:
-        """For anonymous callers: expired entries leave the lists when the policy hides them."""
-        if public and await self.hides_expired():
-            return [IndexEntry.expired_at.is_(None)]
-        return []
+        """For anonymous callers: expired entries leave the lists when the policy hides them,
+        and FDPs below the directory's minimum conformance (TASKS 11.4) when one is set."""
+        if not public:
+            return []
+        conditions: list[ColumnElement[bool]] = []
+        if await self.hides_expired():
+            conditions.append(IndexEntry.expired_at.is_(None))
+        if self.directory_condition is not None:
+            extra = await self.directory_condition()
+            if extra is not None:
+                conditions.append(extra)
+        return conditions
 
     async def all_entries(
         self, permits: list[EntryPermit], *, public: bool = False

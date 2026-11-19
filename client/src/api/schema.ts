@@ -1082,6 +1082,7 @@ export interface components {
        * @enum {string}
        */
       reports: "public" | "admin";
+      surfaces?: components["schemas"]["Surfaces-Input"];
     };
     /** ConformanceSettingsView */
     ConformanceSettingsView: {
@@ -1096,6 +1097,7 @@ export interface components {
        * @enum {string}
        */
       reports: "public" | "admin";
+      surfaces: components["schemas"]["Surfaces-Output"];
     };
     /** EntriesInfoView */
     EntriesInfoView: {
@@ -2148,6 +2150,60 @@ export interface components {
       predicate?: string | null;
       /** Type */
       type?: string | null;
+    };
+    /**
+     * Surfaces
+     * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
+     *     null for everything (design §5). Administrators always see everything.
+     */
+    "Surfaces-Input": {
+      /**
+       * Directory
+       * @description The public FDP list: FDPs whose own description conforms
+       */
+      directory?: string | null;
+      /**
+       * Feed
+       * @description The catalogue feed (TASKS 11.5)
+       */
+      feed?: string | null;
+      /**
+       * Search
+       * @description Search hits and facets
+       */
+      search?: string | null;
+      /**
+       * Sparql
+       * @description The SPARQL store's harvested graphs
+       */
+      sparql?: string | null;
+    };
+    /**
+     * Surfaces
+     * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
+     *     null for everything (design §5). Administrators always see everything.
+     */
+    "Surfaces-Output": {
+      /**
+       * Directory
+       * @description The public FDP list: FDPs whose own description conforms
+       */
+      directory: string | null;
+      /**
+       * Feed
+       * @description The catalogue feed (TASKS 11.5)
+       */
+      feed: string | null;
+      /**
+       * Search
+       * @description Search hits and facets
+       */
+      search: string | null;
+      /**
+       * Sparql
+       * @description The SPARQL store's harvested graphs
+       */
+      sparql: string | null;
     };
     /** TriggerRequest */
     TriggerRequest: {

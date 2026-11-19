@@ -194,6 +194,7 @@ def test_settings_add_a_pack_and_hide_reports(api: Api) -> None:
     assert current == {
         "packs": [{"key": "dcat-ap@3.0.1", "kinds": None, "files": None}],
         "reports": "public",
+        "surfaces": {"search": None, "sparql": None, "feed": None, "directory": None},
         "isDefault": True,
     }
     body = {
@@ -303,3 +304,98 @@ async def _forget_last_retrieval(app: FastAPI, entry: UUID) -> None:
         row = await session.get(IndexEntry, entry)
         assert row is not None
         row.last_retrieval_at = None
+
+
+# --- conformance on the other surfaces (TASKS 11.4) ----------------------------------
+
+DCAT_AP = "https://semiceu.github.io/DCAT-AP/releases/3.0.1/"
+
+
+class SearchApi(Api):
+    def __init__(self, client: TestClient, app: FastAPI) -> None:
+        super().__init__(client, app)
+        self.call(app.state.search.indexer.stop)
+
+    def settle(self) -> None:
+        self.call(self.app.state.jobs.drain)
+        self.call(self.app.state.search.indexer.sync_once)
+        self.call(self.app.state.conformance.sync_once)
+        self.call(self.app.state.search.indexer.sync_once)
+
+
+@pytest.fixture
+def search_api(network: FakeNetwork) -> Iterator[SearchApi]:
+    serve(network)
+    config = Settings(
+        database_url="sqlite+aiosqlite://",
+        admin_tokens=[token_digest(TOKEN)],
+        worker_concurrency=1,
+        search_enabled=True,
+        conformance_enabled=True,
+        conformance_workers=0,
+    )
+    app = create_app(
+        config,
+        transport=httpx.MockTransport(network.handler),
+        resolver=public_resolver,
+        create_tables=True,
+        configure_logs=False,
+        run_scheduler=False,
+    )
+    with TestClient(app) as client:
+        api = SearchApi(client, app)
+        client.post("/", json={"clientUrl": FDP})
+        api.settle()
+        yield api
+
+
+def _search(api: SearchApi, **params: Any) -> dict[str, Any]:
+    headers = params.pop("headers", {})
+    response = api.client.get("/index/search", params=params, headers=headers)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_search_filters_and_counts_conformance(search_api: SearchApi) -> None:
+    body = _search(search_api, facets="conformance")
+    values = {v["value"]: v for v in body["facets"]["conformance"]["buckets"]}
+    assert values[DCAT_AP]["count"] == 3  # the FDP, the catalogue, the "good" dataset
+    assert values[DCAT_AP]["label"] == "DCAT-AP 3.0.1"
+    hits = _search(search_api, conformance=DCAT_AP, type="dataset")["hits"]
+    assert [h["iri"] for h in hits] == [f"{FDP}/dataset/good"]
+    assert hits[0]["values"]["conformance"][0]["label"] == "DCAT-AP 3.0.1"
+
+
+def test_search_minimum_hides_records_from_visitors(search_api: SearchApi) -> None:
+    everything = _search(search_api, type="dataset")["totalResults"]
+    assert everything == 3
+    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "surfaces": {"search": "dcat-ap"}}
+    response = search_api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
+    assert response.status_code == 200, response.text
+    search_api.settle()
+    assert _search(search_api, type="dataset")["totalResults"] == 1
+    assert _search(search_api, type="dataset", headers=ADMIN)["totalResults"] == 3
+
+
+def test_directory_minimum(search_api: SearchApi) -> None:
+    def listed(headers: dict[str, str] | None = None) -> int:
+        return search_api.client.get("/index/entries", headers=headers or {}).json()[
+            "totalElements"
+        ]
+
+    assert listed() == 1
+    # Health-RI core does not apply to FDP roots: nothing qualifies for the directory.
+    body = {
+        "packs": [{"key": "dcat-ap@3.0.1"}, {"key": "health-ri-core@2.0.3"}],
+        "surfaces": {"directory": "health-ri-core"},
+    }
+    assert (
+        search_api.client.put("/index/conformance/settings", json=body, headers=ADMIN).status_code
+        == 200
+    )
+    search_api.settle()
+    assert listed() == 0
+    assert listed(ADMIN) == 1
+    body["surfaces"] = {"directory": "dcat-ap"}
+    search_api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
+    assert listed() == 1  # the FDP's own description conforms to DCAT-AP

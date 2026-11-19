@@ -25,6 +25,7 @@ from sqlalchemy import delete, func, insert, select, update
 
 from fdpindex.db import utcnow
 from fdpindex.models import (
+    ConformanceResult,
     EntryPermit,
     HarvestedNode,
     IndexEntry,
@@ -38,7 +39,9 @@ from fdpindex.search.concepts import concept_fields, concept_groups, concept_tex
 from fdpindex.search.project import (
     PROJECTION_VERSION,
     EntryProjection,
+    LabelRow,
     ResourceRow,
+    Value,
     add_ancestors,
     enrich,
     merge_equivalents,
@@ -47,7 +50,7 @@ from fdpindex.search.project import (
 from fdpindex.search.vocab import pack_digest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -58,6 +61,27 @@ if TYPE_CHECKING:
 log = structlog.get_logger(__name__)
 
 BATCH = 500
+CONFORMANCE_FIELD = "conformance"
+
+
+def _add_conformance(
+    projection: EntryProjection, conforming: dict[str, list[tuple[str, dict[str, str]]]]
+) -> None:
+    """The packs each resource conforms to, as values (specification IRIs) with labels."""
+    if not conforming:
+        return
+    labels: dict[tuple[str, str], str] = {}
+    for row in projection.resources:
+        for iri, title in conforming.get(row.public_id, []):
+            row.values.append(Value(field=CONFORMANCE_FIELD, value=iri))
+            for lang, text in title.items():
+                labels[(iri, lang)] = text
+    known = {(label.iri, label.lang) for label in projection.labels}
+    projection.labels.extend(
+        LabelRow(iri=iri, lang=lang, label=text)
+        for (iri, lang), text in labels.items()
+        if (iri, lang) not in known
+    )
 
 
 def fingerprint(content_hashes: Iterable[str]) -> str:
@@ -97,6 +121,11 @@ class SearchIndexer:
         self.idle = asyncio.Event()
         # Bumped after every write, so caches (landing counters) know to refresh.
         self.generation = 0
+        # Conformance (TASKS 11.4): the active packs' specification IRIs and titles. A
+        # record's conforming packs become values of the profile field ``conformance``.
+        self.conformance_specs: (
+            Callable[[], Awaitable[dict[str, tuple[str, dict[str, str]]]]] | None
+        ) = None
 
     def _use(self, profile: Profile) -> None:
         self.profile = profile
@@ -128,6 +157,12 @@ class SearchIndexer:
             self._reconcile = True
         else:
             return  # entry state and titles are joined at query time
+        self.idle.clear()
+        self._wake.set()
+
+    def touch(self, entry_id: UUID) -> None:
+        """Look at an entry again: projected if its fingerprint changed (conformance did)."""
+        self._entries.add(entry_id)
         self.idle.clear()
         self._wake.set()
 
@@ -217,7 +252,9 @@ class SearchIndexer:
             if state is not None or not accepted:
                 await self._clear(entry_id)
             return False
-        wanted = fingerprint(str(h) for _, _, h in rows)
+        conforming = await self._conforming(entry_id)
+        marks = sorted(f"{pid} {iri}" for pid, iris in conforming.items() for iri, _ in iris)
+        wanted = fingerprint([*(str(h) for _, _, h in rows), *marks])
         if (
             not force
             and state is not None
@@ -227,6 +264,7 @@ class SearchIndexer:
             return False
         nodes = [(str(iri), str(nt)) for iri, nt, _ in rows]
         projection = await asyncio.to_thread(project_entry, str(entry_id), nodes, self.profile)
+        _add_conformance(projection, conforming)
         # Names resolved from the concepts' vocabularies (ADR-0006).
         iris = {
             value.value
@@ -251,6 +289,28 @@ class SearchIndexer:
             written=written,
         )
         return written > 0
+
+    async def _conforming(self, entry_id: UUID) -> dict[str, list[tuple[str, dict[str, str]]]]:
+        """Per resource (public id), the specifications of the packs it conforms to."""
+        if self.conformance_specs is None or CONFORMANCE_FIELD not in self.profile.fields:
+            return {}
+        specs = await self.conformance_specs()
+        if not specs:
+            return {}
+        async with self._session_factory() as session:
+            rows = (
+                await session.execute(
+                    select(ConformanceResult.public_id, ConformanceResult.pack).where(
+                        ConformanceResult.entry_uuid == entry_id,
+                        ConformanceResult.status == "conforms",
+                    )
+                )
+            ).all()
+        out: dict[str, list[tuple[str, dict[str, str]]]] = {}
+        for public, pack in rows:
+            if str(pack) in specs:
+                out.setdefault(str(public), []).append(specs[str(pack)])
+        return out
 
     async def _clear(self, entry_id: UUID) -> None:
         async with self._session_factory() as session, session.begin():

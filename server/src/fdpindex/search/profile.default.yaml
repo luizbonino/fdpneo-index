@@ -149,6 +149,16 @@ fields:
     facet: more
     label: {en: Conforms to}
     help: {en: "Standards, schemas or metadata profiles the record says it follows."}
+  conformance:
+    # Filled from this index's conformance checks (TASKS 11.4), not from harvested
+    # triples: the specifications of the profiles a record has no violations against.
+    # The path is a placeholder no metadata uses.
+    kind: iri
+    paths: ["urn:fdpindex:conformance"]
+    literals: false
+    facet: main
+    label: {en: Meets profile}
+    help: {en: "Metadata profiles this index checked the record against and found no violations of (DCAT-AP, HealthDCAT-AP …). Warnings do not count."}
   spatial:
     kind: iri
     paths: [dct:spatial]
@@ -235,8 +245,8 @@ fields:
 
 cards:
   # The "key fields" in the footer of a result card, per kind (§6).
-  dataset: [publisher, format, license]
-  series: [publisher]
+  dataset: [publisher, format, license, conformance]
+  series: [publisher, conformance]
   catalog: [publisher, datasetCount]
   service: [publisher, endpointUrl]
   fdp: [country, datasetCount]

@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, exists, insert, select
 
 from fdpindex.conformance.records import Record, assemble
 from fdpindex.conformance.settings import kinds_of, pack_digest
@@ -42,6 +42,7 @@ from fdpindex.search.indexer import fingerprint
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
+    from sqlalchemy import ColumnElement
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from fdpindex.conformance.packs import Pack
@@ -83,6 +84,7 @@ class ConformanceService:
         self._pool = pool
         self._debounce = debounce
         self._entries: set[UUID] = set()
+        self._removed = False
         self._forced: set[UUID] = set()
         self._force_all = False
         self._reconcile = True
@@ -90,6 +92,56 @@ class ConformanceService:
         self._task: asyncio.Task[None] | None = None
         self._busy = asyncio.Lock()
         self.idle = asyncio.Event()
+        # Told when an entry's results changed: the search projection and the SPARQL
+        # store carry conformance (TASKS 11.4). Listeners record and return.
+        self.listeners: list[Callable[[UUID], None]] = []
+        self.settings_listeners: list[Callable[[], None]] = []
+
+    # --- what other surfaces ask ----------------------------------------------------
+
+    async def specs(self) -> dict[str, tuple[str, dict[str, str]]]:
+        """Active packs by id: the specification's IRI and the pack's title."""
+        settings = await self.settings.get()
+        packs = self.settings.packs
+        return {
+            packs[a.key].id: (packs[a.key].manifest.specification, packs[a.key].manifest.title)
+            for a in settings.packs
+            if a.key in packs
+        }
+
+    async def minimum(self, surface: str) -> str | None:
+        """The pack id a surface requires visitors' records to conform to, if any."""
+        settings = await self.settings.get()
+        return getattr(settings.surfaces, surface, None)
+
+    async def directory_condition(self) -> ColumnElement[bool] | None:
+        """The public FDP list's condition: the FDP's own description conforms."""
+        pack = await self.minimum("directory")
+        if pack is None:
+            return None
+        return exists(
+            select(ConformanceResult.id).where(
+                ConformanceResult.entry_uuid == IndexEntry.uuid,
+                ConformanceResult.kind == "fdp",
+                ConformanceResult.pack == pack,
+                ConformanceResult.status == "conforms",
+            )
+        )
+
+    async def minimum_specification(self, surface: str) -> str | None:
+        """A surface's minimum as the pack's specification IRI (search values carry it)."""
+        pack = await self.minimum(surface)
+        if pack is None:
+            return None
+        found = (await self.specs()).get(pack)
+        return found[0] if found else None
+
+    def _changed(self, entry_id: UUID) -> None:
+        for listener in self.listeners:
+            try:
+                listener(entry_id)
+            except Exception:
+                log.exception("conformance_listener_failed")
 
     # --- notifications ------------------------------------------------------------
 
@@ -115,7 +167,12 @@ class ConformanceService:
         self._wake.set()
 
     def settings_changed(self) -> None:
-        """Packs or their files changed: every entry is compared again."""
+        """Packs, their files or the surfaces changed: every entry is compared again."""
+        for listener in self.settings_listeners:
+            try:
+                listener()
+            except Exception:
+                log.exception("conformance_listener_failed")
         self._reconcile = True
         self.idle.clear()
         self._wake.set()
@@ -239,6 +296,9 @@ class ConformanceService:
                 state.records = len(records)
                 state.validated_at = utcnow()
         log.info("conformance_entry_validated", entry=str(entry_id), records=done)
+        if done or self._removed:
+            self._changed(entry_id)
+        self._removed = False
         return done
 
     async def _validate_records(
@@ -279,6 +339,7 @@ class ConformanceService:
         gone = [v[0] for k, v in existing.items() if k not in wanted]
         if gone:
             await self._delete_results(gone)
+            self._removed = True
         done = 0
         for start in range(0, len(work), BATCH):
             batch = work[start : start + BATCH]
@@ -362,6 +423,8 @@ class ConformanceService:
             await session.execute(
                 delete(ConformanceEntryState).where(ConformanceEntryState.entry_uuid == entry_id)
             )
+        if ids:
+            self._changed(entry_id)
 
 
 def _finding(result_id: int, finding: Any) -> dict[str, Any]:

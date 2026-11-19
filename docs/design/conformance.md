@@ -267,6 +267,22 @@ A setting per surface: `minimum: none` (default) or `minimum: {pack:
 Lenient surfaces show the status as a badge ("Conforms to DCAT-AP 3") and
 a facet.
 
+**As built (11.4, 2026-11-19).** The surfaces are a setting
+(`surfaces: {search, sparql, feed, directory}`, each a pack id or null). The
+search projection gets a field `conformance` (kind `iri`, a main facet
+"Meets profile", on dataset and series cards): the specification IRIs of
+the packs a record conforms to, labelled with the packs' titles. The
+conformance service tells the search indexer and the SPARQL sync when an
+entry's results changed, and the conforming packs are part of the entry's
+search fingerprint, so a restart catches up. A strict search adds a
+condition on that field for visitors (a request parameter cannot remove
+it); a strict SPARQL store drops the nodes of records with results that do
+not conform, so records not checked yet and distributions stay (a
+deviation from "not yet validated counts as not conforming", which holds
+for search); a strict directory keeps FDPs whose `fdp` record conforms.
+The default profile changed, so every entry is projected again once after
+the upgrade.
+
 ## 6. The catalogue feed (11.5, replacing 9.6)
 
 `GET /index/catalog`, content-negotiated (Turtle, RDF/XML, JSON-LD), is a

@@ -219,6 +219,10 @@ const source = computed(() =>
 .meta a {
   color: inherit;
   overflow-wrap: anywhere;
+  /* WCAG 2.5.8: a 24px target, as the links sit side by side. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }
 .sep {
   opacity: 0.6;

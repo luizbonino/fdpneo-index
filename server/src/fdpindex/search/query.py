@@ -86,6 +86,7 @@ from fdpindex.search.concepts import (
     concept_stats,
     descendants,
 )
+from fdpindex.search.indexer import CONFORMANCE_FIELD
 from fdpindex.search.prefixes import (
     NOTHING,
     TEXT_FIELDS,
@@ -299,6 +300,9 @@ class SearchParams:
     facet_size: int = 20
     # Mark the words of ``q`` in titles and descriptions (TASKS 8.1).
     highlight: bool = False
+    # Set by the service, never from a request: visitors see only records conforming to
+    # this specification (the search surface's minimum, TASKS 11.4).
+    minimum: str | None = None
 
     def validate(self, profile: Profile, properties: frozenset[str] = frozenset()) -> None:
         """Check the parameters; ``properties`` are the ``p:`` fields resolved for this request."""
@@ -444,6 +448,8 @@ class SearchService:
         self._facet_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
         self._hide_expired = False
         self._concept_groups: tuple[float, ConceptGroups] | None = None
+        # The search surface's minimum conformance (TASKS 11.4): a specification IRI.
+        self.conformance_minimum: Callable[[], Awaitable[str | None]] | None = None
 
     # --- sessions ----------------------------------------------------------------
 
@@ -533,6 +539,9 @@ class SearchService:
                 ),
             ]
         names: dict[str, str] = {}
+        params.minimum = None
+        if not admin and self.conformance_minimum is not None:
+            params.minimum = await self.conformance_minimum()
         await self._field_prefixes(params)
 
         captured = {" ".join(self.profile.path_iris(p)) for p in self.profile.capture.paths}
@@ -615,6 +624,8 @@ class SearchService:
             conditions.append(scope.kind.in_(params.types))
         if skip != "fdp" and params.fdps:
             conditions.append(scope.entry_uuid.in_(params.fdps))
+        if params.minimum:
+            conditions.append(_has(CONFORMANCE_FIELD, [params.minimum], scope.id))
         for name, values in params.filters.items():
             if name == skip or not values:
                 continue
@@ -1303,6 +1314,7 @@ class SearchService:
             params.fdp_state,
             filters,
             numbers,
+            params.minimum,
         )
 
     def _cached(self, key: tuple[Any, ...]) -> Any | None:

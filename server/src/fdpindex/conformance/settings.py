@@ -52,6 +52,21 @@ class ActivePack(_Camel):
     )
 
 
+class Surfaces(_Camel):
+    """The minimum each surface shows to visitors: a pack id (no violations against it), or
+    null for everything (design §5). Administrators always see everything."""
+
+    search: str | None = Field(default=None, description="Search hits and facets")
+    sparql: str | None = Field(default=None, description="The SPARQL store's harvested graphs")
+    feed: str | None = Field(default=None, description="The catalogue feed (TASKS 11.5)")
+    directory: str | None = Field(
+        default=None, description="The public FDP list: FDPs whose own description conforms"
+    )
+
+    def chosen(self) -> dict[str, str]:
+        return {k: v for k, v in self.model_dump().items() if v is not None}
+
+
 class ConformanceSettings(_Camel):
     packs: list[ActivePack] = Field(
         default_factory=lambda: [ActivePack(key=k) for k in DEFAULT_PACKS], max_length=MAX_PACKS
@@ -59,6 +74,7 @@ class ConformanceSettings(_Camel):
     reports: Literal["public", "admin"] = Field(
         default="public", description="Who may read conformance reports"
     )
+    surfaces: Surfaces = Field(default_factory=Surfaces)
 
     def check(self, available: dict[str, Pack]) -> None:
         """Packs must exist; kinds and files must be the pack's own."""
@@ -83,6 +99,9 @@ class ConformanceSettings(_Camel):
                 f.role == "shapes" and f.path in active.files for f in pack.manifest.files
             ):
                 raise ValueError(f"{active.key}: no shapes file chosen")
+        for surface, pack_id in self.surfaces.chosen().items():
+            if pack_id not in ids:
+                raise ValueError(f"surface {surface}: {pack_id} is not an active pack")
 
 
 class ConformanceSettingsView(ConformanceSettings):
@@ -121,6 +140,10 @@ class ConformanceSettingsService:
         )
         # A pack an operator removed since is skipped, not an error.
         settings.packs = [p for p in settings.packs if p.key in self.packs]
+        ids = {p.key.split("@")[0] for p in settings.packs}
+        for surface, pack_id in settings.surfaces.chosen().items():
+            if pack_id not in ids:
+                setattr(settings.surfaces, surface, None)
         self._cached = (time.monotonic(), settings)
         return settings
 
@@ -154,5 +177,8 @@ class ConformanceSettingsService:
 
 def _view(settings: ConformanceSettings) -> ConformanceSettingsView:
     return ConformanceSettingsView(
-        packs=settings.packs, reports=settings.reports, isDefault=settings == ConformanceSettings()
+        packs=settings.packs,
+        reports=settings.reports,
+        surfaces=settings.surfaces,
+        isDefault=settings == ConformanceSettings(),
     )

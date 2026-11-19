@@ -786,6 +786,17 @@ export const en = {
       reports: "Who may read the reports",
       reportsPublic: "Everyone, like the metadata they describe",
       reportsAdmin: "Administrators only",
+      minimum: "What visitors see",
+      minimumLead:
+        "Show visitors only records that conform to a profile, per place. Administrators always see everything, with the status shown.",
+      surface: {
+        search: "Search",
+        sparql: "SPARQL",
+        directory: "List of FDPs",
+        feed: "Catalogue feed",
+      },
+      everything: "Everything",
+      onlyConforming: "Only what conforms to {profile}",
       validateAll: "Check every FDP again",
       validateAllConfirm:
         "Check the records of every FDP again? This runs in the background and may take a while.",

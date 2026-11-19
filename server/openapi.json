@@ -200,6 +200,9 @@
             ],
             "title": "Reports",
             "type": "string"
+          },
+          "surfaces": {
+            "$ref": "#/components/schemas/Surfaces-Input"
           }
         },
         "title": "ConformanceSettings",
@@ -229,11 +232,15 @@
             ],
             "title": "Reports",
             "type": "string"
+          },
+          "surfaces": {
+            "$ref": "#/components/schemas/Surfaces-Output"
           }
         },
         "required": [
           "packs",
           "reports",
+          "surfaces",
           "isDefault"
         ],
         "title": "ConformanceSettingsView",
@@ -2872,6 +2879,124 @@
           }
         },
         "title": "Suggest",
+        "type": "object"
+      },
+      "Surfaces-Input": {
+        "additionalProperties": false,
+        "description": "The minimum each surface shows to visitors: a pack id (no violations against it), or\nnull for everything (design \u00a75). Administrators always see everything.",
+        "properties": {
+          "directory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The public FDP list: FDPs whose own description conforms",
+            "title": "Directory"
+          },
+          "feed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The catalogue feed (TASKS 11.5)",
+            "title": "Feed"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Search hits and facets",
+            "title": "Search"
+          },
+          "sparql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The SPARQL store's harvested graphs",
+            "title": "Sparql"
+          }
+        },
+        "title": "Surfaces",
+        "type": "object"
+      },
+      "Surfaces-Output": {
+        "additionalProperties": false,
+        "description": "The minimum each surface shows to visitors: a pack id (no violations against it), or\nnull for everything (design \u00a75). Administrators always see everything.",
+        "properties": {
+          "directory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The public FDP list: FDPs whose own description conforms",
+            "title": "Directory"
+          },
+          "feed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The catalogue feed (TASKS 11.5)",
+            "title": "Feed"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Search hits and facets",
+            "title": "Search"
+          },
+          "sparql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The SPARQL store's harvested graphs",
+            "title": "Sparql"
+          }
+        },
+        "required": [
+          "search",
+          "sparql",
+          "feed",
+          "directory"
+        ],
+        "title": "Surfaces",
         "type": "object"
       },
       "TriggerRequest": {

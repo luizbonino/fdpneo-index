@@ -12,6 +12,8 @@
      their tints and the slate background; these pass 4.5:1 on all of them. */
   --tool-directory: #2563c7;
   --fair-success: #2b752f;
+  /* The shared warning ochre (#8a6d00) reaches 4.32:1 on its own tint; this passes. */
+  --fair-warning: #7a5f00;
   --tool-accent: var(--tool-directory);
   --tool-accent-tint: var(--tool-directory-tint);
 }

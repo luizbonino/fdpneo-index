@@ -25,11 +25,13 @@ import structlog
 from sqlalchemy import func, select
 
 from fdpindex.db import utcnow
-from fdpindex.models import EntryPermit, HarvestedNode, IndexEntry
+from fdpindex.models import ConformanceResult, EntryPermit, HarvestedNode, IndexEntry
 from fdpindex.service import IndexChange, api_state
 from fdpindex.sparql.store import EntryFacts, SparqlStore, fingerprint
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from fdpindex.settings import SettingsService
@@ -63,6 +65,21 @@ class SparqlSync:
         self._task: asyncio.Task[None] | None = None
         self.idle = asyncio.Event()
         self._busy = asyncio.Lock()
+        # The SPARQL surface's minimum conformance (TASKS 11.4): a pack id. Records with
+        # results against it that do not conform are left out of the store.
+        self.conformance_minimum: Callable[[], Awaitable[str | None]] | None = None
+
+    def touch(self, entry_id: UUID) -> None:
+        """Look at an entry again (its conformance changed)."""
+        self._entries.add(entry_id)
+        self.idle.clear()
+        self._wake.set()
+
+    def reconcile(self) -> None:
+        """Compare every entry again (the minimum changed)."""
+        self._reconcile = True
+        self.idle.clear()
+        self._wake.set()
 
     # --- notifications (IndexService listener) ------------------------------------
 
@@ -173,18 +190,36 @@ class SparqlSync:
             accepted = entry.permit is EntryPermit.ACCEPTED
             rows = (
                 await session.execute(
-                    select(HarvestedNode.ntriples, HarvestedNode.content_hash).where(
-                        HarvestedNode.entry_uuid == entry_id
-                    )
+                    select(
+                        HarvestedNode.node_iri, HarvestedNode.ntriples, HarvestedNode.content_hash
+                    ).where(HarvestedNode.entry_uuid == entry_id)
                 )
             ).all()
-            nodes = [(str(ntriples), str(content_hash)) for ntriples, content_hash in rows]
+            minimum = await self.conformance_minimum() if self.conformance_minimum else None
+            left_out: set[str] = set()
+            if minimum is not None:
+                left_out = {
+                    str(iri)
+                    for iri in await session.scalars(
+                        select(ConformanceResult.record_iri).where(
+                            ConformanceResult.entry_uuid == entry_id,
+                            ConformanceResult.pack == minimum,
+                            ConformanceResult.status != "conforms",
+                        )
+                    )
+                }
+            nodes = [
+                (str(ntriples), str(content_hash))
+                for node_iri, ntriples, content_hash in rows
+                if str(node_iri) not in left_out
+            ]
+            marks = [f"minimum {minimum}"] if minimum is not None else []
         if not accepted or not nodes:
             if client_url in await asyncio.to_thread(self._store.fdp_graphs):
                 await asyncio.to_thread(self._store.drop_graph, client_url)
                 return True
             return False
-        wanted = fingerprint(h for _, h in nodes)
+        wanted = fingerprint([*(h for _, h in nodes), *marks])
         if fingerprints is None:
             fingerprints = await asyncio.to_thread(self._store.fingerprints)
         if fingerprints.get(client_url) == wanted:

@@ -659,3 +659,53 @@ def test_schema_names_properties_by_profile_fields(network: FakeNetwork, tmp_pat
     if "dcat:theme" in properties:
         assert {f["name"] for f in properties["dcat:theme"]["fields"]} >= {"theme", "subject"}
     assert "fields" not in properties.get("rdf:type", {})
+
+
+def test_a_strict_store_leaves_out_nonconforming_records(
+    network: FakeNetwork, tmp_path: Path
+) -> None:
+    """The SPARQL surface's minimum conformance (TASKS 11.4)."""
+    config = Settings(
+        database_url="sqlite+aiosqlite://",
+        admin_tokens=[token_digest(TOKEN)],
+        worker_concurrency=1,
+        sparql_enabled=True,
+        sparql_dir=tmp_path / "sparql",
+        sparql_workers=1,
+        sparql_worker_max_mb=0,
+        conformance_enabled=True,
+        conformance_workers=0,
+    )
+    app = create_app(
+        config,
+        transport=httpx.MockTransport(network.handler),
+        resolver=public_resolver,
+        create_tables=True,
+        configure_logs=False,
+        run_scheduler=False,
+    )
+    with TestClient(app) as client:
+        portal = client.portal
+        assert portal is not None
+        portal.call(app.state.conformance.stop)
+        api = Api(client, app)
+
+        def ask(query: str) -> bool:
+            response = client.get("/index/sparql", params={"query": query}, headers=ADMIN)
+            assert response.status_code == 200, response.text
+            return bool(json.loads(response.content)["boolean"])
+
+        client.post("/", json={"clientUrl": FDP})
+        api.settle()
+        portal.call(app.state.conformance.sync_once)
+        assert ask("ASK { ?d a dcat:Dataset }")
+        body = {"packs": [{"key": "dcat-ap@3.0.1"}], "surfaces": {"sparql": "dcat-ap"}}
+        response = client.put("/index/conformance/settings", json=body, headers=ADMIN)
+        assert response.status_code == 200, response.text
+        portal.call(app.state.conformance.sync_once)
+        api.settle()
+        # The test FDP's dataset and catalogue lack a description (DCAT-AP mandatory); its
+        # own description conforms.
+        assert not ask("ASK { ?d a dcat:Dataset }")
+        assert not ask("ASK { ?c a dcat:Catalog }")
+        assert ask("ASK { ?f dct:title 'Demo FDP'@en }")

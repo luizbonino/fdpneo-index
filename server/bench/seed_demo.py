@@ -318,6 +318,33 @@ TOPICS = [
         },
     ),
 ]
+WD = "http://www.wikidata.org/entity/"
+MESH = "http://id.nlm.nih.gov/mesh/"
+# Real concepts (verified against Wikidata, MeSH and EDAM on 2026-11-19), set as
+# dct:subject so that label resolution (ADR-0006) has something to resolve.
+CONCEPTS = {
+    "breast cancer": (WD + "Q128581", MESH + "D001943"),
+    "colorectal cancer": (WD + "Q188874", MESH + "D015179"),
+    "type 2 diabetes": (WD + "Q3025883", MESH + "D003924"),
+    "heart failure": (WD + "Q181754", MESH + "D006333"),
+    "dementia": (WD + "Q83030", MESH + "D003704"),
+    "asthma in children": (WD + "Q35869", MESH + "D001249"),
+    "rare metabolic disorders": (MESH + "D008661",),
+    "whole-genome sequencing": (
+        WD + "Q2068526",
+        MESH + "D000073336",
+        "http://edamontology.org/topic_0622",
+    ),
+    "COVID-19": (WD + "Q84263196", MESH + "D000086382"),
+    "mental health of adolescents": (WD + "Q317309", MESH + "D008603"),
+    "air quality": (WD + "Q56245086", MESH + "D000397"),
+    "river water quality": (WD + "Q625376",),
+    "urban heat islands": (WD + "Q215712",),
+    "household income": (WD + "Q1591167",),
+    "crop yields": (WD + "Q889514",),
+    "household energy consumption": (WD + "Q16869822",),
+    "cycling and commuting": (WD + "Q48442",),
+}
 # (in a title, in a sentence)
 REGIONS = [
     ("national", "the whole country"),
@@ -543,6 +570,9 @@ class FdpBuilder:
         for keyword in rng.sample(topic.keywords, rng.randint(2, min(5, len(topic.keywords)))):
             g.add((node, DCAT.keyword, Literal(keyword, lang="en")))
         g.add((node, DCAT.theme, URIRef(f"{EU}data-theme/{topic.theme}")))
+        for concept in CONCEPTS.get(topic.name, ()):
+            if rng.random() < 0.8:
+                g.add((node, DCTERMS.subject, URIRef(concept)))
         if rng.random() < 0.2:
             g.add(
                 (

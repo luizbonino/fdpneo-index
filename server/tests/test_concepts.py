@@ -293,6 +293,49 @@ async def test_resolved_names_label_facets_and_values(
     assert publishers[ROR] == "University of Twente"
 
 
+async def test_a_host_that_answers_429_is_paused_and_its_concepts_wait(
+    services: Services, network: FakeNetwork
+) -> None:
+    network.standard_fdp()
+    network.serve(f"{FDP}/dataset/d1", DATASET)
+    indexer = SearchIndexer(services.session_factory, default_profile(), debounce=0)
+    services.index.add_listener(indexer.notify)
+    await ping(services)
+    await indexer.sync_once()
+    vocabularies = Vocabularies()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if (request.headers.get("host") or request.url.host) == "www.wikidata.org":
+            return httpx.Response(429, headers={"Retry-After": "120"}, text="slow down")
+        return vocabularies.handler(request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        outbound = OutboundClient(
+            http,
+            allow_private=False,
+            max_bytes=1_000_000,
+            max_redirects=3,
+            user_agent="test",
+            resolver=public_resolver,
+        )
+        resolver = ConceptResolver(
+            services.session_factory,
+            outbound,
+            indexer.profile,
+            ResolverSettings(
+                enabled=True,
+                hosts=frozenset({"www.wikidata.org", "id.nlm.nih.gov"}),
+                requests_per_second=1000,
+            ),
+            on_changed=indexer.reindex,
+        )
+        while await resolver.sync_once():
+            pass
+    wikidata = await _status(services.session_factory, WIKIDATA)
+    assert wikidata.status is ConceptStatus.PENDING and wikidata.fetched_at is None
+    assert (await _status(services.session_factory, MESH)).status is ConceptStatus.RESOLVED
+
+
 async def test_a_redirect_off_the_allow_list_is_not_followed(services: Services) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "id.nlm.nih.gov" or request.headers.get("host") == "id.nlm.nih.gov":

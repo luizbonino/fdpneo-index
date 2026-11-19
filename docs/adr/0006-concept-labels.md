@@ -49,6 +49,11 @@ dereference to HTML.
    are made, and responses are capped in size. Broader concepts are resolved
    too, two levels up by default. A resolved concept is refreshed after 30
    days; a miss or a failure is retried after 7.
+
+   A host that answers 429 is paused until its `Retry-After`, and its
+   concepts stay due. Wikimedia throttles clients that do not identify
+   themselves, so `FDPINDEX_USER_AGENT` should name the deployment and a
+   contact. The default names the project and its URL.
 4. **Use in search.**
    - Labels go into the full-text vectors at the field's weight, synonyms
      one weight lower, and broader concepts' labels at `D`. A search for

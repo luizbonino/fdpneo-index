@@ -102,6 +102,22 @@ class Resolution:
     error: str | None = None
 
 
+class _Throttled(Exception):  # a condition, not an error of ours
+    """The host answered 429: leave its concepts due and pause it."""
+
+    def __init__(self, host: str, seconds: float) -> None:
+        super().__init__(host)
+        self.host = host
+        self.seconds = seconds
+
+
+def _retry_after(value: str | None) -> float:
+    try:
+        return min(max(float(value or 300), 1.0), 3600.0)
+    except ValueError:
+        return 300.0
+
+
 def concept_fields(profile: Profile) -> list[str]:
     """Fields whose IRI values are concepts: IRI and agent fields that are facets or searched."""
     return [
@@ -132,6 +148,8 @@ class ConceptResolver:
         self._on_changed = on_changed
         self._task: asyncio.Task[None] | None = None
         self._wake = asyncio.Event()
+        # Hosts that answered 429, until when (loop time): their concepts wait.
+        self._paused: dict[str, float] = {}
 
     # --- loop -----------------------------------------------------------------
 
@@ -169,6 +187,8 @@ class ConceptResolver:
         if not self.settings.enabled:
             return 0
         now = utcnow()
+        clock = asyncio.get_running_loop().time()
+        paused = [host for host, until in self._paused.items() if until > clock]
         async with self._session_factory() as session:
             due = list(
                 await session.scalars(
@@ -176,6 +196,7 @@ class ConceptResolver:
                     .where(
                         Concept.status != ConceptStatus.SKIPPED,
                         Concept.due_at <= now,
+                        Concept.host.not_in(paused),
                     )
                     .order_by(Concept.depth, Concept.due_at)
                     .limit(BATCH)
@@ -184,9 +205,9 @@ class ConceptResolver:
         if not due:
             return 0
         results = await self._fetch_all(due)
-        changed = await self._store(due, results)
+        changed = await self._store([c for c in due if c.iri in results], results)
         await self._reproject(changed)
-        return len(due)
+        return len(results)
 
     # --- discovery ------------------------------------------------------------
 
@@ -252,7 +273,7 @@ class ConceptResolver:
         if wikidata:
             results |= await self._wikidata(wikidata, {c.iri: c.depth for c in concepts})
         for concept in concepts:
-            if concept.iri in results:
+            if concept.iri in results or self._is_paused(concept.host):
                 continue
             try:
                 if concept.host == "ror.org":
@@ -263,8 +284,17 @@ class ConceptResolver:
                     results[concept.iri] = await self._rdf(concept.iri)
             except OutboundError as err:
                 results[concept.iri] = Resolution(ConceptStatus.FAILED, "http", error=err.message)
+            except _Throttled as throttled:
+                self._pause(throttled)
             await asyncio.sleep(1 / self.settings.requests_per_second)
         return results
+
+    def _is_paused(self, host: str) -> bool:
+        return self._paused.get(host, 0.0) > asyncio.get_running_loop().time()
+
+    def _pause(self, throttled: _Throttled) -> None:
+        self._paused[throttled.host] = asyncio.get_running_loop().time() + throttled.seconds
+        log.warning("concept_host_paused", host=throttled.host, seconds=throttled.seconds)
 
     async def _get(self, url: str, *, accept: str, host: str) -> tuple[int, str, str]:
         allowed = {host, API_HOSTS.get(host, host)}
@@ -275,6 +305,8 @@ class ConceptResolver:
             headers={"Accept": accept},
             allowed_hosts=allowed,
         )
+        if response.status == 429:
+            raise _Throttled(host, _retry_after((response.headers.get("retry-after") or [None])[0]))
         if response.truncated:
             raise OutboundError("too_large", "response too large")
         return response.status, response.content_type, response.body
@@ -302,6 +334,9 @@ class ConceptResolver:
                 entities: dict[str, Any] = (
                     json.loads(body).get("entities", {}) if status == 200 else {}
                 )
+            except _Throttled as throttled:
+                self._pause(throttled)
+                break
             except (OutboundError, ValueError) as err:
                 for qid in chunk:
                     results[by_id[qid]] = Resolution(
@@ -341,6 +376,9 @@ class ConceptResolver:
                     url, accept="application/json", host="www.wikidata.org"
                 )
                 claims = json.loads(body).get("claims", {}).get("P279", []) if status == 200 else []
+            except _Throttled as throttled:
+                self._pause(throttled)
+                claims = []
             except (OutboundError, ValueError):
                 claims = []
             for claim in claims[:MAX_BROADER]:
@@ -432,9 +470,7 @@ class ConceptResolver:
         changed: set[str] = set()
         async with self._session_factory() as session, session.begin():
             for concept in concepts:
-                result = results.get(concept.iri) or Resolution(
-                    ConceptStatus.FAILED, "none", error="not fetched"
-                )
+                result = results[concept.iri]
                 row = await session.get(Concept, concept.iri)
                 if row is None:
                     continue

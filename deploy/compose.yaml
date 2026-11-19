@@ -37,6 +37,9 @@ services:
       FDPINDEX_AUTO_PERMIT: ${FDPINDEX_AUTO_PERMIT:-true}
       FDPINDEX_OUTBOUND_ALLOW_PRIVATE: ${FDPINDEX_OUTBOUND_ALLOW_PRIVATE:-false}
       FDPINDEX_PUBLIC_URL: ${FDPINDEX_PUBLIC_URL:-}
+      # Concept labels from vocabularies (ADR-0006): outbound requests to public
+      # vocabulary services, off unless switched on.
+      FDPINDEX_LABELS_RESOLVE: ${FDPINDEX_LABELS_RESOLVE:-false}
       # The server is not published: only this project's containers reach it, and
       # nginx (client) sets X-Forwarded-For to the address that connected to it.
       FORWARDED_ALLOW_IPS: "*"

@@ -252,6 +252,47 @@ async def test_harvest_records_failed_nodes(network: FakeNetwork) -> None:
     assert result.complete
 
 
+def test_json_ld_with_a_remote_context_is_refused_without_fetching_it() -> None:
+    """rdflib would fetch a remote @context itself, past the outbound checks (ADR-0002)."""
+    import http.server
+    import socketserver
+    import threading
+    import warnings
+
+    from fdpindex.rdf import RdfParseError, parse_rdf
+
+    hits: list[str] = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            hits.append(self.path)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/ld+json")
+            self.end_headers()
+            self.wfile.write(b'{"@context": {"name": "http://schema.org/name"}}')
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    with socketserver.TCPServer(("127.0.0.1", 0), Handler) as server:
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        internal = f"http://127.0.0.1:{server.server_address[1]}/internal"
+        for context in (f'"{internal}"', f'["{internal}", {{"a": "http://x/a"}}]'):
+            document = f'{{"@context": {context}, "@id": "https://x.example/a", "name": "A"}}'
+            with pytest.raises(RdfParseError, match="remote @context"):
+                parse_rdf(document, "application/ld+json", "https://x.example/")
+        nested = '{"@context": {"@import": "' + internal + '"}, "@id": "https://x.example/a"}'
+        with pytest.raises(RdfParseError, match="remote @context"):
+            parse_rdf(nested, "application/ld+json", "https://x.example/")
+        server.shutdown()
+    assert hits == []
+    inline = '{"@context": {"name": "http://schema.org/name"}, "@id": "https://x.example/a", "name": "A"}'
+    with warnings.catch_warnings():
+        # rdflib's JSON-LD parser uses its own deprecated ConjunctiveGraph.
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert len(parse_rdf(inline, "application/ld+json", "https://x.example/")) == 1
+
+
 async def test_connections_are_pinned_to_the_vetted_address() -> None:
     """DNS rebinding: the index connects to the address it checked, not a fresh lookup."""
     seen: list[httpx.Request] = []

@@ -16,6 +16,7 @@ Differences from the reference, both harmless for single-valued metadata:
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 
 from rdflib import Graph, Literal, Namespace, URIRef
@@ -64,9 +65,43 @@ class RepositoryMetadata:
     metadata_version: int = 1
 
 
+def _remote_contexts(value: object) -> bool:
+    """Whether a JSON-LD document refers to a context by URL (``@context`` or ``@import``)."""
+    if isinstance(value, dict):
+        for key, item in value.items():  # pyright: ignore[reportUnknownVariableType]
+            if key in ("@context", "@import") and _names_a_document(item):
+                return True
+            if _remote_contexts(item):
+                return True
+    elif isinstance(value, list):
+        return any(_remote_contexts(item) for item in value)  # pyright: ignore[reportUnknownVariableType]
+    return False
+
+
+def _names_a_document(context: object) -> bool:
+    if isinstance(context, str):
+        return True
+    if isinstance(context, list):
+        return any(isinstance(item, str) for item in context)  # pyright: ignore[reportUnknownVariableType]
+    return False
+
+
 def parse_rdf(body: str, content_type: str, base: str) -> Graph:
-    """Parse ``body``; Turtle when the content type is unknown, as the reference assumes."""
+    """Parse ``body``; Turtle when the content type is unknown, as the reference assumes.
+
+    JSON-LD that names a context by URL is refused: rdflib would fetch it
+    itself, outside ``OutboundClient`` and its address checks (ADR-0002), so a
+    pinged FDP could make the index request internal addresses. Inline
+    contexts are fine.
+    """
     fmt = FORMATS.get(content_type, "turtle")
+    if fmt == "json-ld":
+        try:
+            document = json.loads(body)
+        except ValueError as err:
+            raise RdfParseError(f"invalid JSON-LD: {err}") from err
+        if _remote_contexts(document):
+            raise RdfParseError("JSON-LD with a remote @context is not accepted; inline it")
     graph = Graph()
     try:
         graph.parse(data=body, format=fmt, publicID=base)

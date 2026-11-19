@@ -28,9 +28,8 @@ service needs no triple store. A harvest replaces the entry's rows in one
 transaction, so readers never see a half-replaced graph. `/data` serialises
 the union of an entry's nodes as Turtle, N-Triples or JSON-LD.
 
-Querying the harvested corpus (SPARQL, search) is out of scope: it belongs
-to the harvest tier of FAIR Discovery, which can consume this table or the
-`/data` endpoint.
+Querying the harvested corpus (SPARQL, search) was out of scope here. ADR-0005
+added both, as stores derived from this table.
 
 ### Outbound requests
 
@@ -46,6 +45,10 @@ through one client that:
 - stops reading a response after `FDPINDEX_OUTBOUND_MAX_BYTES`
   (default 5 MiB);
 - applies the retrieval timeout from the index settings.
+
+Parsing never makes requests of its own: JSON-LD that names a context by URL
+(`@context` or `@import`) is refused, because rdflib would fetch it itself,
+past these checks. Inline contexts are accepted. (Found on 2026-11-19.)
 
 The harvester only follows IRIs on the entry's own origin (scheme, host and
 port of the client URL), visits at most `FDPINDEX_HARVEST_MAX_NODES` nodes

@@ -29,6 +29,7 @@ prefixes:
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   rdfs: "http://www.w3.org/2000/01/rdf-schema#"
   healthdcatap: "http://healthdataportal.eu/ns/health#"
+  eu-theme: "http://publications.europa.eu/resource/authority/data-theme/"
 
 types:
   # First match wins, in this order (§3.2).
@@ -55,14 +56,27 @@ fields:
     weight: B
     label: {en: Keyword}
     help: {en: "Free words the data provider attached to the record."}
+  # Themes and subjects come from both predicates and are split by vocabulary:
+  # DCAT-AP 3 allows any vocabulary in dcat:theme, and some providers put EU
+  # data themes in dct:subject.
   theme:
     kind: iri
     paths: [dcat:theme, dct:subject]
     literals: false  # literal dct:subject values are keywords
+    namespaces: ["eu-theme:"]
     facet: main
     weight: B
     label: {en: Theme}
-    help: {en: "Subject categories the data provider assigned, usually from the EU data-theme vocabulary."}
+    help: {en: "The broad data themes of the EU vocabulary, such as Health or Environment."}
+  subject:
+    kind: iri
+    paths: [dcat:theme, dct:subject]
+    literals: false
+    exclude: ["eu-theme:"]
+    facet: main
+    weight: B
+    label: {en: Subject}
+    help: {en: "Topics from domain vocabularies, such as MeSH, Wikidata or EDAM, that the data provider assigned."}
   publisher:
     kind: agent
     paths: [dct:publisher]

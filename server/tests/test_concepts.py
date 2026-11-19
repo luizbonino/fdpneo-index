@@ -85,7 +85,15 @@ def test_preferred_labels_synonyms_and_broader_concepts() -> None:
 
 def test_concept_fields_are_the_named_iri_fields() -> None:
     fields = set(concept_fields(default_profile()))
-    assert {"theme", "publisher", "creator", "conformsTo", "spatial", "license"} <= fields
+    assert {
+        "theme",
+        "subject",
+        "publisher",
+        "creator",
+        "conformsTo",
+        "spatial",
+        "license",
+    } <= fields
     assert not {"landingPage", "downloadUrl", "accessUrl", "contactEmail", "keyword"} & fields
 
 
@@ -285,9 +293,12 @@ async def test_resolved_names_label_facets_and_values(
 ) -> None:
     search = resolved[0]
     result = await search.search(SearchParams(types=["dataset"], lang="de"))
-    themes = {b["value"]: b["label"] for b in result["facets"]["theme"]["buckets"]}
-    assert themes[WIKIDATA] == "Brustkrebs"  # in the requested language
-    assert themes[EDAM] == "Genomics"
+    facets = result["facets"]
+    subjects = {b["value"]: b["label"] for b in facets["subject"]["buckets"]}
+    assert subjects[WIKIDATA] == "Brustkrebs"  # in the requested language
+    assert subjects[EDAM] == "Genomics"
+    themes = {b["value"]: b["label"] for b in facets["theme"]["buckets"]}
+    assert set(themes) == {HEAL}  # EU data themes only
     assert themes[HEAL] == "Gesundheit" or themes[HEAL] == "Health"  # bundled, untouched
     publishers = {b["value"]: b["label"] for b in result["facets"]["publisher"]["buckets"]}
     assert publishers[ROR] == "University of Twente"

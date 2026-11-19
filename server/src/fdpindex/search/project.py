@@ -69,7 +69,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 2
+PROJECTION_VERSION = 3
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -446,6 +446,16 @@ class _Projector:
         found: list[Node] = []
         for path in self.paths[name]:
             found.extend(node.objects(path))
+        if spec.kind in {"iri", "agent"}:
+            # Literals the field does not keep add no text either (a literal
+            # dct:subject is a keyword, not a theme); IRIs outside the field's
+            # namespaces belong to another field.
+            found = [
+                item
+                for item in found
+                if not (isinstance(item, Literal) and spec.kind == "iri" and not spec.literals)
+                and not (isinstance(item, URIRef) and not self.profile.accepts(spec, str(item)))
+            ]
         if spec.weight is None:
             return found
         for item in found:
@@ -678,7 +688,7 @@ def _completeness(row: ResourceRow) -> float:
     present = {
         "title": not row.title_fallback,
         "description": bool(row.descriptions),
-        "subject": bool(fields & {"keyword", "theme"}),
+        "subject": bool(fields & {"keyword", "theme", "subject"}),
         "publisher": "publisher" in fields,
         "license": "license" in fields,
         "accessRights": "accessRights" in fields,

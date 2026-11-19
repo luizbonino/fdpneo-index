@@ -1,9 +1,10 @@
 """Two FDPs as Turtle pages, for the search projection and API tests.
 
 Alpha is FDPneo-shaped (DCAT 3, ``fdp-o``, IRIs from the EU tables, some as
-strings, multilingual titles, a numeric HealthDCAT-AP field). Beta is
+strings, multilingual titles, a numeric HealthDCAT-AP field, a MeSH subject). Beta is
 Java-FDP-shaped (``r3d:Repository``, ``dct:isPartOf`` links, an LDP container, ``https``
-Creative Commons IRIs, a data service, a distribution without a title).
+Creative Commons IRIs, a data service, a distribution without a title, an
+EDAM topic as ``dcat:theme`` and an EU data theme as ``dct:subject``).
 """
 
 from __future__ import annotations
@@ -48,6 +49,7 @@ PAGES: dict[str, str] = {
   dct:description "Biopsies recorded nationwide since 2010."@en ;
   dcat:keyword "Cancer"@en, "registry"@en ;
   dcat:theme <{EU}data-theme/HEAL> ;
+  dct:subject <http://id.nlm.nih.gov/mesh/D001943>, "oncology" ;
   dct:license "CC-BY-4.0" ;
   dct:accessRights <https://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
   dct:language "en" ;
@@ -102,6 +104,8 @@ PAGES: dict[str, str] = {
   dct:title "Genome cohort" ;
   dct:description "Whole-genome sequencing of a Dutch cohort, recruited at the café." ;
   dcat:keyword "genomics" ;
+  dcat:theme <http://edamontology.org/topic_0622> ;
+  dct:subject <https://publications.europa.eu/resource/authority/data-theme/TECH> ;
   dct:license <https://creativecommons.org/licenses/by/4.0/> ;
   dct:isPartOf <{BETA}/catalog/k> ;
   dct:publisher [ foaf:name "Beta Institute" ] ;

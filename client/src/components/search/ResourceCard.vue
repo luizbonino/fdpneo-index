@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * One search hit: type, title (to the resource page), where it comes from
- * (FDP with its state, catalog), a description, theme and keyword chips, the
+ * (FDP with its state, catalog), a description, theme, subject and keyword chips, the
  * formats of a dataset's distributions, and the profile's key fields.
  *
  * Every link to the source is checked to be http(s): harvested IRIs are
@@ -23,8 +23,10 @@ const emit = defineEmits<{ filter: [name: string, value: string] }>();
 const { t } = useI18n();
 
 const MAX_KEYWORDS = 6;
+const MAX_SUBJECTS = 4;
 
 const themes = computed(() => props.hit.values.theme ?? []);
+const subjects = computed(() => (props.hit.values.subject ?? []).slice(0, MAX_SUBJECTS));
 const keywords = computed(() => (props.hit.values.keyword ?? []).slice(0, MAX_KEYWORDS));
 const formats = computed(() => {
   const seen = new Map<string, string>();
@@ -87,7 +89,7 @@ const source = computed(() =>
       </router-link>
     </h3>
     <p v-if="hit.description" class="description">{{ hit.description }}</p>
-    <ul v-if="themes.length || keywords.length" class="chips">
+    <ul v-if="themes.length || subjects.length || keywords.length" class="chips">
       <li v-for="theme in themes" :key="theme.value">
         <button
           type="button"
@@ -96,6 +98,16 @@ const source = computed(() =>
           @click="emit('filter', 'theme', theme.value)"
         >
           {{ theme.label }}
+        </button>
+      </li>
+      <li v-for="subject in subjects" :key="subject.value">
+        <button
+          type="button"
+          class="tag subject"
+          :title="subject.value"
+          @click="emit('filter', 'subject', subject.value)"
+        >
+          {{ subject.label }}
         </button>
       </li>
       <li v-for="keyword in keywords" :key="keyword.value">
@@ -228,6 +240,10 @@ h3 a:hover {
 .tag.theme {
   background: var(--tool-accent-tint);
   border-color: transparent;
+}
+.tag.subject {
+  background: var(--fair-surface-2, transparent);
+  border-color: var(--tool-accent-tint);
 }
 .tag:hover {
   border-color: var(--tool-accent);

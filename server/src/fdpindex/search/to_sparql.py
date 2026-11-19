@@ -138,6 +138,10 @@ def _value_condition(writer: _Writer, spec: SearchField, values: list[str], var:
         accepted = {"true", "1"} if "true" in values else set()
         accepted |= {"false", "0"} if "false" in values else set()
         return f"LCASE(STR({var})) IN ({_strings(accepted)})"
+    # The index holds no value outside the field's namespaces.
+    values = [v for v in values if writer.profile.accepts(spec, v)]
+    if not values:
+        return "false"
     table = writer.profile.normalise.get(spec.normalise or "", {})
     forms = set().union(*(raw_forms(v, table) for v in values))
     condition = f"LCASE(STR({var})) IN ({_strings(forms)})"

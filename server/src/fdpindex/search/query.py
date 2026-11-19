@@ -156,6 +156,7 @@ DEFAULT_TYPES: tuple[Kind, ...] = ("fdp", "catalog", "dataset", "series", "servi
 DEFAULT_FACETS = (
     "type",
     "theme",
+    "subject",
     "keyword",
     "publisher",
     "format",

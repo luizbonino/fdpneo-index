@@ -302,7 +302,7 @@ async def test_large_searches_count_facets_on_a_sample(
     sampled = large(2.0)
     dialog = await sampled.facet(SearchParams(q="cancer"), "keyword")
     assert dialog["approximate"] is True
-    assert {b["value"] for b in dialog["buckets"]} == {"cancer", "registry", "lungs"}
+    assert {b["value"] for b in dialog["buckets"]} == {"cancer", "registry", "lungs", "oncology"}
     # The words-free path (search_value alone) agrees with the join.
     light = await exact.search(SearchParams(types=["dataset", "distribution"]))
     joined = await exact.search(

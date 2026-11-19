@@ -590,7 +590,8 @@ Prefixes: `dcat: http://www.w3.org/ns/dcat#`, `dct: http://purl.org/dc/terms/`,
 | `title` | text, per language | `dct:title`, `rdfs:label`, `skos:prefLabel`, `foaf:name` | — | A | first non-empty per language |
 | `description` | text, per language | `dct:description`, `rdfs:comment`, `dct:abstract` | — | C | |
 | `keyword` | literal | `dcat:keyword`, `dct:subject` (literal) | yes | B | trimmed, case kept, lowercase for counting |
-| `theme` | IRI | `dcat:theme`, `dct:subject` (IRI) | yes | label → B | labels via §3.5 |
+| `theme` | IRI | `dcat:theme`, `dct:subject` (IRI) in the EU data-theme namespace | yes | label → B | labels via §3.5; a short, stable list |
+| `subject` | IRI | `dcat:theme`, `dct:subject` (IRI) outside the EU data-theme namespace | yes | label → B | MeSH, Wikidata, EDAM …; labels via §3.5 and the concept resolver (ADR-0006) |
 | `type` | IRI | `rdf:type` (minus LDP/PROV), `dct:type` | yes (`kind` also) | — | |
 | `publisher` | IRI or bnode | `dct:publisher` → value = IRI or, for a blank node, the `foaf:name` | yes | name → B | FDPneo and the Java FDP use `foaf:Agent` + `foaf:name` |
 | `publisherName` | literal | `dct:publisher/foaf:name`, `dct:publisher/schema:name`, `dct:publisher/vcard:fn` | — | B | also used as the label of the publisher IRI |
@@ -621,6 +622,13 @@ Prefixes: `dcat: http://www.w3.org/ns/dcat#`, `dct: http://purl.org/dc/terms/`,
 | `parent` | IRI | `dct:isPartOf` | — | — | hierarchy |
 | `fdp` | entry | the entry the node came from | yes | — | always present |
 | `harvestedAt` | datetime | `harvested_node.harvested_at` | range | — | |
+
+`theme` and `subject` read the same two predicates and are split by
+vocabulary, not by predicate (profile options `namespaces` and `exclude`).
+DCAT-AP 3 and HealthDCAT-AP allow any vocabulary in `dcat:theme`, and some
+providers put EU data themes in `dct:subject`; split by predicate, MeSH terms
+would still mix with the thirteen EU themes. The search-as-SPARQL translation
+drops a filter value outside a field's namespaces, as the index holds none.
 
 DCAT 2 vs 3 and FDP specifics that matter:
 
@@ -653,8 +661,9 @@ The profile is YAML/JSON, validated by a Pydantic model, bundled as
 version: 1
 prefixes: { dcat: "http://www.w3.org/ns/dcat#", ejprd: "https://w3id.org/ejp-rd/vocabulary#", … }
 fields:
-  theme:   { kind: iri, paths: [dcat:theme, dct:subject], facet: true, weight: B, labels: [bundled, harvested],
-             help: { en: "Subject categories the data provider assigned, usually from the EU data-theme vocabulary." } }
+  theme:   { kind: iri, paths: [dcat:theme, dct:subject], namespaces: ["eu-theme:"], facet: main, weight: B,
+             help: { en: "The broad data themes of the EU vocabulary, such as Health or Environment." } }
+  subject: { kind: iri, paths: [dcat:theme, dct:subject], exclude: ["eu-theme:"], facet: main, weight: B }
   …
 extensions:               # administrator additions; same shape as fields
   ejprdResourceType: { kind: iri, paths: [ejprd:resourceType], facet: true, label: { en: "Resource type (EJP RD)" } }

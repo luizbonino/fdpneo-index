@@ -66,6 +66,8 @@ def test_default_profile_is_valid_and_hashed() -> None:
         ("fields:\n  x: {kind: number, paths: [dct:x]}", "needs buckets"),
         ("fields:\n  x: {kind: iri, paths: [dct:x], normalise: missing}", "no normalise map"),
         ("cards:\n  dataset: [nothing]", "unknown field"),
+        ("fields:\n  x: {kind: literal, paths: [dct:x], exclude: ['dct:']}", "namespaces apply"),
+        ("fields:\n  x: {kind: iri, paths: [dct:x], namespaces: ['nope:']}", "unknown prefix"),
     ],
 )
 def test_profile_validation(change: str, message: str) -> None:
@@ -146,6 +148,9 @@ def test_values_are_normalised_and_rolled_up() -> None:
     values = {(v.field, v.value) for v in d1.values}
     assert ("keyword", "cancer") in values  # case folded
     assert ("theme", f"{EU}data-theme/HEAL") in values
+    assert ("subject", "http://id.nlm.nih.gov/mesh/D001943") in values
+    assert ("keyword", "oncology") in values  # a literal subject is a keyword
+    assert not {(f, v) for f, v in values if f in {"theme", "subject"} and v == "oncology"}
     assert ("license", "http://creativecommons.org/licenses/by/4.0/") in values  # from "CC-BY-4.0"
     assert ("accessRights", f"{EU}access-right/PUBLIC") in values  # https folded
     assert ("language", f"{EU}language/ENG") in values  # from "en"
@@ -174,6 +179,30 @@ def test_titles_texts_and_completeness() -> None:
     assert d1.completeness > rows[f"{ALPHA}/dataset/d2"].completeness
     labels = {(label.iri, label.label) for label in rows["_labels"]}
     assert ("https://ror.org/alpha", "Alpha University") in labels
+
+
+def test_themes_and_subjects_are_split_by_vocabulary() -> None:
+    projection = project_entry("beta", nodes(BETA), default_profile())
+    g = next(r for r in projection.resources if r.iri == f"{BETA}/dataset/g")
+    values = {(v.field, v.value) for v in g.values if v.field in {"theme", "subject"}}
+    # Whatever the predicate: EU data themes are themes (https folded), the rest subjects.
+    assert values == {
+        ("theme", f"{EU}data-theme/TECH"),
+        ("subject", "http://edamontology.org/topic_0622"),
+    }
+    # The literal subject of Alpha's d1 is searched once, as a keyword.
+    d1 = _alpha()[f"{ALPHA}/dataset/d1"]
+    assert [t for _, _, t in d1.segments].count("oncology") == 1
+
+
+def test_namespaces_only_for_iri_fields() -> None:
+    profile = default_profile()
+    theme, subject = profile.fields["theme"], profile.fields["subject"]
+    heal = "https://publications.europa.eu/resource/authority/data-theme/HEAL"
+    assert profile.accepts(theme, heal) and not profile.accepts(subject, heal)
+    assert profile.accepts(subject, "http://www.wikidata.org/entity/Q128581")
+    assert not profile.accepts(theme, "http://www.wikidata.org/entity/Q128581")
+    assert profile.accepts(theme, "a name, not an IRI")
 
 
 def test_java_fdp_shapes() -> None:
@@ -269,10 +298,12 @@ async def test_filters_and_disjunctive_facets(search: SearchService) -> None:
     assert {h["title"] for h in result["hits"]} == {"Breast cancer registry", "Lung function tests"}
     themes = {b["value"]: b for b in result["facets"]["theme"]["buckets"]}
     assert themes[heal]["label"] == "Health"
-    assert themes[f"{EU}data-theme/TECH"]["count"] == 1
+    assert themes[f"{EU}data-theme/TECH"]["count"] == 2  # d2, and g via dct:subject
     # The theme facet ignores its own filter; others count within it.
     keywords = {b["value"]: b["count"] for b in result["facets"]["keyword"]["buckets"]}
-    assert keywords == {"cancer": 2, "registry": 1, "lungs": 1}
+    assert keywords == {"cancer": 2, "registry": 1, "lungs": 1, "oncology": 1}
+    subjects = {b["value"]: b["count"] for b in result["facets"]["subject"]["buckets"]}
+    assert subjects == {"http://id.nlm.nih.gov/mesh/D001943": 1}
     both = await search.search(
         SearchParams(filters={"theme": [heal], "accessRights": [f"{EU}access-right/RESTRICTED"]})
     )
@@ -512,6 +543,15 @@ def _equivalents() -> list[tuple[str, dict[str, Any]]]:
             },
         ),
         ("agent iri", {"filters": {"publisher": ["https://ror.org/alpha"]}}),
+        ("theme from dct:subject", {"filters": {"theme": [f"{EU}data-theme/TECH"]}}),
+        (
+            "subject from dcat:theme",
+            {"filters": {"subject": ["http://edamontology.org/topic_0622"]}},
+        ),
+        (
+            "negated subject",
+            {"types": ["dataset"], "filters": {"subject": ["!http://id.nlm.nih.gov/mesh/D001943"]}},
+        ),
         ("agent name", {"filters": {"publisher": ["Beta Institute"]}}),
         ("number bucket", {"filters": {"records": ["1000..10000"]}}),
         ("language", {"filters": {"language": [f"{EU}language/ENG"]}}),

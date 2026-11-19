@@ -46,6 +46,10 @@ class SearchField(BaseModel):
     weight: Literal["A", "B", "C", "D"] | None = None
     rollup: bool = False  # distributions' values are added to their dataset
     literals: bool = True  # for kind iri: keep literal values too
+    # For kinds iri and agent: keep only IRIs in these namespaces, or drop those in
+    # ``exclude`` (full IRIs or CURIEs; http and https forms are treated alike).
+    namespaces: list[str] = PydanticField(default_factory=lambda: [])
+    exclude: list[str] = PydanticField(default_factory=lambda: [])
     normalise: str | None = None
     buckets: list[float] | None = None  # for kind number
     presence: bool = False  # for kind boolean: present means true
@@ -80,6 +84,10 @@ class Profile(BaseModel):
                 raise ValueError(f"field '{name}': only title and description are text fields")
             if spec.normalise is not None and spec.normalise not in self.normalise:
                 raise ValueError(f"field '{name}': no normalise map '{spec.normalise}'")
+            if (spec.namespaces or spec.exclude) and spec.kind not in {"iri", "agent"}:
+                raise ValueError(f"field '{name}': namespaces apply to iri and agent fields")
+            for namespace in (*spec.namespaces, *spec.exclude):
+                self.expand(namespace)
             if spec.kind == "number" and not spec.buckets:
                 raise ValueError(f"field '{name}': a number field needs buckets")
             for path in spec.paths:
@@ -113,6 +121,20 @@ class Profile(BaseModel):
             return (self.expand(path),)
         return tuple(self.expand(step) for step in path.split("/"))
 
+    def accepts(self, spec: SearchField, iri: str) -> bool:
+        """Whether an IRI value passes the field's ``namespaces`` and ``exclude``.
+
+        Values that are not IRIs (an agent's name, a literal) always pass.
+        """
+        if not iri.startswith(("http://", "https://", "urn:")):
+            return True
+        form = _scheme_free(iri)
+        if spec.namespaces and not any(
+            form.startswith(_scheme_free(self.expand(n))) for n in spec.namespaces
+        ):
+            return False
+        return not any(form.startswith(_scheme_free(self.expand(n))) for n in spec.exclude)
+
     @property
     def facets(self) -> list[str]:
         return [name for name, spec in self.fields.items() if spec.facet is not None]
@@ -120,6 +142,10 @@ class Profile(BaseModel):
     @property
     def hash(self) -> str:
         return profile_hash(self)
+
+
+def _scheme_free(iri: str) -> str:
+    return iri.removeprefix("http://").removeprefix("https://")
 
 
 def profile_hash(profile: Profile) -> str:

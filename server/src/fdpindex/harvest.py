@@ -8,6 +8,13 @@ skipped, as in the reference.
 
 Additions (ADR-0002): only IRIs on the client URL's origin are followed,
 fragments are dropped, and at most ``max_nodes`` nodes are visited.
+
+A node that answers 404 or 410 is gone; any other failure is temporary
+(TASKS 1.14: the stored version is kept).
+
+Every node is asked for conditionally when an earlier harvest stored its
+``ETag`` or ``Last-Modified`` (TASKS 1.16): a ``304`` reuses the stored
+triples, and the walk continues through the children they list.
 """
 
 from __future__ import annotations
@@ -30,6 +37,8 @@ from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, FDP_LEGACY, FDP_O, LDP, R3D, RdfParseError, parse_rdf
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from fdpindex.outbound import OutboundClient
 
 log = structlog.get_logger(__name__)
@@ -49,14 +58,38 @@ class HarvestedGraph:
     node_iri: str
     ntriples: str
     content_hash: str
+    etag: str | None = None
+    last_modified: str | None = None
+    not_modified: bool = False
+
+
+@dataclass(frozen=True)
+class KnownNode:
+    """A node as an earlier harvest stored it."""
+
+    ntriples: str
+    content_hash: str
+    etag: str | None
+    last_modified: str | None
 
 
 @dataclass
 class HarvestResult:
     nodes: list[HarvestedGraph] = field(default_factory=lambda: [])
     failed: dict[str, str] = field(default_factory=lambda: {})
+    # Listed, but answered 404 or 410: the FDP says the node does not exist.
+    gone: set[str] = field(default_factory=lambda: set())
     skipped_off_origin: int = 0
     limit_reached: bool = False
+
+    @property
+    def complete(self) -> bool:
+        """Every node the walk found was fetched (or confirmed unchanged)."""
+        return not self.failed and not self.limit_reached
+
+    @property
+    def not_modified(self) -> int:
+        return sum(1 for node in self.nodes if node.not_modified)
 
 
 def _origin(url: str) -> tuple[str, str, int | None]:
@@ -117,6 +150,17 @@ def _parse_and_serialise(
     return serialise(graph, node), children_of(graph, node)
 
 
+def _stored_children(ntriples: str, node: str) -> list[str]:
+    graph = Graph()
+    graph.parse(data=ntriples, format="nt")
+    return children_of(graph, node)
+
+
+def _header(response_headers: dict[str, list[str]], name: str) -> str | None:
+    value = (response_headers.get(name) or [None])[0]
+    return value[:512] if value else None
+
+
 async def harvest(
     outbound: OutboundClient,
     client_url: str,
@@ -125,6 +169,7 @@ async def harvest(
     max_nodes: int,
     max_bytes: int = 50 * 1024 * 1024,
     max_seconds: float = 900.0,
+    known: Mapping[str, KnownNode] | None = None,
 ) -> HarvestResult:
     """Walk an FDP's metadata tree.
 
@@ -148,29 +193,55 @@ async def harvest(
             result.limit_reached = True
             break
         node = queue.popleft()
+        stored = (known or {}).get(node)
+        headers = {"Accept": ACCEPT}
+        if stored is not None and stored.etag:
+            headers["If-None-Match"] = stored.etag
+        if stored is not None and stored.last_modified:
+            headers["If-Modified-Since"] = stored.last_modified
         try:
             response = await outbound.request(
                 "GET",
                 node,
                 timeout_seconds=min(timeout_seconds, remaining),
-                headers={"Accept": ACCEPT},
+                headers=headers,
             )
         except OutboundError as err:
             result.failed[node] = err.message
             continue
-        if not 200 <= response.status < 300:
+        if response.status == 304 and stored is not None:
+            try:
+                children = await asyncio.to_thread(_stored_children, stored.ntriples, node)
+            except Exception as err:  # stored triples written by an earlier harvest
+                result.failed[node] = f"cannot reuse the stored version: {err}"
+                continue
+            harvested = HarvestedGraph(
+                node_iri=node,
+                ntriples=stored.ntriples,
+                content_hash=stored.content_hash,
+                etag=_header(response.headers, "etag") or stored.etag,
+                last_modified=_header(response.headers, "last-modified") or stored.last_modified,
+                not_modified=True,
+            )
+        elif response.status in (404, 410):
+            result.gone.add(node)
+            continue
+        elif not 200 <= response.status < 300:
             result.failed[node] = f"HTTP {response.status}"
             continue
-        if response.truncated:
+        elif response.truncated:
             result.failed[node] = "response too large"
             continue
-        try:
-            harvested, children = await asyncio.to_thread(
-                _parse_and_serialise, response.body, response.content_type, node
-            )
-        except RdfParseError as err:
-            result.failed[node] = f"cannot parse: {err}"
-            continue
+        else:
+            try:
+                harvested, children = await asyncio.to_thread(
+                    _parse_and_serialise, response.body, response.content_type, node
+                )
+            except RdfParseError as err:
+                result.failed[node] = f"cannot parse: {err}"
+                continue
+            harvested.etag = _header(response.headers, "etag")
+            harvested.last_modified = _header(response.headers, "last-modified")
         total_bytes += len(harvested.ntriples)
         result.nodes.append(harvested)
         for child in children:
@@ -187,6 +258,7 @@ async def harvest(
         client_url=client_url,
         nodes=len(result.nodes),
         failed=len(result.failed),
+        not_modified=result.not_modified,
         skipped_off_origin=result.skipped_off_origin,
         limit_reached=result.limit_reached,
     )

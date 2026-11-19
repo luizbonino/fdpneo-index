@@ -157,7 +157,10 @@ async def services(network: FakeNetwork, config: Settings) -> AsyncIterator[Serv
     # so concurrent jobs would interleave transactions (PostgreSQL has a pool).
     jobs = JobRunner(1)
     settings = SettingsService(factory, auto_permit_default=config.auto_permit)
-    webhooks = WebhookService(factory, settings, outbound, jobs, body_limit=10_000)
+    # Retries without waiting: three attempts in all.
+    webhooks = WebhookService(
+        factory, settings, outbound, jobs, body_limit=10_000, retry_delays=(0.0, 0.0)
+    )
     index = IndexService(
         factory, settings, outbound, jobs, webhooks, body_limit=10_000, harvest_max_nodes=50
     )

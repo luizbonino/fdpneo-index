@@ -237,10 +237,19 @@ async def test_harvest_stops_at_the_node_limit(network: FakeNetwork) -> None:
 
 async def test_harvest_records_failed_nodes(network: FakeNetwork) -> None:
     del network.pages[f"{FDP}/dataset/d1"]
+    network.failing.add(f"{FDP}/catalog/c1")
     result = await harvest(
         _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
     )
-    assert result.failed == {f"{FDP}/dataset/d1": "HTTP 404"}
+    # A 404 is the FDP saying the node does not exist; a refused connection is a failure.
+    assert set(result.failed) == {f"{FDP}/catalog/c1"}
+    assert not result.complete
+    network.failing.clear()
+    result = await harvest(
+        _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
+    )
+    assert result.gone == {f"{FDP}/dataset/d1"}
+    assert result.complete
 
 
 async def test_connections_are_pinned_to_the_vetted_address() -> None:

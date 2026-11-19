@@ -15,24 +15,26 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-60 of 93 tasks are done and 5 are in progress (19 November 2026). "Done"
+64 of 111 tasks are done and 5 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
 | Phase | What it delivers | Done | Partly | Open | Status | Still open |
 |---|---|---|---|---|---|---|
 | 0 Foundations | Repository, ADRs 1–4, tooling, CI | 8/8 | – | – | ✅ Done | – |
-| 1 Server: port of the reference index | Ping intake, retrieval, harvest, entries and admin API, webhooks, auth, outbound safety | 13/13 | – | – | ✅ Done | – |
+| 1 Server: port of the reference index | Ping intake, retrieval, harvest, entries and admin API, webhooks, auth, outbound safety | 17/17 | – | – | ✅ Done | – |
 | 2 Admin client | Directory, entry pages, administration, accessibility, tests | 5/5 | – | – | ✅ Done | – |
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 2/5 | 2 | 1 | 🟡 Mostly done | Keycloak Compose profile (3.2), backup docs (3.3), release process (3.5) |
-| 4 Active liveness checks | Scheduled checks, health events, settings, UI | 5/6 | – | 1 | 🟡 Mostly done | Policy for long-unreachable entries (4.6) |
+| 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 5/9 | – | 4 | 🟡 Mostly done | Long-unreachable entries and expiry (4.6), per-FDP options (4.7), verified approval (4.8), self-service registration (4.9) |
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 0/4 | – | 4 | ⬜ Not started (decided 19 Nov) | All four |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, polish | 0/9 | 1 | 8 | 🔹 Started | All but 8.9 (only its keyboard and screen-reader pass is left) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | – | 8 | 🔹 Started | All but 9.9 (done with 6.15) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
-| **Total** | | **60/93** | **5** | **28** | | |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
+| 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
+| **Total** | | **64/111** | **5** | **42** | | |
 
 ## Phase 0 — Foundations
 
@@ -60,6 +62,10 @@ task are listed in the last column.
 - [x] 1.11 Authentication: OIDC bearer tokens with an admin role; static admin tokens for scripts; anonymous read of accepted entries
 - [x] 1.12 Outbound safety: deny list, no loopback / private / link-local targets unless allowed, redirects re-checked, response size cap
 - [x] 1.13 OpenAPI snapshot and contract tests; integration tests against PostgreSQL and a fake FDP
+- [x] 1.14 A harvest keeps what it could not fetch: a node that fails, or that a limit leaves unvisited, keeps its last version and is flagged stale; only a complete harvest deletes nodes the FDP no longer lists (FAIR Discovery design §2.3) — *done: 404 and 410 mean gone and are removed; any other failure, or a node a limit left unvisited, keeps its stored version with `stale_since` and `fetch_error` (migration 0005)*
+- [x] 1.15 Harvest runs recorded (trigger, start and end, nodes fetched, added, changed, removed, failed, stale, limit reached, outcome) and shown to administrators on the entry page — *done: `Harvest` events, linked to the retrieval or check that caused them, with counters and a one-line summary in the entry's history; resumed after a restart*
+- [x] 1.16 Conditional requests for every harvested node: ETag and Last-Modified stored per node; a 304 reuses the stored version — *done*
+- [x] 1.17 Webhook deliveries retried with backoff, and resumed after a restart — *done: 1, 5, 30 and 120 minutes; each attempt in the delivery's payload*
 
 ## Phase 2 — Admin client (UI/UX)
 
@@ -87,7 +93,10 @@ registered FDPs itself. See [ADR-0004](docs/adr/0004-active-liveness-checks.md).
 - [x] 4.3 `HealthCheck` events; consecutive-failure threshold before an entry becomes Unreachable; webhooks only on state transitions
 - [x] 4.4 Settings: enabled, interval, failure threshold, permits checked, re-harvest when the metadata changed
 - [x] 4.5 UI: last check, liveness history, "check now"
-- [ ] 4.6 Optional policy for entries unreachable for a long time (notify, or hide from the public list)
+- [ ] 4.6 Optional policy for entries unreachable for a long time (notify, or hide from the public list); the FAIR Discovery design's `EXPIRED` state after 90 days without contact, revived by a ping
+- [ ] 4.7 Per-FDP options: directory only (registered and checked, not harvested), and its own harvest interval
+- [ ] 4.8 A "verified" approval policy next to automatic and manual approval: approve automatically after a successful check of the FDP's root
+- [ ] 4.9 Self-service registration: the Register page submits an FDP and shows the result of an immediate check; administrators can add an FDP through the API
 
 ## Phase 5 — Separation from the FAIR Data Point
 
@@ -165,7 +174,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 9.3 Extension facets from the profile (`extensions`), `f.<field>` parameters, re-projection on `PUT`, facet labels in the client and in the SPARQL builder's picker
 - [ ] 9.4 Keyset `cursor` paging for non-relevance sorts
 - [ ] 9.5 JSON-LD / Turtle search results as a `dcat:Catalog` of hits with `Link` paging; `format=` and `Accept` negotiation
-- [ ] 9.6 `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test
+- [ ] 9.6 (see 11.5) `GET /index/catalog`: the index as a DCAT catalog of every accepted FDP's catalogs and services; validated with the DCAT-AP SHACL shapes in a test
 - [ ] 9.7 `GET /index/search/opensearch.xml`; `totalResults`/`startIndex`/`itemsPerPage` in responses; `<link rel="search">` in the client's `index.html`
 - [ ] 9.8 Bounding-box filter: WKT/GeoJSON parsing into the four columns, `bbox=` parameter, a simple map-free "within these coordinates" input (a map widget only if a deployment asks)
 - [x] 9.9 Approximate facet counts above a match threshold; facet response cache for anonymous requests — *done with 6.15: sampled counts above 50 000 matches, marked `approximate`; an in-process facet cache*
@@ -176,3 +185,25 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 10.2 "Did you mean" from trigram similarity on zero-hit queries
 - [ ] 10.3 Saved queries for administrators and featured searches on the search page
 - [ ] 10.4 Lezer grammar for SPARQL (structural autocomplete, bracket-aware folding) replacing the stream mode, if the editor's autocomplete proves too shallow
+
+## Phases 11–12 — FAIR Discovery: conformance, republication, other sources
+
+What FDPneo ADR-0021 and its design (`docs/architecture/discovery.md` in
+fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
+
+### Phase 11 — Conformance and republication
+
+- [ ] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile
+- [ ] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types
+- [ ] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page)
+- [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default
+- [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)
+- [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
+- [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches
+- [ ] 11.8 Configurable language fallback order for titles, descriptions and labels
+
+### Phase 12 — Sources beyond FDPs
+
+- [ ] 12.1 A connector protocol (probe, enumerate, fetch) with the FDP tree walk as its first implementation; traversal declared as data (navigation SHACL) instead of code
+- [ ] 12.2 DCAT-AP sources: a dereferenceable endpoint or a dump file
+- [ ] 12.3 CKAN and Molgenis bridges

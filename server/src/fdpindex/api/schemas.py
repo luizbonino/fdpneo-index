@@ -249,6 +249,31 @@ class ServiceInfo(_Api):
     search: dict[str, Any] | None = None
 
 
+def _harvest_outcome(report: dict[str, Any]) -> str | None:
+    outcome = report.get("outcome")
+    if outcome is None:
+        return None
+    if outcome == "skipped":
+        return "Skipped: the entry is not accepted"
+    if outcome == "failed":
+        failed = report.get("failed") or {}
+        first = next(iter(failed.values()), "nothing could be fetched")
+        return f"Failed: {first}; the stored metadata is kept"
+    nodes = report.get("nodes", 0)
+    parts = [
+        f"{report[key]} {label}"
+        for key, label in (("added", "added"), ("changed", "changed"), ("removed", "removed"))
+        if report.get(key)
+    ]
+    text = f"{nodes} nodes" + (f": {', '.join(parts)}" if parts else ", unchanged")
+    if outcome == "partial":
+        reason = (
+            "a limit was reached" if report.get("limitReached") else "some could not be fetched"
+        )
+        text += f"; {report.get('stale', 0)} kept from before ({reason})"
+    return text
+
+
 def event_outcome(event: Event) -> str | None:
     """A one-line summary for timelines (addition)."""
     payload = event.payload or {}
@@ -265,9 +290,17 @@ def event_outcome(event: Event) -> str | None:
             trigger = payload.get("webhookTrigger") or {}
             exchange = trigger.get("exchange") or {}
             code = (exchange.get("response") or {}).get("code")
-            if code is not None:
-                return f"{trigger.get('matchedEvent')} → HTTP {code}"
-            return exchange.get("error") or trigger.get("matchedEvent")
+            summary = (
+                f"{trigger.get('matchedEvent')} → HTTP {code}"
+                if code is not None
+                else exchange.get("error") or trigger.get("matchedEvent")
+            )
+            attempts = len(trigger.get("attempts") or [])
+            if trigger.get("nextAttemptAt"):
+                return f"{summary}; attempt {attempts} failed, will retry"
+            return f"{summary} (attempt {attempts})" if attempts > 1 else summary
+        case "Harvest":
+            return _harvest_outcome(payload.get("harvest") or {})
         case "AdminTrigger":
             # Not the administrator's name: outcomes are shown to anonymous callers too.
             return "Triggered by an administrator"

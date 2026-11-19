@@ -120,7 +120,9 @@ def test_entry_detail_info_and_all(api: Api) -> None:
     detail = api.client.get(f"/index/entries/{uuid}").json()
     assert detail["currentMetadata"]["repositoryUri"] == FDP
     assert detail["currentMetadata"]["metadata"]["publisherName"] == "Example University"
-    assert {e["type"] for e in detail["events"]} == {"IncomingPing", "MetadataRetrieval"}
+    assert {e["type"] for e in detail["events"]} == {"IncomingPing", "MetadataRetrieval", "Harvest"}
+    harvest = next(e for e in detail["events"] if e["type"] == "Harvest")
+    assert harvest["outcome"] == "3 nodes: 3 added"
     assert detail["harvest"]["nodes"] == 3
     assert api.client.get("/index/entries/info").json() == {
         "entriesCount": {
@@ -135,7 +137,7 @@ def test_entry_detail_info_and_all(api: Api) -> None:
     assert [e["uuid"] for e in api.client.get("/index/entries/all").json()] == [uuid]
     assert api.client.get(f"/index/entries/{uuid}/events").status_code == 401
     events = api.client.get(f"/index/entries/{uuid}/events", headers=ADMIN).json()
-    assert events["totalElements"] == 2
+    assert events["totalElements"] == 3  # the ping, the retrieval and the harvest
     assert "payload" in events["content"][0]
 
 

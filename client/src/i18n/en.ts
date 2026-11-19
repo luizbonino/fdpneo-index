@@ -128,6 +128,7 @@ export const en = {
     WebhookTrigger: "Webhook delivery",
     WebhookPing: "Webhook test",
     HealthCheck: "Scheduled check",
+    Harvest: "Harvest",
     pending: "in progress",
     details: "Details",
     request: "Request",

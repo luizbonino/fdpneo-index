@@ -67,7 +67,7 @@ async def test_first_ping_registers_retrieves_and_harvests(services: Services) -
     assert entry.last_retrieval_at is not None
     assert await _count(services, HarvestedNode, HarvestedNode.entry_uuid == entry.uuid) == 3
     types = {e.type for e in (await services.index.events(entry.uuid, limit=50))[0]}
-    assert types == {EventType.INCOMING_PING, EventType.METADATA_RETRIEVAL}
+    assert types == {EventType.INCOMING_PING, EventType.METADATA_RETRIEVAL, EventType.HARVEST}
     threshold = await services.index.valid_threshold()
     assert api_state(entry, threshold) == "ACTIVE"
 
@@ -194,6 +194,70 @@ async def test_failed_harvest_keeps_previous_data(services: Services, network: F
     network.failing.add(FDP)
     await services.index.harvest_entry(entry.uuid)
     assert await _count(services, HarvestedNode) == 1  # nothing reached: data kept
+
+
+async def _harvest_report(services: Services, harvest_id: Any) -> dict[str, Any]:
+    async with services.session_factory() as session:
+        event = await session.get(Event, harvest_id)
+        assert event is not None and event.finished_at is not None
+        return dict(event.payload["harvest"])
+
+
+async def test_a_temporary_failure_keeps_the_stored_node(
+    services: Services, network: FakeNetwork
+) -> None:
+    await ping(services)
+    entry = await _entry(services)
+    dataset = f"{FDP}/dataset/d1"
+    network.failing.add(dataset)
+    report = await _harvest_report(services, await services.index.harvest_entry(entry.uuid))
+    assert report["outcome"] == "partial"
+    assert (report["nodes"], report["stale"], report["removed"]) == (2, 1, 0)
+    assert await _count(services, HarvestedNode) == 3
+    async with services.session_factory() as session:
+        node = await session.scalar(select(HarvestedNode).where(HarvestedNode.node_iri == dataset))
+    assert node is not None and node.stale_since is not None
+    assert "refused" in (node.fetch_error or "")
+    # Fetched again: no longer stale.
+    network.failing.clear()
+    report = await _harvest_report(services, await services.index.harvest_entry(entry.uuid))
+    assert report["outcome"] == "complete"
+    async with services.session_factory() as session:
+        node = await session.scalar(select(HarvestedNode).where(HarvestedNode.node_iri == dataset))
+    assert node is not None and node.stale_since is None and node.fetch_error is None
+
+
+async def test_nodes_are_asked_for_conditionally(services: Services, network: FakeNetwork) -> None:
+    for number, url in enumerate((FDP, f"{FDP}/catalog/c1", f"{FDP}/dataset/d1")):
+        network.etags[url] = f'"v{number}"'
+    await ping(services)
+    entry = await _entry(services)
+    network.requests.clear()
+    report = await _harvest_report(services, await services.index.harvest_entry(entry.uuid))
+    assert (report["outcome"], report["nodes"], report["notModified"]) == ("complete", 3, 3)
+    assert (report["added"], report["changed"], report["removed"]) == (0, 0, 0)
+    sent = {str(r.url): r.headers.get("If-None-Match") for r in network.requests}
+    assert sent[f"{FDP}/dataset/d1"] == '"v2"'
+    assert await _count(services, HarvestedNode) == 3
+
+
+async def test_an_unfinished_harvest_resumes_at_start_up(
+    services: Services, network: FakeNetwork
+) -> None:
+    await ping(services)
+    entry = await _entry(services)
+    async with services.session_factory() as session, session.begin():
+        event = Event(
+            uuid=uuid4(),
+            type=EventType.HARVEST,
+            related_to=entry.uuid,
+            payload={"harvest": {}},
+            created_at=utcnow(),
+        )
+        session.add(event)
+    assert await services.index.resume_unfinished() == 1
+    await services.jobs.drain()
+    assert (await _harvest_report(services, event.uuid))["outcome"] == "complete"
 
 
 # --- permits, triggers, deletion --------------------------------------------------------------
@@ -393,6 +457,42 @@ async def test_webhook_ping_goes_to_that_webhook(services: Services, network: Fa
     await services.jobs.drain()
     assert [json.loads(c.content)["event"] for c in network.webhook_calls] == ["WebhookPing"]
     assert json.loads(network.webhook_calls[0].content)["clientUrl"] is None
+
+
+async def test_a_failed_webhook_delivery_is_retried(
+    services: Services, network: FakeNetwork
+) -> None:
+    url = "https://hooks.example.net/down"
+    webhook = await services.webhooks.save_webhook(
+        None,
+        {
+            "payload_url": url,
+            "secret": "s3cret-value",
+            "all_events": False,
+            "events": [],
+            "all_entries": True,
+            "entries": [],
+            "enabled": True,
+        },
+    )
+    network.failing.add(url)
+    await services.webhooks.ping(webhook.uuid, actor="admin", remote_addr=None)
+    await services.jobs.drain()
+    async with services.session_factory() as session:
+        delivery = await session.scalar(
+            select(Event).where(Event.type == EventType.WEBHOOK_TRIGGER)
+        )
+    assert delivery is not None and delivery.finished_at is not None
+    trigger = delivery.payload["webhookTrigger"]
+    assert len(trigger["attempts"]) == 3  # the first try and two retries
+    assert trigger["delivered"] is False and trigger["nextAttemptAt"] is None
+    assert sum(1 for r in network.requests if str(r.url) == url) == 3
+    # A delivery that succeeds is tried once.
+    network.failing.clear()
+    network.requests.clear()
+    await services.webhooks.ping(webhook.uuid, actor="admin", remote_addr=None)
+    await services.jobs.drain()
+    assert sum(1 for r in network.requests if str(r.url) == url) == 1
 
 
 async def test_harvest_reports_what_changed_by_node(

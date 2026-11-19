@@ -19,6 +19,10 @@ Matching and delivery follow the reference's ``WebhookService``:
 Differences: a webhook ping is delivered to the webhook it names only (the
 reference sends it to every webhook subscribed to ``WebhookPing``), and the
 reference has no management API; this one does (secrets are write-only).
+A delivery that does not get a 2xx answer is tried again after 1, 5, 30 and
+120 minutes (the reference tries once). Each attempt is listed in the
+delivery's payload; the delivery stays unfinished until it succeeds or the
+last attempt fails, so a restart resumes the wait (TASKS 1.17).
 """
 
 from __future__ import annotations
@@ -26,7 +30,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -40,6 +44,8 @@ from fdpindex.models import EntryState, Event, EventType, IndexEntry, Webhook, W
 from fdpindex.outbound import OutboundError
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from fdpindex.jobs import JobRunner
@@ -47,6 +53,9 @@ if TYPE_CHECKING:
     from fdpindex.settings import SettingsService
 
 log = structlog.get_logger(__name__)
+
+# Seconds to wait before each retry; five attempts in all.
+RETRY_DELAYS: tuple[float, ...] = (60.0, 300.0, 1800.0, 7200.0)
 
 SECRET_PLACEHOLDER = "*** HIDDEN ***"  # noqa: S105 - the mask, not a secret
 
@@ -101,6 +110,16 @@ def _instant(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
+def _seconds_until(moment: object) -> float:
+    if not isinstance(moment, str) or not moment:
+        return 0.0
+    try:
+        due = datetime.fromisoformat(moment.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    return (due - utcnow()).total_seconds()
+
+
 def build_delivery(
     *, webhook_event: str, event_uuid: UUID, client_url: str | None, secret: str, moment: datetime
 ) -> tuple[str, dict[str, str]]:
@@ -129,12 +148,14 @@ class WebhookService:
         jobs: JobRunner,
         *,
         body_limit: int,
+        retry_delays: Sequence[float] = RETRY_DELAYS,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
         self._outbound = outbound
         self._jobs = jobs
         self._body_limit = body_limit
+        self._retry_delays = tuple(retry_delays)
 
     # --- triggering --------------------------------------------------------
 
@@ -192,6 +213,13 @@ class WebhookService:
             if delivery is None or delivery.finished_at is not None:
                 return
             trigger = dict(delivery.payload.get("webhookTrigger") or {})
+            waiting = _seconds_until(trigger.get("nextAttemptAt"))
+            if waiting > 0:
+                # Resumed after a restart before the retry was due.
+                self._jobs.submit_after(
+                    f"webhook-delivery:{delivery_id}", waiting, lambda: self.deliver(delivery_id)
+                )
+                return
             webhook = await session.get(Webhook, UUID(str(trigger.get("webhookUuid"))))
             entry = (
                 await session.get(IndexEntry, delivery.related_to) if delivery.related_to else None
@@ -231,17 +259,43 @@ class WebhookService:
             error=error,
             limit=self._body_limit,
         )
+        now = utcnow()
+        delivered = response is not None and 200 <= response.status < 300
+        attempts = [
+            *list(trigger.get("attempts") or []),
+            {
+                "at": _instant(now),
+                "status": response.status if response is not None else None,
+                "error": error.message if error is not None else None,
+            },
+        ]
+        trigger["attempts"] = attempts
+        retry_in = (
+            self._retry_delays[len(attempts) - 1]
+            if not delivered and len(attempts) <= len(self._retry_delays)
+            else None
+        )
+        trigger["nextAttemptAt"] = (
+            _instant(now + timedelta(seconds=retry_in)) if retry_in is not None else None
+        )
+        trigger["delivered"] = delivered
         async with self._session_factory() as session, session.begin():
             delivery = await session.get(Event, delivery_id)
             if delivery is not None:
                 delivery.payload = {"webhookTrigger": trigger}
-                delivery.finished_at = utcnow()
+                delivery.finished_at = None if retry_in is not None else now
         log.info(
-            "webhook_delivered",
+            "webhook_delivered" if delivered else "webhook_delivery_failed",
             delivery=str(delivery_id),
+            attempt=len(attempts),
             status=response.status if response is not None else None,
             error=error.message if error is not None else None,
+            retry_in=retry_in,
         )
+        if retry_in is not None:
+            self._jobs.submit_after(
+                f"webhook-delivery:{delivery_id}", retry_in, lambda: self.deliver(delivery_id)
+            )
 
     async def ping(self, webhook_id: UUID, *, actor: str, remote_addr: str | None) -> UUID:
         """Record a ``WebhookPing`` and deliver it to that webhook (404 if it does not exist)."""

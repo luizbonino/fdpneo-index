@@ -52,6 +52,7 @@ class EventType(enum.StrEnum):
     INCOMING_PING = "IncomingPing"
     WEBHOOK_PING = "WebhookPing"
     HEALTH_CHECK = "HealthCheck"  # addition: scheduled liveness check (ADR-0004)
+    HARVEST = "Harvest"  # addition: a harvest of an entry's metadata tree (TASKS 1.15)
 
 
 class WebhookEvent(enum.StrEnum):
@@ -177,6 +178,13 @@ class HarvestedNode(Base):
     ntriples: Mapped[str] = mapped_column(Text, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     harvested_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+    # Validators for conditional requests of this node (TASKS 1.16).
+    http_etag: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    http_last_modified: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Set when the last harvest could not fetch or reach this node: the stored
+    # version is kept (TASKS 1.14); cleared when a harvest fetches it again.
+    stale_since: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    fetch_error: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("entry_uuid", "node_iri", name="uq_harvested_node_entry_iri"),

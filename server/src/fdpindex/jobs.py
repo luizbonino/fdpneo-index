@@ -33,6 +33,22 @@ class JobRunner:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
+    def submit_after(
+        self, name: str, delay_seconds: float, job: Callable[[], Awaitable[None]]
+    ) -> None:
+        """Run ``job`` after a delay; the wait does not hold a concurrency slot."""
+        if self._closed:
+            log.warning("job_dropped_after_shutdown", job=name)
+            return
+
+        async def later() -> None:
+            await asyncio.sleep(max(0.0, delay_seconds))
+            await self._run(name, job)
+
+        task = asyncio.create_task(later(), name=name)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
     async def _run(self, name: str, job: Callable[[], Awaitable[None]]) -> None:
         async with self._semaphore:
             try:

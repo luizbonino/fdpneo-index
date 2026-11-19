@@ -34,7 +34,7 @@ from fdpindex import exchange
 from fdpindex.db import utcnow
 from fdpindex.durations import format_duration
 from fdpindex.errors import NotFound, PingDenied, RateLimited
-from fdpindex.harvest import harvest
+from fdpindex.harvest import KnownNode, harvest
 from fdpindex.models import EntryPermit, EntryState, Event, EventType, HarvestedNode, IndexEntry
 from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
@@ -51,6 +51,9 @@ if TYPE_CHECKING:
     from fdpindex.webhooks import WebhookService
 
 log = structlog.get_logger(__name__)
+
+# Failed nodes listed in a Harvest event (the count covers all of them).
+MAX_REPORTED_FAILURES = 20
 
 EVENTS_IN_DETAIL = 10
 
@@ -165,7 +168,7 @@ class IndexService:
         self._harvest_max_seconds = harvest_max_seconds
         self._harvest_node_timeout = harvest_node_timeout
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
-        self._harvest_again: set[UUID] = set()
+        self._harvest_waiting: dict[UUID, set[UUID]] = {}
         self._listeners: list[Callable[[IndexChange], None]] = []
 
     def add_listener(self, listener: Callable[[IndexChange], None]) -> None:
@@ -497,7 +500,7 @@ class IndexService:
                     and entry.permit is EntryPermit.ACCEPTED
                     and wants_harvest
                 ):
-                    harvest_entry = entry.uuid
+                    harvest_entry = self._new_harvest(session, entry.uuid, event.uuid).uuid
             key = "healthCheck" if scheduled else "metadataRetrieval"
             event.payload = {key: payload}
             event.finished_at = now
@@ -588,29 +591,71 @@ class IndexService:
 
     # --- harvest -------------------------------------------------------------------
 
-    def schedule_harvest(self, entry_id: UUID) -> None:
-        self._jobs.submit(f"harvest:{entry_id}", lambda: self.harvest_entry(entry_id))
+    def schedule_harvest(self, harvest_id: UUID) -> None:
+        self._jobs.submit(f"harvest:{harvest_id}", lambda: self.run_harvest(harvest_id))
 
-    async def harvest_entry(self, entry_id: UUID) -> None:
+    async def harvest_entry(self, entry_id: UUID, *, triggered_by: UUID | None = None) -> UUID:
+        """Record a ``Harvest`` event for ``entry_id`` and run it now; return the event."""
+        async with self._session_factory() as session, session.begin():
+            event = self._new_harvest(session, entry_id, triggered_by)
+        await self.run_harvest(event.uuid)
+        return event.uuid
+
+    @staticmethod
+    def _new_harvest(session: AsyncSession, entry_id: UUID, triggered_by: UUID | None) -> Event:
+        event = Event(
+            uuid=uuid4(),
+            type=EventType.HARVEST,
+            triggered_by=triggered_by,
+            related_to=entry_id,
+            payload={"harvest": {}},
+            created_at=utcnow(),
+        )
+        session.add(event)
+        return event
+
+    async def run_harvest(self, harvest_id: UUID) -> None:
+        """Run a recorded ``Harvest``; one harvest per entry at a time.
+
+        A harvest asked for while another one of the same entry runs is done by
+        the running one's next pass, and both events get that pass's result.
+        """
+        async with self._session_factory() as session:
+            event = await session.get(Event, harvest_id)
+            if event is None or event.finished_at is not None or event.related_to is None:
+                return
+            entry_id = event.related_to
+        self._harvest_waiting.setdefault(entry_id, set()).add(harvest_id)
         lock = self._harvest_locks.setdefault(entry_id, asyncio.Lock())
         if lock.locked():
-            # One harvest per entry at a time; run once more when the current one ends.
-            self._harvest_again.add(entry_id)
             return
         async with lock:
-            while True:
-                self._harvest_again.discard(entry_id)
-                await self._harvest_once(entry_id)
-                if entry_id not in self._harvest_again:
-                    break
+            while self._harvest_waiting.get(entry_id):
+                await self._harvest_once(entry_id, self._harvest_waiting.pop(entry_id))
         self._harvest_locks.pop(entry_id, None)
 
-    async def _harvest_once(self, entry_id: UUID) -> None:
-        async with self._session_factory() as session:
+    async def _harvest_once(self, entry_id: UUID, harvest_ids: set[UUID]) -> None:
+        started = utcnow()
+        async with self._session_factory() as session, session.begin():
+            for event in await session.scalars(select(Event).where(Event.uuid.in_(harvest_ids))):
+                event.executed_at = started
             entry = await session.get(IndexEntry, entry_id)
-            if entry is None or entry.permit is not EntryPermit.ACCEPTED:
-                return
-            client_url = entry.client_url
+            accepted = entry is not None and entry.permit is EntryPermit.ACCEPTED
+            client_url = entry.client_url if entry is not None else ""
+            known = {
+                str(node.node_iri): KnownNode(
+                    ntriples=node.ntriples,
+                    content_hash=node.content_hash,
+                    etag=node.http_etag,
+                    last_modified=node.http_last_modified,
+                )
+                for node in await session.scalars(
+                    select(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id)
+                )
+            }
+        if not accepted:
+            await self._finish_harvest(harvest_ids, {"outcome": "skipped"})
+            return
         settings = await self._settings.get()
         result = await harvest(
             self._outbound,
@@ -621,14 +666,17 @@ class IndexService:
             max_nodes=self._harvest_max_nodes,
             max_bytes=self._harvest_max_bytes,
             max_seconds=self._harvest_max_seconds,
+            known=known,
         )
-        if not result.nodes:
-            log.warning("harvest_found_nothing", client_url=client_url, failed=result.failed)
-            return
         now = utcnow()
+        added: set[str] = set()
+        changed: set[str] = set()
+        removed: set[str] = set()
+        stale = 0
         async with self._session_factory() as session, session.begin():
             entry = await session.get(IndexEntry, entry_id)
             if entry is None or entry.permit is not EntryPermit.ACCEPTED:
+                await self._finish_harvest(harvest_ids, {"outcome": "skipped"}, session=session)
                 return
             # Upsert by node IRI, so unchanged nodes keep their rows and derived
             # stores learn exactly what changed.
@@ -641,8 +689,6 @@ class IndexService:
                 )
             }
             fresh = {node.node_iri: node for node in result.nodes}
-            added: set[str] = set()
-            changed: set[str] = set()
             for iri, node in fresh.items():
                 row = existing.get(iri)
                 if row is None:
@@ -654,31 +700,107 @@ class IndexService:
                             ntriples=node.ntriples,
                             content_hash=node.content_hash,
                             harvested_at=now,
+                            http_etag=node.etag,
+                            http_last_modified=node.last_modified,
                         )
                     )
                     continue
                 row.harvested_at = now
+                row.http_etag = node.etag
+                row.http_last_modified = node.last_modified
+                row.stale_since = None
+                row.fetch_error = None
                 if row.content_hash != node.content_hash:
                     changed.add(iri)
                     row.ntriples = node.ntriples
                     row.content_hash = node.content_hash
-            removed = set(existing) - set(fresh)
-            if removed:
+            # The FDP says these do not exist (404, 410): remove them whatever else happened.
+            gone = result.gone & set(existing)
+            if gone and fresh:
+                removed |= gone
                 await session.execute(
                     delete(HarvestedNode).where(
-                        HarvestedNode.entry_uuid == entry_id, HarvestedNode.node_iri.in_(removed)
+                        HarvestedNode.entry_uuid == entry_id, HarvestedNode.node_iri.in_(gone)
                     )
                 )
-        changes = HarvestChanges(frozenset(added), frozenset(changed), frozenset(removed))
+            missing = set(existing) - set(fresh) - removed
+            if result.complete and fresh:
+                # Only a harvest that reached every node may conclude that the others,
+                # no longer listed, are gone.
+                removed |= missing
+                if missing:
+                    await session.execute(
+                        delete(HarvestedNode).where(
+                            HarvestedNode.entry_uuid == entry_id,
+                            HarvestedNode.node_iri.in_(missing),
+                        )
+                    )
+            else:
+                # The stored version stays, marked stale with the reason (TASKS 1.14).
+                for iri in missing:
+                    row = existing[iri]
+                    row.stale_since = row.stale_since or now
+                    reason = result.failed.get(iri) or (
+                        "not reached: the harvest stopped at a limit"
+                        if result.limit_reached
+                        else "not reached: a node above it could not be fetched"
+                    )
+                    row.fetch_error = reason[:512]
+                    stale += 1
+            outcome = "complete" if result.complete and fresh else "partial" if fresh else "failed"
+            failed = dict(list(result.failed.items())[:MAX_REPORTED_FAILURES])
+            await self._finish_harvest(
+                harvest_ids,
+                {
+                    "outcome": outcome,
+                    "nodes": len(fresh),
+                    "notModified": result.not_modified,
+                    "added": len(added),
+                    "changed": len(changed),
+                    "removed": len(removed),
+                    "stale": stale,
+                    "failedCount": len(result.failed),
+                    "failed": failed,
+                    "limitReached": result.limit_reached,
+                    "skippedOffOrigin": result.skipped_off_origin,
+                    "seconds": round((utcnow() - started).total_seconds(), 1),
+                },
+                session=session,
+            )
         log.info(
             "harvested",
             client_url=client_url,
+            outcome=outcome,
             nodes=len(fresh),
+            not_modified=result.not_modified,
             added=len(added),
             changed=len(changed),
             removed=len(removed),
+            stale=stale,
         )
-        self._notify(IndexChange("harvested", entry_id, changes))
+        changes = HarvestChanges(frozenset(added), frozenset(changed), frozenset(removed))
+        if fresh:
+            self._notify(IndexChange("harvested", entry_id, changes))
+
+    async def _finish_harvest(
+        self,
+        harvest_ids: set[UUID],
+        report: dict[str, Any],
+        *,
+        session: AsyncSession | None = None,
+    ) -> None:
+        async def write(active: AsyncSession) -> None:
+            now = utcnow()
+            for event in await active.scalars(select(Event).where(Event.uuid.in_(harvest_ids))):
+                event.payload = {"harvest": report}
+                event.executed_at = event.executed_at or now
+                event.finished_at = now
+
+        if session is not None:
+            await write(session)
+            return
+        async with self._session_factory() as active, active.begin():
+            await write(active)
 
     async def delete_harvested(self, entry_id: UUID) -> None:
         async with self._session_factory() as session, session.begin():
@@ -722,7 +844,7 @@ class IndexService:
     # --- start-up ------------------------------------------------------------------
 
     async def resume_unfinished(self) -> int:
-        """Resume retrievals and webhook deliveries left unfinished by a stopped process."""
+        """Resume retrievals, harvests and webhook deliveries a stopped process left unfinished."""
         async with self._session_factory() as session:
             rows = await session.execute(
                 select(Event.uuid, Event.type)
@@ -739,6 +861,8 @@ class IndexService:
                 self._jobs.submit(
                     f"resume:{event_id}", lambda eid=event_id: self._webhooks.resume(eid)
                 )
+            elif event_type is EventType.HARVEST:
+                self._jobs.submit(f"resume:{event_id}", lambda eid=event_id: self.run_harvest(eid))
         if unfinished:
             log.info("resumed_unfinished_events", count=len(unfinished))
         return len(unfinished)

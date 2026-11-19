@@ -135,52 +135,10 @@ per-address rate limit. They are configurable, and administrators get more
 
 ## Configuration
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `FDPINDEX_DATABASE_URL` | `postgresql+asyncpg://fdpindex:fdpindex@localhost:5432/fdpindex` | Database |
-| `FDPINDEX_AUTO_PERMIT` | `true` | Initial auto-permit setting |
-| `FDPINDEX_OIDC_ISSUER`, `FDPINDEX_OIDC_AUDIENCE`, `FDPINDEX_OIDC_CLIENT_ID` | — | OIDC sign-in for administrators |
-| `FDPINDEX_OIDC_ROLES_CLAIM`, `FDPINDEX_OIDC_ADMIN_ROLE` | `realm_access.roles`, `admin` | Where the admin role is |
-| `FDPINDEX_TRUSTED_PROXY` (client container) | — | Address or CIDR range(s) of a reverse proxy in front of the stack, whose `X-Forwarded-For` nginx trusts for the client's address |
-| `FDPINDEX_OIDC_DISCOVERY_URL` | the issuer's `/.well-known/openid-configuration` | Where the server reads the issuer's configuration, when it cannot reach the issuer's public address (Keycloak inside Compose); tokens are still checked against the issuer |
-| `FDPINDEX_ADMIN_TOKENS` | — | SHA-256 digests of static admin tokens (`fdpindex token new`) |
-| `FDPINDEX_OUTBOUND_ALLOW_PRIVATE` | `false` | Allow fetching private / loopback addresses (local stacks only) |
-| `FDPINDEX_OUTBOUND_MAX_BYTES` | `5242880` | Largest response read |
-| `FDPINDEX_HARVEST_MAX_NODES` | `2000` | Most nodes harvested per FDP |
-| `FDPINDEX_HARVEST_MAX_BYTES`, `FDPINDEX_HARVEST_MAX_SECONDS` | 50 MiB, `900` | Most N-Triples and time per harvest |
-| `FDPINDEX_HARVEST_NODE_TIMEOUT_SECONDS` | `20` | Time budget per harvested node (the root retrieval uses the retrieval timeout) |
-| `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs |
-| `FDPINDEX_HEALTH_SWEEP_SECONDS`, `FDPINDEX_HEALTH_BATCH` | `60`, `100` | How often due liveness checks are started, and how many per sweep |
-| `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API |
-| `FDPINDEX_SEARCH_ENABLED` | `true` | The faceted search and its page (needs the `unaccent` and `pg_trgm` extensions, which migration 0003 creates) |
-| `FDPINDEX_SEARCH_RATE_PER_MINUTE` | `120` | Searches per minute per anonymous address |
-| `FDPINDEX_SEARCH_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `5`, `30` | Statement timeout per search |
-| `FDPINDEX_VOCAB_FILE` | the bundled `search/vocab.json` | Another label pack, written by `fdpindex vocab update --output …`: labels of EU authority table codes, SPDX licences and DCAT/DC/FOAF/ADMS terms, in several languages, and the GeoNames, lexvo and ISO 3166 names of each country |
-| `FDPINDEX_DEPLOYMENT_PROFILE` | `default` | `ehds` for a European Health Data Space index: HealthDCAT-AP and DCAT-AP checked, a catalogue feed of HealthDCAT-AP records only, the HealthDCAT-AP search extension (health categories, numbers of individuals, quality certificates). Defaults only: every setting stays the administrator's |
-| `FDPINDEX_CATALOG_ENABLED` | `true` | The catalogue feed: the harvested metadata republished as DCAT-AP at `/index/catalog` and over OAI-PMH at `/index/oai` (needs search) |
-| `FDPINDEX_CATALOG_TITLE`, `…_DESCRIPTION` | `FDPneo Index`, a sentence | The feed catalogue's `dct:title` and `dct:description`, and the OAI-PMH repository name |
-| `FDPINDEX_CATALOG_PUBLISHER`, `…_PUBLISHER_URL` | the title, — | The catalogue's publisher: a name, and an IRI when it has one |
-| `FDPINDEX_CATALOG_CONTACT_EMAIL` | — | OAI-PMH `adminEmail` (set it before registering the feed with an aggregator) |
-| `FDPINDEX_CONFORMANCE_ENABLED` | `true` | Check harvested records against SHACL profiles in the background, with reports per FDP and per record |
-| `FDPINDEX_CONFORMANCE_WORKERS` | CPUs less one, at most 4 | Processes running the checks; `0` runs them in the server's process |
-| `FDPINDEX_CONFORMANCE_PACKS` | — | A directory of your own SHACL profile packs (`<id>/<version>/pack.yaml`), beside the bundled DCAT-AP 3.0.1, HealthDCAT-AP Release 8 and Health-RI core v2.0.3; see [docs/administering.md](docs/administering.md#conformance-packs) |
-| `FDPINDEX_SEARCH_EMBEDDINGS` | `off` | `local` turns on semantic search (hybrid ranking by meaning and words). Needs the `semantic` extra, pgvector and a model; see [docs/semantic-search.md](docs/semantic-search.md) |
-| `FDPINDEX_EMBEDDINGS_MODEL_DIR` | — | Where `fdpindex embeddings download` put the model |
-| `FDPINDEX_EMBEDDINGS_THREADS` | all cores | Threads for the model |
-| `FDPINDEX_EMBEDDINGS_MAX_DISTANCE` | `0.6` | How close (cosine distance) a hit found by meaning alone must be |
-| `FDPINDEX_LABELS_RESOLVE` | `false` | Fetch labels, synonyms and broader concepts of concept IRIs (subjects, themes, publishers …) from their vocabularies, for facets and search (ADR-0006) |
-| `FDPINDEX_LABELS_HOSTS` | Wikidata, ROR, OBO, EDAM, MeSH, EU Publications Office, ORCID, NERC, Library of Congress, GeoNames | Vocabulary hosts that may be asked (comma-separated); checked on every redirect |
-| `FDPINDEX_LABELS_LANGUAGES` | `en,nl,de,fr,es,it,pt,sv,da,fi` | Languages of labels kept |
-| `FDPINDEX_LABELS_REFRESH_DAYS`, `…_RETRY_DAYS`, `…_BROADER_DEPTH` | `30`, `7`, `2` | Refresh of resolved concepts, retry of misses, levels of broader concepts resolved |
-| `FDPINDEX_SPARQL_ENABLED` | `true` | The SPARQL endpoint and page |
-| `FDPINDEX_SPARQL_DIR` | `data/sparql` | Store and snapshots (a volume; rebuilt from PostgreSQL when empty) |
-| `FDPINDEX_SPARQL_WORKERS` | `2` | Query worker processes |
-| `FDPINDEX_SPARQL_TIMEOUT_SECONDS`, `…_ADMIN_TIMEOUT_SECONDS` | `10`, `60` | Time budget per query |
-| `FDPINDEX_SPARQL_MAX_ROWS`, `…_MAX_BYTES`, `…_MAX_QUERY_CHARS` | `10000`, 10 MiB, `20000` | Result and query caps |
-| `FDPINDEX_SPARQL_RATE_PER_MINUTE` | `30` | Queries per minute per anonymous address |
-| `FDPINDEX_SPARQL_WORKER_MAX_MB` | `1024` | Memory ceiling per worker (Linux) |
-| `FDPINDEX_PUBLIC_URL` | — | Public base URL, for absolute IRIs in the VoID description |
-| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted. The per-address rate limits rely on it: the proxy must overwrite the header with the address that connected (the bundled nginx does), never append to what the client sent |
+The server reads `FDPINDEX_*` environment variables; every one is listed in
+[docs/configuration.md](docs/configuration.md). The ones to set first:
+`FDPINDEX_DATABASE_URL`, `FDPINDEX_PUBLIC_URL`, `FDPINDEX_ADMIN_TOKENS` or the
+`FDPINDEX_OIDC_*` group, and, behind a proxy, `FORWARDED_ALLOW_IPS`.
 
 Search at scale (memory, migration 0004, the measured times at 1 000 FDPs):
 [docs/search-performance.md](docs/search-performance.md). Reverse proxies,

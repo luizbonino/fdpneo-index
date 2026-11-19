@@ -77,3 +77,12 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - run: node scripts/audit.mjs  # npm audit with reviewed exceptions (audit-allowlist.json)
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: The documentation site builds, links and anchors checked
+        env: { NO_MKDOCS_2_WARNING: "1" }
+        run: uv run --no-project --with-requirements docs/requirements.txt mkdocs build --strict

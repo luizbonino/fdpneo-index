@@ -91,6 +91,13 @@ leave one side open. A dataset covering 2013 to 2025 matches 2012–2013;
 one with no end date matches every later year. Resources that do not
 state a temporal coverage are left out once this filter is set.
 
+**Meets profile** keeps records that this index checked against a metadata
+profile (DCAT-AP, HealthDCAT-AP …) and found without violations; a
+dataset's result says which profiles it meets. On indexes for health data,
+**Quality certificate** keeps datasets whose holder states a quality
+certificate; the certificate itself is on the dataset's page. Some indexes
+show only records that meet a profile.
+
 Very broad searches count their filters on a sample: those counts show
 with ≈.
 
@@ -105,7 +112,9 @@ shows such a resource once, as the copy the search ranks first; the count
 then says how many resources the groups stand for. **Open at source** goes to the
 resource on its FDP. A resource's own page shows every value, its parents
 and children, and its metadata as harvested (Turtle, JSON-LD or
-N-Triples).
+N-Triples), and, under **Conformance**, how it fares against each profile
+the index checks: its violations, which break a profile's rules, and its
+warnings, which are recommendations.
 
 **Copy link** copies the address of the search with its filters. **Show as
 SPARQL** opens the same search as a SPARQL query, to refine it; the query
@@ -185,10 +194,22 @@ callers a rate limit per minute; `GET /index/config` tells you this
 index's values.
 
 The search has an API too: `GET /index/search` takes the same parameters as
-the search page's address. See `/docs` on the index for every path.
+the search page's address; [API examples](api.md) shows it, with the
+DCAT-AP feed (`/index/catalog`) and OAI-PMH (`/index/oai`) for harvesting
+everything. See `/docs` on the index for every path.
+
+## Languages
+
+The interface speaks English, Dutch, German, French, Spanish, Italian and
+Portuguese: the menu at the top picks one, and the index remembers it in
+this browser (at first it follows your browser's languages). Titles,
+descriptions and labels from the metadata follow the interface language when
+an FDP provides them in it, then the index's fallback languages; **Metadata
+in** on the search page picks another language for them.
 
 ## Registering your FDP
 
 See the **Register an FDP** page: configure your FDP to ping the index, or
 enter its address there to register it and see at once what the index
-found.
+found. [FDPs and the index](data-holders.md) explains what happens next and
+how to read your FDP's conformance report.

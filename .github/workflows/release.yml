@@ -194,3 +194,10 @@ jobs:
         run: |
           gh release view "$TAG" >/dev/null 2>&1 \
             || gh release create "$TAG" --title "$TAG" --notes-file notes.md --verify-tag --latest
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Attach the documentation site
+        env: { NO_MKDOCS_2_WARNING: "1" }
+        run: |
+          uv run --no-project --with-requirements docs/requirements.txt mkdocs build --strict -d site
+          tar -czf "fdpneo-index-docs-$TAG.tar.gz" site
+          gh release upload "$TAG" "fdpneo-index-docs-$TAG.tar.gz" --clobber

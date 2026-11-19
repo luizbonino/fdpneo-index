@@ -1,7 +1,7 @@
 # Operating the FDPneo Index
 
 For operators running the Compose stack in `deploy/` (or the same images
-elsewhere). Configuration variables are in the [README](../README.md#configuration).
+elsewhere). Configuration variables are in [Configuration](configuration.md).
 
 ## What holds state
 

@@ -225,6 +225,16 @@ Before registering the feed with an aggregator, set the catalogue's title,
 description, publisher and contact address (`FDPINDEX_CATALOG_*`, see the
 README) and `FDPINDEX_PUBLIC_URL`, which the record IRIs are built from.
 
+## Languages
+
+The interface is translated into Dutch, German, French, Spanish, Italian
+and Portuguese; each visitor picks a language, or gets their browser's.
+What administrators write is per language too: the labels and help of
+search filters (**Settings → Search filters**, one text per language, and
+the search profile's `label` and `help` maps, which the bundled profile
+fills in all seven languages). A text missing in the reader's language
+shows in English.
+
 ## Webhooks
 
 **Webhooks** sends a signed POST to an address of yours when something

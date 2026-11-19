@@ -1,0 +1,80 @@
+# The documentation site (TASKS 14.1): `uv run --no-project --with-requirements
+# docs/requirements.txt mkdocs serve`. CI builds it with --strict; each release
+# attaches the built site. Material for MkDocs is maintained until May 2027; its
+# successor, Zensical, reads this file.
+site_name: FDPneo Index
+site_description: A directory and search engine for FAIR Data Points
+repo_url: https://github.com/luizbonino/fdpneo-index
+repo_name: luizbonino/fdpneo-index
+edit_uri: edit/main/docs/
+docs_dir: docs
+exclude_docs: |
+  requirements.txt
+  hooks.py
+  __pycache__/
+  reviews/
+hooks:
+  - docs/hooks.py
+theme:
+  name: material
+  logo: assets/fdpneo-index.svg
+  favicon: assets/fdpneo-index.svg
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      toggle: {icon: material/weather-sunny, name: Light mode}
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - toc: {permalink: true}
+  - pymdownx.superfences
+  - pymdownx.details
+validation:
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: info
+    unrecognized_links: warn
+nav:
+  - Home: index.md
+  - Finding data: user-guide.md
+  - Publishing metadata:
+      - FDPs and the index: data-holders.md
+      - FDPneo servers: with-fdpneo.md
+  - Administering an index: administering.md
+  - Running an index:
+      - Deploying: deploying.md
+      - Configuration: configuration.md
+      - Operations: operations.md
+      - Search and SPARQL: search-and-sparql.md
+      - Semantic search: semantic-search.md
+      - Search performance: search-performance.md
+      - Replacing a Java FDP's index: java-fdp.md
+      - Releasing: releasing.md
+  - API and integration:
+      - Examples: api.md
+      - Reference: api-reference.md
+  - Decisions and design:
+      - adr/0001-standalone-index-service.md
+      - adr/0002-harvested-metadata-and-outbound-safety.md
+      - adr/0003-administrator-authentication.md
+      - adr/0004-active-liveness-checks.md
+      - adr/0005-search-and-sparql.md
+      - adr/0006-concept-labels.md
+      - design/search.md
+      - design/conformance.md
+      - design/mcp.md
+      - design/sources.md

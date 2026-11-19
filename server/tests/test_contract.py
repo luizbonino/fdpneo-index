@@ -37,3 +37,16 @@ def test_reference_paths_are_served() -> None:
         "/index/admin/trigger-all",
         "/index/admin/ping-webhook",
     } <= paths
+
+
+def test_every_setting_is_documented() -> None:
+    """docs/configuration.md lists every FDPINDEX_* variable the server reads (TASKS 14.5)."""
+    from fdpindex.config import Settings
+
+    doc = (Path(__file__).resolve().parents[2] / "docs" / "configuration.md").read_text("utf-8")
+    missing = [
+        f"FDPINDEX_{name.upper()}"
+        for name in Settings.model_fields
+        if f"`FDPINDEX_{name.upper()}`" not in doc
+    ]
+    assert missing == []

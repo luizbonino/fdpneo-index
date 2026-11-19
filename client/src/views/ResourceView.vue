@@ -5,6 +5,7 @@
  * as harvested (Turtle, JSON-LD, N-Triples), and ways onward: the source, the
  * SPARQL page, and searches for similar resources.
  */
+import { currentLocale, localized } from "@/i18n";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -24,8 +25,8 @@ const router = useRouter();
 
 const lang = ref<string>("");
 const resource = useQuery({
-  queryKey: computed(() => ["search-resource", props.id, lang.value]),
-  queryFn: () => searchApi.resource(props.id, lang.value || undefined),
+  queryKey: computed(() => ["search-resource", props.id, lang.value || currentLocale()]),
+  queryFn: () => searchApi.resource(props.id, lang.value || currentLocale()),
   retry: false,
 });
 const landing = useQuery({
@@ -53,7 +54,7 @@ const facetNames = computed(() => new Set((landing.data.value?.facets ?? []).map
 function fieldLabel(name: string): string {
   if (LOCAL_FIELDS.has(name)) return t(`search.fields.${name}`);
   const label = landing.data.value?.fields[name]?.label;
-  return label?.en ?? Object.values(label ?? {})[0] ?? name;
+  return localized(label, name);
 }
 
 /** Values in the profile's field order; fields the profile does not know come last. */

@@ -8,6 +8,7 @@
  * Every link to the source is checked to be http(s): harvested IRIs are
  * attacker-chosen.
  */
+import { currentLocale } from "@/i18n";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Hit, ValueView } from "@/search/api";
@@ -43,7 +44,7 @@ const keyFields = computed(() =>
     .map((name) => {
       if (name === "datasetCount" || name === "distributionCount") {
         const count = props.hit.facts[name];
-        return count === undefined ? null : { name, text: count.toLocaleString() };
+        return count === undefined ? null : { name, text: count.toLocaleString(currentLocale()) };
       }
       const values: ValueView[] = props.hit.values[name] ?? [];
       if (!values.length) return null;

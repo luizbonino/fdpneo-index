@@ -26,78 +26,249 @@ fields:
     paths: [healthdcatap:numberOfUniqueIndividuals]
     facet: more
     buckets: [100, 1000, 10000, 100000, 1000000]
-    label: {en: Number of individuals, nl: Aantal personen}
-    help: {en: "How many distinct people the data are about, as the data holder states it."}
+    label:
+      en: Number of individuals
+      nl: Aantal personen
+      de: Anzahl der Personen
+      fr: Nombre de personnes
+      es: Número de personas
+      it: Numero di persone
+      pt: Número de pessoas
+    help:
+      en: "How many distinct people the data are about, as the data holder states it."
+      nl: "Over hoeveel verschillende personen de data gaan, volgens opgave van de datahouder."
+      de: "Wie viele verschiedene Personen die Daten betreffen, nach Angabe des Dateninhabers."
+      fr: >-
+        Nombre de personnes distinctes concernées par les données, selon le
+        détenteur des données.
+      es: "Cuántas personas distintas abarcan los datos, según indica el titular de los datos."
+      it: >-
+        Quante persone distinte riguardano i dati, secondo quanto dichiarato dal
+        titolare dei dati.
+      pt: "Quantas pessoas distintas abrangem os dados, segundo o detentor dos dados."
   minAge:
     kind: number
     paths: [healthdcatap:minTypicalAge]
     facet: more
     buckets: [2, 12, 18, 65]
-    label: {en: Youngest typical age}
-    help: {en: "The minimum typical age of the population in the dataset, in years."}
+    label:
+      en: Youngest typical age
+      nl: Jongste typische leeftijd
+      de: Niedrigstes typisches Alter
+      fr: Âge typique minimal
+      es: Edad típica mínima
+      it: Età tipica minima
+      pt: Idade típica mínima
+    help:
+      en: "The minimum typical age of the population in the dataset, in years."
+      nl: "De minimale typische leeftijd van de populatie in de dataset, in jaren."
+      de: "Das minimale typische Alter der Population im Datensatz, in Jahren."
+      fr: "L'âge typique minimal de la population du jeu de données, en années."
+      es: "La edad típica mínima de la población del conjunto de datos, en años."
+      it: "L'età tipica minima della popolazione nel dataset, in anni."
+      pt: "A idade típica mínima da população do conjunto de dados, em anos."
   maxAge:
     kind: number
     paths: [healthdcatap:maxTypicalAge]
     facet: more
     buckets: [2, 12, 18, 65]
-    label: {en: Oldest typical age}
-    help: {en: "The maximum typical age of the population in the dataset, in years."}
+    label:
+      en: Oldest typical age
+      nl: Oudste typische leeftijd
+      de: Höchstes typisches Alter
+      fr: Âge typique maximal
+      es: Edad típica máxima
+      it: Età tipica massima
+      pt: Idade típica máxima
+    help:
+      en: "The maximum typical age of the population in the dataset, in years."
+      nl: "De maximale typische leeftijd van de populatie in de dataset, in jaren."
+      de: "Das maximale typische Alter der Population im Datensatz, in Jahren."
+      fr: "L'âge typique maximal de la population du jeu de données, en années."
+      es: "La edad típica máxima de la población del conjunto de datos, en años."
+      it: "L'età tipica massima della popolazione nel dataset, in anni."
+      pt: "A idade típica máxima da população do conjunto de dados, em anos."
   healthCategory:
     kind: iri
     paths: [healthdcatap:healthCategory]
     facet: main
     weight: B
-    label: {en: Health category}
+    label:
+      en: Health category
+      nl: Gezondheidscategorie
+      de: Gesundheitskategorie
+      fr: Catégorie de santé
+      es: Categoría de salud
+      it: Categoria sanitaria
+      pt: Categoria de saúde
     help:
       en: >-
         The categories of electronic health data of the European Health Data
-        Space (EHDS Article 51), such as electronic health records or registries.
+        Space (EHDS Article 51), such as electronic health records or
+        registries.
+      nl: >-
+        De categorieën elektronische gezondheidsgegevens van de Europese ruimte
+        voor gezondheidsgegevens (EHDS, artikel 51), zoals elektronische
+        patiëntendossiers of registers.
+      de: >-
+        Die Kategorien elektronischer Gesundheitsdaten des Europäischen
+        Gesundheitsdatenraums (EHDS, Artikel 51), etwa elektronische
+        Patientenakten oder Register.
+      fr: >-
+        Les catégories de données de santé électroniques de l'espace européen
+        des données de santé (EHDS, article 51), comme les dossiers médicaux
+        électroniques ou les registres.
+      es: >-
+        Las categorías de datos de salud electrónicos del Espacio Europeo de
+        Datos de Salud (EHDS, artículo 51), como las historias clínicas
+        electrónicas o los registros.
+      it: >-
+        Le categorie di dati sanitari elettronici dello spazio europeo dei dati
+        sanitari (EHDS, articolo 51), come le cartelle cliniche elettroniche o i
+        registri.
+      pt: >-
+        As categorias de dados de saúde eletrónicos do Espaço Europeu de Dados
+        de Saúde (EHDS, artigo 51.º), como processos clínicos eletrónicos ou
+        registos.
   healthTheme:
     kind: iri
     paths: [healthdcatap:healthTheme]
     facet: more
     weight: B
-    label: {en: Health theme}
+    label:
+      en: Health theme
+      nl: Gezondheidsthema
+      de: Gesundheitsthema
+      fr: Thème de santé
+      es: Tema de salud
+      it: Tema sanitario
+      pt: Tema de saúde
   codingSystem:
     kind: iri
     paths: [healthdcatap:hasCodingSystem]
     facet: more
-    label: {en: Coding system}
-    help: {en: "Terminologies the data are coded in, such as ICD-10 or SNOMED CT."}
+    label:
+      en: Coding system
+      nl: Coderingssysteem
+      de: Kodiersystem
+      fr: Système de codage
+      es: Sistema de codificación
+      it: Sistema di codifica
+      pt: Sistema de codificação
+    help:
+      en: "Terminologies the data are coded in, such as ICD-10 or SNOMED CT."
+      nl: "Terminologieën waarin de data zijn gecodeerd, zoals ICD-10 of SNOMED CT."
+      de: "Terminologien, in denen die Daten kodiert sind, etwa ICD-10 oder SNOMED CT."
+      fr: "Terminologies dans lesquelles les données sont codées, comme ICD-10 ou SNOMED CT."
+      es: "Terminologías en las que están codificados los datos, como ICD-10 o SNOMED CT."
+      it: "Terminologie in cui sono codificati i dati, come ICD-10 o SNOMED CT."
+      pt: "Terminologias em que os dados estão codificados, como ICD-10 ou SNOMED CT."
   codeValues:
     kind: literal
     paths: [healthdcatap:hasCodeValues]
     weight: D
-    label: {en: Code values}
+    label:
+      en: Code values
+      nl: Codewaarden
+      de: Codewerte
+      fr: Valeurs de code
+      es: Valores de código
+      it: Valori di codice
+      pt: Valores de código
   populationCoverage:
     kind: literal
     paths: [healthdcatap:populationCoverage]
     weight: C
-    label: {en: Population coverage}
+    label:
+      en: Population coverage
+      nl: Populatiedekking
+      de: Populationsabdeckung
+      fr: Couverture de la population
+      es: Cobertura de la población
+      it: Copertura della popolazione
+      pt: Cobertura da população
   hdab:
     kind: agent
     paths: [healthdcatap:hdab]
     facet: more
-    label: {en: Health data access body}
+    label:
+      en: Health data access body
+      nl: Instantie voor toegang tot gezondheidsgegevens
+      de: Zugangsstelle für Gesundheitsdaten
+      fr: Organisme responsable de l'accès aux données de santé
+      es: Organismo de acceso a los datos de salud
+      it: Organismo responsabile dell'accesso ai dati sanitari
+      pt: Organismo de acesso aos dados de saúde
   legislation:
     kind: iri
     paths: [dcatap:applicableLegislation]
     facet: more
-    label: {en: Applicable legislation}
+    label:
+      en: Applicable legislation
+      nl: Toepasselijke wetgeving
+      de: Anwendbare Rechtsvorschriften
+      fr: Législation applicable
+      es: Legislación aplicable
+      it: Legislazione applicabile
+      pt: Legislação aplicável
   hasAnalytics:
     kind: boolean
     paths: [healthdcatap:analytics]
     presence: true
     facet: more
-    label: {en: Has analytics}
-    help: {en: "Whether the dataset links an analytics distribution: reports, quality measures or summary statistics."}
+    label:
+      en: Has analytics
+      nl: Heeft analyses
+      de: Hat Analysen
+      fr: Comporte des analyses
+      es: Tiene análisis
+      it: Ha analisi
+      pt: Tem análises
+    help:
+      en: >-
+        Whether the dataset links an analytics distribution: reports, quality
+        measures or summary statistics.
+      nl: >-
+        Of de dataset naar een analysedistributie verwijst: rapporten,
+        kwaliteitsmaten of samenvattende statistieken.
+      de: >-
+        Ob der Datensatz auf eine Analyse-Distribution verweist: Berichte,
+        Qualitätsmaße oder zusammenfassende Statistiken.
+      fr: >-
+        Si le jeu de données renvoie à une distribution d'analyse : rapports,
+        mesures de qualité ou statistiques récapitulatives.
+      es: >-
+        Si el conjunto de datos enlaza una distribución de análisis: informes,
+        medidas de calidad o estadísticas resumidas.
+      it: >-
+        Se il dataset collega una distribuzione di analisi: report, misure di
+        qualità o statistiche riassuntive.
+      pt: >-
+        Se o conjunto de dados liga a uma distribuição de análises: relatórios,
+        medidas de qualidade ou estatísticas resumidas.
   personalData:
     kind: boolean
     paths: [dpv:hasPersonalData]
     presence: true
     facet: more
-    label: {en: Concerns personal data}
-    help: {en: "Whether the dataset lists the categories of personal data it holds (DPV)."}
+    label:
+      en: Concerns personal data
+      nl: Betreft persoonsgegevens
+      de: Betrifft personenbezogene Daten
+      fr: Concerne des données à caractère personnel
+      es: Concierne a datos personales
+      it: Riguarda dati personali
+      pt: Diz respeito a dados pessoais
+    help:
+      en: "Whether the dataset lists the categories of personal data it holds (DPV)."
+      nl: "Of de dataset de categorieën persoonsgegevens vermeldt die hij bevat (DPV)."
+      de: "Ob der Datensatz die Kategorien personenbezogener Daten angibt, die er enthält (DPV)."
+      fr: >-
+        Si le jeu de données indique les catégories de données à caractère
+        personnel qu'il contient (DPV).
+      es: "Si el conjunto de datos indica las categorías de datos personales que contiene (DPV)."
+      it: "Se il dataset elenca le categorie di dati personali che contiene (DPV)."
+      pt: "Se o conjunto de dados indica as categorias de dados pessoais que contém (DPV)."
   # Quality certificates (dqv:hasQualityAnnotation, a dqv:QualityCertificate whose
   # oa:hasBody is the certificate). EHDS Article 78's quality and utility label is
   # expected to be expressed this way once its implementing act is out; the index
@@ -107,13 +278,55 @@ fields:
     paths: [dqv:hasQualityAnnotation]
     presence: true
     facet: main
-    label: {en: Quality certificate}
-    help: {en: "Whether the data holder states a quality certificate for the dataset (dqv:QualityCertificate). The index shows what is stated; it does not check certificates."}
+    label:
+      en: Quality certificate
+      nl: Kwaliteitscertificaat
+      de: Qualitätszertifikat
+      fr: Certificat de qualité
+      es: Certificado de calidad
+      it: Certificato di qualità
+      pt: Certificado de qualidade
+    help:
+      en: >-
+        Whether the data holder states a quality certificate for the dataset
+        (dqv:QualityCertificate). The index shows what is stated; it does not
+        check certificates.
+      nl: >-
+        Of de datahouder een kwaliteitscertificaat voor de dataset opgeeft
+        (dqv:QualityCertificate). De index toont wat is opgegeven; hij
+        controleert geen certificaten.
+      de: >-
+        Ob der Dateninhaber ein Qualitätszertifikat für den Datensatz angibt
+        (dqv:QualityCertificate). Der Index zeigt, was angegeben ist; er prüft
+        keine Zertifikate.
+      fr: >-
+        Si le détenteur des données déclare un certificat de qualité pour le jeu
+        de données (dqv:QualityCertificate). L'index affiche ce qui est déclaré
+        ; il ne vérifie pas les certificats.
+      es: >-
+        Si el titular de los datos declara un certificado de calidad para el
+        conjunto de datos (dqv:QualityCertificate). El índice muestra lo
+        declarado; no comprueba los certificados.
+      it: >-
+        Se il titolare dei dati dichiara un certificato di qualità per il
+        dataset (dqv:QualityCertificate). L'indice mostra quanto dichiarato; non
+        verifica i certificati.
+      pt: >-
+        Se o detentor dos dados declara um certificado de qualidade para o
+        conjunto de dados (dqv:QualityCertificate). O índice mostra o que é
+        declarado; não verifica os certificados.
   qualityCertificate:
     kind: iri
     paths: [dqv:hasQualityAnnotation/oa:hasBody]
     literals: false
-    label: {en: Quality certificate document}
+    label:
+      en: Quality certificate document
+      nl: Document van kwaliteitscertificaat
+      de: Dokument des Qualitätszertifikats
+      fr: Document du certificat de qualité
+      es: Documento del certificado de calidad
+      it: Documento del certificato di qualità
+      pt: Documento do certificado de qualidade
 
 cards:
   dataset: [publisher, healthCategory, individuals, qualityCertified, conformance]

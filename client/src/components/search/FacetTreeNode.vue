@@ -4,6 +4,7 @@
  * A disclosure, not an ARIA tree: every checkbox and toggle is reached with Tab,
  * and the toggle says whether its branch is open (TASKS 8.9).
  */
+import { currentLocale } from "@/i18n";
 import { computed, ref, useId } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TreeNode } from "@/search/api";
@@ -43,7 +44,7 @@ const branch = useId();
           @change="emit('toggle', node.value)"
         />
         <span>{{ node.label }}</span>
-        <span class="count">{{ node.count.toLocaleString() }}</span>
+        <span class="count">{{ node.count.toLocaleString(currentLocale()) }}</span>
       </label>
     </div>
     <ul v-if="hasChildren && open" :id="branch" class="children">

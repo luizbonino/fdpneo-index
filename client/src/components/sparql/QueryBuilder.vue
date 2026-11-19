@@ -9,6 +9,7 @@
  * 3. What to show: extra columns, or a count per value / per FDP.
  * 4. The generated SPARQL, live; "Edit as SPARQL" hands it to the editor.
  */
+import { currentLocale } from "@/i18n";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { SparqlSchema } from "@/sparql/api";
@@ -134,7 +135,7 @@ const valueType = (operator: Operator) =>
           >
             <option value="">{{ t("sparql.builder.anything") }}</option>
             <option v-for="c in schema?.classes ?? []" :key="c.iri" :value="c.iri">
-              {{ c.label }} ({{ c.curie }}) · {{ c.count.toLocaleString() }}
+              {{ c.label }} ({{ c.curie }}) · {{ c.count.toLocaleString(currentLocale()) }}
             </option>
           </select>
         </label>
@@ -188,12 +189,12 @@ const valueType = (operator: Operator) =>
                 :value="p.iri"
                 :title="p.help ? `${p.help} (${p.iri})` : p.iri"
               >
-                {{ p.name }} ({{ p.curie }}) · {{ p.count.toLocaleString() }}
+                {{ p.name }} ({{ p.curie }}) · {{ p.count.toLocaleString(currentLocale()) }}
               </option>
             </optgroup>
             <optgroup :label="t('sparql.builder.otherProperties')">
               <option v-for="p in otherProperties" :key="p.iri" :value="p.iri" :title="p.iri">
-                {{ p.label }} ({{ p.curie }}) · {{ p.count.toLocaleString() }}
+                {{ p.label }} ({{ p.curie }}) · {{ p.count.toLocaleString(currentLocale()) }}
               </option>
             </optgroup>
           </select>

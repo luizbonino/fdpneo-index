@@ -5,6 +5,7 @@
  * `ApiError` surfaces both so views can show what went wrong.
  */
 
+import { i18n } from "@/i18n";
 import { runtimeApiUrl } from "@/runtimeConfig";
 
 export class ApiError extends Error {
@@ -48,7 +49,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   try {
     response = await fetch(apiUrl(path), init);
   } catch {
-    throw new ApiError(0, "The index cannot be reached.");
+    throw new ApiError(0, i18n.global.t("common.unreachable"));
   }
   if (!response.ok) throw await toError(response);
   if (response.status === 204) return undefined as T;

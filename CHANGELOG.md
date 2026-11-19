@@ -56,12 +56,22 @@ The first release will contain:
 - **EHDS deployment profile** (`FDPINDEX_DEPLOYMENT_PROFILE=ehds`):
   HealthDCAT-AP checked first, a feed of HealthDCAT-AP records only, and the
   HealthDCAT-AP search extension, now with quality certificates.
+- **Seven interface languages**: English, Dutch, German, French, Spanish,
+  Italian and Portuguese, chosen in the header and remembered; dates and
+  numbers in the reader's language; metadata shown in the interface language
+  by default; the search filters' names and saved searches' titles per
+  language.
+- **Documentation site** (MkDocs, built in CI and attached to releases),
+  with guides per audience, a configuration reference, API examples that
+  run in the tests, and a guide for AI agents through fdp-mcp's index mode.
+- **Operations**: Compose stack with an optional Keycloak profile, trusted
+  reverse proxy, backup and restore (docs/operations.md).
 
 ### Fixed
 
+- The Register page was wider than a phone's screen (a long command in a
+  copy field).
 - A literal holding a character Python treats as a line break (U+0085,
   U+2028, form feed; seen in double-encoded UTF-8 on a live FDP) was cut in
   two when a node was stored, which broke the search projection of that
   FDP.
-- **Operations**: Compose stack with an optional Keycloak profile, trusted
-  reverse proxy, backup and restore (docs/operations.md).

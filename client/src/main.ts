@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import App from "./App.vue";
 import { router } from "./router";
-import { i18n } from "./i18n";
+import { i18n, preferredLocale, setLocale } from "./i18n";
 import { api } from "./api";
 import { apiUrl } from "./api/client";
 import { initSession } from "./auth/session";
@@ -33,6 +33,9 @@ async function start() {
   } catch {
     // The index is unreachable: the app still renders and shows the error per view.
   }
+  // The interface language (TASKS 13.2); ?locale=pseudo in development builds.
+  const asked = new URLSearchParams(location.search).get("locale");
+  await setLocale(asked ?? preferredLocale(), { remember: !!asked && asked !== "pseudo" });
   createApp(App).use(i18n).use(router).use(VueQueryPlugin, { queryClient }).mount("#app");
 }
 

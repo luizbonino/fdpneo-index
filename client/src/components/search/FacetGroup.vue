@@ -6,6 +6,7 @@
  * added (`removable`) shows even without values, with Remove. A number facet
  * also takes a minimum and a maximum; a yes/no facet reads Yes and No (TASKS 8.5).
  */
+import { currentLocale } from "@/i18n";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Bucket } from "@/search/api";
@@ -101,7 +102,7 @@ function setBound(end: "min" | "max", raw: string) {
             :state="bucket.state"
           />
           <span class="count" :title="approximate ? t('search.estimated') : undefined">
-            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString() }}
+            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString(currentLocale()) }}
           </span>
         </label>
       </li>

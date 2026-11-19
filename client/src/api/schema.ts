@@ -2042,6 +2042,10 @@ export interface components {
       createdBy: string;
       /** Description */
       description?: string | null;
+      /** Descriptions */
+      descriptions?: {
+        [key: string]: string;
+      };
       /**
        * Featured
        * @default false
@@ -2056,6 +2060,10 @@ export interface components {
       query: string;
       /** Title */
       title: string;
+      /** Titles */
+      titles?: {
+        [key: string]: string;
+      };
       /**
        * Updatedat
        * Format: date-time
@@ -2066,6 +2074,10 @@ export interface components {
     SavedSearchRequest: {
       /** Description */
       description?: string | null;
+      /** Descriptions */
+      descriptions?: {
+        [key: string]: string;
+      };
       /**
        * Featured
        * @default false
@@ -2078,6 +2090,10 @@ export interface components {
       query: string;
       /** Title */
       title: string;
+      /** Titles */
+      titles?: {
+        [key: string]: string;
+      };
     };
     /**
      * SearchRequest

@@ -10,6 +10,7 @@
  * Downloads re-run the query with the format's media type, so the file is
  * exactly what the API returns.
  */
+import { currentLocale } from "@/i18n";
 import { computed, defineAsyncComponent, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ApiError } from "@/api/client";
@@ -206,12 +207,15 @@ async function copyMarkdown() {
         <p class="small muted">
           {{
             t("sparql.results.summary", {
-              rows: outcome.rows.toLocaleString(),
+              rows: outcome.rows.toLocaleString(currentLocale()),
               seconds: outcome.seconds.toFixed(2),
             })
           }}
           <strong v-if="outcome.truncated" class="warn-text">
-            · {{ t("sparql.results.truncated", { rows: outcome.rows.toLocaleString() }) }}
+            ·
+            {{
+              t("sparql.results.truncated", { rows: outcome.rows.toLocaleString(currentLocale()) })
+            }}
           </strong>
         </p>
         <div

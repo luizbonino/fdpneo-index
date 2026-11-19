@@ -16,6 +16,8 @@ export const en = {
     signIn: "Sign in",
     signOut: "Sign out",
     theme: "Switch theme",
+    main: "Main",
+    language: "Language",
   },
   state: {
     ACTIVE: "Active",
@@ -298,6 +300,11 @@ export const en = {
     renameLabel: "Title of {title}",
     featureLabel: "Feature {title} on the search page",
     featuredHeading: "Featured searches",
+    translations: "Other languages",
+    translationsHelp:
+      "The title in the languages of the interface; where one is empty, visitors see the title above.",
+    titleIn: "Title of {title} in {language}",
+    translationsOf: "Other languages of {title}",
   },
   profile: {
     title: "Search profile (advanced)",
@@ -400,6 +407,10 @@ export const en = {
     completing: "Signing you in…",
   },
   sparql: {
+    lint: {
+      syntax: "Syntax error here",
+      invalid: "Invalid query",
+    },
     title: "Query the metadata",
     lead: "Ask questions across the metadata of every listed FAIR Data Point with SPARQL: pick a ready-made question, build one with forms, or write your own.",
     run: "Run",
@@ -536,6 +547,8 @@ export const en = {
     home: "Go to the directory",
     unknown: "Unknown",
     about: "About {name}",
+    unreachable: "The index cannot be reached.",
+    adminToken: "Admin token",
   },
   search: {
     title: "Search metadata",
@@ -663,7 +676,7 @@ export const en = {
     took: "in {ms} ms",
     sort: "Sort",
     language: "Metadata in",
-    languageAuto: "Your browser's language",
+    languageAuto: "The interface language",
     sorts: {
       relevance: "Best match",
       modified: "Recently updated",

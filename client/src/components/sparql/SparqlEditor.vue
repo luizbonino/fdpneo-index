@@ -13,6 +13,7 @@
  * - Inline validation: the parse tree at once, then the server's gate, debounced.
  * - Ctrl/Cmd+Enter runs the query.
  */
+import { currentLocale, i18n } from "@/i18n";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { EditorState, type Extension } from "@codemirror/state";
 import {
@@ -74,7 +75,7 @@ function termOption(curie: string, label: string, count: number, kind: string): 
   const prefix = curie.split(":")[0] ?? "";
   return {
     label: curie,
-    detail: `${label} · ${count.toLocaleString()}`,
+    detail: `${label} · ${count.toLocaleString(currentLocale())}`,
     type: kind,
     boost: Math.min(99, Math.log10(count + 1) * 10),
     apply: (editor, _completion, from, to) => {
@@ -234,7 +235,7 @@ const validate = linter(
         from: e.from,
         to: e.to,
         severity: "error" as const,
-        message: "Syntax error here",
+        message: i18n.global.t("sparql.lint.syntax"),
       }));
     }
     try {
@@ -249,7 +250,7 @@ const validate = linter(
           from,
           to: Math.min(from + 1, doc.length) || from,
           severity: "error",
-          message: result.message ?? "Invalid query",
+          message: result.message ?? i18n.global.t("sparql.lint.invalid"),
         },
       ];
     } catch {

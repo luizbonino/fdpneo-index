@@ -4,6 +4,7 @@
  * show the exact response, offer it for download, and parse JSON results.
  */
 
+import { i18n } from "@/i18n";
 import type { components } from "@/api/schema";
 import { ApiError, apiUrl, request } from "@/api/client";
 import { session } from "@/auth/session";
@@ -87,7 +88,7 @@ export async function runQuery(query: string, accept = RESULT_ACCEPT): Promise<Q
   try {
     response = await fetch(apiUrl("/index/sparql"), { method: "POST", headers, body: query });
   } catch {
-    throw new ApiError(0, "The index cannot be reached.");
+    throw new ApiError(0, i18n.global.t("common.unreachable"));
   }
   const text = await response.text();
   if (!response.ok) {

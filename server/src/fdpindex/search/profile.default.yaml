@@ -54,8 +54,22 @@ fields:
     paths: [dcat:keyword, dct:subject]
     facet: main
     weight: B
-    label: {en: Keyword}
-    help: {en: "Free words the data provider attached to the record."}
+    label:
+      en: Keyword
+      nl: Trefwoord
+      de: Schlagwort
+      fr: Mot-clé
+      es: Palabra clave
+      it: Parola chiave
+      pt: Palavra-chave
+    help:
+      en: "Free words the data provider attached to the record."
+      nl: "Vrije woorden die de dataleverancier aan het record heeft toegevoegd."
+      de: "Freie Wörter, die der Datenanbieter dem Eintrag zugeordnet hat."
+      fr: "Mots libres que le fournisseur de données a associés à la fiche."
+      es: "Palabras libres que el proveedor de datos ha asociado al registro."
+      it: "Parole libere che il fornitore dei dati ha associato al record."
+      pt: "Palavras livres que o fornecedor dos dados associou ao registo."
   # Themes and subjects come from both predicates and are split by vocabulary:
   # DCAT-AP 3 allows any vocabulary in dcat:theme, and some providers put EU
   # data themes in dct:subject.
@@ -66,8 +80,22 @@ fields:
     namespaces: ["eu-theme:"]
     facet: main
     weight: B
-    label: {en: Theme}
-    help: {en: "The broad data themes of the EU vocabulary, such as Health or Environment."}
+    label:
+      en: Theme
+      nl: Thema
+      de: Thema
+      fr: Thème
+      es: Tema
+      it: Tema
+      pt: Tema
+    help:
+      en: "The broad data themes of the EU vocabulary, such as Health or Environment."
+      nl: "De brede datathema's van het EU-vocabulaire, zoals Gezondheid of Milieu."
+      de: "Die allgemeinen Datenthemen des EU-Vokabulars, etwa Gesundheit oder Umwelt."
+      fr: "Les grands thèmes de données du vocabulaire de l'UE, comme Santé ou Environnement."
+      es: "Los grandes temas de datos del vocabulario de la UE, como Salud o Medio ambiente."
+      it: "I grandi temi di dati del vocabolario dell'UE, come Salute o Ambiente."
+      pt: "Os grandes temas de dados do vocabulário da UE, como Saúde ou Ambiente."
   subject:
     kind: iri
     paths: [dcat:theme, dct:subject]
@@ -77,15 +105,61 @@ fields:
     hierarchy: true  # Neoplasms › Breast Neoplasms (from the concepts' broader terms)
     facet: main
     weight: B
-    label: {en: Subject}
-    help: {en: "Topics from domain vocabularies, such as MeSH, Wikidata or EDAM, that the data provider assigned."}
+    label:
+      en: Subject
+      nl: Onderwerp
+      de: Sachgebiet
+      fr: Sujet
+      es: Materia
+      it: Argomento
+      pt: Assunto
+    help:
+      en: >-
+        Topics from domain vocabularies, such as MeSH, Wikidata or EDAM, that
+        the data provider assigned.
+      nl: >-
+        Onderwerpen uit domeinvocabulaires, zoals MeSH, Wikidata of EDAM, die de
+        dataleverancier heeft toegekend.
+      de: >-
+        Begriffe aus Fachvokabularen wie MeSH, Wikidata oder EDAM, die der
+        Datenanbieter vergeben hat.
+      fr: >-
+        Sujets issus de vocabulaires de domaine, comme MeSH, Wikidata ou EDAM,
+        attribués par le fournisseur de données.
+      es: >-
+        Materias de vocabularios de dominio, como MeSH, Wikidata o EDAM,
+        asignadas por el proveedor de datos.
+      it: >-
+        Argomenti tratti da vocabolari di dominio, come MeSH, Wikidata o EDAM,
+        assegnati dal fornitore dei dati.
+      pt: >-
+        Assuntos de vocabulários de domínio, como MeSH, Wikidata ou EDAM,
+        atribuídos pelo fornecedor dos dados.
   publisher:
     kind: agent
     paths: [dct:publisher]
     facet: main
     weight: B
-    label: {en: Publisher}
-    help: {en: "The organisation or person responsible for making the resource available."}
+    label:
+      en: Publisher
+      nl: Uitgever
+      de: Herausgeber
+      fr: Éditeur
+      es: Editor
+      it: Editore
+      pt: Editor
+    help:
+      en: "The organisation or person responsible for making the resource available."
+      nl: >-
+        De organisatie of persoon die verantwoordelijk is voor het beschikbaar
+        stellen van de bron.
+      de: >-
+        Die Organisation oder Person, die für die Bereitstellung der Ressource
+        verantwortlich ist.
+      fr: "L'organisation ou la personne chargée de mettre la ressource à disposition."
+      es: "La organización o persona responsable de poner el recurso a disposición."
+      it: "L'organizzazione o la persona responsabile di rendere disponibile la risorsa."
+      pt: "A organização ou pessoa responsável por disponibilizar o recurso."
   publisherName:
     kind: literal
     paths: [dct:publisher/foaf:name, dct:publisher/schema:name, dct:publisher/vcard:fn]
@@ -94,61 +168,192 @@ fields:
     kind: agent
     paths: [dct:creator]
     weight: D
-    label: {en: Creator}
+    label:
+      en: Creator
+      nl: Maker
+      de: Urheber
+      fr: Créateur
+      es: Creador
+      it: Autore
+      pt: Criador
   contactName:
     kind: literal
     paths: [dcat:contactPoint/vcard:fn, dcat:contactPoint/foaf:name]
     weight: D
-    label: {en: Contact}
+    label:
+      en: Contact
+      nl: Contact
+      de: Kontakt
+      fr: Contact
+      es: Contacto
+      it: Contatto
+      pt: Contacto
   contactEmail:
     kind: iri
     paths: [dcat:contactPoint/vcard:hasEmail, dcat:contactPoint/foaf:mbox]
-    label: {en: Contact e-mail}
+    label:
+      en: Contact e-mail
+      nl: Contact-e-mail
+      de: Kontakt-E-Mail
+      fr: Courriel de contact
+      es: Correo electrónico de contacto
+      it: E-mail di contatto
+      pt: E-mail de contacto
   format:
     kind: iri
     paths: [dct:format]
     facet: main
     rollup: true
     normalise: format
-    label: {en: Format}
-    help: {en: "File formats of the distributions. A dataset shows the formats of all its distributions."}
+    label:
+      en: Format
+      nl: Formaat
+      de: Format
+      fr: Format
+      es: Formato
+      it: Formato
+      pt: Formato
+    help:
+      en: "File formats of the distributions. A dataset shows the formats of all its distributions."
+      nl: >-
+        Bestandsformaten van de distributies. Een dataset toont de formaten van
+        al zijn distributies.
+      de: >-
+        Dateiformate der Distributionen. Ein Datensatz zeigt die Formate aller
+        seiner Distributionen.
+      fr: >-
+        Formats de fichier des distributions. Un jeu de données affiche les
+        formats de toutes ses distributions.
+      es: >-
+        Formatos de archivo de las distribuciones. Un conjunto de datos muestra
+        los formatos de todas sus distribuciones.
+      it: >-
+        Formati di file delle distribuzioni. Un dataset mostra i formati di
+        tutte le sue distribuzioni.
+      pt: >-
+        Formatos de ficheiro das distribuições. Um conjunto de dados mostra os
+        formatos de todas as suas distribuições.
   mediaType:
     kind: iri
     paths: [dcat:mediaType]
     facet: more
     rollup: true
     normalise: mediaType
-    label: {en: Media type}
-    help: {en: "IANA media types (such as text/csv) of the distributions."}
+    label:
+      en: Media type
+      nl: Mediatype
+      de: Medientyp
+      fr: Type de média
+      es: Tipo de medio
+      it: Tipo di media
+      pt: Tipo de média
+    help:
+      en: "IANA media types (such as text/csv) of the distributions."
+      nl: "IANA-mediatypes (zoals text/csv) van de distributies."
+      de: "IANA-Medientypen (etwa text/csv) der Distributionen."
+      fr: "Types de média IANA (comme text/csv) des distributions."
+      es: "Tipos de medio IANA (como text/csv) de las distribuciones."
+      it: "Tipi di media IANA (come text/csv) delle distribuzioni."
+      pt: "Tipos de média IANA (como text/csv) das distribuições."
   license:
     kind: iri
     paths: [dct:license, odrl:hasPolicy]
     facet: main
     rollup: true
     normalise: license
-    label: {en: Licence}
-    help: {en: "The licence under which the data may be used. A dataset shows the licences of its distributions too."}
+    label:
+      en: Licence
+      nl: Licentie
+      de: Lizenz
+      fr: Licence
+      es: Licencia
+      it: Licenza
+      pt: Licença
+    help:
+      en: >-
+        The licence under which the data may be used. A dataset shows the
+        licences of its distributions too.
+      nl: >-
+        De licentie waaronder de data gebruikt mogen worden. Een dataset toont
+        ook de licenties van zijn distributies.
+      de: >-
+        Die Lizenz, unter der die Daten genutzt werden dürfen. Ein Datensatz
+        zeigt auch die Lizenzen seiner Distributionen.
+      fr: >-
+        La licence sous laquelle les données peuvent être utilisées. Un jeu de
+        données affiche aussi les licences de ses distributions.
+      es: >-
+        La licencia bajo la que pueden usarse los datos. Un conjunto de datos
+        muestra también las licencias de sus distribuciones.
+      it: >-
+        La licenza con cui i dati possono essere usati. Un dataset mostra anche
+        le licenze delle sue distribuzioni.
+      pt: >-
+        A licença sob a qual os dados podem ser utilizados. Um conjunto de dados
+        mostra também as licenças das suas distribuições.
   accessRights:
     kind: iri
     paths: [dct:accessRights]
     facet: main
     rollup: true
     normalise: accessRights
-    label: {en: Access rights}
-    help: {en: "Whether the data is public, restricted or not public."}
+    label:
+      en: Access rights
+      nl: Toegangsrechten
+      de: Zugriffsrechte
+      fr: Droits d'accès
+      es: Derechos de acceso
+      it: Diritti di accesso
+      pt: Direitos de acesso
+    help:
+      en: "Whether the data is public, restricted or not public."
+      nl: "Of de data openbaar, beperkt of niet openbaar zijn."
+      de: "Ob die Daten öffentlich, eingeschränkt oder nicht öffentlich sind."
+      fr: "Si les données sont publiques, restreintes ou non publiques."
+      es: "Si los datos son públicos, restringidos o no públicos."
+      it: "Se i dati sono pubblici, con restrizioni o non pubblici."
+      pt: "Se os dados são públicos, restritos ou não públicos."
   language:
     kind: iri
     paths: [dct:language]
     facet: more
     normalise: language
-    label: {en: Language}
-    help: {en: "The language of the data or of its documentation."}
+    label:
+      en: Language
+      nl: Taal
+      de: Sprache
+      fr: Langue
+      es: Idioma
+      it: Lingua
+      pt: Língua
+    help:
+      en: "The language of the data or of its documentation."
+      nl: "De taal van de data of van de documentatie ervan."
+      de: "Die Sprache der Daten oder ihrer Dokumentation."
+      fr: "La langue des données ou de leur documentation."
+      es: "El idioma de los datos o de su documentación."
+      it: "La lingua dei dati o della loro documentazione."
+      pt: "A língua dos dados ou da sua documentação."
   conformsTo:
     kind: iri
     paths: [dct:conformsTo]
     facet: more
-    label: {en: Conforms to}
-    help: {en: "Standards, schemas or metadata profiles the record says it follows."}
+    label:
+      en: Conforms to
+      nl: Voldoet aan
+      de: Entspricht
+      fr: Conforme à
+      es: Conforme a
+      it: Conforme a
+      pt: Em conformidade com
+    help:
+      en: "Standards, schemas or metadata profiles the record says it follows."
+      nl: "Standaarden, schema's of metadataprofielen die het record volgens eigen opgave volgt."
+      de: "Standards, Schemas oder Metadatenprofile, denen der Eintrag nach eigener Angabe folgt."
+      fr: "Normes, schémas ou profils de métadonnées que la fiche déclare suivre."
+      es: "Normas, esquemas o perfiles de metadatos que el registro declara seguir."
+      it: "Standard, schemi o profili di metadati che il record dichiara di seguire."
+      pt: "Normas, esquemas ou perfis de metadados que o registo declara seguir."
   conformance:
     # Filled from this index's conformance checks (TASKS 11.4), not from harvested
     # triples: the specifications of the profiles a record has no violations against.
@@ -157,91 +362,312 @@ fields:
     paths: ["urn:fdpindex:conformance"]
     literals: false
     facet: main
-    label: {en: Meets profile}
-    help: {en: "Metadata profiles this index checked the record against and found no violations of (DCAT-AP, HealthDCAT-AP …). Warnings do not count."}
+    label:
+      en: Meets profile
+      nl: Voldoet aan profiel
+      de: Erfüllt Profil
+      fr: Conforme au profil
+      es: Cumple el perfil
+      it: Conforme al profilo
+      pt: Cumpre o perfil
+    help:
+      en: >-
+        Metadata profiles this index checked the record against and found no
+        violations of (DCAT-AP, HealthDCAT-AP …). Warnings do not count.
+      nl: >-
+        Metadataprofielen waartegen deze index het record heeft gecontroleerd
+        zonder overtredingen te vinden (DCAT-AP, HealthDCAT-AP …).
+        Waarschuwingen tellen niet mee.
+      de: >-
+        Metadatenprofile, gegen die dieser Index den Eintrag geprüft und keine
+        Verstöße gefunden hat (DCAT-AP, HealthDCAT-AP …). Warnungen zählen
+        nicht.
+      fr: >-
+        Profils de métadonnées par rapport auxquels cet index a vérifié la fiche
+        sans trouver de violation (DCAT-AP, HealthDCAT-AP …). Les avertissements
+        ne comptent pas.
+      es: >-
+        Perfiles de metadatos con los que este índice ha comprobado el registro
+        sin encontrar infracciones (DCAT-AP, HealthDCAT-AP …). Las advertencias
+        no cuentan.
+      it: >-
+        Profili di metadati rispetto ai quali questo indice ha verificato il
+        record senza trovare violazioni (DCAT-AP, HealthDCAT-AP …). Gli avvisi
+        non contano.
+      pt: >-
+        Perfis de metadados face aos quais este índice verificou o registo sem
+        encontrar violações (DCAT-AP, HealthDCAT-AP …). Os avisos não contam.
   spatial:
     kind: iri
     paths: [dct:spatial]
     facet: more
     normalise: country
-    label: {en: Spatial coverage}
+    label:
+      en: Spatial coverage
+      nl: Geografische dekking
+      de: Räumliche Abdeckung
+      fr: Couverture géographique
+      es: Cobertura geográfica
+      it: Copertura geografica
+      pt: Cobertura geográfica
     help:
       en: >-
-        Places the data covers: countries, regions and cities. A country named by
-        the EU, GeoNames or an ISO code is one value.
+        Places the data covers: countries, regions and cities. A country named
+        by the EU, GeoNames or an ISO code is one value.
+      nl: >-
+        Plaatsen waarop de data betrekking hebben: landen, regio's en steden.
+        Een land dat door de EU, GeoNames of een ISO-code wordt benoemd, is één
+        waarde.
+      de: >-
+        Orte, die die Daten abdecken: Länder, Regionen und Städte. Ein Land, das
+        über die EU, GeoNames oder einen ISO-Code benannt ist, ist ein einziger
+        Wert.
+      fr: >-
+        Lieux couverts par les données : pays, régions et villes. Un pays
+        désigné par l'UE, GeoNames ou un code ISO est une seule valeur.
+      es: >-
+        Lugares que abarcan los datos: países, regiones y ciudades. Un país
+        designado por la UE, GeoNames o un código ISO es un solo valor.
+      it: >-
+        Luoghi coperti dai dati: paesi, regioni e città. Un paese indicato
+        dall'UE, da GeoNames o con un codice ISO è un unico valore.
+      pt: >-
+        Locais abrangidos pelos dados: países, regiões e cidades. Um país
+        designado pela UE, pelo GeoNames ou por um código ISO é um único valor.
   country:
     kind: iri
     paths: [r3d:country]
     facet: more
     normalise: country
-    label: {en: FDP country}
-    help: {en: "The country a FAIR Data Point declares for itself."}
+    label:
+      en: FDP country
+      nl: FDP-land
+      de: FDP-Land
+      fr: Pays du FDP
+      es: País del FDP
+      it: Paese del FDP
+      pt: País do FDP
+    help:
+      en: "The country a FAIR Data Point declares for itself."
+      nl: "Het land dat een FAIR Data Point voor zichzelf opgeeft."
+      de: "Das Land, das ein FAIR Data Point für sich selbst angibt."
+      fr: "Le pays qu'un FAIR Data Point déclare pour lui-même."
+      es: "El país que un FAIR Data Point declara para sí mismo."
+      it: "Il paese che un FAIR Data Point dichiara per sé."
+      pt: "O país que um FAIR Data Point declara para si próprio."
   identifier:
     kind: literal
     paths: [dct:identifier, adms:identifier/skos:notation, fdp-o:metadataIdentifier]
     weight: D
-    label: {en: Identifier}
+    label:
+      en: Identifier
+      nl: Identificator
+      de: Kennung
+      fr: Identifiant
+      es: Identificador
+      it: Identificativo
+      pt: Identificador
   version:
     kind: literal
     paths: [dcat:version, dct:hasVersion, owl:versionInfo]
     weight: D
-    label: {en: Version}
+    label:
+      en: Version
+      nl: Versie
+      de: Version
+      fr: Version
+      es: Versión
+      it: Versione
+      pt: Versão
   landingPage:
     kind: iri
     paths: [dcat:landingPage, foaf:homepage, foaf:page]
-    label: {en: Landing page}
+    label:
+      en: Landing page
+      nl: Landingspagina
+      de: Landingpage
+      fr: Page d'accueil
+      es: Página de destino
+      it: Pagina di destinazione
+      pt: Página de destino
   accessUrl:
     kind: iri
     paths: [dcat:accessURL]
-    label: {en: Access URL}
+    label:
+      en: Access URL
+      nl: Toegangs-URL
+      de: Zugriffs-URL
+      fr: URL d'accès
+      es: URL de acceso
+      it: URL di accesso
+      pt: URL de acesso
   downloadUrl:
     kind: iri
     paths: [dcat:downloadURL]
-    label: {en: Download URL}
+    label:
+      en: Download URL
+      nl: Download-URL
+      de: Download-URL
+      fr: URL de téléchargement
+      es: URL de descarga
+      it: URL di download
+      pt: URL de transferência
   endpointUrl:
     kind: iri
     paths: [dcat:endpointURL, dcat:endpointDescription]
-    label: {en: Endpoint}
+    label:
+      en: Endpoint
+      nl: Endpoint
+      de: Endpunkt
+      fr: Point d'accès
+      es: Punto de acceso
+      it: Endpoint
+      pt: Ponto de acesso
   servesDataset:
     kind: iri
     paths: [dcat:servesDataset]
-    label: {en: Serves dataset}
+    label:
+      en: Serves dataset
+      nl: Levert dataset
+      de: Stellt Datensatz bereit
+      fr: Sert le jeu de données
+      es: Sirve el conjunto de datos
+      it: Fornisce il dataset
+      pt: Serve o conjunto de dados
   inSeries:
     kind: iri
     paths: [dcat:inSeries]
-    label: {en: In series}
+    label:
+      en: In series
+      nl: In reeks
+      de: In Serie
+      fr: Dans la série
+      es: En la serie
+      it: Nella serie
+      pt: Na série
   issued:
     kind: datetime
     paths: [dct:issued, fdp-o:metadataIssued, dct:created]
-    label: {en: Issued}
+    label:
+      en: Issued
+      nl: Uitgegeven
+      de: Veröffentlicht
+      fr: Publié
+      es: Publicado
+      it: Pubblicato
+      pt: Publicado
   modified:
     kind: datetime
     paths: [dct:modified, fdp-o:metadataModified]
-    label: {en: Modified}
+    label:
+      en: Modified
+      nl: Gewijzigd
+      de: Geändert
+      fr: Modifié
+      es: Modificado
+      it: Modificato
+      pt: Modificado
   temporal:
     kind: period
     paths: [dct:temporal]
-    label: {en: Temporal coverage}
+    label:
+      en: Temporal coverage
+      nl: Tijdsdekking
+      de: Zeitliche Abdeckung
+      fr: Couverture temporelle
+      es: Cobertura temporal
+      it: Copertura temporale
+      pt: Cobertura temporal
     help:
       en: >-
         The period the data covers. Read from dcat:startDate and dcat:endDate,
         schema:startDate and schema:endDate, time:hasBeginning and time:hasEnd,
         or a literal such as "2010/2020".
+      nl: >-
+        De periode waarop de data betrekking hebben. Gelezen uit dcat:startDate
+        en dcat:endDate, schema:startDate en schema:endDate, time:hasBeginning
+        en time:hasEnd, of een literal zoals "2010/2020".
+      de: >-
+        Der Zeitraum, den die Daten abdecken. Gelesen aus dcat:startDate und
+        dcat:endDate, schema:startDate und schema:endDate, time:hasBeginning und
+        time:hasEnd oder einem Literal wie "2010/2020".
+      fr: >-
+        La période couverte par les données. Lue depuis dcat:startDate et
+        dcat:endDate, schema:startDate et schema:endDate, time:hasBeginning et
+        time:hasEnd, ou un littéral comme "2010/2020".
+      es: >-
+        El periodo que abarcan los datos. Se lee de dcat:startDate y
+        dcat:endDate, schema:startDate y schema:endDate, time:hasBeginning y
+        time:hasEnd, o de un literal como "2010/2020".
+      it: >-
+        Il periodo coperto dai dati. Letto da dcat:startDate e dcat:endDate,
+        schema:startDate e schema:endDate, time:hasBeginning e time:hasEnd, o da
+        un letterale come "2010/2020".
+      pt: >-
+        O período abrangido pelos dados. Lido de dcat:startDate e dcat:endDate,
+        schema:startDate e schema:endDate, time:hasBeginning e time:hasEnd, ou
+        de um literal como "2010/2020".
   bbox:
     kind: geometry
     paths: [dct:spatial]
-    label: {en: Area}
+    label:
+      en: Area
+      nl: Gebied
+      de: Gebiet
+      fr: Zone
+      es: Área
+      it: Area
+      pt: Área
     help:
       en: >-
         The area the data covers, from dcat:bbox, dcat:centroid or locn:geometry
         (WKT or GeoJSON), as a box of longitudes and latitudes.
+      nl: >-
+        Het gebied waarop de data betrekking hebben, uit dcat:bbox,
+        dcat:centroid of locn:geometry (WKT of GeoJSON), als een kader van
+        lengte- en breedtegraden.
+      de: >-
+        Das Gebiet, das die Daten abdecken, aus dcat:bbox, dcat:centroid oder
+        locn:geometry (WKT oder GeoJSON), als Rechteck aus Längen- und
+        Breitengraden.
+      fr: >-
+        La zone couverte par les données, d'après dcat:bbox, dcat:centroid ou
+        locn:geometry (WKT ou GeoJSON), sous forme de rectangle de longitudes et
+        de latitudes.
+      es: >-
+        El área que abarcan los datos, a partir de dcat:bbox, dcat:centroid o
+        locn:geometry (WKT o GeoJSON), como un rectángulo de longitudes y
+        latitudes.
+      it: >-
+        L'area coperta dai dati, da dcat:bbox, dcat:centroid o locn:geometry
+        (WKT o GeoJSON), come un riquadro di longitudini e latitudini.
+      pt: >-
+        A área abrangida pelos dados, a partir de dcat:bbox, dcat:centroid ou
+        locn:geometry (WKT ou GeoJSON), como um retângulo de longitudes e
+        latitudes.
   records:
     kind: number
     paths: [healthdcatap:numberOfRecords]
     facet: more
     buckets: [100, 1000, 10000, 100000]
-    label: {en: Number of records}
-    help: {en: "As reported by the data provider; absent for most datasets."}
+    label:
+      en: Number of records
+      nl: Aantal records
+      de: Anzahl der Einträge
+      fr: Nombre d'enregistrements
+      es: Número de registros
+      it: Numero di record
+      pt: Número de registos
+    help:
+      en: "As reported by the data provider; absent for most datasets."
+      nl: "Zoals opgegeven door de dataleverancier; ontbreekt bij de meeste datasets."
+      de: "Wie vom Datenanbieter angegeben; fehlt bei den meisten Datensätzen."
+      fr: >-
+        Tel que déclaré par le fournisseur de données ; absent pour la plupart
+        des jeux de données.
+      es: "Según lo indica el proveedor de datos; falta en la mayoría de los conjuntos de datos."
+      it: "Come dichiarato dal fornitore dei dati; assente per la maggior parte dei dataset."
+      pt: "Conforme indicado pelo fornecedor dos dados; ausente na maioria dos conjuntos de dados."
 
 cards:
   # The "key fields" in the footer of a result card, per kind (§6).

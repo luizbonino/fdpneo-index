@@ -11,6 +11,7 @@
  * reader may add filters on any property of the harvested metadata
  * (`facet=prop:<IRI>` in the URL, remembered in the browser).
  */
+import { currentLocale, localized, translated } from "@/i18n";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -166,8 +167,8 @@ onMounted(() => {
   }
 });
 
-// The language of titles, descriptions and labels (TASKS 8.7): the browser's unless the
-// reader picks one; remembered in this browser.
+// The language of titles, descriptions and labels (TASKS 8.7): the interface language
+// (TASKS 13.5) unless the reader picks another; remembered in this browser.
 const LANG_KEY = "fdpindex.search.lang";
 function storedLang(): string {
   try {
@@ -186,7 +187,7 @@ watch(contentLang, (value) => {
   }
 });
 const languageNames = computed(() => {
-  const names = new Intl.DisplayNames([navigator.language || "en"], { type: "language" });
+  const names = new Intl.DisplayNames([currentLocale()], { type: "language" });
   return (landing.data.value?.languages ?? []).map((code) => ({
     code,
     name: names.of(code) ?? code,
@@ -201,7 +202,7 @@ const params = computed(() =>
   apiParams(state.value, {
     facets: requested.value.slice(0, FACETS_PER_REQUEST),
     highlight: true,
-    lang: contentLang.value || undefined,
+    lang: contentLang.value || currentLocale(),
   }),
 );
 const restParams = computed(() => {
@@ -209,7 +210,11 @@ const restParams = computed(() => {
   if (!rest.length) return null;
   return apiParams(
     { ...state.value, page: 1 },
-    { facets: rest.slice(0, FACETS_PER_REQUEST), size: 1, lang: contentLang.value || undefined },
+    {
+      facets: rest.slice(0, FACETS_PER_REQUEST),
+      size: 1,
+      lang: contentLang.value || currentLocale(),
+    },
   );
 });
 const results = useQuery({
@@ -232,7 +237,7 @@ const facetResults = computed(() => ({
 }));
 
 function label(record: Record<string, string> | undefined, fallback: string): string {
-  return record?.en ?? Object.values(record ?? {})[0] ?? fallback;
+  return localized(record, fallback);
 }
 function facetTitle(name: string): string {
   if (name === "fdp") return t("search.fdpFacet");
@@ -451,7 +456,9 @@ const counters = computed(() => {
         @click="go({ ...state, type: tab, page: 1 })"
       >
         {{ t(`search.tabs.${tab || "all"}`) }}
-        <span v-if="data" class="count">{{ (typeCounts[tab] ?? 0).toLocaleString() }}</span>
+        <span v-if="data" class="count">{{
+          (typeCounts[tab] ?? 0).toLocaleString(currentLocale())
+        }}</span>
       </button>
     </nav>
 
@@ -459,7 +466,7 @@ const counters = computed(() => {
       <ul class="counters">
         <li v-for="counter in counters" :key="counter.kind">
           <button type="button" class="counter" @click="openKind(counter.kind)">
-            <span class="n">{{ counter.count.toLocaleString() }}</span>
+            <span class="n">{{ counter.count.toLocaleString(currentLocale()) }}</span>
             <span class="what">{{ t(`search.plural.${counter.kind}`) }}</span>
           </button>
         </li>
@@ -478,9 +485,9 @@ const counters = computed(() => {
           <li v-for="item in landing.data.value.featured" :key="item.id">
             <router-link
               :to="{ name: 'search', query: routeQuery(item.query) }"
-              :title="item.description ?? undefined"
+              :title="translated(item.descriptions, item.description ?? '') || undefined"
             >
-              {{ item.title }}
+              {{ translated(item.titles, item.title) }}
             </router-link>
           </li>
         </ul>
@@ -702,14 +709,18 @@ const counters = computed(() => {
             <template v-if="data">
               {{ t("search.results", total) }}
               <span v-if="data.resources !== undefined" class="muted small">
-                {{ t("search.grouped", { n: data.resources.toLocaleString() }) }}
+                {{ t("search.grouped", { n: data.resources.toLocaleString(currentLocale()) }) }}
               </span>
               <span class="muted small">{{ t("search.took", { ms: data.took }) }}</span>
             </template>
             <template v-else>{{ t("common.loading") }}</template>
           </h2>
           <p v-if="data?.ranking" class="muted small ranking-note">
-            {{ t("search.rankedNewest", { n: data.ranking.candidates.toLocaleString() }) }}
+            {{
+              t("search.rankedNewest", {
+                n: data.ranking.candidates.toLocaleString(currentLocale()),
+              })
+            }}
           </p>
           <div class="row">
             <button type="button" class="btn sm filters-button" @click="filtersOpen = true">

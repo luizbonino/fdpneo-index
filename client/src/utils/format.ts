@@ -4,6 +4,7 @@
  * The API writes durations the way Java does (`PT168H`); people think in
  * "7 days". `toAmount` picks the largest whole unit, `toIso` writes it back.
  */
+import { currentLocale } from "@/i18n";
 
 import type { EntryState } from "@/api";
 
@@ -55,7 +56,7 @@ export function toIso(amount: number, unit: DurationUnit): string {
   return `PT${hours ? `${hours}H` : ""}${minutes ? `${minutes}M` : ""}${seconds ? `${seconds}S` : ""}`;
 }
 
-export function humanDuration(iso: string, locale = "en"): string {
+export function humanDuration(iso: string, locale = currentLocale()): string {
   const { amount, unit } = toAmount(iso);
   const format = new Intl.NumberFormat(locale, {
     style: "unit",
@@ -77,7 +78,7 @@ const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
 export function relativeTime(
   iso: string | null | undefined,
   now = Date.now(),
-  locale = "en",
+  locale = currentLocale(),
 ): string {
   if (!iso) return "—";
   const seconds = (new Date(iso).getTime() - now) / 1000;
@@ -88,7 +89,7 @@ export function relativeTime(
   return format.format(0, "minute");
 }
 
-export function absoluteTime(iso: string | null | undefined, locale = "en"): string {
+export function absoluteTime(iso: string | null | undefined, locale = currentLocale()): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
     new Date(iso),
@@ -102,7 +103,9 @@ export function countryLabel(value: string | undefined): string | undefined {
     /iso3166\/([A-Za-z]{2})$/.exec(value)?.[1] ?? (/^[A-Za-z]{2}$/.test(value) ? value : null);
   if (code) {
     try {
-      return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code;
+      return (
+        new Intl.DisplayNames([currentLocale()], { type: "region" }).of(code.toUpperCase()) ?? code
+      );
     } catch {
       return code.toUpperCase();
     }

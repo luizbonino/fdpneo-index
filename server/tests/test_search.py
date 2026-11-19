@@ -1717,9 +1717,26 @@ def test_saved_and_featured_searches(api: Api) -> None:
             "id": saved["id"],
             "title": "Registries of cancer",
             "description": None,
+            "titles": {},
+            "descriptions": {},
             "query": "q=registry&type=dataset",
         }
     ]
+    # In other languages too (TASKS 13.4); empty ones are dropped.
+    translated = api.client.put(
+        f"/index/search/saved/{saved['id']}",
+        json={**body, "featured": True, "titles": {"nl": " Kankerregisters ", "de": " "}},
+        headers=ADMIN,
+    )
+    assert translated.json()["titles"] == {"nl": "Kankerregisters"}
+    landing = api.client.get("/index/search/landing").json()["featured"]
+    assert landing[0]["titles"] == {"nl": "Kankerregisters"}
+    wrong = api.client.put(
+        f"/index/search/saved/{saved['id']}",
+        json={**body, "titles": {"Dutch": "x"}},
+        headers=ADMIN,
+    )
+    assert wrong.status_code == 400
     for bad in ("https://evil.example/?q=x", "q=a\nb", "a=1&&b"):
         response = api.client.post(
             "/index/search/saved", json={"title": "x", "query": bad}, headers=ADMIN

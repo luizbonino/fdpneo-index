@@ -5,6 +5,7 @@
  * any property. Saved separately from the index settings
  * (`PUT /index/search/settings`).
  */
+import { localized } from "@/i18n";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
@@ -75,7 +76,7 @@ function title(name: string): string {
   if (name === "fdp") return t("search.fdpFacet");
   const fields = landing.data.value?.fields ?? {};
   const label = fields[name]?.label;
-  if (label) return label.en ?? Object.values(label)[0] ?? name;
+  if (label) return localized(label, name);
   return isPropertyFacet(name) ? propertyLabel(name) : name;
 }
 

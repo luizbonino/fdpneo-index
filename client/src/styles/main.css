@@ -34,6 +34,9 @@ h4 {
   letter-spacing: var(--fair-tracking-display);
   line-height: var(--fair-leading-tight);
   margin: 0;
+  /* Long words (German compounds) break instead of widening the page (TASKS 13.2). */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 h1 {
   font-size: var(--fair-text-3xl);

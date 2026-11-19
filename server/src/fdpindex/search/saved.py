@@ -41,6 +41,24 @@ class SavedSearchRequest(BaseModel):
     )
     description: str | None = Field(default=None, max_length=500)
     featured: bool = False
+    # The title and description in other languages (TASKS 13.4): language code → text.
+    # ``title`` and ``description`` are the fallback shown when the reader's is missing.
+    titles: dict[str, str] = Field(default_factory=dict, max_length=20)
+    descriptions: dict[str, str] = Field(default_factory=dict, max_length=20)
+
+    @field_validator("titles", "descriptions")
+    @classmethod
+    def _languages(cls, value: dict[str, str]) -> dict[str, str]:
+        out: dict[str, str] = {}
+        for code, text in value.items():
+            if not re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})?", code):
+                raise ValueError(f"not a language code: {code}")
+            cleaned = " ".join(text.split())
+            if len(cleaned) > 500:
+                raise ValueError(f"{code}: at most 500 characters")
+            if cleaned:
+                out[code] = cleaned
+        return out
 
     @field_validator("title", "description")
     @classmethod
@@ -89,7 +107,14 @@ class SavedSearches:
 
     async def featured(self) -> list[dict[str, Any]]:
         return [
-            {"id": s.id, "title": s.title, "description": s.description, "query": s.query}
+            {
+                "id": s.id,
+                "title": s.title,
+                "description": s.description,
+                "titles": s.titles,
+                "descriptions": s.descriptions,
+                "query": s.query,
+            }
             for s in await self.all()
             if s.featured
         ]

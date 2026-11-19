@@ -9,8 +9,9 @@ import { apiUrl } from "@/api/client";
 import ToastHost from "@/components/ToastHost.vue";
 import ConfirmHost from "@/components/ConfirmHost.vue";
 import AppMark from "@/components/AppMark.vue";
+import { ENDONYMS, LOCALES, setLocale } from "@/i18n";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const info = useServiceInfo();
 const pending = useCounts("pending");
@@ -36,7 +37,7 @@ async function leave() {
           <span class="tagline">{{ t("app.tagline") }}</span>
         </span>
       </router-link>
-      <nav class="nav" aria-label="Main">
+      <nav class="nav" :aria-label="t('nav.main')">
         <router-link :to="{ name: 'directory' }">{{ t("nav.directory") }}</router-link>
         <router-link v-if="info.data.value?.search" :to="{ name: 'search' }">{{
           t("nav.search")
@@ -55,6 +56,17 @@ async function leave() {
         </template>
       </nav>
       <div class="tools">
+        <select
+          class="input sm language"
+          :value="locale"
+          :aria-label="t('nav.language')"
+          :title="t('nav.language')"
+          @change="setLocale(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="code in LOCALES" :key="code" :value="code" :lang="code">
+            {{ ENDONYMS[code] }}
+          </option>
+        </select>
         <button
           class="btn ghost sm"
           :title="t('nav.theme')"

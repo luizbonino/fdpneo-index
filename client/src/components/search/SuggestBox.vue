@@ -6,6 +6,7 @@
  * Arrow keys move, Enter picks the active suggestion or searches the text,
  * Escape closes the list.
  */
+import { currentLocale } from "@/i18n";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { searchApi, type Suggestion } from "@/search/api";
@@ -145,12 +146,12 @@ function fieldName(field: string): string {
         <template v-else-if="item.kind === 'query'">
           <span class="what">{{ t("search.suggest.titles") }}</span>
           <span class="text">{{ item.text }}</span>
-          <span class="count">{{ item.count.toLocaleString() }}</span>
+          <span class="count">{{ item.count.toLocaleString(currentLocale()) }}</span>
         </template>
         <template v-else>
           <span class="what">{{ fieldName(item.field) }}</span>
           <span class="text">{{ item.label }}</span>
-          <span class="count">{{ item.count.toLocaleString() }}</span>
+          <span class="count">{{ item.count.toLocaleString(currentLocale()) }}</span>
         </template>
       </li>
     </ul>

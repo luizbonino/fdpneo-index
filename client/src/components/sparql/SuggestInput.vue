@@ -7,6 +7,7 @@
  * model holds the IRI and the field shows its label. Arrow keys move through
  * the list, Enter picks, Escape closes; free text is kept as typed.
  */
+import { currentLocale } from "@/i18n";
 import { computed, onBeforeUnmount, ref, useId, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { sparqlApi, type Suggestion } from "@/sparql/api";
@@ -164,7 +165,7 @@ onBeforeUnmount(() => {
         <span v-if="item.kind === 'uri'" class="mono small muted iri" :title="item.value">{{
           shortIri(item.value)
         }}</span>
-        <span class="count small muted">{{ item.count.toLocaleString() }}</span>
+        <span class="count small muted">{{ item.count.toLocaleString(currentLocale()) }}</span>
       </li>
     </ul>
   </div>

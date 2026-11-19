@@ -4,6 +4,7 @@
  * current types, most used first, over `GET /index/search/properties`.
  * Choosing one adds a facet on it (`prop:<IRI>`) to the search.
  */
+import { currentLocale } from "@/i18n";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { searchApi, type PropertyInfo } from "@/search/api";
@@ -100,7 +101,7 @@ onMounted(() => {
           <span class="count">
             {{
               t("search.addFacet.resources", property.resources, {
-                named: { n: property.resources.toLocaleString() },
+                named: { n: property.resources.toLocaleString(currentLocale()) },
               })
             }}
           </span>

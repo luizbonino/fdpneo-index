@@ -8,6 +8,7 @@
  * The page state is in the URL: `tab`, `example` + `p.<name>`, `q` (an
  * encoded query), `b` (a builder model), so any view can be shared.
  */
+import { currentLocale } from "@/i18n";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -244,7 +245,7 @@ onMounted(async () => {
         {{
           t("sparql.endpoint.limits", {
             seconds: info.data.value?.sparql?.timeoutSeconds,
-            rows: Number(info.data.value?.sparql?.maxRows ?? 0).toLocaleString(),
+            rows: Number(info.data.value?.sparql?.maxRows ?? 0).toLocaleString(currentLocale()),
             perMinute: info.data.value?.sparql?.perMinute,
           })
         }}
@@ -345,7 +346,7 @@ onMounted(async () => {
             <li v-for="c in (schema.data.value?.classes ?? []).slice(0, 12)" :key="c.iri">
               <button class="term" :title="c.iri" @click="editor?.insertAtCursor(c.curie)">
                 <span class="mono">{{ c.curie }}</span><span class="muted small">{{
-                  c.count.toLocaleString()
+                  c.count.toLocaleString(currentLocale())
                 }}</span>
               </button>
             </li>
@@ -355,7 +356,7 @@ onMounted(async () => {
             <li v-for="p in (schema.data.value?.properties ?? []).slice(0, 25)" :key="p.iri">
               <button class="term" :title="p.iri" @click="editor?.insertAtCursor(p.curie)">
                 <span class="mono">{{ p.curie }}</span><span class="muted small">{{
-                  p.count.toLocaleString()
+                  p.count.toLocaleString(currentLocale())
                 }}</span>
               </button>
             </li>

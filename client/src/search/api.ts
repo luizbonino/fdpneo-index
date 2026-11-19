@@ -227,6 +227,9 @@ export interface FeaturedSearch {
   id: string;
   title: string;
   description: string | null;
+  /** The title and description in other languages (TASKS 13.4). */
+  titles?: Record<string, string>;
+  descriptions?: Record<string, string>;
   /** The search page's query string. */
   query: string;
 }
@@ -243,6 +246,8 @@ export interface SavedSearchRequest {
   query: string;
   description?: string | null;
   featured: boolean;
+  titles?: Record<string, string>;
+  descriptions?: Record<string, string>;
 }
 
 /** A saved query string as a route query (repeated parameters as arrays). */

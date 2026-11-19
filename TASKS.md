@@ -34,9 +34,9 @@ task are listed in the last column.
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 4/4 | – | – | ✅ Done | – |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 8/8 | – | 0 | ✅ Done | – |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 0/6 | – | 6 | ⬜ Not started | All six |
+| 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 8/9 | – | 1 | 🔹 Started | 14.8 (optional) |
-| **Total** | | **120/130** | **–** | **10** | | |
+| **Total** | | **126/130** | **–** | **4** | | |
 
 ## Phase 0 — Foundations
 
@@ -223,12 +223,12 @@ The client has vue-i18n with English only (`client/src/i18n/en.ts`, about
 with a fallback order (8.5, 11.8). This phase makes the interface itself
 multilingual.
 
-- [ ] 13.1 Audit: every user-visible string of the client through vue-i18n (no concatenated sentences; plurals with ICU rules; dates, numbers and durations through `Intl`); a list of server texts that reach people (error details, OpenSearch description, catalogue feed titles, webhook test payloads), translated or deliberately English
-- [ ] 13.2 Locale switching: a language menu, the browser's language by default, the choice remembered; `<html lang>` follows it; layout checked with long strings (a pseudo-locale) and with logical CSS properties so a right-to-left language is possible later
-- [ ] 13.3 First translations, one file per locale, and a check in CI that no locale misses a key — *first languages agreed 2026-11-19: Dutch, German, French, Spanish, Italian, Portuguese (with English)*
-- [ ] 13.4 Texts administrators write, per language: the index's name and description, saved searches' titles, featured searches (facet labels and help already are)
-- [ ] 13.5 One language setting for both: the interface language picks the metadata language by default (the search's `lang`), with the fallback order as now
-- [ ] 13.6 Tests: every locale renders every page without missing keys (unit), screenshots per locale of the main pages (e2e), axe in a second locale
+- [x] 13.1 Audit: every user-visible string of the client through vue-i18n (no concatenated sentences; plurals with ICU rules; dates, numbers and durations through `Intl`); a list of server texts that reach people (error details, OpenSearch description, catalogue feed titles, webhook test payloads), translated or deliberately English — *done: every template and script string goes through vue-i18n (the header's labels, the editor's lint notes, "Admin token", the unreachable-index error were not); dates, times, durations, numbers and country names follow the interface language through `Intl`. Server texts that reach people stay English on purpose: API error details (for developers), OpenSearch and the catalogue feed's descriptions (configured per deployment); Yes/No filter values are translated in the client*
+- [x] 13.2 Locale switching: a language menu, the browser's language by default, the choice remembered; `<html lang>` follows it; layout checked with long strings (a pseudo-locale) and with logical CSS properties so a right-to-left language is possible later — *done: a language menu in the header (endonyms), the browser's languages by default, the choice remembered; `<html lang>` follows; languages load on first use (about 11 kB each); `?locale=pseudo` in development builds stretches every message; headings break long words, a copy field no longer widens the register page; every page fits 390 px in every language and in the pseudo-locale*
+- [x] 13.3 First translations, one file per locale, and a check in CI that no locale misses a key — *first languages agreed 2026-11-19: Dutch, German, French, Spanish, Italian, Portuguese (with English)* — *done: Dutch, German, French, Spanish, Italian and European Portuguese (737 messages each); the unit tests check every language has every key, the English placeholders and plural forms, and renders; the search profile's labels and help are in all seven languages*
+- [x] 13.4 Texts administrators write, per language: the index's name and description, saved searches' titles, featured searches (facet labels and help already are) — *done: saved searches have titles and descriptions per language (`titles`, `descriptions`), edited under Settings → Saved searches → Other languages and shown to visitors in theirs; filter labels and help were per language already. The index has no name or description setting of its own; the catalogue feed's are configuration (`FDPINDEX_CATALOG_*`)*
+- [x] 13.5 One language setting for both: the interface language picks the metadata language by default (the search's `lang`), with the fallback order as now — *done: the search and the resource page ask for metadata in the interface language unless the reader picks another under "Metadata in"*
+- [x] 13.6 Tests: every locale renders every page without missing keys (unit), screenshots per locale of the main pages (e2e), axe in a second locale — *done: unit tests per language (keys, placeholders, plurals, rendering); `tests/e2e/i18n.spec.ts`: every language renders the main pages without raw keys and sets `<html lang>`, the menu switches and remembers, German passes axe. Checked by hand on live FDP data: no page wider than 390 px in any language*
 
 ## Phase 14 — Documentation
 

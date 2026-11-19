@@ -3,6 +3,7 @@
  * Every value of one facet, with a filter box: "Show more" opens this over
  * `GET /index/search/facets` (counts within the current search).
  */
+import { currentLocale } from "@/i18n";
 import { onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { searchApi, type Bucket } from "@/search/api";
@@ -85,7 +86,7 @@ onMounted(() => {
           />
           <span>{{ bucket.label }}</span>
           <span class="count" :title="approximate ? t('search.estimated') : undefined">
-            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString() }}
+            {{ approximate ? "≈" : "" }}{{ bucket.count.toLocaleString(currentLocale()) }}
           </span>
         </label>
       </li>

@@ -8,6 +8,7 @@
  * asks once, by reading the admin-only settings.
  */
 
+import { i18n } from "@/i18n";
 import { reactive, readonly } from "vue";
 import { UserManager, WebStorageStateStore } from "oidc-client-ts";
 import { ApiError, request, setTokenSource } from "@/api/client";
@@ -105,7 +106,7 @@ export async function initSession(info: ServiceInfo): Promise<void> {
   if (stored && state.tokenAvailable) {
     state.mode = "token";
     state.token = stored;
-    state.name = "Admin token";
+    state.name = i18n.global.t("common.adminToken");
     await checkAdmin();
   } else {
     const oidc = state.oidcAvailable ? oidcManager(info) : null;
@@ -126,7 +127,7 @@ export async function initSession(info: ServiceInfo): Promise<void> {
 export async function signInWithToken(token: string): Promise<boolean> {
   state.mode = "token";
   state.token = token.trim();
-  state.name = "Admin token";
+  state.name = i18n.global.t("common.adminToken");
   await checkAdmin();
   if (state.isAdmin) {
     storage()?.setItem(TOKEN_KEY, state.token);

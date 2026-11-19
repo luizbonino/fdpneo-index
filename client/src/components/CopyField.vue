@@ -30,6 +30,9 @@ async function copy() {
   display: flex;
   gap: var(--fair-space-2);
   align-items: flex-start;
+  /* A long command scrolls inside its box instead of widening the page. */
+  min-width: 0;
+  max-width: 100%;
 }
 .copy-field .code {
   flex: 1;

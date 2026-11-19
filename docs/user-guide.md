@@ -3,6 +3,10 @@
 For people looking for data: what the index holds, and how to find things
 in it. No account is needed for anything on this page.
 
+*Also in [Nederlands](nl/user-guide.md), [Deutsch](de/user-guide.md),
+[Français](fr/user-guide.md), [Español](es/user-guide.md),
+[Italiano](it/user-guide.md) and [Português](pt/user-guide.md).*
+
 ## What is in the index
 
 FAIR Data Points (FDPs) publish metadata about data: catalogs, datasets,

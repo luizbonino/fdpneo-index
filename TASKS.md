@@ -35,8 +35,8 @@ task are listed in the last column.
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 8/8 | – | 0 | ✅ Done | – |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
-| 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 8/9 | – | 1 | 🔹 Started | 14.8 (optional) |
-| **Total** | | **126/130** | **–** | **4** | | |
+| 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 9/9 | – | – | ✅ Done | – |
+| **Total** | | **127/130** | **–** | **3** | | |
 
 ## Phase 0 — Foundations
 
@@ -242,6 +242,6 @@ features landed. This phase organises it by audience and publishes it.
 - [x] 14.5 Deployment and operations: Compose and container images, a configuration reference generated from the settings class, upgrades and migrations, backup and restore, monitoring, security hardening (from `deploying.md` and `operations.md`) — *done: `configuration.md` lists every `FDPINDEX_*` variable by topic (a test fails when one is missing); deploying and operations stay as they were*
 - [x] 14.6 API and integration: the OpenAPI reference rendered, worked examples (curl, Python) for search, SPARQL, OpenSearch, the catalogue feed and OAI-PMH, the reference index's API for existing clients — *done: `api.md` (worked examples; every request runs against a test index in `tests/test_docs.py`), `api-reference.md` (Redoc over `openapi.json`)*
 - [x] 14.7 Agents and MCP: connecting an agent through `fdp-mcp`'s index mode, the tools and what they return, example sessions (after 11.7) — *done: `agents.md`: connecting fdp-mcp in index mode, the tools, what the bridge may reach, an example session*
-- [ ] 14.8 Translations of the guide for people searching, in Phase 13's languages (optional, once the interface is translated)
+- [x] 14.8 Translations of the guide for people searching, in Phase 13's languages (optional, once the interface is translated) — *done: `docs/<lang>/user-guide.md` in Dutch, German, French, Spanish, Italian and Portuguese, with the interface's own labels; linked from the English guide and the site's navigation*
 - [x] 14.9 Documentation checks in CI: links, commands and API examples run against a test index, screenshots up to date — *done: strict site build (links, anchors), API examples run in the server tests, the configuration check; screenshots by script (not compared in CI)*
 

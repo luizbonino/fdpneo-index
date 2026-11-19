@@ -50,7 +50,14 @@ validation:
     unrecognized_links: warn
 nav:
   - Home: index.md
-  - Finding data: user-guide.md
+  - Finding data:
+      - English: user-guide.md
+      - Nederlands: nl/user-guide.md
+      - Deutsch: de/user-guide.md
+      - Français: fr/user-guide.md
+      - Español: es/user-guide.md
+      - Italiano: it/user-guide.md
+      - Português: pt/user-guide.md
   - Publishing metadata:
       - FDPs and the index: data-holders.md
       - FDPneo servers: with-fdpneo.md

@@ -635,8 +635,8 @@ export const de: Messages = {
       titles: "Titel",
       fields: {
         keyword: "Schlagwort",
-        subject: "Thema",
-        theme: "Themenbereich",
+        subject: "Sachgebiet",
+        theme: "Thema",
         publisher: "Herausgeber",
       },
     },

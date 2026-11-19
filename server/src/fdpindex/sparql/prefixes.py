@@ -30,6 +30,9 @@ PREFIXES: dict[str, str] = {
     "fdp-o": "https://w3id.org/fdp/fdp-o#",
     "r3d": "http://www.re3data.org/schema/3-0#",
     "healthdcatap": "http://healthdataportal.eu/ns/health#",
+    "dcatap": "http://data.europa.eu/r5r/",
+    "dpv": "https://w3id.org/dpv#",
+    "geosparql": "http://www.opengis.net/ont/geosparql#",
     "fdpindex": "urn:fdpindex:",
 }
 

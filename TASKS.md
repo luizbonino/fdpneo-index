@@ -32,9 +32,9 @@ task are listed in the last column.
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 13/13 | – | – | ✅ Done | – (a pass with a real screen reader is still worth doing) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 8/9 | – | 1 | ✅ Done | 9.6, moved to 11.5 |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 2/4 | – | 2 | 🔹 Started | Semantic search (10.1), SPARQL grammar (10.4) |
-| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
+| 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | 1 | 7 | 🔹 Started | Design note (11.1) awaiting review; all of 11.2 to 11.8 |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **101/115** | **–** | **14** | | |
+| **Total** | | **101/115** | **1** | **13** | | |
 
 ## Phase 0 — Foundations
 
@@ -197,7 +197,7 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 
 ### Phase 11 — Conformance and republication
 
-- [ ] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile
+- [~] 11.1 Design note, as for search: profile packs, where results are stored, per-surface strictness, the DCAT-AP republication, the EHDS profile — *drafted in `docs/design/conformance.md`, awaiting review (seven questions in §9)*
 - [ ] 11.2 SHACL profile packs as data (DCAT-AP 3, HealthDCAT-AP R5, Health-RI core), versioned, each for declared record types
 - [ ] 11.3 Validation of every harvested record against the deployment's packs, results stored; a conformance report per FDP for data holders (API and page)
 - [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default

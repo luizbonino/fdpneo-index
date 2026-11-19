@@ -79,6 +79,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/catalog": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The catalogue feed
+     * @description Harvested catalogues, datasets, series and services as a DCAT-AP catalogue: one dcat:CatalogRecord per resource (foaf:primaryTopic the resource, dct:source its FDP document, dct:conformsTo the profiles it meets) with the resource's triples as harvested. Paged with Hydra: follow hydra:next.
+     */
+    get: operations["catalog_index_catalog_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/catalog/records/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A catalogue record
+     * @description One dcat:CatalogRecord of the feed with its resource's triples.
+     */
+    get: operations["catalog_record_index_catalog_records__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/config": {
     parameters: {
       query?: never;
@@ -364,6 +404,30 @@ export interface paths {
     get: operations["get_event_index_events__event_id__get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/oai": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * OAI-PMH
+     * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
+     */
+    get: operations["oai_get_index_oai_get"];
+    put?: never;
+    /**
+     * OAI-PMH (form)
+     * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
+     */
+    post: operations["oai_post_index_oai_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2122,6 +2186,10 @@ export interface components {
     ServiceInfo: {
       /** Auth */
       auth: ("oidc" | "token")[];
+      /** Catalog */
+      catalog?: {
+        [key: string]: string;
+      } | null;
       /** Name */
       name: string;
       /** Oidc */
@@ -2465,6 +2533,87 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  catalog_index_catalog_get: {
+    parameters: {
+      query?: {
+        /** @description Position from hydra:next */
+        after?: number | null;
+        size?: number;
+        /** @description ttl, rdf, jsonld or nt */
+        format?: string | null;
+      };
+      header?: {
+        accept?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  catalog_record_index_catalog_records__public_id__get: {
+    parameters: {
+      query?: {
+        /** @description ttl, rdf, jsonld or nt */
+        format?: string | null;
+      };
+      header?: {
+        accept?: string;
+      };
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
       };
     };
   };
@@ -3039,6 +3188,48 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  oai_get_index_oai_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "text/xml": unknown;
+        };
+      };
+    };
+  };
+  oai_post_index_oai_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "text/xml": unknown;
         };
       };
     };

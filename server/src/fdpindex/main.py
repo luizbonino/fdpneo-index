@@ -18,11 +18,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fdpindex import __version__
+from fdpindex.api.catalog import router as catalog_router
 from fdpindex.api.conformance import router as conformance_router
 from fdpindex.api.routes import router
 from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
 from fdpindex.auth import Authenticator, OidcVerifier
+from fdpindex.catalog.feed import CatalogFeed, CatalogMeta
 from fdpindex.config import Settings, get_settings
 from fdpindex.conformance.packs import discover as discover_packs
 from fdpindex.conformance.service import ConformanceService
@@ -208,6 +210,7 @@ def create_app(
             config, factory, index, search, conformance_settings, sparql
         )
         app.state.conformance = conformance
+        app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
@@ -257,7 +260,34 @@ def create_app(
     app.include_router(sparql_router)
     app.include_router(search_router)
     app.include_router(conformance_router)
+    app.include_router(catalog_router)
     return app
+
+
+def _catalog_feed(
+    config: Settings,
+    factory: async_sessionmaker[AsyncSession],
+    index: IndexService,
+    search: SearchService | None,
+    conformance: ConformanceService | None,
+) -> CatalogFeed | None:
+    """The catalogue feed (TASKS 11.5): it lists records from the search projection."""
+    if not config.catalog_enabled or search is None:
+        return None
+    meta = CatalogMeta(
+        title=config.catalog_title,
+        description=config.catalog_description,
+        publisher=config.catalog_publisher or config.catalog_title,
+        publisher_url=config.catalog_publisher_url,
+        homepage=config.public_url,
+    )
+    return CatalogFeed(
+        factory,
+        meta,
+        hide_expired=index.hides_expired,
+        minimum=(lambda: conformance.minimum("feed")) if conformance is not None else None,
+        specs=conformance.specs if conformance is not None else None,
+    )
 
 
 async def _start_conformance(

@@ -49,6 +49,10 @@ The first release will contain:
 - **Conformance in search and per surface**: a "Meets profile" filter and
   card line, and a minimum per surface (search, SPARQL, the list of FDPs,
   the catalogue feed) that shows visitors only conforming records.
+- **Catalogue feed**: the harvested metadata republished as DCAT-AP 3 at
+  `/index/catalog` (Hydra paging) and over OAI-PMH at `/index/oai`, one
+  catalogue record per resource with links back to its FDP, for
+  aggregators such as data.europa.eu.
 
 ### Fixed
 

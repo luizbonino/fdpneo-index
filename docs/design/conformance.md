@@ -329,6 +329,19 @@ DCAT-AP 3 catalogue that an aggregator such as data.europa.eu can harvest:
   the others, strict in the EHDS profile. See §9, question 4.
 - **Validated in a test** with the DCAT-AP 3 shapes (what 9.6 asked for).
 
+**As built (11.5, 2026-11-19).** The feed lists records from the search
+projection (kind, IRI, node, distributions), so it needs search on. Pages
+are keyset pages over the projection's row id (`after`), for both Hydra and
+OAI-PMH resumption tokens. `dct:source` is the FDP document the resource was
+harvested from; `dct:modified` is when the index last saw the record change
+(the projection's `harvested_at`); `dct:issued` (first harvested) is left
+out, as the index does not keep it. FDP roots are not records of the feed.
+OAI-PMH: Identify, ListMetadataFormats, ListSets (no sets), ListIdentifiers,
+ListRecords, GetRecord; `from`/`until` on the datestamp; no deleted
+records. The catalogue's own description comes from `FDPINDEX_CATALOG_*`.
+A test validates the feed's catalogue, publisher and catalogue records
+against the DCAT-AP 3.0.1 pack: no violations.
+
 ## 7. The EHDS deployment profile (11.6)
 
 `FDPINDEX_DEPLOYMENT_PROFILE=ehds` sets, as defaults an administrator can

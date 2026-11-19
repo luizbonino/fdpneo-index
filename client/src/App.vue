@@ -86,6 +86,12 @@ async function leave() {
       t("footer.version", { version: info.data.value.version })
     }}</span>
     <a :href="apiUrl('/docs')">{{ t("footer.api") }}</a>
+    <a
+      v-if="info.data.value?.catalog"
+      :href="info.data.value.catalog.feed"
+      :title="t('footer.feedHelp')"
+      >{{ t("footer.feed") }}</a
+    >
   </footer>
   <ToastHost />
   <ConfirmHost />

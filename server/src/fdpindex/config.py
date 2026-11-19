@@ -102,6 +102,18 @@ class Settings(BaseSettings):
     # background. Packs: the bundled DCAT-AP, HealthDCAT-AP and Health-RI ones, and an
     # operator's directory of <id>/<version>/pack.yaml. Workers: processes running
     # pySHACL; -1 for the CPUs less one (at most four), 0 for a thread of this process.
+    # The catalogue feed (TASKS 11.5): the harvested metadata republished as DCAT-AP at
+    # /index/catalog and over OAI-PMH at /index/oai. Needs search (the projection lists
+    # the records). The catalogue's own description:
+    catalog_enabled: bool = True
+    catalog_title: str = "FDPneo Index"
+    catalog_description: str = (
+        "Metadata harvested from FAIR Data Points by this index, as each FDP publishes it; "
+        "every record links back to its source."
+    )
+    catalog_publisher: str = Field(default="", description="Name; the title when empty")
+    catalog_publisher_url: str | None = None
+    catalog_contact_email: str | None = None  # OAI-PMH adminEmail
     conformance_enabled: bool = True
     conformance_packs: Path | None = None
     conformance_workers: int = Field(default=-1, ge=-1, le=64)

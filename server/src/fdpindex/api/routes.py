@@ -197,6 +197,12 @@ def _service_info(request: Request) -> ServiceInfo:
         }
         if getattr(request.app.state, "search", None) is not None
         else None,
+        catalog={
+            "feed": public_url(request, "catalog"),
+            "oai": public_url(request, "oai_get"),
+        }
+        if getattr(request.app.state, "catalog_feed", None) is not None
+        else None,
     )
 
 

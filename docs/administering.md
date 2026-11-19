@@ -178,6 +178,32 @@ packs` lists every pack and checks its files against its `SHA256SUMS`;
 `fdpindex conformance fetch my-rules` downloads a pack's files again from the
 `source.download` its manifest names.
 
+## The catalogue feed
+
+The index republishes what it harvested as a DCAT-AP catalogue, for
+aggregators such as data.europa.eu:
+
+- `GET /index/catalog`: a DCAT-AP 3 catalogue in Turtle, RDF/XML (`?format=rdf`),
+  JSON-LD or N-Triples, 100 records a page (`size` up to 500), with Hydra
+  paging (`hydra:next`, and a `Link: rel="next"` header);
+- `GET /index/oai`: the same records over OAI-PMH 2.0, metadata format
+  `dcat_ap`, which data.europa.eu's harvester prefers (`ListRecords`).
+
+Each harvested catalogue, dataset, series and data service is one
+`dcat:CatalogRecord` under the index's own URL
+(`/index/catalog/records/<id>`, the id the search uses), pointing at the
+resource under its own IRI (`foaf:primaryTopic`), at the FDP document it came
+from (`dct:source`), at when the index last saw it change (`dct:modified`),
+and at the checked profiles it conforms to (`dct:conformsTo`). The
+resource's triples follow as the FDP published them, with its
+distributions'; the index does not rewrite them, and a dataset several FDPs
+list is several records. **Settings → Conformance → What visitors see →
+Catalogue feed** republishes only what conforms to a profile.
+
+Before registering the feed with an aggregator, set the catalogue's title,
+description, publisher and contact address (`FDPINDEX_CATALOG_*`, see the
+README) and `FDPINDEX_PUBLIC_URL`, which the record IRIs are built from.
+
 ## Webhooks
 
 **Webhooks** sends a signed POST to an address of yours when something

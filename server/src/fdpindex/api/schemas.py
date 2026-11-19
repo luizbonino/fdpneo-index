@@ -304,6 +304,8 @@ class ServiceInfo(_Api):
     sparql: dict[str, Any] | None = None
     # addition: the faceted search (search design §5)
     search: dict[str, Any] | None = None
+    # addition: the catalogue feed (TASKS 11.5): DCAT-AP and OAI-PMH addresses
+    catalog: dict[str, str] | None = None
 
 
 def _harvest_outcome(report: dict[str, Any]) -> str | None:

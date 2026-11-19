@@ -2783,6 +2783,20 @@
             "title": "Auth",
             "type": "array"
           },
+          "catalog": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -3388,6 +3402,174 @@
         "summary": "Trigger All",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/catalog": {
+      "get": {
+        "description": "Harvested catalogues, datasets, series and services as a DCAT-AP catalogue: one dcat:CatalogRecord per resource (foaf:primaryTopic the resource, dct:source its FDP document, dct:conformsTo the profiles it meets) with the resource's triples as harvested. Paged with Hydra: follow hydra:next.",
+        "operationId": "catalog_index_catalog_get",
+        "parameters": [
+          {
+            "description": "Position from hydra:next",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Position from hydra:next",
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "ttl, rdf, jsonld or nt",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ttl, rdf, jsonld or nt",
+              "title": "Format"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept",
+            "required": false,
+            "schema": {
+              "default": "text/turtle",
+              "title": "Accept",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/ld+json": {},
+              "application/n-triples": {},
+              "application/rdf+xml": {},
+              "text/turtle": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The catalogue feed",
+        "tags": [
+          "Catalogue feed"
+        ]
+      }
+    },
+    "/index/catalog/records/{public_id}": {
+      "get": {
+        "description": "One dcat:CatalogRecord of the feed with its resource's triples.",
+        "operationId": "catalog_record_index_catalog_records__public_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "public_id",
+            "required": true,
+            "schema": {
+              "title": "Public Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "ttl, rdf, jsonld or nt",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ttl, rdf, jsonld or nt",
+              "title": "Format"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept",
+            "required": false,
+            "schema": {
+              "default": "text/turtle",
+              "title": "Accept",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/ld+json": {},
+              "application/n-triples": {},
+              "application/rdf+xml": {},
+              "text/turtle": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A catalogue record",
+        "tags": [
+          "Catalogue feed"
         ]
       }
     },
@@ -4350,6 +4532,46 @@
         "summary": "Get Event",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/oai": {
+      "get": {
+        "description": "The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).",
+        "operationId": "oai_get_index_oai_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/xml": {}
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "OAI-PMH",
+        "tags": [
+          "Catalogue feed"
+        ]
+      },
+      "post": {
+        "description": "The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).",
+        "operationId": "oai_post_index_oai_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/xml": {}
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "OAI-PMH (form)",
+        "tags": [
+          "Catalogue feed"
         ]
       }
     },

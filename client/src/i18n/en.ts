@@ -806,6 +806,8 @@ export const en = {
   },
   footer: {
     api: "API",
+    feed: "DCAT-AP feed",
+    feedHelp: "The harvested metadata as a DCAT-AP catalogue, also over OAI-PMH at /index/oai",
     version: "Version {version}",
   },
 };

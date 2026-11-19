@@ -23,6 +23,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.sparql.examples import Example, Library, default_library, expand
 from fdpindex.sparql.gate import CheckedQuery, QueryRejected, check_query, iri_term, string_term
 from fdpindex.sparql.labels import KNOWN_LABELS, humanize
@@ -50,12 +51,8 @@ _ACCEPT: dict[str, str] = {
 }
 _FORMAT_NAMES = {name: name for name in MEDIA_TYPES} | {"ttl": "turtle", "nt": "ntriples"}
 
-LABEL_PREDICATES = (
-    "http://www.w3.org/2004/02/skos/core#prefLabel",
-    "http://www.w3.org/2000/01/rdf-schema#label",
-    "http://purl.org/dc/terms/title",
-    "http://xmlns.com/foaf/0.1/name",
-)
+# The same predicates the search projection and the concept resolver read.
+LABEL_PREDICATES = tuple(str(p) for p in RDF_LABEL_PREDICATES)
 
 
 @dataclass(frozen=True)

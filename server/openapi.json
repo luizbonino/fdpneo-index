@@ -2941,7 +2941,7 @@
     },
     "/index/sparql/labels": {
       "post": {
-        "description": "Labels for up to 500 IRIs, from bundled vocabularies and the harvested data.",
+        "description": "Labels for up to 500 IRIs: bundled vocabularies, the harvested data, and labels\nresolved from the concepts' own vocabularies (ADR-0006).",
         "operationId": "sparql_labels_index_sparql_labels_post",
         "requestBody": {
           "content": {

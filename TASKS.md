@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-64 of 111 tasks are done and 5 are in progress (19 November 2026). "Done"
+65 of 111 tasks are done and 5 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -29,12 +29,12 @@ task are listed in the last column.
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 0/4 | – | 4 | ⬜ Not started (decided 19 Nov) | All four |
 | 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 13/16 | 2 | 1 | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12), operator docs (6.16) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 13/14 | – | 1 | 🟡 Mostly done | User and operator docs (7.14); leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
-| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, polish | 0/9 | 1 | 8 | 🔹 Started | All but 8.9 (only its keyboard and screen-reader pass is left) |
+| 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, polish | 1/9 | 1 | 7 | 🔹 Started | All but 8.6 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | – | 8 | 🔹 Started | All but 9.9 (done with 6.15) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **64/111** | **5** | **42** | | |
+| **Total** | | **65/111** | **5** | **41** | | |
 
 ## Phase 0 — Foundations
 
@@ -162,7 +162,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [ ] 8.3 Temporal coverage: `dct:temporal` with `dcat:`, `schema:` and `time:` forms, literal ranges; `temporalFrom`/`temporalTo`; range inputs in the client
 - [ ] 8.4 Spatial facet from `dct:spatial` IRIs with labels (EU country/place/continent, GeoNames via the bundled pack)
 - [ ] 8.5 Numeric-range and boolean facet kinds end to end (`value_num`, buckets, yes/no groups), with a bundled HealthDCAT-AP extension profile as the worked example
-- [ ] 8.6 Remote label resolution through `OutboundClient` with a host allow-list, off by default, background with cached misses
+- [x] 8.6 Remote label resolution through `OutboundClient` with a host allow-list, off by default, background with cached misses — *done (ADR-0006): labels, synonyms and broader concepts from Wikidata, ROR, OLS (OBO, EDAM) and RDF content negotiation; one shared list of naming predicates (`dct:title`, `dc:title`, `schema:name` … besides `rdfs:label`); used in search, facets and SPARQL labels; off by default*
 - [ ] 8.7 Multilingual display: `lang` / `Accept-Language` pick for titles, descriptions and labels; language switch in the client; index default language in settings
 - [ ] 8.8 Cross-FDP duplicates: `dedup_key` (DOI, identifiers, `owl:sameAs`, landing page), `duplicates` on hits, `collapse=true`, "also in n other FDPs" on cards
 - [~] 8.9 Client polish: active-filter chips, "show more" facet dialog, "more facets", copy link, empty and busy states, keyboard and screen-reader pass — *done with 6.13 except the keyboard and screen-reader pass*

@@ -153,3 +153,113 @@ def extract_repository_metadata(graph: Graph, client_url: str) -> RepositoryMeta
         if names:
             result.metadata["publisherName"] = str(_preferred(names))
     return result
+
+
+# --- naming concepts (labels, synonyms, broader concepts) ---------------------------------
+
+# Vocabularies name things with different predicates; the first that has a value wins.
+_SKOS = "http://www.w3.org/2004/02/skos/core#"
+_SKOSXL = "http://www.w3.org/2008/05/skos-xl#"
+_GN = "http://www.geonames.org/ontology#"
+_VCARD = "http://www.w3.org/2006/vcard/ns#"
+LABEL_PREDICATES: tuple[URIRef, ...] = tuple(
+    URIRef(iri)
+    for iri in (
+        _SKOS + "prefLabel",
+        "http://www.w3.org/2000/01/rdf-schema#label",
+        "http://purl.org/dc/terms/title",
+        "http://purl.org/dc/elements/1.1/title",
+        "http://schema.org/name",
+        "https://schema.org/name",
+        "http://xmlns.com/foaf/0.1/name",
+        _VCARD + "fn",
+        _VCARD + "organization-name",
+        _GN + "name",
+        _GN + "officialName",
+    )
+)
+SYNONYM_PREDICATES: tuple[URIRef, ...] = tuple(
+    URIRef(iri)
+    for iri in (
+        _SKOS + "altLabel",
+        "http://schema.org/alternateName",
+        "https://schema.org/alternateName",
+        "http://purl.org/dc/terms/alternative",
+        "http://www.geneontology.org/formats/oboInOwl#hasExactSynonym",
+        _GN + "alternateName",
+    )
+)
+BROADER_PREDICATES: tuple[URIRef, ...] = tuple(
+    URIRef(iri)
+    for iri in (
+        _SKOS + "broader",
+        "http://id.nlm.nih.gov/mesh/vocab#broaderDescriptor",
+        "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    )
+)
+SKOSXL_PREF = URIRef(_SKOSXL + "prefLabel")
+SKOSXL_ALT = URIRef(_SKOSXL + "altLabel")
+SKOSXL_LITERAL = URIRef(_SKOSXL + "literalForm")
+
+
+@dataclass
+class ConceptNames:
+    """What a graph says about one IRI: a label per language, synonyms, broader IRIs."""
+
+    labels: dict[str, str] = field(default_factory=lambda: {})
+    synonyms: dict[str, list[str]] = field(default_factory=lambda: {})
+    broader: list[str] = field(default_factory=lambda: [])
+
+    @property
+    def empty(self) -> bool:
+        return not self.labels and not self.synonyms
+
+
+def iri_variants(iri: str) -> set[str]:
+    """The forms one IRI is written in: http/https, with or without a trailing slash."""
+    forms = {iri, iri.rstrip("/"), iri.rstrip("/") + "/"}
+    for form in list(forms):
+        if form.startswith("https://"):
+            forms.add("http://" + form[8:])
+        elif form.startswith("http://"):
+            forms.add("https://" + form[7:])
+    return forms
+
+
+def describe(graph: Graph, iri: str) -> ConceptNames:
+    """Labels, synonyms and broader concepts ``graph`` gives ``iri`` (in any of its forms)."""
+    subjects = [URIRef(form) for form in iri_variants(iri)]
+    names = ConceptNames()
+
+    def literals(predicates: tuple[URIRef, ...], xl: URIRef) -> list[tuple[int, Literal]]:
+        found: list[tuple[int, Literal]] = []
+        for rank, predicate in enumerate(predicates):
+            for subject in subjects:
+                found.extend(
+                    (rank, o)
+                    for o in graph.objects(subject, predicate)
+                    if isinstance(o, Literal) and str(o).strip()
+                )
+        # SKOS-XL: the label is a resource with a literal form.
+        for subject in subjects:
+            for label in graph.objects(subject, xl):
+                found.extend(
+                    (0, o)
+                    for o in graph.objects(label, SKOSXL_LITERAL)
+                    if isinstance(o, Literal) and str(o).strip()
+                )
+        return found
+
+    for _rank, literal in sorted(literals(LABEL_PREDICATES, SKOSXL_PREF), key=lambda item: item[0]):
+        names.labels.setdefault((literal.language or "").lower(), " ".join(str(literal).split()))
+    for _rank, literal in literals(SYNONYM_PREDICATES, SKOSXL_ALT):
+        text = " ".join(str(literal).split())
+        lang = (literal.language or "").lower()
+        if text != names.labels.get(lang) and text not in names.synonyms.get(lang, []):
+            names.synonyms.setdefault(lang, []).append(text)
+    for predicate in BROADER_PREDICATES:
+        for subject in subjects:
+            for o in graph.objects(subject, predicate):
+                if isinstance(o, URIRef) and str(o) not in names.broader and str(o) != iri:
+                    names.broader.append(str(o))
+    return names

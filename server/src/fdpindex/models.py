@@ -303,3 +303,52 @@ class SearchEntryState(Base):
     profile_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     resources: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     projected_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+
+
+# --- concept labels (TASKS 8.6, ADR-0006) ------------------------------------------
+
+
+class ConceptStatus(enum.StrEnum):
+    PENDING = "pending"  # found in harvested metadata, not fetched yet
+    RESOLVED = "resolved"  # labels found
+    MISSING = "missing"  # fetched, but no label for it
+    FAILED = "failed"  # the fetch failed; tried again later
+    SKIPPED = "skipped"  # host not on the allow-list (rechecked when the list changes)
+
+
+class Concept(Base):
+    """An IRI used as a value in harvested metadata, and what its vocabulary says about it.
+
+    Shared by every FDP that uses the IRI; harvested data that labels it is in
+    ``search_label`` instead.
+    """
+
+    __tablename__ = "concept"
+
+    iri: Mapped[str] = mapped_column(String(2048), primary_key=True)
+    host: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[ConceptStatus] = mapped_column(
+        _enum(ConceptStatus, "concept_status"), nullable=False, default=ConceptStatus.PENDING
+    )
+    source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Levels above an IRI used in metadata (broader concepts are resolved too, up to a depth).
+    depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    broader: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    fetched_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    due_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+
+    __table_args__ = (Index("ix_concept_status_due", "status", "due_at"),)
+
+
+class ConceptLabel(Base):
+    """A label (``pref``) or synonym (``alt``) of a concept, per language (``""`` untagged)."""
+
+    __tablename__ = "concept_label"
+
+    iri: Mapped[str] = mapped_column(
+        ForeignKey("concept.iri", ondelete="CASCADE"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(8), primary_key=True)
+    lang: Mapped[str] = mapped_column(String(32), primary_key=True)
+    label: Mapped[str] = mapped_column(String(512), primary_key=True)

@@ -26,7 +26,7 @@ import base64
 import hashlib
 import json
 import re
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
@@ -35,6 +35,7 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
+from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
 from fdpindex.search.vocab import bundled_label
 
@@ -64,17 +65,11 @@ IS_PART_OF = URIRef(DCT + "isPartOf")
 LDP_CONTAINS = URIRef(LDP + "contains")
 IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 
-LABEL_PREDICATES = tuple(
-    URIRef(iri)
-    for iri in (
-        "http://www.w3.org/2004/02/skos/core#prefLabel",
-        "http://www.w3.org/2000/01/rdf-schema#label",
-        DCT + "title",
-        "http://xmlns.com/foaf/0.1/name",
-        "http://schema.org/name",
-        "http://www.w3.org/2006/vcard/ns#fn",
-    )
-)
+# What names a thing: skos:prefLabel, rdfs:label, dct:title, dc:title, schema:name,
+# foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
+LABEL_PREDICATES = RDF_LABEL_PREDICATES
+# Bumped when the projection's output changes for the same input: entries are re-projected.
+PROJECTION_VERSION = 2
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -180,6 +175,53 @@ class ResourceRow:
         }
         text = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         return hashlib.sha256(text.encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class ConceptText:
+    """A resolved concept's names (ADR-0006): labels and synonyms per language, and one
+    label of each broader concept (``(lang, label)``)."""
+
+    labels: dict[str, str]
+    synonyms: dict[str, list[str]]
+    broader: list[tuple[str, str]]
+
+
+_ONE_LOWER = {"A": "B", "B": "C", "C": "D", "D": "D"}
+
+
+def enrich(
+    projection: EntryProjection, concepts: Mapping[str, ConceptText], profile: Profile
+) -> None:
+    """Add resolved concept names to the text of the resources that use the concepts.
+
+    Labels at the field's weight, synonyms one lower, broader concepts' labels at
+    ``D``: a search for a broader concept finds what is tagged with a narrower one,
+    below what matches it directly.
+    """
+    if not concepts:
+        return
+    for row in projection.resources:
+        seen = {text.lower() for _, _, text in row.segments}
+        for value in row.values:
+            spec = profile.fields.get(value.field)
+            concept = concepts.get(value.value)
+            if concept is None or spec is None or spec.weight is None:
+                continue
+            for lang, label in sorted(concept.labels.items()):
+                _add_segment(row, seen, lang, spec.weight, label)
+            for lang, synonyms in sorted(concept.synonyms.items()):
+                for synonym in synonyms:
+                    _add_segment(row, seen, lang, _ONE_LOWER[spec.weight], synonym)
+            for lang, label in concept.broader:
+                _add_segment(row, seen, lang, "D", label)
+
+
+def _add_segment(row: ResourceRow, seen: set[str], lang: str, weight: str, text: str) -> None:
+    cleaned = _clean(text, MAX_TITLE_CHARS)
+    if cleaned and cleaned.lower() not in seen:
+        seen.add(cleaned.lower())
+        row.segments.append((ts_config(lang), weight, cleaned))
 
 
 @dataclass(frozen=True)

@@ -15,6 +15,20 @@ from typing import Annotated, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+# Vocabulary hosts asked for concept labels when resolution is on (ADR-0006).
+DEFAULT_LABEL_HOSTS = (
+    "www.wikidata.org",
+    "ror.org",
+    "purl.obolibrary.org",
+    "edamontology.org",
+    "id.nlm.nih.gov",
+    "publications.europa.eu",
+    "orcid.org",
+    "vocab.nerc.ac.uk",
+    "id.loc.gov",
+    "sws.geonames.org",
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -75,13 +89,30 @@ class Settings(BaseSettings):
     search_rate_per_minute: int = Field(default=120, ge=0)
     search_timeout_seconds: float = Field(default=5, gt=0)
     search_admin_timeout_seconds: float = Field(default=30, gt=0)
+    # Concept labels from vocabularies (TASKS 8.6, ADR-0006): off by default, because it
+    # sends requests to third-party hosts. Only these hosts are asked, each hop of a fetch.
+    labels_resolve: bool = False
+    labels_hosts: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: list(DEFAULT_LABEL_HOSTS)
+    )
+    labels_languages: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["en", "nl", "de", "fr", "es", "it", "pt", "sv", "da", "fi"]
+    )
+    labels_refresh_days: int = Field(default=30, ge=1)
+    labels_retry_days: int = Field(default=7, ge=1)
+    labels_broader_depth: int = Field(default=2, ge=0, le=5)
+    labels_interval_seconds: float = Field(default=60, gt=0)
+    labels_requests_per_second: float = Field(default=2, gt=0)
+    labels_max_bytes: int = Field(default=2 * 1024 * 1024, gt=0)
     # Public base URL (https://index.example.org), for absolute IRIs in the VoID description.
     public_url: str | None = None
 
     # --- web -----------------------------------------------------------------
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
-    @field_validator("admin_tokens", "cors_origins", mode="before")
+    @field_validator(
+        "admin_tokens", "cors_origins", "labels_hosts", "labels_languages", mode="before"
+    )
     @classmethod
     def _comma_separated(cls, value: object) -> object:
         """Environment variables carry lists as comma-separated strings."""

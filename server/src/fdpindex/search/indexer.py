@@ -33,11 +33,21 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
-from fdpindex.search.project import EntryProjection, ResourceRow, project_entry
+from fdpindex.search.concepts import concept_fields, concept_texts
+from fdpindex.search.project import (
+    PROJECTION_VERSION,
+    EntryProjection,
+    ResourceRow,
+    enrich,
+    project_entry,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+    from fdpindex.search.concepts import ConceptResolver
     from fdpindex.search.profile import Profile
     from fdpindex.service import IndexChange
 
@@ -69,7 +79,12 @@ class SearchIndexer:
     ) -> None:
         self._session_factory = session_factory
         self.profile = profile
-        self._profile_hash = profile.hash
+        # A new projection version re-projects every entry, like a changed profile.
+        self._profile_hash = f"{profile.hash[:56]}:v{PROJECTION_VERSION}"
+        self._concept_fields = set(concept_fields(profile))
+        # Set when concept labels are resolved (ADR-0006): woken after projections.
+        self.after_projection: Callable[[], None] | None = None
+        self.resolver: ConceptResolver | None = None
         self._debounce = debounce
         self._entries: set[UUID] = set()
         self._reconcile = True
@@ -190,7 +205,20 @@ class SearchIndexer:
             return False
         nodes = [(str(iri), str(nt)) for iri, nt, _ in rows]
         projection = await asyncio.to_thread(project_entry, str(entry_id), nodes, self.profile)
+        # Names resolved from the concepts' vocabularies (ADR-0006).
+        iris = {
+            value.value
+            for row in projection.resources
+            for value in row.values
+            if value.field in self._concept_fields and value.value.startswith("http")
+        }
+        if iris:
+            async with self._session_factory() as session:
+                concepts = await concept_texts(session, iris)
+            enrich(projection, concepts, self.profile)
         written = await self._write(entry_id, projection, wanted)
+        if self.after_projection is not None:
+            self.after_projection()
         log.info(
             "search_entry_projected",
             entry=str(entry_id),

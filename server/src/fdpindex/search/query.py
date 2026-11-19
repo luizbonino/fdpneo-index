@@ -62,6 +62,7 @@ from sqlalchemy.orm import aliased
 from fdpindex.db import utcnow
 from fdpindex.errors import BadRequest, IndexServiceError, NotFound
 from fdpindex.models import (
+    ConceptLabel,
     EntryPermit,
     EntryState,
     HarvestedNode,
@@ -71,6 +72,7 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
+from fdpindex.search.concepts import concept_stats
 from fdpindex.search.profile import COLUMN_FIELDS, KINDS, Kind, Profile
 from fdpindex.search.project import SIMPLE_CONFIG, bucket_label, pick_language, ts_config
 from fdpindex.search.to_sparql import to_sparql
@@ -237,7 +239,8 @@ class SearchParams:
 
 
 class Labels:
-    """Labels for IRIs: harvested (in the requested language first), bundled, humanised."""
+    """Labels for IRIs: harvested (in the requested language first), bundled, resolved from
+    the concept's vocabulary (ADR-0006), humanised."""
 
     def __init__(self, session: AsyncSession, lang: str) -> None:
         self._session = session
@@ -256,9 +259,25 @@ class Labels:
             )
             for iri, lang, label in rows:
                 found[str(iri)].setdefault(str(lang), str(label))
+        resolved: dict[str, dict[str, str]] = defaultdict(dict)
+        unlabelled = [iri for iri in wanted if iri not in found and not bundled_label(iri)]
+        for start in range(0, len(unlabelled), 500):
+            rows = await self._session.execute(
+                select(ConceptLabel.iri, ConceptLabel.lang, ConceptLabel.label).where(
+                    ConceptLabel.iri.in_(unlabelled[start : start + 500]),
+                    ConceptLabel.kind == "pref",
+                )
+            )
+            for iri, lang, label in rows:
+                resolved[str(iri)][str(lang)] = str(label)
         for iri in wanted:
             picked = pick_language(found.get(iri, {}), self._lang)
-            self._cache[iri] = picked[1] if picked else (bundled_label(iri) or humanize(iri))
+            concept = pick_language(resolved.get(iri, {}), self._lang)
+            self._cache[iri] = (
+                picked[1]
+                if picked
+                else bundled_label(iri) or (concept[1] if concept else humanize(iri))
+            )
         return self._cache
 
     def get(self, value: str) -> str:
@@ -1205,10 +1224,12 @@ class SearchService:
             states = {s.entry_uuid: s for s in await session.scalars(select(SearchEntryState))}
             values = int(await session.scalar(select(func.count()).select_from(V)) or 0)
             labels = int(await session.scalar(select(func.count()).select_from(SearchLabel)) or 0)
+            concepts = await concept_stats(session)
         return {
             "profileHash": self.profile.hash,
             "values": values,
             "labels": labels,
+            "concepts": concepts,
             "entries": [
                 {
                     "uuid": str(uuid),

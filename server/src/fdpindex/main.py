@@ -29,6 +29,7 @@ from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
 from fdpindex.outbound import OutboundClient, system_resolver
+from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
 from fdpindex.search.profile import default_profile
 from fdpindex.search.query import SearchService
@@ -182,7 +183,9 @@ def create_app(
         app.state.data_rate = RateLimiter(30)  # anonymous harvested-data downloads per minute
         sparql = await _start_sparql(config, factory, settings_service, index)
         app.state.sparql = sparql
-        search = _start_search(config, factory, settings_service, index)
+        search = _start_search(
+            config, factory, settings_service, index, http, resolver or system_resolver
+        )
         app.state.search = search
         app.state.search_rate = RateLimiter(config.search_rate_per_minute)
         if resume_on_startup:
@@ -199,6 +202,8 @@ def create_app(
             await scheduler.stop()
             await jobs.close()
             if search is not None:
+                if search.indexer.resolver is not None:
+                    await search.indexer.resolver.stop()
                 await search.indexer.stop()
             if sparql is not None:
                 if sparql.sync is not None:
@@ -235,6 +240,8 @@ def _start_search(
     factory: async_sessionmaker[AsyncSession],
     settings_service: SettingsService,
     index: IndexService,
+    http: httpx.AsyncClient,
+    dns_resolver: Callable[[str, int], Awaitable[list[str]]],
 ) -> SearchService | None:
     if not config.search_enabled:
         return None
@@ -242,6 +249,34 @@ def _start_search(
     index.add_listener(indexer.notify)
     indexer.start()
     log.info("search_started", profile=indexer.profile.hash[:12])
+    if config.labels_resolve:
+        resolver = ConceptResolver(
+            factory,
+            OutboundClient(
+                http,
+                allow_private=config.outbound_allow_private,
+                max_bytes=config.labels_max_bytes,
+                max_redirects=config.outbound_max_redirects,
+                user_agent=config.user_agent,
+                resolver=dns_resolver,
+            ),
+            indexer.profile,
+            ResolverSettings(
+                enabled=True,
+                hosts=frozenset(h.lower() for h in config.labels_hosts),
+                languages=tuple(config.labels_languages),
+                refresh_days=config.labels_refresh_days,
+                retry_days=config.labels_retry_days,
+                broader_depth=config.labels_broader_depth,
+                interval_seconds=config.labels_interval_seconds,
+                requests_per_second=config.labels_requests_per_second,
+            ),
+            on_changed=indexer.reindex,
+        )
+        indexer.after_projection = resolver.notify
+        resolver.start()
+        indexer.resolver = resolver
+        log.info("concept_labels_started", hosts=len(config.labels_hosts))
     return SearchService(
         factory,
         settings_service,

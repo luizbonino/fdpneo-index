@@ -516,7 +516,8 @@ export interface paths {
     put?: never;
     /**
      * Sparql Labels
-     * @description Labels for up to 500 IRIs, from bundled vocabularies and the harvested data.
+     * @description Labels for up to 500 IRIs: bundled vocabularies, the harvested data, and labels
+     *     resolved from the concepts' own vocabularies (ADR-0006).
      */
     post: operations["sparql_labels_index_sparql_labels_post"];
     delete?: never;

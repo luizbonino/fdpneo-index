@@ -28,7 +28,7 @@ from urllib.parse import urljoin, urlsplit
 import httpx
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Mapping
+    from collections.abc import Awaitable, Callable, Collection, Mapping
 
 _REDIRECTS = frozenset({301, 302, 303, 307, 308})
 
@@ -161,10 +161,20 @@ class OutboundClient:
         timeout_seconds: float,
         headers: Mapping[str, str] | None = None,
         content: str | None = None,
+        allowed_hosts: Collection[str] | None = None,
     ) -> OutboundResponse:
+        """Send a request, following redirects; each hop is checked again.
+
+        With ``allowed_hosts``, every hop's host must be one of them (label
+        resolution: only allow-listed vocabulary hosts are dereferenced).
+        """
         request_headers = {"User-Agent": self._user_agent, **(headers or {})}
         current, current_method, body = url, method, content
         for _hop in range(self._max_redirects + 1):
+            if allowed_hosts is not None:
+                host = (urlsplit(current).hostname or "").lower()
+                if host not in allowed_hosts:
+                    raise OutboundError("denied", f"Host not allowed: {host}")
             pinned = await self.check_url(current)
             try:
                 async with asyncio.timeout(timeout_seconds):

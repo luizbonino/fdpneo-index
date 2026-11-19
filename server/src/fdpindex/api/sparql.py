@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from fdpindex.api.routes import public_url
 from fdpindex.auth import Principal, current_principal
 from fdpindex.errors import IndexServiceError
+from fdpindex.search.concepts import resolved_labels
 from fdpindex.sparql.examples import Library
 from fdpindex.sparql.gate import QueryRejected
 from fdpindex.sparql.service import SparqlService
@@ -234,10 +235,16 @@ class LabelsRequest(BaseModel):
 async def sparql_labels(
     body: LabelsRequest, request: Request, service: Sparql, caller: Caller
 ) -> dict[str, dict[str, str]]:
-    """Labels for up to 500 IRIs, from bundled vocabularies and the harvested data."""
+    """Labels for up to 500 IRIs: bundled vocabularies, the harvested data, and labels
+    resolved from the concepts' own vocabularies (ADR-0006)."""
     _limit(service, request, caller)
     try:
-        return {"labels": await service.labels(body.iris)}
+        labels = await service.labels(body.iris)
+        missing = [iri for iri in dict.fromkeys(body.iris) if iri not in labels]
+        factory = getattr(request.app.state, "session_factory", None)
+        if missing and factory is not None:
+            labels.update(await resolved_labels(factory, missing))
+        return {"labels": labels}
     except QueryRejected as err:
         raise SparqlError(err.message, 400) from err
     except QueryFailed as err:

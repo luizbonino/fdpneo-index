@@ -23,7 +23,8 @@ def humanize(iri: str) -> str:
     """
     known = bundled_label(iri)
     if known:
-        return known
+        # Vocabularies label terms in lower case ("keyword"); names read better capitalised.
+        return known[:1].upper() + known[1:]
     local = re.split(r"[#/:]", iri.rstrip("/#"))[-1] or iri
     if any(c.isdigit() for c in local) or local.isupper():
         return local

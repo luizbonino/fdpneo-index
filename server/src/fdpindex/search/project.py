@@ -39,7 +39,7 @@ from rdflib.term import Node
 
 from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
-from fdpindex.search.vocab import bundled_label
+from fdpindex.search.vocab import bundled_labels
 
 DCAT = "http://www.w3.org/ns/dcat#"
 DCT = "http://purl.org/dc/terms/"
@@ -71,7 +71,7 @@ IGNORED_TYPE_PREFIXES = (LDP, "http://www.w3.org/ns/prov#")
 # foaf:name, vcard:fn … (shared with the SPARQL labels and the concept resolver).
 LABEL_PREDICATES = RDF_LABEL_PREDICATES
 # Bumped when the projection's output changes for the same input: entries are re-projected.
-PROJECTION_VERSION = 5
+PROJECTION_VERSION = 6
 
 # Literal language → PostgreSQL text search configuration (created by migration 0003).
 TS_CONFIGS = {
@@ -544,7 +544,14 @@ class _Projector:
                     text, lang = str(named), (named.language or "")
             elif isinstance(item, URIRef):
                 named = node.name_of(item)
-                text = str(named) if named is not None else bundled_label(canonical_iri(str(item)))
+                if named is not None:
+                    text, lang = str(named), (named.language or "")
+                else:
+                    # Bundled labels in every language of the pack (EU themes, file
+                    # types …): "Gezondheid" and "Gesundheit" find Health too.
+                    limit = MAX_TITLE_CHARS
+                    for code, label in bundled_labels(canonical_iri(str(item))).items():
+                        segments.append((ts_config(code), spec.weight, _clean(label, limit)))
             if text and text.strip():
                 limit = MAX_DESCRIPTION_CHARS if spec.weight in {"C", "D"} else MAX_TITLE_CHARS
                 segments.append((ts_config(lang), spec.weight, _clean(text, limit)))

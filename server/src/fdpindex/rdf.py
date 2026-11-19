@@ -47,6 +47,9 @@ FORMATS = {
     "application/n-triples": "nt",
     "application/ld+json": "json-ld",
     "application/rdf+xml": "xml",
+    # Some servers (the EU Publications Office among them) label RDF/XML as plain XML.
+    "text/xml": "xml",
+    "application/xml": "xml",
     "text/n3": "n3",
 }
 ACCEPT = (

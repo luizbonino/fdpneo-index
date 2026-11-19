@@ -15,7 +15,7 @@ package `org.fairdatateam.fairdatapoint.index`, `FDP_INDEX=true`) and its client
 
 ## Summary
 
-80 of 115 tasks are done and 4 are in progress (19 November 2026). "Done"
+81 of 115 tasks are done and 3 are in progress (19 November 2026). "Done"
 counts `[x]`, and "partly" counts `[~]`. Small leftovers noted under a done
 task are listed in the last column.
 
@@ -27,14 +27,14 @@ task are listed in the last column.
 | 3 Packaging and operations | Images, Compose stack, operator docs, importer, releases | 5/5 | – | – | ✅ Done | – |
 | 4 Active liveness checks and registry | Scheduled checks, health events, settings, UI; per-FDP options and registration | 9/9 | – | – | ✅ Done | – |
 | 5 Separation from the FAIR Data Point | Running next to FDPneo, documentation here, guidance for Java index deployments, ADR-0021 update | 4/4 | – | – | ✅ Done | – |
-| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 14/16 | 2 | – | 🟡 Mostly done | `fdpindex vocab update` (6.8), profile `PUT`/`DELETE` (6.12) |
+| 6 Search: foundation | Projection, full text, facets, ranking, search API, search and resource pages, performance check | 15/16 | 1 | – | 🟡 Mostly done | Profile `PUT`/`DELETE` (6.12) |
 | 7 SPARQL API and UI | Store, workers, endpoint, schema, query library, editor, builder, charts, history, "Show as SPARQL" | 14/14 | – | – | ✅ Done | Leftovers: `fdpindex sparql rebuild`, editing the query library, `POST /index/sparql/share`, "Open in YASGUI" |
 | 8 Richer discovery | Snippets, suggestions, temporal and spatial facets, multilingual display, duplicates, subjects, chosen facets, polish | 3/13 | 1 | 9 | 🔹 Started | All but 8.6, 8.10 and 8.13 (done) and 8.9 (only its keyboard and screen-reader pass is left) |
 | 9 Expert and machine access | Field prefixes, raw predicates, extension facets, cursors, DCAT/OpenSearch output, bounding box, approximate counts | 1/9 | 1 | 7 | 🔹 Started | All but 9.9 (done with 6.15) and the capture part of 9.2 (done with 8.13) |
 | 10 Optional engines and extras | Semantic search, "did you mean", saved queries, SPARQL grammar | 0/4 | – | 4 | ⬜ Not started | All four |
 | 11 Conformance and republication | Profile validation, conformance reports, DCAT-AP republication, EHDS profile, MCP | 0/8 | – | 8 | ⬜ Not started | All eight |
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
-| **Total** | | **80/115** | **4** | **31** | | |
+| **Total** | | **81/115** | **3** | **31** | | |
 
 ## Phase 0 — Foundations
 
@@ -128,7 +128,7 @@ Phase 6, then 7.7 and 7.11–7.14.
 - [x] 6.5 Incremental harvest storage: upsert `harvested_node` by `(entry_uuid, node_iri)` with change sets; projection job for changed/new/removed nodes; deletion on reject/delete; `search_reindex` event for resumable full re-projection — *done: upsert with change sets, listeners, deletion; the search projection job comes with 6.4*
 - [x] 6.6 Text search write path: weighted `tsv_lang` / `tsv_simple` per §3.6, language → configuration map; integration tests for stemming and unaccent — *done; plus prefix matching of plain words*
 - [x] 6.7 Roll-up pass: distribution formats, media types, licences onto datasets; dataset counts onto catalogs
-- [~] 6.8 Labels: harvested labels during projection; bundled vocabulary pack (EU authority tables, SPDX, IANA, DCAT terms) and `fdpindex vocab update`; `GET /index/search/labels` — *harvested labels, a small bundled pack (themes, file types, access rights, languages, countries, frequencies, licences) and the endpoint are done; `fdpindex vocab update` is not*
+- [x] 6.8 Labels: harvested labels during projection; bundled vocabulary pack (EU authority tables, SPDX, IANA, DCAT terms) and `fdpindex vocab update`; `GET /index/search/labels` — *done: `fdpindex vocab update` regenerates `search/vocab.json` (1 697 IRIs: EU themes, access rights, file types, frequencies, licences, countries, 47 languages, in ten languages; SPDX; DCAT, DC, FOAF and ADMS terms); labels in the reader's language, every language searchable, re-projection when the pack changes; IANA media types need no labels (the bare type is the label)*
 - [x] 6.9 Search repository: filters (named fields, dates, fdp, fdpState), text condition, ranking per §4, sorting, offset paging, facet counts with the facet cache, `statement_timeout`; unit tests on SQLite, ranking and FTS tests on PostgreSQL — *done except the facet cache*
 - [x] 6.10 `GET` / `POST /index/search` (JSON), `GET /index/search/resources/{id}` (JSON, Turtle, JSON-LD, N-Triples), `GET /index/search/facets`, `GET /index/search/landing`; parameter validation and caps; anonymous visibility; OpenAPI snapshot and contract tests — *done except `POST /index/search` (it carries the path filters of 9.2)*
 - [x] 6.11 Rate limit for anonymous search and suggest (in-memory token bucket, trusted proxy IP as for pings)

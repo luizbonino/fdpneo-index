@@ -42,6 +42,7 @@ from fdpindex.search.project import (
     enrich,
     project_entry,
 )
+from fdpindex.search.vocab import pack_digest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -81,7 +82,8 @@ class SearchIndexer:
         self._session_factory = session_factory
         self.profile = profile
         # A new projection version re-projects every entry, like a changed profile.
-        self._profile_hash = f"{profile.hash[:56]}:v{PROJECTION_VERSION}"
+        # The profile, the projection code and the label pack all shape the rows.
+        self._profile_hash = f"{profile.hash[:48]}:v{PROJECTION_VERSION}:{pack_digest()[:8]}"
         self._concept_fields = set(concept_fields(profile))
         # Set when concept labels are resolved (ADR-0006): woken after projections.
         self.after_projection: Callable[[], None] | None = None

@@ -13,6 +13,8 @@ db_app = typer.Typer(help="Database.", no_args_is_help=True)
 token_app = typer.Typer(help="Static admin tokens (ADR-0003).", no_args_is_help=True)
 app.add_typer(db_app, name="db")
 app.add_typer(token_app, name="token")
+vocab_app = typer.Typer(help="The bundled vocabulary pack (labels).", no_args_is_help=True)
+app.add_typer(vocab_app, name="vocab")
 
 
 def alembic_config(database_url: str | None = None) -> Config:
@@ -121,5 +123,53 @@ def import_java_command(
             f"{report.events} events ({report.events_closed} unfinished, now closed), "
             f"{report.webhooks} webhooks, settings: {'yes' if report.settings else 'no'}"
         )
+
+    asyncio.run(run())
+
+
+@vocab_app.command("update")
+def vocab_update(
+    output: str = typer.Option(
+        "", help="Where to write the pack; default: the package's search/vocab.json"
+    ),
+    languages: str = typer.Option(
+        "en,nl,de,fr,es,it,pt,sv,da,fi", help="Languages of the labels kept"
+    ),
+) -> None:
+    """Fetch labels from the EU authority tables, SPDX and the DCAT/DC/FOAF/ADMS terms."""
+    import asyncio
+    from importlib import resources
+    from pathlib import Path
+
+    import httpx
+
+    from fdpindex.config import get_settings
+    from fdpindex.outbound import OutboundClient
+    from fdpindex.search.vocab_update import VocabFetcher, write_pack
+
+    settings = get_settings()
+    target = (
+        Path(output) if output else Path(str(resources.files("fdpindex.search"))) / "vocab.json"
+    )
+
+    async def run() -> None:
+        async with httpx.AsyncClient(follow_redirects=False) as http:
+            client = OutboundClient(
+                http,
+                allow_private=False,
+                max_bytes=8 * 1024 * 1024,
+                max_redirects=5,
+                user_agent=settings.user_agent,
+            )
+            fetcher = VocabFetcher(client, languages=[x for x in languages.split(",") if x])
+            report = await fetcher.run()
+        write_pack(target, fetcher.labels, report)
+        for source, count in sorted(report.sources.items()):
+            typer.echo(f"{source:45} {count:6}")
+        typer.echo(f"{report.labels} IRIs labelled; written to {target}")
+        for failure in report.failed[:20]:
+            typer.echo(f"failed: {failure}", err=True)
+        if report.failed:
+            typer.echo(f"{len(report.failed)} requests failed", err=True)
 
     asyncio.run(run())

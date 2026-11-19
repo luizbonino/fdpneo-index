@@ -298,7 +298,7 @@ class Labels:
             self._cache[iri] = (
                 picked[1]
                 if picked
-                else bundled_label(iri) or (concept[1] if concept else humanize(iri))
+                else bundled_label(iri, self._lang) or (concept[1] if concept else humanize(iri))
             )
         return self._cache
 

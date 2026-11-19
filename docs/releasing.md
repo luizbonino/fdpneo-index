@@ -12,11 +12,14 @@ signing and with build provenance attested.
    (cd server && uv version X.Y.Z && uv lock)
    (cd client && npm version X.Y.Z --no-git-tag-version)
    ```
-2. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` and
+2. Refresh the label pack (`cd server && uv run fdpindex vocab update`) and
+   look over the diff of `search/vocab.json`; it changes when the EU
+   authority tables or SPDX gain entries.
+3. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` and
    start a new empty `[Unreleased]`. When operators must act on upgrade,
    add an **Upgrading** subsection.
-3. Commit `chore(release): X.Y.Z` (signed off), open a pull request, merge.
-4. Tag the merge commit on main and push the tag:
+4. Commit `chore(release): X.Y.Z` (signed off), open a pull request, merge.
+5. Tag the merge commit on main and push the tag:
    ```sh
    git tag -a vX.Y.Z -m "FDPneo Index X.Y.Z" <merge commit>
    git push origin vX.Y.Z

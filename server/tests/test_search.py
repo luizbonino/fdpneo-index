@@ -953,3 +953,11 @@ def test_titles_and_descriptions_are_not_captured() -> None:
     fields = {v.field for r in projection.resources for v in r.values}
     assert property_field(f"{DCT}title") not in fields
     assert property_field(f"{DCT}description") not in fields
+
+
+async def test_theme_names_in_other_languages_are_found(search: SearchService) -> None:
+    result = await search.search(SearchParams(q="gezondheid", types=["dataset"]))
+    assert {h["title"] for h in result["hits"]} == {"Breast cancer registry", "Lung function tests"}
+    german = await search.search(SearchParams(types=["dataset"], lang="de", facets=["theme"]))
+    labels = {b["label"] for b in german["facets"]["theme"]["buckets"]}
+    assert "Gesundheit" in labels

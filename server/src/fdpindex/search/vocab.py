@@ -7,6 +7,12 @@ from ``vocab.json``, a pack regenerated from the sources by
 languages; ``FDPINDEX_VOCAB_FILE`` points at another pack. The English table
 below is the fallback for what the pack lacks (Creative Commons licences).
 Harvested labels take precedence over both.
+
+The pack also names the same place twice (TASKS 8.4): ``aliases`` map
+GeoNames' and lexvo's IRIs of a country or continent to the EU authority IRI,
+``codes`` map ISO 3166 codes to it. :func:`place_alias` and
+:func:`country_code` apply them; :func:`aliases_of` gives them back, so
+"Show as SPARQL" can match every form.
 """
 
 from __future__ import annotations
@@ -14,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from functools import cache
 from importlib import resources
 from pathlib import Path
@@ -192,6 +199,50 @@ def _pack() -> dict[str, dict[str, str]]:
     for iri, label in FALLBACK.items():
         labels.setdefault(iri, {}).setdefault("en", label)
     return labels
+
+
+@cache
+def _aliases() -> dict[str, str]:
+    return dict(json.loads(_pack_text()).get("aliases", {}))
+
+
+@cache
+def _codes() -> dict[str, str]:
+    return dict(json.loads(_pack_text()).get("codes", {}))
+
+
+@cache
+def _reverse() -> dict[str, list[str]]:
+    reverse: dict[str, list[str]] = {}
+    for alias, iri in _aliases().items():
+        reverse.setdefault(iri, []).append(alias)
+    for code, iri in _codes().items():
+        reverse.setdefault(iri, []).append(code)
+    return reverse
+
+
+_GEONAMES = re.compile(r"^https?://(?:sws\.|www\.)?geonames\.org/(\d+)(?:[/#].*)?$")
+
+
+def geonames_iri(iri: str) -> str | None:
+    """GeoNames' concept IRI (``https://sws.geonames.org/<id>/``) for any of its forms."""
+    match = _GEONAMES.match(iri)
+    return f"https://sws.geonames.org/{match.group(1)}/" if match else None
+
+
+def place_alias(iri: str) -> str:
+    """The EU authority IRI of a country or continent named another way, else ``iri``."""
+    return _aliases().get(iri, iri)
+
+
+def country_code(text: str) -> str | None:
+    """The EU country IRI of an ISO 3166 alpha-2 or alpha-3 code ("NL", "nld")."""
+    return _codes().get(text.strip().lower())
+
+
+def aliases_of(iri: str) -> list[str]:
+    """The other IRIs and the codes the pack folds into ``iri``."""
+    return _reverse().get(iri, [])
 
 
 def pack_digest() -> str:

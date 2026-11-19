@@ -153,8 +153,12 @@ fields:
     kind: iri
     paths: [dct:spatial]
     facet: more
+    normalise: country
     label: {en: Spatial coverage}
-    help: {en: "Places the data covers, when given as IRIs (countries, regions, cities)."}
+    help:
+      en: >-
+        Places the data covers: countries, regions and cities. A country named by
+        the EU, GeoNames or an ISO code is one value.
   country:
     kind: iri
     paths: [r3d:country]

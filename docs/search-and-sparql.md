@@ -30,6 +30,13 @@ ranking, and how common spellings fold into one value (`csv`, `text/csv`
 and the EU file-type IRI are one format). It covers DCAT 2 and 3, DCAT-AP,
 FDP-O, the Java FDP's shapes, FOAF and vCard.
 
+Spatial coverage (`dct:spatial`) folds the names of one country into the
+EU authority IRI: GeoNames (`https://sws.geonames.org/2750405/`, also
+`www.geonames.org/…/netherlands.html`), lexvo, and ISO 3166 codes written
+as text (`"NL"`, `"NLD"`). The mapping is part of the label pack, from
+GeoNames' country list (CC BY 4.0). Other GeoNames places keep one form and
+get their names from the concept resolver, as do the EU's 4 700 places.
+
 Temporal coverage (`dct:temporal`) is read in every form FDPs use: a
 period with `dcat:startDate`/`dcat:endDate` (DCAT 2 and 3),
 `schema:startDate`/`schema:endDate` (DCAT 1, DCAT-AP 1.x), OWL-Time

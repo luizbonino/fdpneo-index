@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from fdpindex.search.project import canonical_iri
+from fdpindex.search.vocab import aliases_of, geonames_iri
 from fdpindex.sparql.gate import is_safe_iri, string_term
 from fdpindex.sparql.prefixes import PREFIXES
 
@@ -119,8 +120,23 @@ def _property_field(iri: str) -> SearchField:
 
 
 def raw_forms(value: str, table: Mapping[str, str]) -> set[str]:
-    """Every lower-cased form of a stored value that ``normalise`` folds into it."""
+    """Every lower-cased form of a stored value that ``normalise`` folds into it.
+
+    Places include the GeoNames and lexvo IRIs and the ISO codes the bundled pack
+    folds into them, GeoNames in its four common spellings (not ``…/name.html``).
+    """
     forms = {value.lower()}
+    for other in [value, *aliases_of(value)]:
+        if geonames_iri(other) == other:
+            number = other.removeprefix("https://sws.geonames.org/").rstrip("/")
+            forms |= {
+                f"{scheme}://{host}geonames.org/{number}{slash}"
+                for scheme in ("http", "https")
+                for host in ("sws.", "www.")
+                for slash in ("", "/")
+            }
+        else:
+            forms.add(other.lower())
     if value.startswith("http://") and canonical_iri("https://" + value[7:]) == value:
         forms.add(("https://" + value[7:]).lower())
     for key, replacement in table.items():

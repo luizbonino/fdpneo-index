@@ -353,6 +353,18 @@ async def test_text_types_fdp_dates_and_paging(search: SearchService) -> None:
     assert len(set(titles)) == 6
 
 
+async def test_a_country_is_one_spatial_value(search: SearchService) -> None:
+    nld = f"{EU}country/NLD"
+    result = await search.search(SearchParams(facets=["spatial"], types=["dataset"]))
+    buckets = {b["value"]: b for b in result["facets"]["spatial"]["buckets"]}
+    # An EU IRI, a GeoNames IRI and an ISO code: one value, labelled from the pack.
+    assert buckets[nld]["count"] == 3
+    assert buckets[nld]["label"] == "Netherlands"
+    assert buckets["https://sws.geonames.org/2759794/"]["count"] == 1
+    found = await search.search(SearchParams(filters={"spatial": [nld]}, facets=[]))
+    assert len(found["hits"]) == 3
+
+
 async def test_temporal_coverage_overlaps(search: SearchService) -> None:
     async def titles(low: date | None, high: date | None) -> set[str]:
         result = await search.search(SearchParams(temporal=(low, high), facets=[]))
@@ -598,6 +610,8 @@ def _equivalents() -> list[tuple[str, dict[str, Any]]]:
         ("phrase", {"q": '"function tests"'}),
         ("dates", {"ranges": {"modified": (parse_datetime("2026-01-01"), None)}}),
         ("temporal", {"temporal": (date(2012, 1, 1), date(2013, 12, 31))}),
+        # The EU IRI, a GeoNames IRI and an ISO code are one country.
+        ("country", {"filters": {"spatial": [f"{EU}country/NLD"]}}),
         # An end year ("2022") still reaches a period starting inside that year.
         ("temporal open", {"temporal": (date(2022, 6, 1), None)}),
         ("active FDPs", {"fdp_state": "ACTIVE", "types": ["dataset"]}),

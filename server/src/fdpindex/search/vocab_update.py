@@ -4,9 +4,14 @@ The pack (``search/vocab.json``) gives labels, in several languages, to IRIs
 that FDPs publish without one:
 
 * the EU authority tables DCAT-AP prescribes: data themes, access rights,
-  file types, frequencies, licences, countries, and the common languages.
-  Each concept is dereferenced at the Publications Office, which answers
-  SKOS with labels in every EU language;
+  file types, frequencies, licences, countries, continents, and the common
+  languages. Each concept is dereferenced at the Publications Office, which
+  answers SKOS with labels in every EU language. (The place table, 4 700
+  cities, is left to the concept resolver, which fetches only those in use);
+* other names of the same countries (TASKS 8.4): GeoNames' country and
+  continent IRIs and lexvo's ISO 3166 IRIs as ``aliases`` of the EU IRI, and
+  ISO 3166 alpha-2 and alpha-3 codes as ``codes``, from GeoNames'
+  ``countryInfo.txt`` (CC BY 4.0). A country the EU table lacks is skipped;
 * the SPDX licence list (English names);
 * the terms of DCAT, Dublin Core, FOAF and ADMS, so properties have names in
   facets and in the SPARQL schema.
@@ -41,7 +46,15 @@ if TYPE_CHECKING:
 log = structlog.get_logger(__name__)
 
 EU = "http://publications.europa.eu/resource/authority/"
-EU_TABLES = ("data-theme", "access-right", "file-type", "frequency", "licence", "country")
+EU_TABLES = (
+    "data-theme",
+    "access-right",
+    "file-type",
+    "frequency",
+    "licence",
+    "country",
+    "continent",
+)
 # The language table has 8 000 codes; these are the ones metadata uses in practice:
 # the EU's official languages and the others of Europe's research infrastructures.
 EU_LANGUAGES = [
@@ -94,6 +107,17 @@ EU_LANGUAGES = [
     "ZXX",
 ]
 SPDX = "https://spdx.org/licenses/licenses.json"
+GEONAMES_COUNTRIES = "https://download.geonames.org/export/dump/countryInfo.txt"
+GEONAMES = "https://sws.geonames.org/"
+LEXVO_COUNTRY = "http://lexvo.org/id/iso3166/"
+# GeoNames' continents that are one of the EU table's (it has one America, GeoNames two).
+GEONAMES_CONTINENTS = {
+    "6255146": "AFRICA",
+    "6255147": "ASIA",
+    "6255148": "EUROPE",
+    "6255151": "OCEANIA",
+    "6255152": "ANTARCTICA",
+}
 TERM_SOURCES = {
     "http://www.w3.org/ns/dcat#": "https://www.w3.org/ns/dcat.ttl",
     "http://purl.org/dc/terms/": (
@@ -111,6 +135,7 @@ HOSTS = frozenset(
         "www.dublincore.org",
         "xmlns.com",
         "uri.semic.eu",
+        "download.geonames.org",
     }
 )
 DEFAULT_LANGUAGES = ("en", "nl", "de", "fr", "es", "it", "pt", "sv", "da", "fi")
@@ -120,6 +145,8 @@ RDF_ACCEPT = "application/rdf+xml;q=1, text/turtle;q=0.9, application/ld+json;q=
 @dataclass
 class UpdateReport:
     labels: int = 0
+    aliases: int = 0
+    codes: int = 0
     sources: dict[str, int] = field(default_factory=lambda: {})
     failed: list[str] = field(default_factory=lambda: [])
 
@@ -138,6 +165,8 @@ class VocabFetcher:
         self._limit = asyncio.Semaphore(concurrency)
         self._timeout = timeout_seconds
         self.labels: dict[str, dict[str, str]] = {}
+        self.aliases: dict[str, str] = {}
+        self.codes: dict[str, str] = {}
         self.report = UpdateReport()
 
     async def _graph(self, url: str) -> Graph | None:
@@ -215,6 +244,44 @@ class VocabFetcher:
             count += 1
         self.report.sources["spdx"] = count
 
+    async def _text(self, url: str) -> str | None:
+        async with self._limit:
+            try:
+                response = await self._client.request(
+                    "GET", url, timeout_seconds=self._timeout, allowed_hosts=HOSTS
+                )
+            except OutboundError as err:
+                self.report.failed.append(f"{url}: {err.message}")
+                return None
+        if response.status != 200 or response.truncated:
+            self.report.failed.append(f"{url}: HTTP {response.status}")
+            return None
+        return response.body
+
+    async def geonames(self) -> None:
+        """Aliases and codes of the EU countries; run after the country table is in."""
+        text = await self._text(GEONAMES_COUNTRIES)
+        if text is None:
+            return
+        for line in text.splitlines():
+            columns = line.split("\t")
+            if line.startswith("#") or len(columns) < 17:
+                continue
+            alpha2, alpha3, geonameid = columns[0].strip(), columns[1].strip(), columns[16].strip()
+            eu = f"{EU}country/{alpha3}"
+            if not (alpha2 and alpha3 and geonameid.isdigit()) or eu not in self.labels:
+                continue
+            self.aliases[f"{GEONAMES}{geonameid}/"] = eu
+            self.aliases[f"{LEXVO_COUNTRY}{alpha2}"] = eu
+            self.codes.setdefault(alpha2.lower(), eu)
+            self.codes.setdefault(alpha3.lower(), eu)
+        for geonameid, code in GEONAMES_CONTINENTS.items():
+            if f"{EU}continent/{code}" in self.labels:
+                self.aliases[f"{GEONAMES}{geonameid}/"] = f"{EU}continent/{code}"
+        self.report.sources["geonames:countries"] = len(
+            [a for a in self.aliases if a.startswith(GEONAMES)]
+        )
+
     async def terms(self, namespace: str, url: str) -> None:
         graph = await self._graph(url)
         if graph is None:
@@ -233,15 +300,27 @@ class VocabFetcher:
             self.spdx(),
             *(self.terms(ns, url) for ns, url in TERM_SOURCES.items()),
         )
+        await self.geonames()
         self.report.labels = len(self.labels)
+        self.report.aliases = len(self.aliases)
+        self.report.codes = len(self.codes)
         return self.report
 
 
-def write_pack(path: Path, labels: dict[str, dict[str, str]], report: UpdateReport) -> None:
+def write_pack(
+    path: Path,
+    labels: dict[str, dict[str, str]],
+    report: UpdateReport,
+    *,
+    aliases: dict[str, str] | None = None,
+    codes: dict[str, str] | None = None,
+) -> None:
     """Write the pack: sorted, so a regenerated pack diffs cleanly."""
     pack = {
         "generated": datetime.now(UTC).date().isoformat(),
         "sources": dict(sorted(report.sources.items())),
         "labels": {iri: dict(sorted(labels[iri].items())) for iri in sorted(labels)},
+        "aliases": dict(sorted((aliases or {}).items())),
+        "codes": dict(sorted((codes or {}).items())),
     }
     path.write_text(json.dumps(pack, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

@@ -163,10 +163,13 @@ def vocab_update(
             )
             fetcher = VocabFetcher(client, languages=[x for x in languages.split(",") if x])
             report = await fetcher.run()
-        write_pack(target, fetcher.labels, report)
+        write_pack(target, fetcher.labels, report, aliases=fetcher.aliases, codes=fetcher.codes)
         for source, count in sorted(report.sources.items()):
             typer.echo(f"{source:45} {count:6}")
-        typer.echo(f"{report.labels} IRIs labelled; written to {target}")
+        typer.echo(
+            f"{report.labels} IRIs labelled, {report.aliases} aliases, {report.codes} codes; "
+            f"written to {target}"
+        )
         for failure in report.failed[:20]:
             typer.echo(f"failed: {failure}", err=True)
         if report.failed:

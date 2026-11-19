@@ -54,7 +54,9 @@ the results; click it to remove it.
   ticking one there finds it and everything narrower (*Neoplasms by Site*
   includes *Breast Neoplasms*).
 - **Keyword**, **Publisher**, **Format**, **Licence**, **Access rights**,
-  **FAIR Data Point**, and more under **More filters**.
+  **FAIR Data Point**, and more under **More filters**, among them
+  **Spatial coverage**: the places the data cover. A country is one entry
+  however an FDP names it (the EU's list, GeoNames or a code such as `NL`).
 - **+ Add a filter**: any property found in the metadata, most used first
   (for example `dct:language` or `dct:conformsTo`). Added filters stay in
   the page's address, so a shared link carries them, and this browser

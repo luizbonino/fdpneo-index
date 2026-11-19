@@ -14,7 +14,7 @@ signing and with build provenance attested.
    ```
 2. Refresh the label pack (`cd server && uv run fdpindex vocab update`) and
    look over the diff of `search/vocab.json`; it changes when the EU
-   authority tables or SPDX gain entries.
+   authority tables, SPDX or GeoNames' country list gain entries.
 3. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD` and
    start a new empty `[Unreleased]`. When operators must act on upgrade,
    add an **Upgrading** subsection.

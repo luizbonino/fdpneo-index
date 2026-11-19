@@ -66,6 +66,21 @@ COUNTRIES = {
     "CH": ("CHE", "de"),
     "AT": ("AUT", "de"),
 }
+# GeoNames IDs of those countries, for the spatial forms (from countryInfo.txt).
+GEONAMES_IDS = {
+    "NLD": 2750405,
+    "DEU": 2921044,
+    "BEL": 2802361,
+    "FRA": 3017382,
+    "ESP": 2510769,
+    "ITA": 3175395,
+    "SWE": 2661886,
+    "FIN": 660013,
+    "DNK": 2623032,
+    "PRT": 2264397,
+    "CHE": 2658434,
+    "AUT": 2782113,
+}
 LANGUAGES = {
     "nl": "NLD",
     "de": "DEU",
@@ -604,7 +619,7 @@ class FdpBuilder:
         if self.language != "en" and rng.random() < 0.4:
             g.add((node, DCTERMS.language, URIRef(f"{EU}language/{LANGUAGES[self.language]}")))
         if rng.random() < 0.6:
-            g.add((node, DCTERMS.spatial, URIRef(f"{EU}country/{COUNTRIES[self.country][0]}")))
+            self._spatial(g, node, iri)
         if rng.random() < 0.85:
             g.add((node, DCTERMS.publisher, self.org))
             g.add((self.org, FOAF.name, Literal(self.institution)))
@@ -670,6 +685,22 @@ class FdpBuilder:
             self._distribution(
                 f"{iri.replace('/dataset/', '/distribution/')}-{x + 1}", node, fmt, licence, access
             )
+
+    def _spatial(self, g: Graph, node: URIRef, iri: str) -> None:
+        """The FDP's country, written the ways FDPs write it (TASKS 8.4): mostly the EU
+        IRI, sometimes GeoNames or an ISO code; now and then Europe as well."""
+        rng = random.Random(f"{iri}#spatial")
+        code, _ = COUNTRIES[self.country]
+        form = rng.random()
+        if form < 0.7:
+            g.add((node, DCTERMS.spatial, URIRef(f"{EU}country/{code}")))
+        elif form < 0.9:
+            geonames = f"http://www.geonames.org/{GEONAMES_IDS[code]}/"
+            g.add((node, DCTERMS.spatial, URIRef(geonames)))
+        else:
+            g.add((node, DCTERMS.spatial, Literal(self.country)))
+        if rng.random() < 0.1:
+            g.add((node, DCTERMS.spatial, URIRef("https://sws.geonames.org/6255148/")))
 
     @staticmethod
     def _temporal(g: Graph, node: URIRef, iri: str, start: int, end: int) -> None:

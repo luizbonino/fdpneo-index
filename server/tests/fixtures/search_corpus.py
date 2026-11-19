@@ -54,6 +54,7 @@ PAGES: dict[str, str] = {
   dct:license "CC-BY-4.0" ;
   dct:accessRights <https://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
   dct:language "en" ;
+  dct:spatial <https://publications.europa.eu/resource/authority/country/NLD> ;
   dct:publisher <https://ror.org/alpha> ;
   dct:issued "2020-01-01"^^xsd:date ;
   dct:modified "2026-11-01T10:00:00Z"^^xsd:dateTime ;
@@ -85,6 +86,7 @@ PAGES: dict[str, str] = {
   dct:publisher [ a foaf:Agent ; foaf:name "Pulmonology Lab" ] ;
   dct:accessRights <{EU}access-right/RESTRICTED> ;
   dct:temporal [ <http://schema.org/startDate> "2018"^^xsd:gYear ] ;
+  dct:spatial <http://www.geonames.org/2750405/>, <https://sws.geonames.org/2759794/> ;
   dct:modified "2025-03-01"^^xsd:date .
 """,
     BETA: f"""
@@ -113,6 +115,7 @@ PAGES: dict[str, str] = {
   dct:license <https://creativecommons.org/licenses/by/4.0/> ;
   dct:isPartOf <{BETA}/catalog/k> ;
   dct:publisher [ foaf:name "Beta Institute" ] ;
+  dct:spatial "NL" ;
   dct:temporal [ time:hasBeginning [ time:inXSDDate "2020-01-01"^^xsd:date ] ;
     time:hasEnd [ time:inXSDgYear "2022"^^xsd:gYear ] ] ;
   dcat:distribution <{BETA}/distribution/vcf> .

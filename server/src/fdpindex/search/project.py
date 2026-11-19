@@ -41,7 +41,7 @@ from rdflib.term import Node
 from fdpindex.rdf import LABEL_PREDICATES as RDF_LABEL_PREDICATES
 from fdpindex.search.period import Period, merge as merge_periods, period_of
 from fdpindex.search.profile import KINDS, Kind, Profile, SearchField
-from fdpindex.search.vocab import bundled_labels
+from fdpindex.search.vocab import bundled_labels, country_code, geonames_iri, place_alias
 
 DCAT = "http://www.w3.org/ns/dcat#"
 DCT = "http://purl.org/dc/terms/"
@@ -339,10 +339,16 @@ def public_id(entry_uuid: str, iri: str) -> str:
 
 
 def canonical_iri(iri: str) -> str:
+    """One form per IRI: the EU tables and Creative Commons on ``http``, GeoNames as
+    ``https://sws.geonames.org/<id>/``; a country or continent named by GeoNames or
+    lexvo becomes its EU authority IRI (TASKS 8.4)."""
+    geonames = geonames_iri(iri)
+    if geonames is not None:
+        return place_alias(geonames)
     for host in ("publications.europa.eu/", "creativecommons.org/"):
         if iri.startswith("https://" + host):
             return "http://" + iri.removeprefix("https://")
-    return iri
+    return place_alias(iri)
 
 
 def normalise(value: str, table: dict[str, str]) -> str:
@@ -659,6 +665,9 @@ def found_values(
                 value = _clean(str(item), MAX_VALUE_CHARS)
                 if table:
                     value = canonical_iri(normalise(value, table))
+                if spec.normalise == "country" and not value.startswith(("http://", "https://")):
+                    # A country written as its ISO code ("NL", "NLD").
+                    value = country_code(value) or value
                 if name == "keyword":
                     value = value.lower()
                 lang = (item.language or None) if spec.kind == "literal" else None

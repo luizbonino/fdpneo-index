@@ -23,6 +23,9 @@ The first release will contain:
 - **Temporal coverage**: `dct:temporal` in its DCAT, schema.org, OWL-Time
   and literal forms, searched by overlap (`temporalFrom`/`temporalTo`, a
   year, month or day) and shown on results.
+- **Spatial coverage**: a country is one filter value whether an FDP names
+  it by the EU authority table, GeoNames, lexvo or an ISO code; continents
+  are labelled in ten languages.
 - **Concept labels** from Wikidata, ROR, OLS and RDF vocabularies, off by
   default (ADR-0006).
 - **SPARQL** endpoint and page: editor, builder, example library, charts.

@@ -203,10 +203,12 @@ fdpneo-server) ask for beyond Phases 1–10: the catalogue tier.
 - [ ] 11.4 Minimum conformance per surface (search, SPARQL, the catalogue feed) as a deployment setting; accept-and-flag by default
 - [ ] 11.5 The harvested metadata republished as a DCAT-AP catalogue with links back to each source (`dct:source`), harvestable by the EU dataset catalogue (replaces 9.6)
 - [ ] 11.6 EHDS deployment profile: HealthDCAT-AP shapes, EU vocabularies, a strict feed; quality and utility labels (EHDS Art. 78) shown on search and resource pages
-- [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches
+- [ ] 11.7 An MCP server for the index: find FDPs and datasets, run searches — *proposal in `docs/design/mcp.md` awaiting review (where it lives: an index mode of `fdp-mcp`, recommended, a second sidecar, or inside the index)*
 - [x] 11.8 Configurable language fallback order for titles, descriptions and labels — *done: `languageFallback` in the search settings (default `en`): the reader's language, untagged text, then these languages in order, then any; for titles, descriptions, harvested, resolved and bundled labels; "Fallback languages" in Settings*
 
 ### Phase 12 — Sources beyond FDPs
+
+Design note for review: `docs/design/sources.md` (connector protocol, DCAT endpoint and dump sources, CKAN via ckanext-dcat or a mapping, Molgenis EMX2 through its own FDP; five questions in §6).
 
 - [ ] 12.1 A connector protocol (probe, enumerate, fetch) with the FDP tree walk as its first implementation; traversal declared as data (navigation SHACL) instead of code
 - [ ] 12.2 DCAT-AP sources: a dereferenceable endpoint or a dump file

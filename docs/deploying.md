@@ -45,6 +45,31 @@ Put a TLS-terminating reverse proxy in front of port 8090 and set
 clients' addresses. Details, backups and upgrades are in
 [operations.md](operations.md).
 
+### Behind a proxy in Docker
+
+When the proxy runs in Docker on the same host (Caddy, Traefik, nginx), the
+client can join the proxy's network instead of publishing a port for it. Add
+`deploy/compose.proxy.yaml` to every `docker compose` command, and in
+`deploy/.env` set:
+
+- `FDPINDEX_PROXY_NETWORK` to the proxy's network (`docker network ls`);
+- `FDPINDEX_TRUSTED_PROXY` to that network's subnet
+  (`docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' <network>`).
+
+```sh
+docker compose -f deploy/compose.yaml -f deploy/compose.proxy.yaml \
+  --env-file deploy/.env up -d --build
+```
+
+The proxy forwards to `http://fdpneo-index-client:80`. With Caddy, which
+sets `X-Forwarded-For` from the address that connected to it:
+
+```caddyfile
+index.example.org {
+    reverse_proxy fdpneo-index-client:80
+}
+```
+
 ## Sign-in
 
 Admin tokens are enough to start. For an identity provider, set

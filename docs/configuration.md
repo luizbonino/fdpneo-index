@@ -20,6 +20,8 @@ A test checks that every variable the server reads is listed here.
 | `FDPINDEX_CORS_ORIGINS` | — | Comma-separated origins allowed to call the API from a browser |
 | `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-For` is trusted. The per-address rate limits rely on it: the proxy must overwrite the header with the address that connected (the bundled nginx does), never append to what the client sent |
 | `FDPINDEX_TRUSTED_PROXY` (client container) | — | Address or CIDR range(s) of a reverse proxy in front of the stack, whose `X-Forwarded-For` nginx trusts |
+| `FDPINDEX_PROXY_NETWORK` (`compose.proxy.yaml`) | — | The Docker network of a reverse proxy on the same host, which the client joins ([Deploying](deploying.md#behind-a-proxy-in-docker)) |
+| `FDPINDEX_PROXY_ALIAS` (`compose.proxy.yaml`) | `fdpneo-index-client` | The client's name on that network, which the proxy forwards to |
 
 ## Administrators
 

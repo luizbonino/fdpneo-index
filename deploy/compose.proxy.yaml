@@ -1,0 +1,23 @@
+# Optional: behind a reverse proxy that runs in Docker on the same host (Caddy,
+# Traefik, nginx …), attach the client to that proxy's network, so the proxy
+# reaches it by name and no port needs publishing for it:
+#
+#   docker compose -f deploy/compose.yaml -f deploy/compose.proxy.yaml \
+#     --env-file deploy/.env up -d --build
+#
+# In .env: FDPINDEX_PROXY_NETWORK, the proxy's network (`docker network ls`),
+# and FDPINDEX_TRUSTED_PROXY, that network's subnet, so rate limits see the
+# clients' addresses. The proxy then forwards to http://fdpneo-index-client:80
+# (FDPINDEX_PROXY_ALIAS).
+
+services:
+  client:
+    networks:
+      default:
+      proxy:
+        aliases: ["${FDPINDEX_PROXY_ALIAS:-fdpneo-index-client}"]
+
+networks:
+  proxy:
+    external: true
+    name: ${FDPINDEX_PROXY_NETWORK:?set FDPINDEX_PROXY_NETWORK to the proxy's Docker network}

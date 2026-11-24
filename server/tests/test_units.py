@@ -234,6 +234,38 @@ async def test_harvest_walks_ldp_and_navigation_links_on_the_same_origin(
     assert all(len(node.content_hash) == 64 for node in result.nodes)
 
 
+async def test_harvest_follows_data_services_linked_only_through_dcat(
+    network: FakeNetwork,
+) -> None:
+    """Without LDP containers, a catalogue's and a distribution's services are harvested."""
+    prefixes = "@prefix dcat: <http://www.w3.org/ns/dcat#> .\n"
+    network.serve(
+        f"{FDP}/catalog/c1",
+        prefixes + f"<{FDP}/catalog/c1> a dcat:Catalog ; dcat:dataset <{FDP}/dataset/d1> ;"
+        f" dcat:service <{FDP}/service/s1> .",
+    )
+    network.serve(
+        f"{FDP}/dataset/d1",
+        prefixes
+        + f"<{FDP}/dataset/d1> a dcat:Dataset ; dcat:distribution <{FDP}/distribution/x1> .",
+    )
+    network.serve(
+        f"{FDP}/distribution/x1",
+        prefixes
+        + f"<{FDP}/distribution/x1> a dcat:Distribution ; dcat:accessService <{FDP}/service/s2> .",
+    )
+    for service in ("s1", "s2"):
+        network.serve(
+            f"{FDP}/service/{service}",
+            prefixes + f"<{FDP}/service/{service}> a dcat:DataService .",
+        )
+    result = await harvest(
+        _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
+    )
+    harvested = {node.node_iri for node in result.nodes}
+    assert {f"{FDP}/service/s1", f"{FDP}/service/s2"} <= harvested
+
+
 async def test_harvest_stops_at_the_node_limit(network: FakeNetwork) -> None:
     result = await harvest(_client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=2)
     assert len(result.nodes) == 2

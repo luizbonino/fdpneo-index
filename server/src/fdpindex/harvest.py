@@ -7,7 +7,11 @@ reference's default navigation SHACL. Nodes that fail to load or parse are
 skipped, as in the reference.
 
 Additions (ADR-0002): only IRIs on the client URL's origin are followed,
-fragments are dropped, and at most ``max_nodes`` nodes are visited.
+fragments are dropped, and at most ``max_nodes`` nodes are visited. Without
+LDP containers, data services are followed too (``dcat:service``,
+``dcat:accessService``): an FDP that links them only through DCAT would
+otherwise keep them out of the index. On home.fairdatapoint.org every
+service linked that way was also in an LDP container (2026-11-24).
 
 A node that answers 404 or 410 is gone; any other failure is temporary
 (TASKS 1.14: the stored version is kept).
@@ -50,6 +54,10 @@ NAVIGATION_PREDICATES = (
     DCAT.dataset,
     DCAT.distribution,
     DCTERMS.isPartOf,
+    # Data services, which the reference's navigation shapes leave out: a catalogue's
+    # dcat:service and a dataset's or distribution's dcat:accessService (2026-11-24).
+    DCAT.service,
+    DCAT.accessService,
 )
 
 

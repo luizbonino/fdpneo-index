@@ -83,6 +83,11 @@ The first release will contain:
 
 ### Fixed
 
+- Harvest: data services linked only through DCAT (a catalogue's
+  `dcat:service`, a dataset's or distribution's `dcat:accessService`) are
+  followed when a page has no LDP containers. No FDP on
+  home.fairdatapoint.org needed it: all of them also list their services in
+  LDP containers.
 - One FDP, one entry. URLs that differ only in `http`/`https`, letter case
   in the host, a default port or a trailing slash were separate entries, so
   the FDP counted twice; home.fairdatapoint.org had ten such pairs. A ping

@@ -24,7 +24,8 @@ once a week); an FDP that stops pinging and cannot be reached is marked
 Once accepted, the index **harvests** the FDP: it reads the FDP's own
 description, follows the links to catalogues, datasets, distributions and
 data services (`ldp:contains`, `dcat:dataset`, `dcat:distribution`,
-`fdp-o:metadataCatalog` …), and stores each page it reads. It harvests again
+`fdp-o:metadataCatalog`, `dcat:service`, `dcat:accessService` …), and stores
+each page it reads. It harvests again
 after every ping and when a scheduled check finds the FDP's own description
 changed; an administrator can add a fixed interval for FDPs whose datasets
 change without their root changing.

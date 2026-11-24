@@ -58,7 +58,10 @@ past these checks. Inline contexts are accepted. (Found on 2026-11-19.)
 
 The harvester only follows IRIs on the entry's own origin (scheme, host and
 port of the client URL), visits at most `FDPINDEX_HARVEST_MAX_NODES` nodes
-(default 2000) and runs one harvest per entry at a time.
+(default 2000) and runs one harvest per entry at a time. Where a node has no
+LDP containers, it also follows `dcat:service` and `dcat:accessService`, which
+the reference's navigation shapes leave out, so data services linked only
+through DCAT are kept (2026-11-24).
 
 ## Consequences
 

@@ -489,6 +489,46 @@ def test_harvested_metadata_is_queryable(api: Api) -> None:
     assert _bindings(entries.content) == [{"title": "Demo FDP"}]
 
 
+def test_a_node_the_store_cannot_parse_is_left_out_not_the_rest(
+    api: Api, network: FakeNetwork
+) -> None:
+    # Seen on a real FDP: rdflib accepts this IRI, Oxigraph does not. It once kept every
+    # FDP out of SPARQL: the sync pass failed and no snapshot was ever published.
+    network.serve(
+        f"{FDP}/dataset/d1",
+        f"""
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+<{FDP}/dataset/d1> a dcat:Dataset ;
+    dct:title "Dataset one" ;
+    foaf:page <;https://saildatabank.com/> ;
+    dct:isPartOf <{FDP}/catalog/c1> .
+""",
+    )
+    api.client.post("/", json={"clientUrl": FDP})
+    api.settle()
+    response = api.client.get(
+        "/index/sparql",
+        params={"query": "SELECT ?t WHERE { GRAPH ?g { ?c a dcat:Catalog ; dct:title ?t } }"},
+        headers=ADMIN,
+    )
+    assert response.status_code == 200, response.text
+    assert _bindings(response.content) == [{"t": "Catalog one"}]
+    datasets = api.client.get(
+        "/index/sparql", params={"query": "ASK { ?d a dcat:Dataset }"}, headers=ADMIN
+    )
+    assert json.loads(datasets.content)["boolean"] is False
+
+
+def test_store_skips_documents_it_cannot_parse(tmp_path: Path) -> None:
+    store = SparqlStore(tmp_path / "sparql")
+    good = '<https://a.example/x> <http://purl.org/dc/terms/title> "X" .\n'
+    bad = "<https://a.example/y> <http://xmlns.com/foaf/0.1/page> <;https://b.example/> .\n"
+    triples, rejected = store.replace_graph("https://a.example/", [good, bad, good], "f")
+    assert (triples, rejected) == (1, [1])
+
+
 def test_rejecting_an_entry_removes_its_graph(api: Api) -> None:
     api.client.post("/", json={"clientUrl": FDP})
     api.settle()

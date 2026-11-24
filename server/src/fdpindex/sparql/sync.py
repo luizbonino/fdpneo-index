@@ -145,7 +145,7 @@ class SparqlSync:
             self._reconcile = False
             loaded |= await self._reconcile_all()
         while self._entries:
-            loaded |= await self._sync_entry(self._entries.pop())
+            loaded |= await self._sync_entry_contained(self._entries.pop())
         if self._entries_dirty:
             self._entries_dirty = False
             await self._write_entries()
@@ -177,7 +177,7 @@ class SparqlSync:
             loaded = True
         fingerprints = await asyncio.to_thread(self._store.fingerprints)
         for entry_id in accepted:
-            loaded |= await self._sync_entry(entry_id, fingerprints)
+            loaded |= await self._sync_entry_contained(entry_id, fingerprints)
         return loaded
 
     async def _sync_entry(self, entry_id: UUID, fingerprints: dict[str, str] | None = None) -> bool:
@@ -209,7 +209,7 @@ class SparqlSync:
                     )
                 }
             nodes = [
-                (str(ntriples), str(content_hash))
+                (str(node_iri), str(ntriples), str(content_hash))
                 for node_iri, ntriples, content_hash in rows
                 if str(node_iri) not in left_out
             ]
@@ -219,16 +219,34 @@ class SparqlSync:
                 await asyncio.to_thread(self._store.drop_graph, client_url)
                 return True
             return False
-        wanted = fingerprint([*(h for _, h in nodes), *marks])
+        wanted = fingerprint([*(h for _, _, h in nodes), *marks])
         if fingerprints is None:
             fingerprints = await asyncio.to_thread(self._store.fingerprints)
         if fingerprints.get(client_url) == wanted:
             return False
-        triples = await asyncio.to_thread(
-            self._store.replace_graph, client_url, (n for n, _ in nodes), wanted
+        triples, rejected = await asyncio.to_thread(
+            self._store.replace_graph, client_url, (n for _, n, _ in nodes), wanted
         )
+        if rejected:
+            log.warning(
+                "sparql_nodes_rejected",
+                client_url=client_url,
+                nodes=[nodes[i][0] for i in rejected][:20],
+                count=len(rejected),
+                hint="RDF the SPARQL store cannot parse (an invalid IRI); left out of SPARQL",
+            )
         log.info("sparql_graph_loaded", client_url=client_url, nodes=len(nodes), triples=triples)
         return True
+
+    async def _sync_entry_contained(
+        self, entry_id: UUID, fingerprints: dict[str, str] | None = None
+    ) -> bool:
+        """One FDP's sync, its failure kept to itself: the pass goes on and is published."""
+        try:
+            return await self._sync_entry(entry_id, fingerprints)
+        except Exception:
+            log.exception("sparql_entry_failed", entry=str(entry_id))
+            return False
 
     async def _write_entries(self) -> None:
         settings = await self._settings.get()

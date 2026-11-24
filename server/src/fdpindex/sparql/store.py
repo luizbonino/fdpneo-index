@@ -147,19 +147,34 @@ class SparqlStore:
             if isinstance(quad.subject, ox.NamedNode) and isinstance(quad.object, ox.Literal)
         }
 
-    def replace_graph(self, client_url: str, ntriples: Iterable[str], fingerprint: str) -> int:
-        """Replace the FDP's graph with ``ntriples`` (one document per node); return triples."""
+    def replace_graph(
+        self, client_url: str, ntriples: Iterable[str], fingerprint: str
+    ) -> tuple[int, list[int]]:
+        """Replace the FDP's graph with ``ntriples`` (one document per node).
+
+        Returns the triples loaded and the positions of the documents left out: the
+        store's parser is stricter than the harvester's (an IRI such as
+        ``<;https://example.org/>`` passes rdflib but not Oxigraph), and one such node
+        must not keep the rest of the FDP, or the snapshot, from being published.
+        """
         graph = ox.NamedNode(client_url)
+        rejected: list[int] = []
         with self._lock:
             if self._store.contains_named_graph(graph):
                 self._store.clear_graph(graph)
             # Node by node, so an entry's harvest is never held in memory twice. Blank
             # node labels are scoped per node by the harvester, so documents cannot merge.
-            for document in ntriples:
-                self._store.load(document.encode(), format=ox.RdfFormat.N_TRIPLES, to_graph=graph)
+            # A document is parsed whole before it is added, so a rejected one adds nothing.
+            for position, document in enumerate(ntriples):
+                try:
+                    quads = list(ox.parse(document.encode(), format=ox.RdfFormat.N_TRIPLES))
+                except SyntaxError:
+                    rejected.append(position)
+                    continue
+                self._store.extend(ox.Quad(q.subject, q.predicate, q.object, graph) for q in quads)
             self._set_fingerprint(graph, fingerprint)
             self._changed()
-        return sum(1 for _ in self._store.quads_for_pattern(None, None, None, graph))
+        return sum(1 for _ in self._store.quads_for_pattern(None, None, None, graph)), rejected
 
     def drop_graph(self, client_url: str) -> None:
         graph = ox.NamedNode(client_url)

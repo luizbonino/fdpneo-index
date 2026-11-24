@@ -71,6 +71,11 @@ The first release will contain:
 
 ### Fixed
 
+- SPARQL: one harvested node the store could not parse (an IRI such as
+  `<;https://example.org/>`, which rdflib accepts) failed every sync pass, so
+  no snapshot was published and SPARQL stayed empty or stale. Such nodes are
+  now left out and logged (`sparql_nodes_rejected`), and one FDP's failure no
+  longer stops the pass.
 - The Register page was wider than a phone's screen (a long command in a
   copy field).
 - A literal holding a character Python treats as a line break (U+0085,

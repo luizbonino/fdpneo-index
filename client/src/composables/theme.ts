@@ -3,7 +3,7 @@
  * localStorage; "system" follows prefers-color-scheme.
  */
 
-import { ref, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 
 export type ThemeMode = "system" | "light" | "dark";
 const KEY = "fdpindex.theme";
@@ -26,9 +26,13 @@ const media =
 const systemDark = ref(media?.matches ?? false);
 media?.addEventListener("change", (event) => (systemDark.value = event.matches));
 
+/** Whether the dark theme is on: charts read their colours again when it changes. */
+export const darkTheme = computed(
+  () => themeMode.value === "dark" || (themeMode.value === "system" && systemDark.value),
+);
+
 watchEffect(() => {
-  const dark = themeMode.value === "dark" || (themeMode.value === "system" && systemDark.value);
-  document.documentElement.classList.toggle("theme-dark", dark);
+  document.documentElement.classList.toggle("theme-dark", darkTheme.value);
 });
 
 export function cycleTheme(): void {

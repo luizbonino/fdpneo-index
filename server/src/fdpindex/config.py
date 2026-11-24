@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     # start per sweep. Whether checks run, and their interval, are index settings.
     health_sweep_seconds: float = Field(default=60, gt=0)
     health_batch: int = Field(default=100, gt=0)
+    # Statistics (TASKS 15.1): how often today's snapshot is taken again; 0 takes none.
+    stats_snapshot_seconds: float = Field(default=3600, ge=0)
     # Recorded HTTP bodies are cut at this size so the event log stays bounded.
     event_body_max_chars: int = Field(default=65536, ge=0)
     # SPARQL over the harvested metadata (search design §2.2): an embedded store

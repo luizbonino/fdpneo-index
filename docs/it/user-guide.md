@@ -218,6 +218,18 @@ inglese) la illustra, insieme al feed DCAT-AP (`/index/catalog`) e a OAI-PMH
 (`/index/oai`) per raccogliere tutto. Tutti i percorsi sono descritti in
 `/docs` sull'indice.
 
+## Statistiche
+
+**Statistiche** mostra che cosa contiene l'indice e come cambia: FDP elencati
+e attivi, schede per tipo, gli FDP con più schede, la quota di schede conformi
+a ciascun profilo, gli FDP per mese di registrazione e i dataset per anno di
+pubblicazione. Conta ciò che vedono i visitatori, come l'elenco degli FDP e la
+ricerca. Gli andamenti iniziano con il primo conteggio (ogni ora; resta
+l'ultimo del giorno), quindi un indice nuovo mostra una linea solo dal secondo
+giorno. Ogni grafico ha **Mostra come tabella**, e **Apri come query SPARQL**
+pone la stessa domanda in SPARQL, dove è possibile modificarla; SPARQL conta
+per tipo RDF, quindi i numeri possono differire leggermente.
+
 ## Lingue
 
 L'interfaccia è disponibile in inglese, olandese, tedesco, francese,

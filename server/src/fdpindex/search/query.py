@@ -599,6 +599,19 @@ class SearchService:
             return True
         return settings.properties.visitors and not settings.hides(iri)
 
+    async def visitor_conditions(self) -> list[ColumnElement[bool]]:
+        """What every visitor's search is limited to, on ``search_resource`` and its entry:
+        accepted FDPs, expired ones left out when the policy hides them, and the minimum
+        conformance when one is set (TASKS 11.4). The statistics count the same records."""
+        conditions: list[ColumnElement[bool]] = [E.permit == EntryPermit.ACCEPTED]
+        if self._hide_expired:
+            conditions.append(E.expired_at.is_(None))
+        if self.conformance_minimum is not None:
+            minimum = await self.conformance_minimum()
+            if minimum:
+                conditions.append(_has(CONFORMANCE_FIELD, [minimum], R.id))
+        return conditions
+
     # --- conditions --------------------------------------------------------------
 
     def _conditions(

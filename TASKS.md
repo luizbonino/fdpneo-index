@@ -36,7 +36,8 @@ task are listed in the last column.
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 9/9 | – | – | ✅ Done | – |
-| **Total** | | **127/130** | **–** | **3** | | |
+| 15 Statistics and provenance | A Statistics page with counts over time; harvest provenance in PROV-O | 1/3 | – | 2 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; then 15.3 |
+| **Total** | | **128/133** | **–** | **5** | | |
 
 ## Phase 0 — Foundations
 
@@ -245,3 +246,11 @@ features landed. This phase organises it by audience and publishes it.
 - [x] 14.8 Translations of the guide for people searching, in Phase 13's languages (optional, once the interface is translated) — *done: `docs/<lang>/user-guide.md` in Dutch, German, French, Spanish, Italian and Portuguese, with the interface's own labels; linked from the English guide and the site's navigation*
 - [x] 14.9 Documentation checks in CI: links, commands and API examples run against a test index, screenshots up to date — *done: strict site build (links, anchors), API examples run in the server tests, the configuration check; screenshots by script (not compared in CI)*
 
+## Phase 15 — Statistics and provenance
+
+The index's own story: how much it holds and how that changes, and where each
+copy it republishes came from.
+
+- [x] 15.1 Statistics page and API: FDPs and records now (by state, by type), the FDPs with most records, conformance shares, FDPs by month of registration, datasets by year of `dct:issued`, and counts over time from daily snapshots; counted as visitors see the index; each chart with a table view and, where SPARQL can ask the same, an "Open as SPARQL query" link — *done: `GET /index/stats` (public; conformance shares follow the `reports` setting), `stats_daily` (migration 0015) filled hourly (`FDPINDEX_STATS_SNAPSHOT_SECONDS`), the Statistics page in seven languages. One endpoint rather than SPARQL alone (agreed 2026-11-24): history needs storage, the search's record types and registration dates are not in the SPARQL store, and SPARQL's per-visitor limits and optional status would make the page fragile*
+- [ ] 15.2 Harvest provenance, design: what to publish about each harvest and each copy in PROV-O, where, and for whom — *proposal in [`docs/design/provenance.md`](docs/design/provenance.md), five questions for review*
+- [ ] 15.3 Harvest provenance, build: a provenance graph in SPARQL, `/index/harvests/{id}`, `prov:wasGeneratedBy` in the catalogue feed, provenance lines on resource and FDP pages (after 15.2)

@@ -23,6 +23,7 @@ from fdpindex.api.conformance import router as conformance_router
 from fdpindex.api.routes import router
 from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
+from fdpindex.api.stats import router as stats_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.catalog.feed import CatalogFeed, CatalogMeta
 from fdpindex.config import Settings, get_settings
@@ -49,6 +50,7 @@ from fdpindex.sparql.service import Limits, RateLimiter, SparqlService
 from fdpindex.sparql.store import SparqlStore
 from fdpindex.sparql.sync import SparqlSync
 from fdpindex.sparql.workers import WorkerPool
+from fdpindex.stats import StatsScheduler, StatsService
 from fdpindex.webhooks import WebhookService
 
 if TYPE_CHECKING:
@@ -216,18 +218,23 @@ def create_app(
         )
         app.state.conformance = conformance
         app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
+        stats = StatsService(factory, index, search, conformance)
+        app.state.stats = stats
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
             index, sweep_seconds=config.health_sweep_seconds, batch=config.health_batch
         )
+        stats_scheduler = StatsScheduler(stats, seconds=config.stats_snapshot_seconds)
         if run_scheduler:
             scheduler.start()
+            stats_scheduler.start()
         log.info("fdpindex_started", version=__version__)
         try:
             yield
         finally:
             await scheduler.stop()
+            await stats_scheduler.stop()
             await jobs.close()
             if conformance is not None:
                 await conformance.stop()
@@ -266,6 +273,7 @@ def create_app(
     app.include_router(search_router)
     app.include_router(conformance_router)
     app.include_router(catalog_router)
+    app.include_router(stats_router)
     return app
 
 

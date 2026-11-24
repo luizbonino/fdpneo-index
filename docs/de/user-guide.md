@@ -219,6 +219,19 @@ zeigt sie, zusammen mit dem DCAT-AP-Feed (`/index/catalog`) und OAI-PMH
 (`/index/oai`), um alles abzurufen. Unter `/docs` auf dem Index finden Sie
 alle Pfade.
 
+## Statistik
+
+**Statistik** zeigt, was der Index enthält und wie sich das ändert: gelistete
+und aktive FDPs, Einträge nach Typ, die FDPs mit den meisten Einträgen, den
+Anteil der Einträge, die ein Profil erfüllen, FDPs nach Monat der Anmeldung und
+Datensätze nach Erscheinungsjahr. Gezählt wird, was Besucher sehen, wie im
+FDP-Verzeichnis und in der Suche. Die Verläufe beginnen mit der ersten Zählung
+(stündlich; die letzte Zählung des Tages bleibt), ein neuer Index zeigt also
+erst ab dem zweiten Tag eine Linie. Unter jedem Diagramm steht **Als Tabelle
+anzeigen**, und **Als SPARQL-Abfrage öffnen** stellt dieselbe Frage in SPARQL,
+wo Sie sie ändern können; SPARQL zählt nach RDF-Typ, die Zahlen können daher
+leicht abweichen.
+
 ## Sprachen
 
 Die Oberfläche gibt es auf Englisch, Niederländisch, Deutsch, Französisch,

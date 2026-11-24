@@ -131,6 +131,21 @@ An FDP's conformance report, when the index publishes reports:
 GET /index/conformance/entries/{uuid}
 ```
 
+## Statistics
+
+What the index holds now, FDPs by month of registration, datasets by year of
+issue, and daily counts over the last `days` (365 by default), as the
+Statistics page shows them:
+
+```http
+GET /index/stats?days=90
+```
+
+`history.series` has one value per day for each count (`fdps.total`,
+`fdps.state.ACTIVE`, `records.kind.dataset` …), `null` where the index took no
+count that day. Conformance shares are there only for those who may read
+conformance reports.
+
 ## Search engines and browsers
 
 An OpenSearch description lets browsers add the index as a search engine:

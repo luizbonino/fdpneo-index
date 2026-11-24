@@ -64,6 +64,11 @@ The first release will contain:
 - **Documentation site** (MkDocs, built in CI and attached to releases),
   with guides per audience, a configuration reference, API examples that
   run in the tests, and a guide for AI agents through fdp-mcp's index mode.
+- **Statistics** (`/statistics`, `GET /index/stats`): FDPs and records now
+  and over time (daily counts, kept from the upgrade on), registrations by
+  month, datasets by year of issue, conformance shares and the FDPs with most
+  records, counted as visitors see the index; charts with tables and "Open as
+  SPARQL query" links.
 - **`deploy/compose.proxy.yaml`**: the client joins the Docker network of a
   reverse proxy on the same host, such as Caddy.
 - **Operations**: Compose stack with an optional Keycloak profile, trusted

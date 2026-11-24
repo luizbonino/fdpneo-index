@@ -218,6 +218,19 @@ parameters als het adres van de zoekpagina; [API-voorbeelden](../api.md)
 en OAI-PMH (`/index/oai`) om alles op te halen. Zie `/docs` op de index
 voor alle paden.
 
+## Statistieken
+
+**Statistieken** laat zien wat de index bevat en hoe dat verandert: vermelde
+en actieve FDP's, records per type, de FDP's met de meeste records, het deel
+van de records dat aan elk profiel voldoet, FDP's per maand van aanmelding en
+datasets per jaar van uitgifte. Er wordt geteld wat bezoekers zien, net als in
+de lijst van FDP's en het zoeken. Het verloop begint bij de eerste telling (er
+wordt elk uur geteld; de laatste telling van de dag blijft bewaard), dus een
+nieuwe index toont pas vanaf de tweede dag een lijn. Onder elke grafiek staat
+**Als tabel tonen**, en **Openen als SPARQL-query** stelt dezelfde vraag in
+SPARQL, waar u die kunt aanpassen; SPARQL telt per RDF-type, dus de getallen
+kunnen iets afwijken.
+
 ## Talen
 
 De interface is beschikbaar in het Engels, Nederlands, Duits, Frans, Spaans,

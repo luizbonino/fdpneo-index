@@ -218,6 +218,19 @@ API](../api.md) (en inglés) la muestra, junto con el feed DCAT-AP
 (`/index/catalog`) y OAI-PMH (`/index/oai`) para recolectarlo todo. En
 `/docs` del índice figuran todas las rutas.
 
+## Estadísticas
+
+**Estadísticas** muestra lo que contiene el índice y cómo cambia: FDP en la
+lista y activos, registros por tipo, los FDP con más registros, la proporción
+de registros que cumple cada perfil, los FDP por mes de registro y los
+conjuntos de datos por año de publicación. Cuenta lo que ven los visitantes,
+igual que la lista de FDP y la búsqueda. La evolución empieza con el primer
+recuento (cada hora; se conserva el último del día), así que un índice nuevo
+solo muestra una línea a partir de su segundo día. Cada gráfico ofrece **Ver
+como tabla**, y **Abrir como consulta SPARQL** plantea la misma pregunta en
+SPARQL, donde se puede modificar; SPARQL cuenta por tipo RDF, por lo que sus
+cifras pueden diferir un poco.
+
 ## Idiomas
 
 La interfaz está disponible en inglés, neerlandés, alemán, francés, español,

@@ -474,3 +474,20 @@ class ConformanceEntryState(Base):
     settings_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # packs in use
     records: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     validated_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+
+
+# --- statistics (TASKS 15.1) --------------------------------------------------------
+
+
+class StatsDaily(Base):
+    """One value of one statistic on one day: the last snapshot taken that day.
+
+    Metrics are dotted names (``fdps.total``, ``records.kind.dataset``,
+    ``conformance.dcat-ap.conforms`` …), counted as visitors saw the index then.
+    """
+
+    __tablename__ = "stats_daily"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    metric: Mapped[str] = mapped_column(String(128), primary_key=True)
+    value: Mapped[int] = mapped_column(BigInteger, nullable=False)

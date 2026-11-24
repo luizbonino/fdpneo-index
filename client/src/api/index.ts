@@ -21,6 +21,7 @@ export type WebhookInput = Schemas["WebhookRequest"];
 export type WebhookEvent = Schemas["WebhookEvent"];
 export type ServiceInfo = Schemas["ServiceInfo"];
 export type Registration = Schemas["RegistrationView"];
+export type Statistics = Schemas["Statistics"];
 export interface EntryOptions {
   harvest?: boolean;
   /** ISO-8601 duration; "" clears it. */
@@ -72,6 +73,7 @@ export const api = {
     request<EntryPage>(
       `/index/entries${query({ state: q.state, permit: q.permit, q: q.q, sort: q.sort, page: q.page, size: q.size })}`,
     ),
+  stats: (days: number) => request<Statistics>(`/index/stats${query({ days })}`),
   counts: (permit = "accepted") =>
     request<{ entriesCount: Record<string, number> }>(`/index/entries/info${query({ permit })}`),
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),

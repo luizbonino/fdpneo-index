@@ -17,6 +17,7 @@ export const keys = {
   data: (uuid: string) => ["data", uuid] as const,
   settings: ["settings"] as const,
   webhooks: ["webhooks"] as const,
+  stats: (days: number) => ["stats", days] as const,
 };
 
 export function useServiceInfo() {
@@ -73,4 +74,14 @@ export function useInvalidateEntries() {
       uuid ? client.invalidateQueries({ queryKey: ["events", uuid] }) : Promise.resolve(),
     ]);
   };
+}
+
+/** The Statistics page (TASKS 15.1): counted hourly on the server, so kept a minute. */
+export function useStats(days: MaybeRefOrGetter<number>) {
+  return useQuery({
+    queryKey: computed(() => [...keys.stats(toValue(days)), session.isAdmin]),
+    queryFn: () => api.stats(toValue(days)),
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  });
 }

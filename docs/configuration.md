@@ -57,6 +57,7 @@ Every request the index makes goes through one guarded client (ADR-0002).
 | `FDPINDEX_WORKER_CONCURRENCY` | `4` | Parallel background jobs (retrievals, harvests, webhook deliveries) |
 | `FDPINDEX_HEALTH_SWEEP_SECONDS` | `60` | How often due liveness checks are started |
 | `FDPINDEX_HEALTH_BATCH` | `100` | Liveness checks started per sweep |
+| `FDPINDEX_STATS_SNAPSHOT_SECONDS` | `3600` | How often the day's statistics are counted again for the history on the Statistics page; `0` keeps no history |
 | `FDPINDEX_EVENT_BODY_MAX_CHARS` | `65536` | Request and response bodies kept in the event log, at most |
 
 ## Search

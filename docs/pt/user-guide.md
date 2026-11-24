@@ -217,6 +217,18 @@ parâmetros que o endereço da página de pesquisa; [Exemplos da API](../api.md)
 OAI-PMH (`/index/oai`) para recolher tudo. Todos os caminhos estão em `/docs`
 no índice.
 
+## Estatísticas
+
+**Estatísticas** mostra o que o índice contém e como isso muda: FDP listados e
+ativos, registos por tipo, os FDP com mais registos, a proporção de registos
+que cumpre cada perfil, os FDP por mês de registo e os conjuntos de dados por
+ano de publicação. Conta o que os visitantes veem, tal como a lista de FDP e a
+pesquisa. A evolução começa com a primeira contagem (de hora a hora; fica a
+última do dia), pelo que um índice novo só mostra uma linha a partir do
+segundo dia. Cada gráfico tem **Ver como tabela**, e **Abrir como consulta
+SPARQL** faz a mesma pergunta em SPARQL, onde a pode alterar; o SPARQL conta
+por tipo RDF, pelo que os números podem diferir um pouco.
+
 ## Idiomas
 
 A interface está disponível em inglês, neerlandês, alemão, francês,

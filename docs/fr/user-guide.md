@@ -226,6 +226,19 @@ d’API](../api.md) (en anglais) la présente, avec le flux DCAT-AP
 (`/index/catalog`) et OAI-PMH (`/index/oai`) pour tout moissonner.
 Consultez `/docs` sur l’index pour la liste de tous les chemins.
 
+## Statistiques
+
+**Statistiques** montre ce que contient l’index et comment cela évolue : FDP
+listés et actifs, notices par type, les FDP ayant le plus de notices, la part
+des notices conformes à chaque profil, les FDP par mois d’inscription et les
+jeux de données par année de publication. Elle compte ce que voient les
+visiteurs, comme la liste des FDP et la recherche. Les évolutions commencent au
+premier relevé (toutes les heures ; le dernier relevé du jour est conservé) :
+un nouvel index n’affiche donc une courbe qu’à partir de son deuxième jour.
+Chaque graphique propose **Afficher sous forme de tableau**, et **Ouvrir comme
+requête SPARQL** pose la même question en SPARQL, où vous pouvez la modifier ;
+SPARQL compte par type RDF, ses chiffres peuvent donc différer légèrement.
+
 ## Langues
 
 L’interface est disponible en anglais, néerlandais, allemand, français,

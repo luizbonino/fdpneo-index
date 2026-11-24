@@ -1030,6 +1030,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Statistics on the index */
+    get: operations["statistics_index_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/webhooks": {
     parameters: {
       query?: never;
@@ -1162,6 +1179,40 @@ export interface components {
        */
       reports: "public" | "admin";
       surfaces: components["schemas"]["Surfaces-Output"];
+    };
+    /** ConformanceShare */
+    ConformanceShare: {
+      /** Bykind */
+      byKind: {
+        [key: string]: components["schemas"]["KindShare"];
+      };
+      /**
+       * Checked
+       * @description Records checked against it
+       */
+      checked: number;
+      /**
+       * Conforms
+       * @description Records that meet it
+       */
+      conforms: number;
+      /**
+       * Pack
+       * @description The profile pack's id
+       */
+      pack: string;
+      /**
+       * Specification
+       * @description The specification's IRI
+       */
+      specification: string;
+      /**
+       * Title
+       * @description The pack's title by language
+       */
+      title: {
+        [key: string]: string;
+      };
     };
     /** EntriesInfoView */
     EntriesInfoView: {
@@ -1484,6 +1535,21 @@ export interface components {
        */
       placement: "main" | "more" | "hidden";
     };
+    /** FdpCounts */
+    FdpCounts: {
+      /**
+       * Bystate
+       * @description By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN
+       */
+      byState: {
+        [key: string]: number;
+      };
+      /**
+       * Total
+       * @description FDPs in the public list
+       */
+      total: number;
+    };
     /**
      * FilterRequest
      * @description One structured filter of `POST /index/search` (search design §2.1).
@@ -1620,6 +1686,21 @@ export interface components {
       /** Nextchecktime */
       nextCheckTime: string | null;
     };
+    /** History */
+    History: {
+      /**
+       * Days
+       * @description Every day from the first snapshot, ISO dates
+       */
+      days: string[];
+      /**
+       * Series
+       * @description Per metric (fdps.total, fdps.state.ACTIVE, records.total, records.kind.dataset, conformance.<pack>.conforms …), one value per day; null where no snapshot was taken
+       */
+      series: {
+        [key: string]: (number | null)[];
+      };
+    };
     /** IndexSettings */
     IndexSettings: {
       /** Autopermit */
@@ -1650,10 +1731,31 @@ export interface components {
        */
       verifiedPermit: boolean;
     };
+    /** KindShare */
+    KindShare: {
+      /** Checked */
+      checked: number;
+      /** Conforms */
+      conforms: number;
+    };
     /** LabelsRequest */
     LabelsRequest: {
       /** Iris */
       iris: string[];
+    };
+    /** LargestFdp */
+    LargestFdp: {
+      /** Clienturl */
+      clientUrl: string;
+      /**
+       * Records
+       * @description Its records, the FDP's own description left out
+       */
+      records: number;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
     };
     /** Library */
     Library: {
@@ -1661,6 +1763,16 @@ export interface components {
       examples: components["schemas"]["Example"][];
       /** Groups */
       groups: string[];
+    };
+    /** MonthCount */
+    MonthCount: {
+      /** Count */
+      count: number;
+      /**
+       * Month
+       * @description YYYY-MM
+       */
+      month: string;
     };
     /** PackFileView */
     PackFileView: {
@@ -1912,6 +2024,21 @@ export interface components {
        * @default true
        */
       visitors: boolean;
+    };
+    /** RecordCounts */
+    RecordCounts: {
+      /**
+       * Bykind
+       * @description By kind: fdp, catalog, dataset, series, service …
+       */
+      byKind: {
+        [key: string]: number;
+      };
+      /**
+       * Total
+       * @description Records visitors find in search
+       */
+      total: number;
     };
     /** RecordPage */
     RecordPage: {
@@ -2225,6 +2352,35 @@ export interface components {
       /** Version */
       version: string;
     };
+    /** Statistics */
+    Statistics: {
+      /**
+       * Conformance
+       * @description Null when conformance is off or its reports are for administrators
+       */
+      conformance: components["schemas"]["ConformanceShare"][] | null;
+      fdps: components["schemas"]["FdpCounts"];
+      /** Generatedat */
+      generatedAt: string;
+      history: components["schemas"]["History"];
+      /**
+       * Largest
+       * @description The FDPs with most records
+       */
+      largest: components["schemas"]["LargestFdp"][];
+      /**
+       * Published
+       * @description Datasets by year of dct:issued
+       */
+      published: components["schemas"]["YearCount"][];
+      /** @description Null when search is off */
+      records: components["schemas"]["RecordCounts"] | null;
+      /**
+       * Registrations
+       * @description FDPs in the public list by month of registration
+       */
+      registrations: components["schemas"]["MonthCount"][];
+    };
     /**
      * Suggest
      * @description Where the UI gets suggestions: objects of a predicate, or instances of a class.
@@ -2379,6 +2535,13 @@ export interface components {
        * Format: uuid
        */
       uuid: string;
+    };
+    /** YearCount */
+    YearCount: {
+      /** Count */
+      count: number;
+      /** Year */
+      year: number;
     };
     /** ValidateRequest */
     fdpindex__api__conformance__ValidateRequest: {
@@ -4337,6 +4500,38 @@ export interface operations {
           "application/json": {
             [key: string]: unknown;
           };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  statistics_index_stats_get: {
+    parameters: {
+      query?: {
+        /** @description Days of history */
+        days?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Statistics"];
         };
       };
       /** @description Validation Error */

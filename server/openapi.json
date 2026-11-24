@@ -246,6 +246,55 @@
         "title": "ConformanceSettingsView",
         "type": "object"
       },
+      "ConformanceShare": {
+        "properties": {
+          "byKind": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/KindShare"
+            },
+            "title": "Bykind",
+            "type": "object"
+          },
+          "checked": {
+            "description": "Records checked against it",
+            "title": "Checked",
+            "type": "integer"
+          },
+          "conforms": {
+            "description": "Records that meet it",
+            "title": "Conforms",
+            "type": "integer"
+          },
+          "pack": {
+            "description": "The profile pack's id",
+            "title": "Pack",
+            "type": "string"
+          },
+          "specification": {
+            "description": "The specification's IRI",
+            "title": "Specification",
+            "type": "string"
+          },
+          "title": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The pack's title by language",
+            "title": "Title",
+            "type": "object"
+          }
+        },
+        "required": [
+          "pack",
+          "specification",
+          "title",
+          "checked",
+          "conforms",
+          "byKind"
+        ],
+        "title": "ConformanceShare",
+        "type": "object"
+      },
       "EntriesInfoView": {
         "properties": {
           "entriesCount": {
@@ -1045,6 +1094,29 @@
         "title": "FacetSetting",
         "type": "object"
       },
+      "FdpCounts": {
+        "properties": {
+          "byState": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN",
+            "title": "Bystate",
+            "type": "object"
+          },
+          "total": {
+            "description": "FDPs in the public list",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "byState"
+        ],
+        "title": "FdpCounts",
+        "type": "object"
+      },
       "FilterRequest": {
         "additionalProperties": false,
         "description": "One structured filter of `POST /index/search` (search design \u00a72.1).",
@@ -1387,6 +1459,42 @@
         "title": "HealthView",
         "type": "object"
       },
+      "History": {
+        "properties": {
+          "days": {
+            "description": "Every day from the first snapshot, ISO dates",
+            "items": {
+              "type": "string"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "series": {
+            "additionalProperties": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "description": "Per metric (fdps.total, fdps.state.ACTIVE, records.total, records.kind.dataset, conformance.<pack>.conforms \u2026), one value per day; null where no snapshot was taken",
+            "title": "Series",
+            "type": "object"
+          }
+        },
+        "required": [
+          "days",
+          "series"
+        ],
+        "title": "History",
+        "type": "object"
+      },
       "IndexSettings": {
         "additionalProperties": false,
         "properties": {
@@ -1461,6 +1569,24 @@
         "title": "IndexSettingsView",
         "type": "object"
       },
+      "KindShare": {
+        "properties": {
+          "checked": {
+            "title": "Checked",
+            "type": "integer"
+          },
+          "conforms": {
+            "title": "Conforms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checked",
+          "conforms"
+        ],
+        "title": "KindShare",
+        "type": "object"
+      },
       "LabelsRequest": {
         "properties": {
           "iris": {
@@ -1476,6 +1602,42 @@
           "iris"
         ],
         "title": "LabelsRequest",
+        "type": "object"
+      },
+      "LargestFdp": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "records": {
+            "description": "Its records, the FDP's own description left out",
+            "title": "Records",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "clientUrl",
+          "title",
+          "records"
+        ],
+        "title": "LargestFdp",
         "type": "object"
       },
       "Library": {
@@ -1501,6 +1663,25 @@
           "examples"
         ],
         "title": "Library",
+        "type": "object"
+      },
+      "MonthCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "month": {
+            "description": "YYYY-MM",
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "count"
+        ],
+        "title": "MonthCount",
         "type": "object"
       },
       "PackFileView": {
@@ -2121,6 +2302,29 @@
           "hidden"
         ],
         "title": "PropertySettings",
+        "type": "object"
+      },
+      "RecordCounts": {
+        "properties": {
+          "byKind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "By kind: fdp, catalog, dataset, series, service \u2026",
+            "title": "Bykind",
+            "type": "object"
+          },
+          "total": {
+            "description": "Records visitors find in search",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "byKind"
+        ],
+        "title": "RecordCounts",
         "type": "object"
       },
       "RecordPage": {
@@ -2897,6 +3101,82 @@
         "title": "ServiceInfo",
         "type": "object"
       },
+      "Statistics": {
+        "properties": {
+          "conformance": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ConformanceShare"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when conformance is off or its reports are for administrators",
+            "title": "Conformance"
+          },
+          "fdps": {
+            "$ref": "#/components/schemas/FdpCounts"
+          },
+          "generatedAt": {
+            "title": "Generatedat",
+            "type": "string"
+          },
+          "history": {
+            "$ref": "#/components/schemas/History"
+          },
+          "largest": {
+            "description": "The FDPs with most records",
+            "items": {
+              "$ref": "#/components/schemas/LargestFdp"
+            },
+            "title": "Largest",
+            "type": "array"
+          },
+          "published": {
+            "description": "Datasets by year of dct:issued",
+            "items": {
+              "$ref": "#/components/schemas/YearCount"
+            },
+            "title": "Published",
+            "type": "array"
+          },
+          "records": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecordCounts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when search is off"
+          },
+          "registrations": {
+            "description": "FDPs in the public list by month of registration",
+            "items": {
+              "$ref": "#/components/schemas/MonthCount"
+            },
+            "title": "Registrations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "fdps",
+          "records",
+          "largest",
+          "conformance",
+          "registrations",
+          "published",
+          "history"
+        ],
+        "title": "Statistics",
+        "type": "object"
+      },
       "Suggest": {
         "additionalProperties": false,
         "description": "Where the UI gets suggestions: objects of a predicate, or instances of a class.",
@@ -3245,6 +3525,24 @@
           "updatedAt"
         ],
         "title": "WebhookView",
+        "type": "object"
+      },
+      "YearCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "title": "YearCount",
         "type": "object"
       },
       "fdpindex__api__conformance__ValidateRequest": {
@@ -6341,6 +6639,53 @@
         "summary": "Sparql Validate",
         "tags": [
           "SPARQL"
+        ]
+      }
+    },
+    "/index/stats": {
+      "get": {
+        "operationId": "statistics_index_stats_get",
+        "parameters": [
+          {
+            "description": "Days of history",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 365,
+              "description": "Days of history",
+              "maximum": 3660,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Statistics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Statistics on the index",
+        "tags": [
+          "Statistics"
         ]
       }
     },

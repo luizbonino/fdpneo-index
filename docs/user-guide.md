@@ -202,6 +202,18 @@ the search page's address; [API examples](api.md) shows it, with the
 DCAT-AP feed (`/index/catalog`) and OAI-PMH (`/index/oai`) for harvesting
 everything. See `/docs` on the index for every path.
 
+## Statistics
+
+**Statistics** shows what the index holds and how that changes: FDPs listed
+and active, records by type, the FDPs with most records, the share of records
+meeting each profile, FDPs by month of registration, and datasets by the year
+they were issued. It counts what visitors see, as the directory and the search
+do. Counts over time start when the index first counts (it counts every hour,
+and keeps the day's last count), so a new index shows a line only from its
+second day. Every chart has a table under **Show as a table**, and **Open as
+SPARQL query** asks the same question of SPARQL, where you can change it; SPARQL
+counts by RDF type, so its numbers can differ a little.
+
 ## Languages
 
 The interface speaks English, Dutch, German, French, Spanish, Italian and

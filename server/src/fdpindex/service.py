@@ -1142,6 +1142,10 @@ class IndexService:
             items = list(rows.scalars().all())
         return EntryPage(items=items, total=int(total or 0), page=page, size=size)
 
+    async def public_conditions(self) -> list[ColumnElement[bool]]:
+        """The public FDP list's conditions on ``index_entry`` (the statistics use them)."""
+        return await self._public_conditions(True)
+
     async def _public_conditions(self, public: bool) -> list[ColumnElement[bool]]:
         """For anonymous callers: expired entries leave the lists when the policy hides them,
         and FDPs below the directory's minimum conformance (TASKS 11.4) when one is set."""

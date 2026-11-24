@@ -265,6 +265,10 @@ def test_registration_and_options_over_http(api: Api) -> None:
         "harvest": False,
         "harvestInterval": "PT24H",
         "country": None,
+        "harvestPagesPerRun": 2000,
+        "harvestPagesPerWalk": 50_000,
+        "harvestBudgetSet": False,
+        "harvestOrigins": [],
     }
     assert updated.json()["permit"] == "ACCEPTED"  # unchanged without permit
     short = {"options": {"harvestInterval": "PT5M"}}

@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     harvest_max_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
     harvest_max_seconds: float = Field(default=900, gt=0)
     harvest_node_timeout_seconds: float = Field(default=20, gt=0)
+    # The bounds above are per run; a walk continues over runs (TASKS 15.7) up to this
+    # many pages, and its next run starts this long after the last one.
+    harvest_walk_max_nodes: int = Field(default=50_000, gt=0)
+    harvest_continue_seconds: float = Field(default=600, ge=0)
     user_agent: str = "fdpneo-index (+https://github.com/luizbonino/fdpneo-index)"
 
     # --- background work -------------------------------------------------------

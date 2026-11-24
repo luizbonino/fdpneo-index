@@ -36,6 +36,7 @@ from fdpindex.api.schemas import (
     EventPageView,
     EventView,
     HarvestView,
+    HarvestWalkView,
     HealthView,
     LocationView,
     PingRequest,
@@ -52,7 +53,7 @@ from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.durations import format_duration, parse_duration
 from fdpindex.errors import BadRequest, NotFound, RateLimited
 from fdpindex.geo import valid as valid_country
-from fdpindex.models import EntryPermit, IndexEntry
+from fdpindex.models import EntryPermit, EventType, IndexEntry
 from fdpindex.service import DuplicateGroup, IndexService, api_state
 from fdpindex.settings import IndexSettings, IndexSettingsView, SettingsService
 from fdpindex.webhooks import WebhookService
@@ -275,6 +276,10 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
     threshold = await index.valid_threshold()
     events, _total = await index.events(entry_id)
     nodes, harvested_at = await index.harvest_summary(entry_id)
+    walk = await index.harvest_walk(entry_id)
+    run_pages, walk_pages = index.harvest_budget(entry)
+    # While a run reads, continue_at holds the sweep's lease, not a time to show.
+    running = any(e.type is EventType.HARVEST and e.finished_at is None for e in events)
     metadata = None
     if entry.last_retrieval_at is not None:
         metadata = RepositoryMetadataView(
@@ -292,7 +297,20 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
         registration_time=instant(entry.created_at) or "",
         modification_time=instant(entry.updated_at) or "",
         last_retrieval_time=instant(entry.last_retrieval_at),
-        harvest=HarvestView(nodes=nodes, harvested_at=instant(harvested_at)),
+        harvest=HarvestView(
+            nodes=nodes,
+            harvested_at=instant(harvested_at),
+            walk=HarvestWalkView(
+                started_at=instant(walk.started_at) or "",
+                runs=walk.runs,
+                pages=walk.pages,
+                queued=len(walk.queue),
+                running=running,
+                continues_at=None if running else instant(walk.continue_at),
+            )
+            if walk is not None
+            else None,
+        ),
         health=HealthView(
             next_check_time=instant(entry.next_check_at),
             last_success_time=instant(entry.last_success_at),
@@ -304,6 +322,10 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
             if entry.harvest_interval_seconds
             else None,
             country=entry.country,
+            harvest_pages_per_run=run_pages,
+            harvest_pages_per_walk=walk_pages,
+            harvest_budget_set=bool(entry.harvest_run_pages or entry.harvest_walk_pages),
+            harvest_origins=list(entry.harvest_origins or []),
         ),
         expired_time=instant(entry.expired_at),
         location=_location((await index.locate([entry])).get(entry.uuid)),
@@ -333,6 +355,9 @@ async def update_entry(
     `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
     harvests again at that interval even when the root metadata did not
     change; it takes effect at the entry's checks.
+    `options.harvestPagesPerRun`, `harvestPagesPerWalk` and `harvestOrigins`
+    give this FDP its own harvest budget and other sites it may read (TASKS
+    15.7); `null` returns one to the deployment's default.
     """
     if body.options is not None:
         await _apply_options(index, entry_id, body.options)
@@ -368,6 +393,15 @@ async def _apply_options(index: IndexService, entry_id: UUID, options: EntryOpti
         clear_interval=clear,
         country=country,
         clear_country=options.country == "",
+        budget={
+            key: getattr(options, field)
+            for field, key in (
+                ("harvest_pages_per_run", "run_pages"),
+                ("harvest_pages_per_walk", "walk_pages"),
+                ("harvest_origins", "origins"),
+            )
+            if field in options.model_fields_set
+        },
     )
 
 

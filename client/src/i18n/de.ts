@@ -106,6 +106,11 @@ export const de: Messages = {
       saved: "Optionen gespeichert.",
       country: "Land",
       countryAuto: "Aus den anderen Quellen",
+      runPages: "Seiten pro Durchlauf",
+      walkPages: "Seiten pro Harvest",
+      budgetReset: "Standardwerte verwenden",
+      origins: "Weitere Websites",
+      originsHint: "Etwa https://data.example.org",
     },
     location: "Standort: {country} · {source}",
     back: "Alle FAIR Data Points",
@@ -130,6 +135,9 @@ export const de: Messages = {
     harvest: "Abgerufene Metadaten",
     harvestSummary:
       "Keine Knoten abgerufen | Ein Knoten abgerufen {when} | {n} Knoten abgerufen {when}",
+    walkRunning: "Harvest läuft: bisher {pages} Seiten, {n} noch zu lesen; wird gerade gelesen.",
+    walkProgress:
+      "Harvest läuft: bisher {pages} Seiten, {n} noch zu lesen; der nächste Durchlauf beginnt {when}.",
     harvestNone:
       "Noch nichts abgerufen. Angenommene FDPs werden nach einer erfolgreichen Prüfung abgerufen.",
     preview: "Vorschau",

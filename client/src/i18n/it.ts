@@ -105,6 +105,11 @@ export const it: Messages = {
       saved: "Opzioni salvate.",
       country: "Paese",
       countryAuto: "Dalle altre fonti",
+      runPages: "Pagine per passata",
+      walkPages: "Pagine per raccolta",
+      budgetReset: "Usa i valori predefiniti",
+      origins: "Altri siti",
+      originsHint: "Ad esempio https://data.example.org",
     },
     location: "Posizione: {country} · {source}",
     back: "Tutti i FAIR Data Point",
@@ -128,6 +133,10 @@ export const it: Messages = {
     fullLog: "Registro completo",
     harvest: "Metadati raccolti",
     harvestSummary: "Nessun nodo raccolto | Un nodo raccolto {when} | {n} nodi raccolti {when}",
+    walkRunning:
+      "Raccolta in corso: finora {pages} pagine, {n} ancora da leggere; lettura in corso.",
+    walkProgress:
+      "Raccolta in corso: finora {pages} pagine, {n} ancora da leggere; la prossima passata inizia {when}.",
     harvestNone:
       "Ancora nulla di raccolto. I metadati degli FDP accettati vengono raccolti dopo una verifica riuscita.",
     preview: "Anteprima",

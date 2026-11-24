@@ -1,7 +1,8 @@
 """The liveness-check scheduler (ADR-0004).
 
 Every ``sweep_seconds`` it asks the index to start the checks that are due,
-and to mark entries without contact for too long as expired (TASKS 4.6).
+and to mark entries without contact for too long as expired (TASKS 4.6), and
+starts the next run of harvest walks whose wait is over (TASKS 15.7).
 Whether checks run at all, and how often per entry, are index settings; the
 sweep itself is cheap when nothing is due.
 """
@@ -36,6 +37,7 @@ class HealthScheduler:
             try:
                 await self._index.schedule_due_checks(batch=self._batch)
                 await self._index.mark_expired(batch=self._batch)
+                await self._index.schedule_due_walks(batch=self._batch)
             except asyncio.CancelledError:
                 raise
             except Exception:

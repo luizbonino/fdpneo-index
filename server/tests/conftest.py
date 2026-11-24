@@ -76,6 +76,8 @@ class FakeNetwork:
     pages: dict[str, tuple[int, str, str]] = field(default_factory=lambda: {})
     failing: set[str] = field(default_factory=lambda: set())
     etags: dict[str, str] = field(default_factory=lambda: {})
+    # Extra response headers per URL, such as Retry-After.
+    headers: dict[str, dict[str, str]] = field(default_factory=lambda: {})
     requests: list[httpx.Request] = field(default_factory=lambda: [])
     webhook_calls: list[httpx.Request] = field(default_factory=lambda: [])
 
@@ -103,7 +105,7 @@ class FakeNetwork:
         if page is None:
             return httpx.Response(404, text="not found")
         status, content_type, body = page
-        headers = {"Content-Type": content_type}
+        headers = {"Content-Type": content_type, **self.headers.get(url, {})}
         etag = self.etags.get(url)
         if etag is not None:
             if request.headers.get("If-None-Match") == etag:

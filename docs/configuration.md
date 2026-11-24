@@ -45,9 +45,11 @@ Every request the index makes goes through one guarded client (ADR-0002).
 | `FDPINDEX_OUTBOUND_MAX_BYTES` | `5242880` | The largest response read |
 | `FDPINDEX_OUTBOUND_MAX_REDIRECTS` | `5` | Redirects followed; each hop is checked again |
 | `FDPINDEX_USER_AGENT` | `fdpneo-index (+https://github.com/luizbonino/fdpneo-index)` | The `User-Agent` of every request |
-| `FDPINDEX_HARVEST_MAX_NODES` | `2000` | Most nodes harvested per FDP |
-| `FDPINDEX_HARVEST_MAX_BYTES` | 50 MiB | Most N-Triples kept per harvest |
-| `FDPINDEX_HARVEST_MAX_SECONDS` | `900` | Longest harvest |
+| `FDPINDEX_HARVEST_MAX_NODES` | `2000` | Most pages one harvest run reads; a larger FDP continues in the next run |
+| `FDPINDEX_HARVEST_MAX_BYTES` | 50 MiB | Most N-Triples kept per run |
+| `FDPINDEX_HARVEST_MAX_SECONDS` | `900` | Longest run |
+| `FDPINDEX_HARVEST_WALK_MAX_NODES` | `50000` | Most pages one harvest reads over all its runs |
+| `FDPINDEX_HARVEST_CONTINUE_SECONDS` | `600` | Wait before a harvest's next run (longer when the FDP sends `Retry-After`) |
 | `FDPINDEX_HARVEST_NODE_TIMEOUT_SECONDS` | `20` | Time budget per harvested node (the root uses the retrieval timeout setting) |
 
 ## Background work

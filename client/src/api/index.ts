@@ -28,6 +28,10 @@ export interface EntryOptions {
   harvestInterval?: string;
   /** ISO 3166-1 alpha-2, set by an administrator; "" clears it (TASKS 15.4). */
   country?: string;
+  /** The FDP's own harvest budget and other sites (TASKS 15.7); null: the defaults. */
+  harvestPagesPerRun?: number | null;
+  harvestPagesPerWalk?: number | null;
+  harvestOrigins?: string[] | null;
 }
 
 export type EntryState = "ACTIVE" | "INACTIVE" | "UNREACHABLE" | "INVALID" | "UNKNOWN";

@@ -45,6 +45,12 @@ An entry's page, for administrators, has:
   and when a scheduled check finds its root metadata changed. An interval
   (12 hours, a day, a week) also harvests it on that schedule, for FDPs
   whose datasets change without their root changing.
+- **Harvest budget**: a harvest reads an FDP in runs of 2 000 pages, a few
+  minutes apart, up to 50 000 pages in all (the deployment's defaults). For
+  an FDP you trust you can set its own pages per run and per harvest, and
+  **other sites** it may read (for example a separate host for its
+  distributions, as `https://data.example.org`). While a harvest continues,
+  the FDP's page shows how far it got and when the next run starts.
 
 - **Country**: where the FDP is, for the Statistics page's map. Leave it at
   *From the other sources* unless those place it wrongly (below).

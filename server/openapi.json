@@ -510,6 +510,7 @@
       },
       "EntryOptionsRequest": {
         "additionalProperties": false,
+        "description": "Leave a field out to keep it; ``null`` returns a budget or origins to the default.",
         "properties": {
           "country": {
             "anyOf": [
@@ -543,6 +544,47 @@
               }
             ],
             "title": "Harvestinterval"
+          },
+          "harvestOrigins": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvestorigins"
+          },
+          "harvestPagesPerRun": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvestpagesperrun"
+          },
+          "harvestPagesPerWalk": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvestpagesperwalk"
           }
         },
         "title": "EntryOptionsRequest",
@@ -568,6 +610,11 @@
             "title": "Harvest",
             "type": "boolean"
           },
+          "harvestBudgetSet": {
+            "description": "True: the pages above were set for this FDP; false: the defaults",
+            "title": "Harvestbudgetset",
+            "type": "boolean"
+          },
           "harvestInterval": {
             "anyOf": [
               {
@@ -579,10 +626,31 @@
             ],
             "description": "Harvest again at least this often (ISO-8601 duration); null: when changed",
             "title": "Harvestinterval"
+          },
+          "harvestOrigins": {
+            "description": "Other sites the harvest may read for this FDP",
+            "items": {
+              "type": "string"
+            },
+            "title": "Harvestorigins",
+            "type": "array"
+          },
+          "harvestPagesPerRun": {
+            "description": "Pages one harvest run reads before it continues later",
+            "title": "Harvestpagesperrun",
+            "type": "integer"
+          },
+          "harvestPagesPerWalk": {
+            "description": "Pages one harvest reads over all its runs, at most",
+            "title": "Harvestpagesperwalk",
+            "type": "integer"
           }
         },
         "required": [
-          "harvest"
+          "harvest",
+          "harvestPagesPerRun",
+          "harvestPagesPerWalk",
+          "harvestBudgetSet"
         ],
         "title": "EntryOptionsView",
         "type": "object"
@@ -1453,6 +1521,17 @@
           "nodes": {
             "title": "Nodes",
             "type": "integer"
+          },
+          "walk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HarvestWalkView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set while a harvest continues over several runs"
           }
         },
         "required": [
@@ -1460,6 +1539,57 @@
           "harvestedAt"
         ],
         "title": "HarvestView",
+        "type": "object"
+      },
+      "HarvestWalkView": {
+        "description": "A harvest walk with runs still to go (TASKS 15.7).",
+        "properties": {
+          "continuesAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the next run starts; null while one runs",
+            "title": "Continuesat"
+          },
+          "pages": {
+            "description": "Pages asked for so far, read or failed",
+            "title": "Pages",
+            "type": "integer"
+          },
+          "queued": {
+            "description": "Pages found and not yet read",
+            "title": "Queued",
+            "type": "integer"
+          },
+          "running": {
+            "default": false,
+            "description": "A run is reading the FDP now",
+            "title": "Running",
+            "type": "boolean"
+          },
+          "runs": {
+            "description": "Runs so far",
+            "title": "Runs",
+            "type": "integer"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "startedAt",
+          "runs",
+          "pages",
+          "queued",
+          "continuesAt"
+        ],
+        "title": "HarvestWalkView",
         "type": "object"
       },
       "HealthCheckSettings-Input": {
@@ -4880,7 +5010,7 @@
         ]
       },
       "put": {
-        "description": "Change the permit (as in the reference) and the per-FDP options (addition).\n\n`options.harvest: false` makes the entry directory only: it stays listed\nand checked, and its harvested metadata is removed from search and SPARQL.\n`options.harvestInterval` (ISO-8601, at least an hour; empty clears it)\nharvests again at that interval even when the root metadata did not\nchange; it takes effect at the entry's checks.",
+        "description": "Change the permit (as in the reference) and the per-FDP options (addition).\n\n`options.harvest: false` makes the entry directory only: it stays listed\nand checked, and its harvested metadata is removed from search and SPARQL.\n`options.harvestInterval` (ISO-8601, at least an hour; empty clears it)\nharvests again at that interval even when the root metadata did not\nchange; it takes effect at the entry's checks.\n`options.harvestPagesPerRun`, `harvestPagesPerWalk` and `harvestOrigins`\ngive this FDP its own harvest budget and other sites it may read (TASKS\n15.7); `null` returns one to the deployment's default.",
         "operationId": "update_entry_index_entries__entry_id__put",
         "parameters": [
           {

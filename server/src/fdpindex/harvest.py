@@ -3,18 +3,24 @@
 The walk follows the reference's ``HarvesterService``: a node that declares
 LDP direct containers yields its children through ``ldp:contains``;
 otherwise the children are the objects of the navigation predicates of the
-reference's default navigation SHACL. Nodes that fail to load or parse are
-skipped, as in the reference.
+reference's default navigation SHACL. That is the FDP specification's
+navigation: DCAT links outside it (a catalogue's ``dcat:service``, a
+distribution's ``dcat:accessService``) are not followed (design note
+metadata-health, decision 6).
 
-Additions (ADR-0002): only IRIs on the client URL's origin are followed,
-fragments are dropped, and at most ``max_nodes`` nodes are visited. Without
-LDP containers, data services are followed too (``dcat:service``,
-``dcat:accessService``): an FDP that links them only through DCAT would
-otherwise keep them out of the index. On home.fairdatapoint.org every
-service linked that way was also in an LDP container (2026-11-24).
+Additions (ADR-0002): only IRIs on the client URL's origin, or on origins an
+administrator allowed for the FDP, are followed; fragments are dropped.
+
+One call is one **run** of a **walk** (design note metadata-health, 3.1): it
+reads breadth first, one request at a time, until the queue is empty or its
+budget (pages, bytes, time) is spent, and returns the pages still queued. The
+caller stores them and starts the next run from there (``queue`` and
+``seen``). An FDP that answers ``429``, or ``503`` with ``Retry-After``, ends
+the run; the page goes back to the front of the queue.
 
 A node that answers 404 or 410 is gone; any other failure is temporary
-(TASKS 1.14: the stored version is kept).
+(TASKS 1.14: the stored version is kept). A failed node with a stored version
+still yields the children that version lists, so the walk goes on below it.
 
 Every node is asked for conditionally when an earlier harvest stored its
 ``ETag`` or ``Last-Modified`` (TASKS 1.16): a ``304`` reuses the stored
@@ -28,6 +34,8 @@ import hashlib
 import time
 from collections import deque
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlsplit
 
@@ -41,7 +49,7 @@ from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, FDP_LEGACY, FDP_O, LDP, R3D, RdfParseError, parse_rdf
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Iterable, Mapping
 
     from fdpindex.outbound import OutboundClient
 
@@ -54,11 +62,10 @@ NAVIGATION_PREDICATES = (
     DCAT.dataset,
     DCAT.distribution,
     DCTERMS.isPartOf,
-    # Data services, which the reference's navigation shapes leave out: a catalogue's
-    # dcat:service and a dataset's or distribution's dcat:accessService (2026-11-24).
-    DCAT.service,
-    DCAT.accessService,
 )
+
+# The longest wait a Retry-After may ask for; a longer one waits this long.
+MAX_RETRY_AFTER_SECONDS = 24 * 3600
 
 
 @dataclass
@@ -87,13 +94,26 @@ class HarvestResult:
     failed: dict[str, str] = field(default_factory=lambda: {})
     # Listed, but answered 404 or 410: the FDP says the node does not exist.
     gone: set[str] = field(default_factory=lambda: set())
+    # Failed with no stored version: what lies below them was not reached.
+    unreached_below: set[str] = field(default_factory=lambda: set())
     skipped_off_origin: int = 0
+    # The run's budget ran out with pages still queued (``queue``).
     limit_reached: bool = False
+    # Pages still to read, in order: the next run starts here.
+    queue: list[str] = field(default_factory=lambda: [])
+    # The FDP asked the index to wait (429, or 503 with Retry-After): seconds, or
+    # 0 when it gave no time.
+    retry_after: float | None = None
+
+    @property
+    def finished(self) -> bool:
+        """The queue is empty: every page this walk found was asked for."""
+        return not self.queue
 
     @property
     def complete(self) -> bool:
         """Every node the walk found was fetched (or confirmed unchanged)."""
-        return not self.failed and not self.limit_reached
+        return self.finished and not self.failed
 
     @property
     def not_modified(self) -> int:
@@ -102,8 +122,29 @@ class HarvestResult:
 
 def _origin(url: str) -> tuple[str, str, int | None]:
     parts = urlsplit(url)
-    port = parts.port or (443 if parts.scheme == "https" else 80)
+    try:
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+    except ValueError:
+        port = None
     return (parts.scheme, (parts.hostname or "").lower(), port)
+
+
+def _retry_after(headers: Mapping[str, list[str]]) -> float:
+    """Seconds from a ``Retry-After`` header (seconds or an HTTP date); 0 if absent."""
+    value = ((headers.get("retry-after") or [""])[0] or "").strip()
+    if not value:
+        return 0.0
+    try:
+        seconds = float(value)
+    except ValueError:
+        try:
+            when = parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return 0.0
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=UTC)
+        seconds = (when - datetime.now(UTC)).total_seconds()
+    return min(max(seconds, 0.0), MAX_RETRY_AFTER_SECONDS)
 
 
 def _normalise(iri: str) -> str:
@@ -181,21 +222,42 @@ async def harvest(
     max_bytes: int = 50 * 1024 * 1024,
     max_seconds: float = 900.0,
     known: Mapping[str, KnownNode] | None = None,
+    queue: Iterable[str] | None = None,
+    seen: Collection[str] = (),
+    origins: Iterable[str] = (),
 ) -> HarvestResult:
-    """Walk an FDP's metadata tree.
+    """Run one budgeted run of a walk over an FDP's metadata tree.
 
     Bounded so that one FDP cannot hold the index (security review, 2026-11-18):
-    at most ``max_nodes`` nodes and ``max_bytes`` of N-Triples in total, at most
+    at most ``max_nodes`` nodes and ``max_bytes`` of N-Triples per run, at most
     ``max_seconds`` overall, and each node fetch within ``timeout_seconds``.
     Parsing runs in a thread: a large document takes seconds of pure CPU.
+
+    ``queue`` continues a walk (default: the client URL alone); ``seen`` holds
+    the pages earlier runs of the walk already asked for. ``origins`` are other
+    sites an administrator allowed for this FDP.
     """
     result = HarvestResult()
-    origin = _origin(client_url)
-    queue: deque[str] = deque([_normalise(client_url)])
-    seen: set[str] = {_normalise(client_url)}
+    allowed = {_origin(client_url), *(_origin(o) for o in origins)}
+    start = [_normalise(iri) for iri in queue] if queue is not None else [_normalise(client_url)]
+    pending: deque[str] = deque(dict.fromkeys(start))
+    visited: set[str] = {*seen, *pending}
     deadline = time.monotonic() + max_seconds
     total_bytes = 0
-    while queue:
+
+    def stored_children(node: str, stored: KnownNode | None, reason: str) -> list[str]:
+        """Record a failure; a stored version still says where the walk goes on."""
+        result.failed[node] = reason
+        if stored is None:
+            result.unreached_below.add(node)
+            return []
+        try:
+            return _stored_children(stored.ntriples, node)
+        except Exception:  # stored triples written by an earlier harvest
+            result.unreached_below.add(node)
+            return []
+
+    while pending:
         if len(result.nodes) + len(result.failed) >= max_nodes:
             result.limit_reached = True
             break
@@ -203,7 +265,7 @@ async def harvest(
         if remaining <= 0 or total_bytes >= max_bytes:
             result.limit_reached = True
             break
-        node = queue.popleft()
+        node = pending.popleft()
         stored = (known or {}).get(node)
         headers = {"Accept": ACCEPT}
         if stored is not None and stored.etag:
@@ -218,13 +280,21 @@ async def harvest(
                 headers=headers,
             )
         except OutboundError as err:
-            result.failed[node] = err.message
+            _enqueue(stored_children(node, stored, err.message), pending, visited, allowed, result)
             continue
+        if response.status == 429 or (
+            response.status == 503 and response.headers.get("retry-after")
+        ):
+            # The FDP asks the index to wait: stop here and read this page first next time.
+            pending.appendleft(node)
+            result.retry_after = _retry_after(response.headers)
+            break
         if response.status == 304 and stored is not None:
             try:
                 children = await asyncio.to_thread(_stored_children, stored.ntriples, node)
             except Exception as err:  # stored triples written by an earlier harvest
                 result.failed[node] = f"cannot reuse the stored version: {err}"
+                result.unreached_below.add(node)
                 continue
             harvested = HarvestedGraph(
                 node_iri=node,
@@ -238,10 +308,12 @@ async def harvest(
             result.gone.add(node)
             continue
         elif not 200 <= response.status < 300:
-            result.failed[node] = f"HTTP {response.status}"
+            reason = f"HTTP {response.status}"
+            _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
             continue
         elif response.truncated:
-            result.failed[node] = "response too large"
+            reason = "response too large"
+            _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
             continue
         else:
             try:
@@ -249,21 +321,15 @@ async def harvest(
                     _parse_and_serialise, response.body, response.content_type, node
                 )
             except RdfParseError as err:
-                result.failed[node] = f"cannot parse: {err}"
+                reason = f"cannot parse: {err}"
+                _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
                 continue
             harvested.etag = _header(response.headers, "etag")
             harvested.last_modified = _header(response.headers, "last-modified")
         total_bytes += len(harvested.ntriples)
         result.nodes.append(harvested)
-        for child in children:
-            child = _normalise(child)
-            if child in seen:
-                continue
-            seen.add(child)
-            if _origin(child) != origin:
-                result.skipped_off_origin += 1
-                continue
-            queue.append(child)
+        _enqueue(children, pending, visited, allowed, result)
+    result.queue = list(pending)
     log.info(
         "harvest_completed",
         client_url=client_url,
@@ -272,5 +338,25 @@ async def harvest(
         not_modified=result.not_modified,
         skipped_off_origin=result.skipped_off_origin,
         limit_reached=result.limit_reached,
+        queued=len(result.queue),
+        retry_after=result.retry_after,
     )
     return result
+
+
+def _enqueue(
+    children: Iterable[str],
+    pending: deque[str],
+    visited: set[str],
+    allowed: set[tuple[str, str, int | None]],
+    result: HarvestResult,
+) -> None:
+    for child in children:
+        child = _normalise(child)
+        if child in visited:
+            continue
+        visited.add(child)
+        if _origin(child) not in allowed:
+            result.skipped_off_origin += 1
+            continue
+        pending.append(child)

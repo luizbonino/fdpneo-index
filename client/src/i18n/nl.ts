@@ -105,6 +105,11 @@ export const nl: Messages = {
       saved: "Opties opgeslagen.",
       country: "Land",
       countryAuto: "Uit de andere bronnen",
+      runPages: "Pagina’s per ronde",
+      walkPages: "Pagina’s per oogst",
+      budgetReset: "Standaardwaarden gebruiken",
+      origins: "Andere sites",
+      originsHint: "Zoals https://data.example.org",
     },
     location: "Locatie: {country} · {source}",
     back: "Alle FAIR Data Points",
@@ -128,6 +133,9 @@ export const nl: Messages = {
     fullLog: "Volledig logboek",
     harvest: "Opgehaalde metadata",
     harvestSummary: "Geen nodes opgehaald | Eén node opgehaald {when} | {n} nodes opgehaald {when}",
+    walkRunning: "Oogst bezig: tot nu toe {pages} pagina’s, nog {n} te lezen; wordt nu gelezen.",
+    walkProgress:
+      "Oogst bezig: tot nu toe {pages} pagina’s, nog {n} te lezen; de volgende ronde start {when}.",
     harvestNone:
       "Nog niets opgehaald. Van geaccepteerde FDP's wordt de metadata opgehaald na een geslaagde controle.",
     preview: "Voorbeeld",

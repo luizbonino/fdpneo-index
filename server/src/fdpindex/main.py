@@ -177,6 +177,8 @@ def create_app(
             harvest_max_bytes=config.harvest_max_bytes,
             harvest_max_seconds=config.harvest_max_seconds,
             harvest_node_timeout=config.harvest_node_timeout_seconds,
+            harvest_walk_max_nodes=config.harvest_walk_max_nodes,
+            harvest_continue_seconds=config.harvest_continue_seconds,
             geoip=geoip,
         )
         verifier = (

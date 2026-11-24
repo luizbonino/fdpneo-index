@@ -106,6 +106,11 @@ export const pt: Messages = {
       saved: "Opções guardadas.",
       country: "País",
       countryAuto: "A partir das outras fontes",
+      runPages: "Páginas por ronda",
+      walkPages: "Páginas por recolha",
+      budgetReset: "Usar os valores predefinidos",
+      origins: "Outros sítios",
+      originsHint: "Por exemplo https://data.example.org",
     },
     location: "Localização: {country} · {source}",
     back: "Todos os FAIR Data Points",
@@ -129,6 +134,9 @@ export const pt: Messages = {
     fullLog: "Registo completo",
     harvest: "Metadados recolhidos",
     harvestSummary: "Nenhum nó recolhido | Um nó recolhido {when} | {n} nós recolhidos {when}",
+    walkRunning: "Recolha em curso: {pages} páginas até agora, {n} por ler; a ler agora.",
+    walkProgress:
+      "Recolha em curso: {pages} páginas até agora, {n} por ler; a próxima ronda começa {when}.",
     harvestNone:
       "Ainda nada foi recolhido. Os metadados dos FDP aceites são recolhidos após uma verificação bem-sucedida.",
     preview: "Pré-visualização",

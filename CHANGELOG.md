@@ -88,11 +88,14 @@ The first release will contain:
   anyone) answered with that address, so names inside the index's network
   could be looked up through it. The answer now names the host only; the
   address goes to the log.
-- Harvest: data services linked only through DCAT (a catalogue's
-  `dcat:service`, a dataset's or distribution's `dcat:accessService`) are
-  followed when a page has no LDP containers. No FDP on
-  home.fairdatapoint.org needed it: all of them also list their services in
-  LDP containers.
+- Large FDPs are harvested in full. A harvest stopped at 2,000 pages, so
+  an FDP larger than that was never held whole (two FDPs on
+  home.fairdatapoint.org). It is now a walk over runs of that size, a few
+  minutes apart, up to 50,000 pages, and continues where it stopped; an FDP
+  answering `429`, or `503` with `Retry-After`, is left alone for that
+  long. Administrators can set an FDP's own budget and other sites it may
+  read. Migration 0018. A page that fails but has a stored version still
+  leads the harvest to the pages below it.
 - One FDP, one entry. URLs that differ only in `http`/`https`, letter case
   in the host, a default port or a trailing slash were separate entries, so
   the FDP counted twice; home.fairdatapoint.org had ten such pairs. A ping

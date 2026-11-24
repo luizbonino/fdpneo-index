@@ -94,6 +94,26 @@ function setHarvestInterval(harvestInterval: string) {
   void run(() => api.setOptions(props.uuid, { harvestInterval }), t("entry.options.saved"));
 }
 
+/** The FDP's own harvest budget and other sites it may read (TASKS 15.7). */
+function setPages(key: "harvestPagesPerRun" | "harvestPagesPerWalk", value: string) {
+  const pages = value.trim() ? Number(value) : null;
+  if (pages !== null && (!Number.isInteger(pages) || pages < 1)) return;
+  void run(() => api.setOptions(props.uuid, { [key]: pages }), t("entry.options.saved"));
+}
+function setOrigins(value: string) {
+  const origins = value.split(/[\s,]+/).filter(Boolean);
+  void run(
+    () => api.setOptions(props.uuid, { harvestOrigins: origins.length ? origins : null }),
+    t("entry.options.saved"),
+  );
+}
+function resetBudget() {
+  void run(
+    () => api.setOptions(props.uuid, { harvestPagesPerRun: null, harvestPagesPerWalk: null }),
+    t("entry.options.saved"),
+  );
+}
+
 /** Where the FDP is (TASKS 15.4): its country by name, and which source placed it. */
 const regions = computed(() => {
   try {
@@ -250,6 +270,49 @@ async function remove() {
             </select>
           </label>
         </div>
+        <div v-if="detail.options" class="row options">
+          <label class="row">
+            <span class="small">{{ t("entry.options.runPages") }}</span>
+            <input
+              class="input pages"
+              type="number"
+              min="1"
+              :value="detail.options.harvestPagesPerRun"
+              :disabled="busy || !detail.options.harvest"
+              @change="setPages('harvestPagesPerRun', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <label class="row">
+            <span class="small">{{ t("entry.options.walkPages") }}</span>
+            <input
+              class="input pages"
+              type="number"
+              min="1"
+              :value="detail.options.harvestPagesPerWalk"
+              :disabled="busy || !detail.options.harvest"
+              @change="setPages('harvestPagesPerWalk', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <button
+            v-if="detail.options.harvestBudgetSet"
+            class="btn sm"
+            :disabled="busy"
+            @click="resetBudget"
+          >
+            {{ t("entry.options.budgetReset") }}
+          </button>
+          <label class="row grow">
+            <span class="small">{{ t("entry.options.origins") }}</span>
+            <input
+              class="input"
+              type="text"
+              :placeholder="t('entry.options.originsHint')"
+              :value="(detail.options.harvestOrigins ?? []).join(' ')"
+              :disabled="busy || !detail.options.harvest"
+              @change="setOrigins(($event.target as HTMLInputElement).value)"
+            />
+          </label>
+        </div>
       </section>
 
       <div class="grid">
@@ -318,6 +381,20 @@ async function remove() {
 
       <section class="card stack">
         <h2>{{ t("entry.harvest") }}</h2>
+        <p v-if="detail.harvest?.walk" class="walk">
+          {{
+            detail.harvest.walk.running || !detail.harvest.walk.continuesAt
+              ? t("entry.walkRunning", {
+                  pages: detail.harvest.walk.pages,
+                  n: detail.harvest.walk.queued,
+                })
+              : t("entry.walkProgress", {
+                  pages: detail.harvest.walk.pages,
+                  n: detail.harvest.walk.queued,
+                  when: relativeTime(detail.harvest.walk.continuesAt),
+                })
+          }}
+        </p>
         <p v-if="!detail.harvest?.nodes" class="muted">{{ t("entry.harvestNone") }}</p>
         <template v-else>
           <p>
@@ -374,6 +451,18 @@ async function remove() {
 .options {
   flex-basis: 100%;
   gap: var(--fair-space-4);
+}
+.options .pages {
+  width: 8rem;
+}
+.options .grow {
+  flex: 1 1 18rem;
+}
+.options .grow .input {
+  flex: 1;
+}
+.walk {
+  color: var(--fair-text-strong);
 }
 .admin {
   display: flex;

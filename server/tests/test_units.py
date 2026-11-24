@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from fdpindex.durations import format_duration, parse_duration
-from fdpindex.harvest import harvest, serialise
+from fdpindex.harvest import KnownNode, harvest, serialise
 from fdpindex.outbound import OutboundClient, OutboundError, PinnedTransport, outbound_http
 from fdpindex.rdf import extract_repository_metadata, parse_rdf
 from fdpindex.settings import IndexSettings, default_settings
@@ -234,10 +234,14 @@ async def test_harvest_walks_ldp_and_navigation_links_on_the_same_origin(
     assert all(len(node.content_hash) == 64 for node in result.nodes)
 
 
-async def test_harvest_follows_data_services_linked_only_through_dcat(
+async def test_harvest_does_not_follow_dcat_links_outside_the_fdp_navigation(
     network: FakeNetwork,
 ) -> None:
-    """Without LDP containers, a catalogue's and a distribution's services are harvested."""
+    """The FDP specification's navigation only (design note metadata-health, decision 6).
+
+    A catalogue's ``dcat:service`` and a distribution's ``dcat:accessService``
+    are not part of it; the health findings report such links instead.
+    """
     prefixes = "@prefix dcat: <http://www.w3.org/ns/dcat#> .\n"
     network.serve(
         f"{FDP}/catalog/c1",
@@ -263,7 +267,70 @@ async def test_harvest_follows_data_services_linked_only_through_dcat(
         _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
     )
     harvested = {node.node_iri for node in result.nodes}
-    assert {f"{FDP}/service/s1", f"{FDP}/service/s2"} <= harvested
+    assert f"{FDP}/distribution/x1" in harvested
+    assert not {f"{FDP}/service/s1", f"{FDP}/service/s2"} & harvested
+
+
+async def test_a_run_returns_its_queue_and_the_next_run_continues_from_it(
+    network: FakeNetwork,
+) -> None:
+    client = _client(network, max_bytes=100_000)
+    first = await harvest(client, FDP, timeout_seconds=5, max_nodes=2)
+    assert [n.node_iri for n in first.nodes] == [FDP, f"{FDP}/catalog/c1"]
+    assert first.limit_reached and not first.finished and not first.complete
+    assert first.queue == [f"{FDP}/dataset/d1"]
+    seen = {n.node_iri for n in first.nodes}
+    second = await harvest(
+        client, FDP, timeout_seconds=5, max_nodes=2, queue=first.queue, seen=seen
+    )
+    # The dataset links back to its catalogue (dct:isPartOf): read already, not again.
+    assert [n.node_iri for n in second.nodes] == [f"{FDP}/dataset/d1"]
+    assert second.finished and second.complete
+
+
+async def test_an_fdp_asking_to_wait_ends_the_run(network: FakeNetwork) -> None:
+    network.serve(f"{FDP}/catalog/c1", "busy", status=429, content_type="text/plain")
+    network.headers[f"{FDP}/catalog/c1"] = {"Retry-After": "120"}
+    result = await harvest(
+        _client(network, max_bytes=100_000), FDP, timeout_seconds=5, max_nodes=50
+    )
+    assert [n.node_iri for n in result.nodes] == [FDP]
+    assert result.queue == [f"{FDP}/catalog/c1"]  # read first next time
+    assert result.retry_after == 120
+    assert not result.failed
+
+
+async def test_a_failed_page_with_a_stored_version_still_leads_below_it(
+    network: FakeNetwork,
+) -> None:
+    client = _client(network, max_bytes=100_000)
+    first = await harvest(client, FDP, timeout_seconds=5, max_nodes=50)
+    known = {n.node_iri: KnownNode(n.ntriples, n.content_hash, None, None) for n in first.nodes}
+    network.failing.add(f"{FDP}/catalog/c1")
+    result = await harvest(client, FDP, timeout_seconds=5, max_nodes=50, known=known)
+    assert set(result.failed) == {f"{FDP}/catalog/c1"}
+    assert f"{FDP}/dataset/d1" in {n.node_iri for n in result.nodes}
+    assert not result.unreached_below
+    # Without a stored version nothing below it is known.
+    result = await harvest(client, FDP, timeout_seconds=5, max_nodes=50)
+    assert result.unreached_below == {f"{FDP}/catalog/c1"}
+
+
+async def test_an_allowed_origin_is_followed(network: FakeNetwork) -> None:
+    other = "https://elsewhere.example.com/dataset/x"
+    network.serve(other, f"<{other}> a <http://www.w3.org/ns/dcat#Dataset> .")
+    client = _client(network, max_bytes=100_000)
+    result = await harvest(client, FDP, timeout_seconds=5, max_nodes=50)
+    assert other not in {n.node_iri for n in result.nodes}
+    result = await harvest(
+        client,
+        FDP,
+        timeout_seconds=5,
+        max_nodes=50,
+        origins=["https://elsewhere.example.com"],
+    )
+    assert other in {n.node_iri for n in result.nodes}
+    assert result.skipped_off_origin == 0
 
 
 async def test_harvest_stops_at_the_node_limit(network: FakeNetwork) -> None:

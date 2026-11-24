@@ -105,6 +105,11 @@ export const fr: Messages = {
       saved: "Options enregistrées.",
       country: "Pays",
       countryAuto: "D’après les autres sources",
+      runPages: "Pages par passe",
+      walkPages: "Pages par moissonnage",
+      budgetReset: "Utiliser les valeurs par défaut",
+      origins: "Autres sites",
+      originsHint: "Par exemple https://data.example.org",
     },
     location: "Emplacement : {country} · {source}",
     back: "Tous les FAIR Data Points",
@@ -128,6 +133,10 @@ export const fr: Messages = {
     fullLog: "Journal complet",
     harvest: "Métadonnées moissonnées",
     harvestSummary: "Aucun nœud moissonné | Un nœud moissonné {when} | {n} nœuds moissonnés {when}",
+    walkRunning:
+      "Moissonnage en cours : {pages} pages jusqu’ici, {n} encore à lire ; lecture en cours.",
+    walkProgress:
+      "Moissonnage en cours : {pages} pages jusqu’ici, {n} encore à lire ; la prochaine passe commence {when}.",
     harvestNone:
       "Rien n’a encore été moissonné. Les FDP acceptés sont moissonnés après une vérification réussie.",
     preview: "Aperçu",

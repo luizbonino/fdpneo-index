@@ -23,9 +23,12 @@ once a week); an FDP that stops pinging and cannot be reached is marked
 
 Once accepted, the index **harvests** the FDP: it reads the FDP's own
 description, follows the links to catalogues, datasets, distributions and
-data services (`ldp:contains`, `dcat:dataset`, `dcat:distribution`,
-`fdp-o:metadataCatalog`, `dcat:service`, `dcat:accessService` …), and stores
-each page it reads. It harvests again
+data services as the FDP specification lays them out (`ldp:contains`, or
+`fdp-o:metadataCatalog`, `dcat:dataset` and `dcat:distribution` on pages
+without LDP containers), and stores each page it reads. A record linked only
+by another DCAT property, such as a data service named only in a
+distribution's `dcat:accessService`, is not harvested: list it in an LDP
+container, as the FDP software does. It harvests again
 after every ping and when a scheduled check finds the FDP's own description
 changed; an administrator can add a fixed interval for FDPs whose datasets
 change without their root changing.
@@ -33,8 +36,13 @@ change without their root changing.
 - **Only your FDP's origin** is read: links to other hosts are not followed.
 - **Conditional requests** (`ETag`, `Last-Modified`) save both sides work:
   serve them if you can.
-- **Limits**: at most 2 000 pages per FDP and 50 MB of metadata by default;
-  a page that cannot be read keeps its previous version.
+- **Large FDPs** are read in runs of up to 2 000 pages, a few minutes apart,
+  until every page has been read (up to 50 000 by default; an administrator
+  can allow more). Unchanged pages answer `304 Not Modified`, so later
+  harvests are quick. A page that cannot be read keeps its previous version.
+- **Asking the index to wait**: answer `429 Too Many Requests`, or `503` with
+  `Retry-After`, and the index stops and comes back when `Retry-After` says.
+  It reads one page at a time.
 - **Nothing is rewritten.** The index shows, searches and republishes your
   metadata as you serve it; titles and labels are shown in the reader's
   language when you provide it.

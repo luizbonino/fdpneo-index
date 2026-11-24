@@ -21,7 +21,7 @@ import asyncio
 import hashlib
 import random
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
@@ -43,6 +43,7 @@ from fdpindex.models import (
     Event,
     EventType,
     HarvestedNode,
+    HarvestWalk,
     IndexEntry,
 )
 from fdpindex.outbound import OutboundError
@@ -138,6 +139,13 @@ class Retrieval:
     server_country: str | None = None
 
 
+def _instant(moment: datetime | None) -> str | None:
+    """As ``java.time.Instant.toString()``, for event payloads."""
+    if moment is None:
+        return None
+    return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
 def _harvest_due(entry: IndexEntry, now: datetime) -> bool:
     """The entry's own harvest interval has passed since its last harvest (TASKS 4.7)."""
     if not entry.harvest_interval_seconds:
@@ -193,6 +201,8 @@ class IndexService:
         harvest_max_bytes: int = 50 * 1024 * 1024,
         harvest_max_seconds: float = 900.0,
         harvest_node_timeout: float = 20.0,
+        harvest_walk_max_nodes: int = 50_000,
+        harvest_continue_seconds: float = 600.0,
         geoip: GeoIp | None = None,
     ) -> None:
         self._session_factory = session_factory
@@ -206,6 +216,8 @@ class IndexService:
         self._harvest_max_bytes = harvest_max_bytes
         self._harvest_max_seconds = harvest_max_seconds
         self._harvest_node_timeout = harvest_node_timeout
+        self._harvest_walk_max_nodes = harvest_walk_max_nodes
+        self._harvest_continue_seconds = harvest_continue_seconds
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_waiting: dict[UUID, set[UUID]] = {}
         self._listeners: list[Callable[[IndexChange], None]] = []
@@ -728,8 +740,13 @@ class IndexService:
         clear_interval: bool = False,
         country: str | None = None,
         clear_country: bool = False,
+        budget: dict[str, Any] | None = None,
     ) -> IndexEntry:
-        """Directory only (no harvest), the entry's own harvest interval, and its country."""
+        """Directory only (no harvest), the entry's own harvest interval, and its country.
+
+        ``budget`` holds the keys given of ``run_pages``, ``walk_pages`` and
+        ``origins`` (TASKS 15.7); ``None`` as a value returns to the default.
+        """
         async with self._session_factory() as session, session.begin():
             entry = await session.get(IndexEntry, entry_id)
             if entry is None:
@@ -745,6 +762,8 @@ class IndexService:
                 entry.country = None
             elif country is not None:
                 entry.country = country
+            for key, value in (budget or {}).items():
+                setattr(entry, f"harvest_{key}", value or None)
         if stop_harvest:
             # Directory only: what was harvested leaves search and SPARQL.
             await self.delete_harvested(entry_id)
@@ -898,6 +917,14 @@ class IndexService:
         self._harvest_locks.pop(entry_id, None)
 
     async def _harvest_once(self, entry_id: UUID, harvest_ids: set[UUID]) -> None:
+        """One run of the entry's walk (TASKS 15.7): a new walk, or the next run of one.
+
+        A run reads up to its budget and stores what it read. While pages are
+        queued the walk continues ``harvest_continue_seconds`` later (or when
+        the FDP's ``Retry-After`` says), through :meth:`schedule_due_walks`.
+        Only the run that ends the walk removes nodes no longer listed, and only
+        when the walk reached everything below the pages it read.
+        """
         started = utcnow()
         async with self._session_factory() as session, session.begin():
             for event in await session.scalars(select(Event).where(Event.uuid.in_(harvest_ids))):
@@ -905,17 +932,30 @@ class IndexService:
             entry = await session.get(IndexEntry, entry_id)
             accepted = entry is not None and entry.permit is EntryPermit.ACCEPTED
             client_url = entry.client_url if entry is not None else ""
-            known = {
-                str(node.node_iri): KnownNode(
+            run_pages = (entry.harvest_run_pages if entry else None) or self._harvest_max_nodes
+            walk_pages = (
+                entry.harvest_walk_pages if entry else None
+            ) or self._harvest_walk_max_nodes
+            origins = list((entry.harvest_origins if entry else None) or [])
+            walk = await session.get(HarvestWalk, entry_id)
+            walk_started = walk.started_at if walk is not None else started
+            queue = list(walk.queue) if walk is not None else None
+            already = walk.pages if walk is not None else 0
+            known: dict[str, KnownNode] = {}
+            read_in_walk: set[str] = set()
+            for node in await session.scalars(
+                select(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id)
+            ):
+                iri = str(node.node_iri)
+                known[iri] = KnownNode(
                     ntriples=node.ntriples,
                     content_hash=node.content_hash,
                     etag=node.http_etag,
                     last_modified=node.http_last_modified,
                 )
-                for node in await session.scalars(
-                    select(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id)
-                )
-            }
+                if walk is not None and node.harvested_at >= walk_started:
+                    read_in_walk.add(iri)
+            seen = {*read_in_walk, *(walk.failed if walk is not None else {})}
         if not accepted:
             await self._finish_harvest(harvest_ids, {"outcome": "skipped"})
             return
@@ -926,10 +966,13 @@ class IndexService:
             timeout_seconds=min(
                 settings.retrieval.timeout.total_seconds(), self._harvest_node_timeout
             ),
-            max_nodes=self._harvest_max_nodes,
+            max_nodes=max(1, min(run_pages, walk_pages - already)),
             max_bytes=self._harvest_max_bytes,
             max_seconds=self._harvest_max_seconds,
             known=known,
+            queue=queue,
+            seen=seen,
+            origins=origins,
         )
         now = utcnow()
         added: set[str] = set()
@@ -939,6 +982,7 @@ class IndexService:
         async with self._session_factory() as session, session.begin():
             entry = await session.get(IndexEntry, entry_id)
             if entry is None or entry.permit is not EntryPermit.ACCEPTED:
+                await session.execute(delete(HarvestWalk).where(HarvestWalk.entry_uuid == entry_id))
                 await self._finish_harvest(harvest_ids, {"outcome": "skipped"}, session=session)
                 return
             # Upsert by node IRI, so unchanged nodes keep their rows and derived
@@ -977,40 +1021,83 @@ class IndexService:
                     changed.add(iri)
                     row.ntriples = node.ntriples
                     row.content_hash = node.content_hash
+            read_in_walk |= set(fresh)
             # The FDP says these do not exist (404, 410): remove them whatever else happened.
             gone = result.gone & set(existing)
-            if gone and fresh:
+            if gone:
                 removed |= gone
                 await session.execute(
                     delete(HarvestedNode).where(
                         HarvestedNode.entry_uuid == entry_id, HarvestedNode.node_iri.in_(gone)
                     )
                 )
-            missing = set(existing) - set(fresh) - removed
-            if result.complete and fresh:
-                # Only a harvest that reached every node may conclude that the others,
-                # no longer listed, are gone.
-                removed |= missing
-                if missing:
-                    await session.execute(
-                        delete(HarvestedNode).where(
-                            HarvestedNode.entry_uuid == entry_id,
-                            HarvestedNode.node_iri.in_(missing),
-                        )
-                    )
-            else:
-                # The stored version stays, marked stale with the reason (TASKS 1.14).
-                for iri in missing:
-                    row = existing[iri]
+            # A page that failed keeps its stored version, marked stale (TASKS 1.14).
+            for iri, reason in result.failed.items():
+                row = existing.get(iri)
+                if row is not None:
                     row.stale_since = row.stale_since or now
-                    reason = result.failed.get(iri) or (
-                        "not reached: the harvest stopped at a limit"
-                        if result.limit_reached
-                        else "not reached: a node above it could not be fetched"
-                    )
                     row.fetch_error = reason[:512]
                     stale += 1
-            outcome = "complete" if result.complete and fresh else "partial" if fresh else "failed"
+
+            walk = await session.get(HarvestWalk, entry_id)
+            if walk is None:
+                walk = HarvestWalk(
+                    entry_uuid=entry_id,
+                    started_at=walk_started,
+                    runs=0,
+                    pages=0,
+                    queue=[],
+                    failed={},
+                    unreached=False,
+                    skipped_off_origin=0,
+                )
+                session.add(walk)
+            walk.runs += 1
+            walk.pages += len(result.nodes) + len(result.failed)
+            walk.failed = {**walk.failed, **{k: v[:200] for k, v in result.failed.items()}}
+            walk.unreached = walk.unreached or bool(result.unreached_below)
+            walk.skipped_off_origin += result.skipped_off_origin
+            walk.queue = list(result.queue)
+            at_ceiling = bool(result.queue) and walk.pages >= walk_pages
+            finished = not result.queue or at_ceiling
+            continues_at: datetime | None = None
+            if not finished:
+                wait = self._harvest_continue_seconds
+                if result.retry_after:
+                    wait = max(wait, result.retry_after)
+                continues_at = now + timedelta(seconds=wait)
+                walk.continue_at = continues_at
+                outcome = "in progress"
+            else:
+                missing = set(existing) - read_in_walk - set(walk.failed) - removed
+                if read_in_walk and not at_ceiling and not walk.unreached:
+                    # The walk reached everything below the pages it read: what it
+                    # did not find is no longer listed.
+                    removed |= missing
+                    if missing:
+                        await session.execute(
+                            delete(HarvestedNode).where(
+                                HarvestedNode.entry_uuid == entry_id,
+                                HarvestedNode.node_iri.in_(missing),
+                            )
+                        )
+                else:
+                    reason = (
+                        "not reached: the walk stopped at its ceiling"
+                        if at_ceiling
+                        else "not reached: a page above it could not be fetched"
+                    )
+                    for iri in missing:
+                        row = existing[iri]
+                        row.stale_since = row.stale_since or now
+                        row.fetch_error = reason
+                        stale += 1
+                complete = bool(read_in_walk) and not walk.failed and not at_ceiling
+                outcome = "complete" if complete else "partial" if read_in_walk else "failed"
+                if walk in session.new:  # a walk done in one run is never stored
+                    session.expunge(walk)
+                else:
+                    await session.delete(walk)
             failed = dict(list(result.failed.items())[:MAX_REPORTED_FAILURES])
             await self._finish_harvest(
                 harvest_ids,
@@ -1027,6 +1114,15 @@ class IndexService:
                     "limitReached": result.limit_reached,
                     "skippedOffOrigin": result.skipped_off_origin,
                     "seconds": round((utcnow() - started).total_seconds(), 1),
+                    "walk": {
+                        "startedAt": _instant(walk_started),
+                        "run": walk.runs,
+                        "pages": walk.pages,
+                        "queued": len(result.queue),
+                        "continuesAt": _instant(continues_at),
+                        "atCeiling": at_ceiling,
+                        "retryAfter": result.retry_after,
+                    },
                 },
                 session=session,
             )
@@ -1040,10 +1136,37 @@ class IndexService:
             changed=len(changed),
             removed=len(removed),
             stale=stale,
+            queued=len(result.queue),
         )
         changes = HarvestChanges(frozenset(added), frozenset(changed), frozenset(removed))
-        if fresh:
+        if fresh or removed:
             self._notify(IndexChange("harvested", entry_id, changes))
+
+    async def schedule_due_walks(self, *, batch: int = 100) -> int:
+        """Start the next run of every walk whose wait is over; return how many (TASKS 15.7).
+
+        The claim pushes ``continue_at`` ahead by the longest a run may take, so
+        a run that dies is retried, and replicas sweeping at once skip it.
+        """
+        now = utcnow()
+        lease = timedelta(seconds=self._harvest_max_seconds * 2 + 60)
+        started: list[UUID] = []
+        async with self._session_factory() as session, session.begin():
+            walks = await session.scalars(
+                select(HarvestWalk)
+                .where(HarvestWalk.continue_at.is_not(None), HarvestWalk.continue_at <= now)
+                .order_by(HarvestWalk.continue_at)
+                .limit(batch)
+                .with_for_update(skip_locked=True)
+            )
+            for walk in walks:
+                walk.continue_at = now + lease
+                started.append(self._new_harvest(session, walk.entry_uuid, None).uuid)
+        for event_id in started:
+            self.schedule_harvest(event_id)
+        if started:
+            log.info("harvest_walks_continued", count=len(started))
+        return len(started)
 
     async def _finish_harvest(
         self,
@@ -1071,6 +1194,7 @@ class IndexService:
     async def delete_harvested(self, entry_id: UUID) -> None:
         async with self._session_factory() as session, session.begin():
             await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
+            await session.execute(delete(HarvestWalk).where(HarvestWalk.entry_uuid == entry_id))
         self._notify(IndexChange("removed", entry_id))
 
     async def harvested_ntriples(self, entry_id: UUID) -> str:
@@ -1095,6 +1219,18 @@ class IndexService:
             return graph
 
         return await asyncio.to_thread(parse)
+
+    async def harvest_walk(self, entry_id: UUID) -> HarvestWalk | None:
+        """The entry's walk in progress, if any (TASKS 15.7)."""
+        async with self._session_factory() as session:
+            return await session.get(HarvestWalk, entry_id)
+
+    def harvest_budget(self, entry: IndexEntry) -> tuple[int, int]:
+        """Pages per run and per walk for ``entry``: its own, or the deployment's."""
+        return (
+            entry.harvest_run_pages or self._harvest_max_nodes,
+            entry.harvest_walk_pages or self._harvest_walk_max_nodes,
+        )
 
     async def harvest_summary(self, entry_id: UUID) -> tuple[int, datetime | None]:
         async with self._session_factory() as session:

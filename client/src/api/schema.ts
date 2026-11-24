@@ -383,6 +383,9 @@ export interface paths {
      *     `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
      *     harvests again at that interval even when the root metadata did not
      *     change; it takes effect at the entry's checks.
+     *     `options.harvestPagesPerRun`, `harvestPagesPerWalk` and `harvestOrigins`
+     *     give this FDP its own harvest budget and other sites it may read (TASKS
+     *     15.7); `null` returns one to the deployment's default.
      */
     put: operations["update_entry_index_entries__entry_id__put"];
     post?: never;
@@ -1322,7 +1325,10 @@ export interface components {
       /** Uuid */
       uuid: string;
     };
-    /** EntryOptionsRequest */
+    /**
+     * EntryOptionsRequest
+     * @description Leave a field out to keep it; ``null`` returns a budget or origins to the default.
+     */
     EntryOptionsRequest: {
       /** Country */
       country?: string | null;
@@ -1330,6 +1336,12 @@ export interface components {
       harvest?: boolean | null;
       /** Harvestinterval */
       harvestInterval?: string | null;
+      /** Harvestorigins */
+      harvestOrigins?: string[] | null;
+      /** Harvestpagesperrun */
+      harvestPagesPerRun?: number | null;
+      /** Harvestpagesperwalk */
+      harvestPagesPerWalk?: number | null;
     };
     /**
      * EntryOptionsView
@@ -1347,10 +1359,30 @@ export interface components {
        */
       harvest: boolean;
       /**
+       * Harvestbudgetset
+       * @description True: the pages above were set for this FDP; false: the defaults
+       */
+      harvestBudgetSet: boolean;
+      /**
        * Harvestinterval
        * @description Harvest again at least this often (ISO-8601 duration); null: when changed
        */
       harvestInterval?: string | null;
+      /**
+       * Harvestorigins
+       * @description Other sites the harvest may read for this FDP
+       */
+      harvestOrigins?: string[];
+      /**
+       * Harvestpagesperrun
+       * @description Pages one harvest run reads before it continues later
+       */
+      harvestPagesPerRun: number;
+      /**
+       * Harvestpagesperwalk
+       * @description Pages one harvest reads over all its runs, at most
+       */
+      harvestPagesPerWalk: number;
     };
     /**
      * EntryPageView
@@ -1726,6 +1758,42 @@ export interface components {
       harvestedAt: string | null;
       /** Nodes */
       nodes: number;
+      /** @description Set while a harvest continues over several runs */
+      walk?: components["schemas"]["HarvestWalkView"] | null;
+    };
+    /**
+     * HarvestWalkView
+     * @description A harvest walk with runs still to go (TASKS 15.7).
+     */
+    HarvestWalkView: {
+      /**
+       * Continuesat
+       * @description When the next run starts; null while one runs
+       */
+      continuesAt: string | null;
+      /**
+       * Pages
+       * @description Pages asked for so far, read or failed
+       */
+      pages: number;
+      /**
+       * Queued
+       * @description Pages found and not yet read
+       */
+      queued: number;
+      /**
+       * Running
+       * @description A run is reading the FDP now
+       * @default false
+       */
+      running: boolean;
+      /**
+       * Runs
+       * @description Runs so far
+       */
+      runs: number;
+      /** Startedat */
+      startedAt: string;
     };
     /** HealthCheckSettings */
     "HealthCheckSettings-Input": {

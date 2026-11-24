@@ -142,9 +142,26 @@ class EventPageView(_Api):
     size: int
 
 
+class HarvestWalkView(_Api):
+    """A harvest walk with runs still to go (TASKS 15.7)."""
+
+    started_at: str = Field(serialization_alias="startedAt")
+    runs: int = Field(description="Runs so far")
+    pages: int = Field(description="Pages asked for so far, read or failed")
+    queued: int = Field(description="Pages found and not yet read")
+    running: bool = Field(default=False, description="A run is reading the FDP now")
+    continues_at: str | None = Field(
+        serialization_alias="continuesAt",
+        description="When the next run starts; null while one runs",
+    )
+
+
 class HarvestView(_Api):
     nodes: int
     harvested_at: str | None = Field(serialization_alias="harvestedAt")
+    walk: HarvestWalkView | None = Field(
+        default=None, description="Set while a harvest continues over several runs"
+    )
 
 
 class HealthView(_Api):
@@ -197,9 +214,31 @@ class EntryOptionsView(_Api):
         default=None,
         description="Set by an administrator (ISO 3166-1 alpha-2); first of the sources",
     )
+    harvest_pages_per_run: int = Field(
+        serialization_alias="harvestPagesPerRun",
+        description="Pages one harvest run reads before it continues later",
+    )
+    harvest_pages_per_walk: int = Field(
+        serialization_alias="harvestPagesPerWalk",
+        description="Pages one harvest reads over all its runs, at most",
+    )
+    harvest_budget_set: bool = Field(
+        serialization_alias="harvestBudgetSet",
+        description="True: the pages above were set for this FDP; false: the defaults",
+    )
+    harvest_origins: list[str] = Field(
+        default_factory=lambda: [],
+        serialization_alias="harvestOrigins",
+        description="Other sites the harvest may read for this FDP",
+    )
+
+
+MAX_HARVEST_ORIGINS = 10
 
 
 class EntryOptionsRequest(BaseModel):
+    """Leave a field out to keep it; ``null`` returns a budget or origins to the default."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     harvest: bool | None = None
@@ -207,6 +246,38 @@ class EntryOptionsRequest(BaseModel):
     harvest_interval: str | None = Field(default=None, alias="harvestInterval")
     # ISO 3166-1 alpha-2; "" clears it (TASKS 15.4).
     country: str | None = None
+    # TASKS 15.7: an administrator's budget for this FDP and other sites it may use.
+    harvest_pages_per_run: int | None = Field(
+        default=None, alias="harvestPagesPerRun", ge=1, le=100_000
+    )
+    harvest_pages_per_walk: int | None = Field(
+        default=None, alias="harvestPagesPerWalk", ge=1, le=1_000_000
+    )
+    harvest_origins: list[str] | None = Field(
+        default=None, alias="harvestOrigins", max_length=MAX_HARVEST_ORIGINS
+    )
+
+    @field_validator("harvest_origins")
+    @classmethod
+    def _origins(cls, value: list[str] | None) -> list[str] | None:
+        """Each an http(s) origin, kept as scheme://host[:port]."""
+        if value is None:
+            return None
+        origins: list[str] = []
+        for item in value:
+            parts = urlsplit(_http_url(item))
+            if parts.username or parts.password:
+                raise ValueError("an origin has no user name or password")
+            try:
+                port = parts.port
+            except ValueError as err:
+                raise ValueError(f"invalid port in {item}") from err
+            host = (parts.hostname or "").lower()
+            netloc = f"[{host}]" if ":" in host else host
+            if port is not None:
+                netloc = f"{netloc}:{port}"
+            origins.append(f"{parts.scheme.lower()}://{netloc}")
+        return list(dict.fromkeys(origins))
 
 
 class EntryUpdateRequest(BaseModel):
@@ -357,10 +428,22 @@ def _harvest_outcome(report: dict[str, Any]) -> str | None:
         if report.get(key)
     ]
     text = f"{nodes} nodes" + (f": {', '.join(parts)}" if parts else ", unchanged")
+    walk: dict[str, Any] = report.get("walk") or {}
+    if outcome == "in progress":
+        # One run of a walk that continues (TASKS 15.7).
+        text = f"Run {walk.get('run', 1)}: {text}; {walk.get('queued', 0)} pages still to read"
+        if walk.get("retryAfter") is not None:
+            text += ", the FDP asked the index to wait"
+        return text
+    if walk.get("run", 1) > 1:
+        text += f" (run {walk['run']}, {walk.get('pages', 0)} pages in all)"
     if outcome == "partial":
-        reason = (
-            "a limit was reached" if report.get("limitReached") else "some could not be fetched"
-        )
+        if walk.get("atCeiling"):
+            reason = "the harvest stopped at its page limit"
+        elif report.get("limitReached"):
+            reason = "a limit was reached"
+        else:
+            reason = "some could not be fetched"
         text += f"; {report.get('stale', 0)} kept from before ({reason})"
     return text
 

@@ -106,6 +106,11 @@ export const es: Messages = {
       saved: "Opciones guardadas.",
       country: "País",
       countryAuto: "Según las otras fuentes",
+      runPages: "Páginas por ronda",
+      walkPages: "Páginas por recolección",
+      budgetReset: "Usar los valores predeterminados",
+      origins: "Otros sitios",
+      originsHint: "Por ejemplo https://data.example.org",
     },
     location: "Ubicación: {country} · {source}",
     back: "Todos los FAIR Data Points",
@@ -130,6 +135,9 @@ export const es: Messages = {
     harvest: "Metadatos recolectados",
     harvestSummary:
       "Ningún nodo recolectado | Un nodo recolectado {when} | {n} nodos recolectados {when}",
+    walkRunning: "Recolección en curso: {pages} páginas hasta ahora, {n} por leer; leyendo ahora.",
+    walkProgress:
+      "Recolección en curso: {pages} páginas hasta ahora, {n} por leer; la próxima ronda empieza {when}.",
     harvestNone:
       "Todavía no se ha recolectado nada. Los FDP aceptados se recolectan tras una comprobación correcta.",
     preview: "Vista previa",

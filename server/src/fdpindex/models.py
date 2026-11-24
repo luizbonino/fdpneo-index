@@ -118,6 +118,11 @@ class IndexEntry(Base):
     # Harvest again at least this often, even when the root metadata is unchanged.
     harvest_interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     last_harvest_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # An administrator's budget for this FDP (TASKS 15.7); null: the deployment's.
+    harvest_run_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    harvest_walk_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Other sites (origins: scheme, host, port) the harvest may read for this FDP.
+    harvest_origins: Mapped[list[str] | None] = mapped_column(JsonType, nullable=True)
     # Set when the expiry policy marked the entry; cleared by a successful retrieval.
     expired_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
     # --- location (TASKS 15.4) ---
@@ -218,6 +223,35 @@ class HarvestedNode(Base):
     __table_args__ = (
         UniqueConstraint("entry_uuid", "node_iri", name="uq_harvested_node_entry_iri"),
     )
+
+
+class HarvestWalk(Base):
+    """A walk over an FDP's metadata that has runs still to go (TASKS 15.7).
+
+    A row exists while the walk is in progress; the last run deletes it. Pages
+    read by this walk are the entry's ``harvested_node`` rows with
+    ``harvested_at`` at or after ``started_at``.
+    """
+
+    __tablename__ = "harvest_walk"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    started_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+    runs: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Pages asked for so far, read or failed.
+    pages: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    queue: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    # Pages that failed in this walk, with the reason.
+    failed: Mapped[dict[str, str]] = mapped_column(JsonType, nullable=False, default=dict)
+    # Some failed page had no stored version, so what lies below it was not reached.
+    unreached: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    skipped_off_origin: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # When the next run may start; claimed runs push it ahead as a lease.
+    continue_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+
+    __table_args__ = (Index("ix_harvest_walk_continue_at", "continue_at"),)
 
 
 # --- search projection (search design §3.1, ADR-0005) ------------------------------

@@ -1,6 +1,7 @@
 # Metadata health and complete harvests (TASKS 15.6–15.11)
 
-Status: proposal, for review (2026-11-24). Nothing in §3 is built yet.
+Status: reviewed (2026-11-24); the decisions are in §5. Nothing in §3 is built
+yet.
 
 ## 1. Why
 
@@ -35,15 +36,22 @@ a network expects is configuration.
   on the FDP's event timeline. Nothing sums it.
 - **Each harvested page** keeps when it was fetched, its hash, ETag and
   Last-Modified, and whether it is stale (kept from an earlier harvest because
-  the last fetch failed).
+  the last fetch failed). The harvest sends conditional requests with them.
+- **Removals only after a complete walk**: a record missing from a harvest
+  that stopped early or had failures is kept.
 - **Profile checks** (conformance packs): every record against DCAT-AP,
   HealthDCAT-AP and the others an administrator activates; per FDP and in
-  search. Whether visitors may read the reports is a setting (`reports`).
+  search. Whether visitors may read the reports is a setting (`reports`,
+  public by default).
+- **Approval of new FDPs**, as in the reference: `autoPermit` accepts every
+  ping; otherwise a new FDP waits for an administrator, or for valid metadata
+  with `verifiedPermit`.
+- **Webhooks** on new entries, pings and state changes (valid, invalid,
+  unreachable, expired).
 - **Statistics**: records by type, FDPs by state, conformance shares, daily
   history.
 - Fixed while preparing this note: one FDP is one entry whatever variant of
-  its URL it is registered under (migration 0017), and the harvest follows
-  data services linked only through DCAT.
+  its URL it is registered under (migration 0017).
 
 ### The harvest's limits today
 
@@ -56,92 +64,161 @@ else's site.
 
 On the copy of home.fairdatapoint.org's FDPs (71 harvested), 2 hit the
 2,000-page limit and are held only in part: `fdp.lovd.nl` (1,997 pages after
-474 s and still going) and `ehdsfdp.healthdataportal.eu` (1,972 pages and 28
-refused with HTTP 403). 5 FDPs had 20 links to other sites left out, and 11
-had pages that failed.
+474 s and still going, about 4 pages a second) and
+`ehdsfdp.healthdataportal.eu` (1,972 pages and 28 refused with HTTP 403). 5
+FDPs had 20 links to other sites left out, and 11 had pages that failed.
 
-## 3. Proposal
+### How the harvest walks an FDP
 
-### 3.1 Harvest budgets that resume, not caps
+As the FDP specification says: through each page's LDP containers
+(`ldp:contains`). A page without containers falls back to the navigation
+properties of earlier FDP versions (`r3d:dataCatalog`, `fdp-o:metadataCatalog`,
+`dcat:dataset`, `dcat:distribution`). DCAT links that are not part of the FDP's
+navigation are not followed (decision 6).
 
-The limits should stop abuse, not cut real FDPs short.
+## 3. Design
 
-- **A budget per run that resumes.** A run reads up to its budget (pages,
-  bytes, time) and records where it stopped: the queue of pages not yet read.
-  The next run starts there, then walks the rest again. Pages that have not
-  changed answer `304 Not Modified` to the index's conditional requests, so
-  walking again is cheap. A large FDP becomes complete over a few runs; its
-  health report says "harvest in progress: N pages so far".
-- **Trust per FDP.** An administrator can give an accepted FDP a larger
-  budget, or allow it other sites (for example a separate host for
-  distributions), on its page like the harvest interval today. FDPs that only
-  pinged keep the defaults.
-- **The index's own stops are reported as such**: "the index stopped at its
-  budget", "a link to another site was not followed", never as the FDP's
-  fault.
+### 3.1 Complete harvests at a bounded cost
+
+The limits should stop abuse, not cut real FDPs short. A harvest becomes a
+**walk** that may take several **runs**: each run is bounded, the walk is not.
+
+- **Each run has a budget** (pages, bytes, time; today's limits). When it is
+  spent, the run stores the pages it read and the queue of pages still to
+  read. The next run carries on from that queue.
+- **A walk that is not finished continues soon**: its next run is due a few
+  minutes later (default 10), not after the FDP's harvest interval. It queues
+  behind FDPs that are due, so a large FDP never holds up small ones. A
+  finished walk waits for the interval, as now.
+- **Revisiting is cheap.** The index sends `If-None-Match` and
+  `If-Modified-Since`; an unchanged page answers `304 Not Modified` with no
+  body. A large FDP costs its full size once; after that mostly 304s.
+- **Breadth first**: the FDP, its catalogues and their datasets are read
+  before distributions and data services, so the levels most people search
+  are the freshest when a walk is in progress.
+- **Polite to the FDP's server**: one request at a time per FDP, and a
+  `429` or `503` with `Retry-After` ends the run there and sets when the next
+  one may start.
+- **Removals still wait for a complete walk**, over all its runs. A page that
+  fails keeps its stored version and is retried by the next walk; one failed
+  page no longer holds up removals elsewhere in the FDP.
+- **A ceiling per walk** stays, so a site generating pages endlessly cannot
+  keep a worker forever: 50,000 pages by default. An administrator can raise
+  the budget per run or the ceiling for an accepted FDP, or allow it another
+  site (for example a separate host for distributions), on its page, like the
+  harvest interval today. FDPs that only pinged keep the defaults.
+- **The index's own stops are reported as such**: "walk in progress: 6,000
+  pages so far, continues at 14:10", "a link to another site was not
+  followed", "the walk reached its ceiling". Never as the FDP's fault.
+
+`fdp.lovd.nl`, if it has 10,000 pages, is then complete after five runs over
+about an hour and a half the first time, and later walks are mostly 304s.
 
 ### 3.2 Built in: what the index found
 
-Computed after each harvest from the pages it read, for every deployment.
+Computed after each walk from the pages it read, for every deployment.
 Nothing here depends on a project.
 
 | Finding | Meaning |
-|---|---|
-| Pages read and failed, by level | FDP, catalogue, dataset, distribution, data service; failures with their reason (HTTP status, timeout, cannot parse, too large) |
+| --- | --- |
+| Pages read and failed, by level | FDP, catalogue, dataset, distribution, data service; failures by kind (HTTP status, timeout, cannot parse, too large, refused by the index's rules) |
 | Shape | How many catalogues, datasets, distributions and data services; how many datasets have no distribution, distributions no access URL or service |
 | Reach | The deepest level reached, per FDP (FDPcrawleR's drop-off) |
-| Listed only in LDP | A child in an LDP container that its parent does not link with the DCAT or FDP-O property |
-| Linked only in DCAT | A DCAT link to a page in no LDP container |
+| Linked only in DCAT | A DCAT link (`dcat:dataset`, `dcat:distribution`, `dcat:service`, `dcat:accessService`) to a page in no LDP container: the harvest does not follow it, so the record is not in the index |
+| Not linked in DCAT | A child in an LDP container that its parent does not link with the DCAT or FDP-O property |
 | Empty container | An LDP container with no members |
 | Dead end | A catalogue without datasets, a dataset without distributions |
-| Not followed | Links to other sites, pages beyond the budget |
+| Not followed | Links to other sites, pages beyond the ceiling |
 
 Each finding comes with a sentence on how to fix it, written for the FDP's
 maintainer (the data holders' guide gets a section with the same text).
 
-### 3.3 Configured: what a network expects
+**What is public.** The harvest reads only what any visitor can read, so the
+findings say nothing a visitor could not find out. They are public, under the
+same `reports` setting as conformance, for deployments that want them
+admin-only. Failures are shown by kind only. The full error text stays in the
+admin-only event: it can describe the index's own network, for example the
+address a name resolves to (see §4).
 
-A deployment states what it counts as complete, as data. Two parts:
+### 3.3 Configured: a network profile
 
-1. **Required reach**: the level an FDP must reach, and what that level must
-   have. ERDERA's, as an example:
+A network states what it requires in a **network profile**: one document with
+a fixed structure, so every network presents its requirements the same way.
+The documentation ships the template, its JSON Schema, a generic default and
+ERDERA's as a worked example. An administrator loads a profile on a settings
+page (stored in the database, like the search profile) or from a file at
+deployment. Visitors see the active profile on an "Expectations" page, so a
+maintainer knows what the index checks before registering.
 
-   ```yaml
-   # expectations.yaml
-   complete:
-     reach: dataservice          # fdp | catalog | dataset | distribution | dataservice
-     dataservice:
-       requires: [dcat:endpointURL]
-   ```
+```yaml
+# network-profile.yaml: illustrative; the real values come from ERDERA's metadata schema
+profile: 1                          # template version
+network:
+  name: ERDERA Virtual Platform
+  homepage: https://…
+  contact: mailto:…
+  description: Rare-disease resources found by the Virtual Platform.
 
-   The default deployment ships `reach: dataset`, with no requirements.
-2. **Record rules**: SHACL, through the conformance packs that exist. A
-   network's minimal metadata becomes a pack, as DCAT-AP is one.
+reach: dataservice                  # fdp | catalog | dataset | distribution | dataservice
 
-ERDERA's settings would be a file an operator installs, or an example in the
-documentation, not code. The EHDS deployment profile, which is code today,
-could move to the same form later.
+levels:                             # per level: properties required and recommended
+  catalog:
+    requires: [dct:title, dct:publisher]
+  dataset:
+    types: [dcat:Dataset, ejp:Biobank, ejp:PatientRegistry]   # what counts as this level
+    requires: [dct:title, dcat:theme]
+  distribution:
+    requires: [dcat:accessURL]
+  dataservice:
+    requires: [dcat:endpointURL]
+    recommends: [dcat:endpointDescription]
 
-### 3.4 Optional: external FAIR tests
+shapes:                             # record rules in SHACL: conformance packs
+  - https://…/erdera-shapes.ttl
 
-Some networks have their own test services: ERDERA runs its L1 and L2 tests of
-its Virtual Platform metadata on OSTrails (`tests.ostrails.eu`). Those
-services answer in the FAIR Testing Resources vocabulary (`ftr:TestResult`,
-with `prov:value` pass, fail or indeterminate, a summary and a log), so one
-generic client fits all of them:
+vocabularies:                       # optional: where values must come from
+  dcat:theme: [http://www.orpha.net/ORDO/]
 
-- an operator lists test endpoints in the settings; the list is empty by
-  default, as each call sends the FDP's URL to that service;
-- the index calls each one with the FDP's root URL after a harvest that
-  changed something, at most once a day per FDP and test;
-- it keeps the outcome, summary, log and time, and keeps a failed call (HTTP
-  error, timeout) apart from a failed test, as FDPcrawleR does.
+tools: []                           # external tools to run (3.4)
+```
+
+- `reach` and `levels` become findings ("does not reach data services";
+  "3 data services have no `dcat:endpointURL`"). The index turns `requires`
+  into SHACL shapes, so one engine checks everything.
+- `shapes` are conformance packs, as DCAT-AP is one today.
+- The default profile is `reach: dataset` with no requirements.
+- The EHDS deployment profile, which is code today, could move to this form
+  later.
+
+### 3.4 Triggering other tools
+
+A FAIR assessment, or a network's own tests (ERDERA runs L1 and L2 tests on
+OSTrails), is a separate tool. The index starts it and shows its result; it
+does not contain it.
+
+- An administrator registers a tool: its name, the URL the index calls, when
+  (a new FDP, a walk that changed something, a schedule, by hand) and a
+  secret. The list is empty by default, as each call sends the FDP's URL to
+  that tool.
+- The index calls the tool with the FDP's URL and entry. The tool answers at
+  once, or later at a callback URL with a result: outcome (pass, fail,
+  indeterminate, or a score), summary, link to the full report, time. FAIR
+  Testing Resources results (`ftr:TestResult`) are read as they are, so
+  OSTrails tests fit without an adapter.
+- A call that failed (HTTP error, timeout) is kept apart from a test that
+  failed, as FDPcrawleR does. At most one call per day per FDP and tool.
+- Results show on the FDP's page beside the findings; who may see them is
+  set per tool.
+
+The webhooks already tell other services about new and changed FDPs; a
+"walk finished, metadata changed" event is added to them too, for tools
+that only listen.
 
 ### 3.5 Where it shows
 
 - **The FDP's page**: a "Metadata health" section, combining the reach (as a
   small level-by-level line), the findings with their fixes, the profile
-  results and the external tests, and the harvest's progress or the index's
+  results and the external tools, and the walk's progress or the index's
   stops.
 - **Statistics**: FDPs by reach (the drop-off as a flow or stacked bar), FDPs
   that are fine, have findings or cannot be read, counts by finding, failures
@@ -149,55 +226,60 @@ generic client fits all of them:
   their findings, sortable, with CSV download.
 - **API**: `GET /index/entries/{uuid}/health`, and the aggregate in
   `GET /index/stats`.
-- **Check before registering**: the Register page can run the same checks on
-  a URL without adding it to the index (budgeted, rate-limited as pings are),
-  so a maintainer can fix problems first. FDPcrawleR's authors list this as
-  future work.
+- **Check before registering**: the same checks on a URL without adding it to
+  the index, with a smaller budget (200 pages). Who may run it follows the
+  approval policy, which an administrator can override:
+  - with `autoPermit` (anyone's FDP is accepted), anyone, under the ping
+    rate limit;
+  - with approval required, administrators, from the page of a pending FDP,
+    so they review an FDP with its health in front of them.
 
 ### 3.6 Provenance
 
 The provenance proposal (`provenance.md`) publishes each harvest's report in
 PROV-O. The health findings are computed from the same reports, so the two
-share their storage: the harvest record holds what was read and what failed;
+share their storage: the walk's record holds what was read and what failed;
 the health view is derived from it.
 
-## 4. Left out
+## 4. Changes to what exists
 
-- Guessing a record's type from its URL (FDPcrawleR's ERDERA profile treats
-  pages under `/biobank/` as datasets): the index reads `rdf:type`.
-- Saved crawl runs: the daily snapshots cover history.
+- **Data-service links.** On 2026-11-24 (`72cff8f`) the fallback for pages
+  without LDP containers gained `dcat:service` and `dcat:accessService`. They
+  are not part of the FDP's navigation; per decision 6 they are taken out
+  again and reported as "linked only in DCAT". On the real-data copy all 64
+  such links were reached through LDP anyway.
+- **Error texts.** `POST /index/register` returns the retrieval's error to
+  anyone, and the text of a refused address names the address: registering
+  a name that resolves to a private address answers "… resolves to a
+  non-public address (10.…)". That lets anyone look up names in the index's
+  network. The public answer gets the kind only ("resolves to a non-public
+  address"); the address stays in the log and the admin-only event.
 
-## 5. Questions for review
+## 5. Decisions (review of 2026-11-24)
 
-1. **Who sees an FDP's findings?** (a) everyone; (b) administrators only;
-   (c) as the `reports` setting says for conformance. *Recommendation: (c), so
-   one setting decides whether problems are public. The FDP's maintainer has
-   no sign-in today, so with (b) they would not see their own findings.*
-2. **Resumable budgets: default sizes?** *Recommendation: keep 2,000 pages and
-   15 minutes per run, and resume; let administrators raise them per FDP.
-   `fdp.lovd.nl` is then complete after as many runs as its size needs,
-   instead of never. Its size is unknown: it lists a dataset per gene.*
-3. **Expectations: YAML file or a settings page?** (a) a file mounted into
-   the container; (b) the administration settings, stored in the database,
-   like the search profile. *Recommendation: (b), with (a) as the way to
-   install a network's ready-made settings.*
-4. **External tests: build now or later?** They are the one part only some
-   networks use. *Recommendation: later, after 3.1–3.3 and 3.5; the design
-   stays as above.*
-5. **Check before registering: open to everyone?** It makes the index fetch
-   an arbitrary site on request. *Recommendation: yes, under the outbound
-   rules and the ping rate limit, with a smaller budget (200 pages).*
-6. **Union of LDP and DCAT links.** Today a page with LDP containers is walked
-   through them only, and its DCAT links are ignored; the findings in 3.2 need
-   both. *Recommendation: read both for the findings, and follow both, under
-   the same origin rule and budget.*
+1. **Findings are public.** The metadata is public, so the findings are too;
+   failures by kind, not raw error text. The `reports` setting can still make
+   them admin-only.
+2. **Complete at a bounded cost**: walks that continue over budgeted runs,
+   conditional requests, breadth first, polite per FDP, a ceiling per walk
+   (3.1).
+3. **A network profile template** (3.3), loaded on a settings page or from a
+   file, shown to visitors.
+4. **The index triggers other tools; it does not contain them** (3.4). The
+   FAIR test is a separate tool, built later.
+5. **Check before registering follows the approval policy** (3.5).
+6. **The harvest follows the FDP specification: LDP.** DCAT links outside it
+   are reported, not followed.
 
 ## 6. Tasks
 
-- 15.6 This design, reviewed.
-- 15.7 Resumable harvest budgets and per-FDP trust (3.1).
+- 15.6 This design, reviewed. Done.
+- 15.7 Walks that continue over budgeted runs, and per-FDP budgets (3.1);
+  the data-service fallback taken out (§4).
 - 15.8 The built-in findings, per FDP and summed (3.2, 3.5), with the data
   holders' guide.
-- 15.9 Expectations as configuration, with an ERDERA example (3.3).
-- 15.10 External FAIR tests (3.4), if wanted.
+- 15.9 Network profiles: the template, its schema, the settings page, the
+  "Expectations" page, a generic default and an ERDERA example (3.3).
+- 15.10 Triggering other tools and showing their results (3.4).
 - 15.11 Check before registering (3.5).
+- The error-text fix (§4) goes first, on its own.

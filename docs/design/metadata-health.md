@@ -1,7 +1,8 @@
 # Metadata health and complete harvests (TASKS 15.6–15.11)
 
-Status: reviewed (2026-11-24); the decisions are in §5. Nothing in §3 is built
-yet.
+Status: reviewed (2026-11-24); the decisions are in §5. 3.1 is built (TASKS
+15.7); the rest of §3 is not. Updated the same day with ERDERA's onboarding
+benchmark (3.3, 3.4).
 
 ## 1. Why
 
@@ -16,6 +17,26 @@ other 23 are "structurally valid yet functionally invisible". The authors plan
 "a real-time online FDP monitoring system composed of FDPCrawleR and a
 metadata validator", which tells data stewards when an update breaks an FDP
 and tests new FDPs before they are registered.
+
+ERDERA has since made its requirements formal. Its **Onboarding Benchmark**
+([FAIRsharing.2d49c0](https://fairsharing.org/FAIRsharing.2d49c0), in review
+at FAIRsharing, maintained by Mark Wilkinson) is an OSTrails benchmark: a set
+of metrics, each tested by a service on `tests.ostrails.eu`, run by FAIR
+Champion. It measures a record's onboarding level, cumulatively:
+
+| Level | Metric | Requires |
+| --- | --- | --- |
+| L1 | [FAIRsharing 8034](https://fairsharing.org/8034) | `w3id.org` terms, not the old EJP PURLs; `VPDiscoverable`; `dcat:theme`, `dcat:contactPoint`, `dct:description`, `dcat:keyword`, `dct:language`, `dct:license`, `dct:publisher` (a `foaf:Agent` with a `foaf:name`), `dct:title`, `dcat:landingPage` |
+| L2 | [FAIRsharing 8035](https://fairsharing.org/8035) | L1; typed as `dcat:DataService`; a `dcat:landingPage` |
+| Core quality | [FAIRsharing 9483](https://fairsharing.org/9483) | not public yet (in review) |
+
+One of the L2 tests is FDPcrawleR itself, as the test
+[`FDP_structural_completeness`](https://ostrails.github.io/assessment-component-metadata-records/test/FDP_structural_completeness.ttl)
+(0.1.2): it "checks FDPs in an FDP Index for a structural completeness of
+their metadata … (FDP -> Catalog -> Dataset -> Distribution -> Data
+Service)". So a network now publishes what it requires in a public registry,
+in a common vocabulary (FAIR Testing Resources, `ftr:`), with a generic
+runner. The index can use that without knowing anything about ERDERA.
 
 That is close to what this index already is. It harvests every accepted FDP,
 keeps a report of each harvest, checks every record against SHACL profiles,
@@ -179,22 +200,64 @@ shapes:                             # record rules in SHACL: conformance packs
 vocabularies:                       # optional: where values must come from
   dcat:theme: [http://www.orpha.net/ORDO/]
 
-tools: []                           # external tools to run (3.4)
+benchmarks:                         # the network's own verdict, run outside the index (3.4)
+  - https://ostrails.github.io/assessment-component-metadata-records/benchmark/ERDERA_Onboard.ttl
 ```
 
 - `reach` and `levels` become findings ("does not reach data services";
   "3 data services have no `dcat:endpointURL`"). The index turns `requires`
   into SHACL shapes, so one engine checks everything.
 - `shapes` are conformance packs, as DCAT-AP is one today.
-- The default profile is `reach: dataset` with no requirements.
+- `benchmarks` name FAIR Testing Resources benchmarks (or single tests) by
+  IRI. The index runs them as 3.4 says and shows their verdict; it does not
+  read their rules.
+- The default profile is `reach: dataset` with no requirements and no
+  benchmarks.
 - The EHDS deployment profile, which is code today, could move to this form
   later.
 
+**Rules in the profile, verdict in the benchmark.** ERDERA's L1 is the same
+kind of rule as `levels.requires`, so the two could repeat each other. They
+do different jobs:
+
+- The profile's rules (`reach`, `levels`, `shapes`) run inside the index, on
+  every record of every FDP after each walk, at no cost to anyone else. They
+  feed the findings on the FDP's page and the sums on the Statistics page,
+  and the check before registering.
+- A benchmark is the network's authoritative verdict, run by the network's
+  own services. It is called per FDP, at most daily (3.4), not per record and
+  harvest: thousands of records a walk would load those services, and send
+  them every record's IRI.
+
+To write a rule once, a network publishes it as SHACL and lists the file
+under `shapes`; its benchmark's tests can use the same file. Where a network
+has only a benchmark, its profile may hold just `benchmarks` and the
+index's built-in findings still apply.
+
 ### 3.4 Triggering other tools
 
-A FAIR assessment, or a network's own tests (ERDERA runs L1 and L2 tests on
-OSTrails), is a separate tool. The index starts it and shows its result; it
-does not contain it.
+A FAIR assessment, or a network's own tests, is a separate tool. The index
+starts it and shows its result; it does not contain it.
+
+**First case: a FAIR Testing Resources benchmark.** The network profile
+names a benchmark (3.3), such as ERDERA's Onboarding Benchmark. The index
+reads its description (a `ftr:Benchmark`, with `ftr:supportedBy` naming the
+runner, here FAIR Champion), asks the runner to apply it to an FDP, and
+keeps the result. Nothing in this is specific to ERDERA: any community with
+a benchmark in FAIRsharing plugs in the same way. How a runner is called
+(its API, and whether it takes the FDP's URL or a record's) is confirmed
+with FAIR Champion when 15.10 starts.
+
+Two things the published records do not give yet, which the index needs:
+
+- The benchmark's metrics are listed only in its description text, not as
+  triples, so a machine cannot follow from the benchmark to its metrics and
+  tests. Until they are, the runner is the only reader of that link.
+- ERDERA's levels are per record (a dataset, a data service), while the
+  index triggers per FDP. Which records the runner tests for one FDP (the
+  root, every record, a sample) is part of the same conversation.
+
+**Other tools**, such as a FAIR assessment service:
 
 - An administrator registers a tool: its name, the URL the index calls, when
   (a new FDP, a walk that changed something, a schedule, by hand) and a
@@ -264,9 +327,11 @@ the health view is derived from it.
    conditional requests, breadth first, polite per FDP, a ceiling per walk
    (3.1).
 3. **A network profile template** (3.3), loaded on a settings page or from a
-   file, shown to visitors.
+   file, shown to visitors. It may name the network's FAIR Testing Resources
+   benchmarks (added 2026-11-24, after ERDERA's Onboarding Benchmark).
 4. **The index triggers other tools; it does not contain them** (3.4). The
-   FAIR test is a separate tool, built later.
+   FAIR test is a separate tool, built later. The first case is running a
+   network's benchmark through its runner (FAIR Champion).
 5. **Check before registering follows the approval policy** (3.5).
 6. **The harvest follows the FDP specification: LDP.** DCAT links outside it
    are reported, not followed.
@@ -275,11 +340,14 @@ the health view is derived from it.
 
 - 15.6 This design, reviewed. Done.
 - 15.7 Walks that continue over budgeted runs, and per-FDP budgets (3.1);
-  the data-service fallback taken out (§4).
+  the data-service fallback taken out (§4). Done.
 - 15.8 The built-in findings, per FDP and summed (3.2, 3.5), with the data
   holders' guide.
 - 15.9 Network profiles: the template, its schema, the settings page, the
-  "Expectations" page, a generic default and an ERDERA example (3.3).
-- 15.10 Triggering other tools and showing their results (3.4).
+  "Expectations" page, a generic default and an ERDERA example that names
+  its Onboarding Benchmark (3.3).
+- 15.10 Triggering other tools and showing their results (3.4), starting
+  with a profile's benchmarks run through FAIR Champion; the call agreed
+  with its maintainers first.
 - 15.11 Check before registering (3.5).
-- The error-text fix (§4) goes first, on its own.
+- The error-text fix (§4) goes first, on its own. Done.

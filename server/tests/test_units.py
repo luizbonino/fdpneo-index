@@ -442,6 +442,8 @@ async def test_shared_address_space_is_blocked(address: str) -> None:
         with pytest.raises(OutboundError) as caught:
             await client.check_url("http://cloud.example/latest/meta-data")
     assert caught.value.kind == "blocked"
+    # The message reaches whoever registered the URL: it must not reveal the address.
+    assert caught.value.message == "cloud.example resolves to a non-public address"
 
 
 async def test_a_harvest_stops_at_its_byte_budget(network: FakeNetwork) -> None:

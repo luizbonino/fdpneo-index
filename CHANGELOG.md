@@ -83,6 +83,11 @@ The first release will contain:
 
 ### Fixed
 
+- Registration answers no longer reveal the index's network. When a URL's
+  host resolved to a private address, `POST /index/register` (open to
+  anyone) answered with that address, so names inside the index's network
+  could be looked up through it. The answer now names the host only; the
+  address goes to the log.
 - Harvest: data services linked only through DCAT (a catalogue's
   `dcat:service`, a dataset's or distribution's `dcat:accessService`) are
   followed when a page has no LDP containers. No FDP on

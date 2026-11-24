@@ -19,6 +19,10 @@ address in the URL instead; the pool, keyed on the URL's host, then let a
 connection opened for one name carry requests for another name at the same
 address, whose certificate was never checked (security audit 2026-11-23,
 follow-up to F-01).
+
+A refusal's message names the host, never the address it resolved to: the
+message reaches whoever registered the URL, so the address would let anyone
+look up names in the index's own network. The address goes to the log.
 """
 
 from __future__ import annotations
@@ -33,9 +37,12 @@ from urllib.parse import urljoin, urlsplit
 
 import httpcore
 import httpx
+import structlog
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Collection, Iterable, Mapping
+
+log = structlog.get_logger(__name__)
 
 _REDIRECTS = frozenset({301, 302, 303, 307, 308})
 
@@ -237,9 +244,8 @@ class OutboundClient:
             raise OutboundError("failed", f"cannot resolve {host}")
         for address in addresses:
             if _blocked_address(address):
-                raise OutboundError(
-                    "blocked", f"{host} resolves to a non-public address ({address})"
-                )
+                log.info("outbound_blocked_address", host=host, address=address)
+                raise OutboundError("blocked", f"{host} resolves to a non-public address")
         return None if literal else addresses[0]
 
     async def request(

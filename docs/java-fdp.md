@@ -38,6 +38,11 @@ accepted entry again on its first checks, within minutes.
 Run it again, without `--dry-run`, just before switching over: entries
 registered in the meantime are added; the others are skipped.
 
+A Java index keeps the same FDP under several URLs when they differ only
+in `http`/`https` or a trailing slash, and the importer copies them as they
+are. Merge them afterwards (Administering, *FDPs registered more than
+once*).
+
 ## 3. Switch over
 
 Pick one:

@@ -25,6 +25,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/admin/duplicates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * FDPs registered more than once
+     * @description Entries whose URLs differ only in scheme, case, default port or a trailing slash.
+     */
+    get: operations["duplicates_index_admin_duplicates_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/duplicates/merge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Keep one entry per FDP
+     * @description Delete all but one entry of each group, except groups with conflicts.
+     */
+    post: operations["merge_duplicates_index_admin_duplicates_merge_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/admin/ping-webhook": {
     parameters: {
       query?: never;
@@ -1213,6 +1253,34 @@ export interface components {
       title: {
         [key: string]: string;
       };
+    };
+    /**
+     * DuplicateGroupView
+     * @description Entries that are one FDP under variants of its URL (fdpindex.urls).
+     */
+    DuplicateGroupView: {
+      /**
+       * Conflicts
+       * @description Why a merge leaves this group to an administrator; empty when it can merge
+       */
+      conflicts: string[];
+      /** @description The entry kept: working, named by the FDP itself, https, oldest */
+      keep: components["schemas"]["EntryView"];
+      /**
+       * Key
+       * @description The URL without scheme, case, default port or trailing slash
+       */
+      key: string;
+      /**
+       * Merged
+       * @description True when this request merged the group
+       */
+      merged: boolean;
+      /**
+       * Remove
+       * @description The entries a merge deletes
+       */
+      remove: components["schemas"]["EntryView"][];
     };
     /** EntriesInfoView */
     EntriesInfoView: {
@@ -2707,6 +2775,46 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  duplicates_index_admin_duplicates_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateGroupView"][];
+        };
+      };
+    };
+  };
+  merge_duplicates_index_admin_duplicates_merge_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateGroupView"][];
+        };
       };
     };
   };

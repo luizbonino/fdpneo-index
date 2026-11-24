@@ -251,6 +251,20 @@ class EntriesInfoView(_Api):
     entries_count: dict[str, int] = Field(serialization_alias="entriesCount")
 
 
+class DuplicateGroupView(_Api):
+    """Entries that are one FDP under variants of its URL (fdpindex.urls)."""
+
+    key: str = Field(description="The URL without scheme, case, default port or trailing slash")
+    keep: EntryView = Field(
+        description="The entry kept: working, named by the FDP itself, https, oldest"
+    )
+    remove: list[EntryView] = Field(description="The entries a merge deletes")
+    conflicts: list[str] = Field(
+        description="Why a merge leaves this group to an administrator; empty when it can merge"
+    )
+    merged: bool = Field(description="True when this request merged the group")
+
+
 class TriggerRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 

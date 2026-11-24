@@ -6,9 +6,11 @@ import asyncio
 import json
 from collections.abc import AsyncIterator, Iterator
 from typing import Any, ClassVar
+from uuid import uuid4
 
 import httpx
 import pytest
+import sqlalchemy
 from alembic import command
 from sqlalchemy import delete, func, select
 from testcontainers.community.postgres import PostgresContainer
@@ -525,3 +527,47 @@ async def test_conformance_in_worker_processes(
     assert report.packs[0].violations >= 2
     assert report.problems and report.problems[0].severity == "violation"
     assert page.total == report.packs[0].violations
+
+
+def test_the_url_key_migration_fills_existing_entries() -> None:
+    """0017 adds url_key to entries that predate it (fdpindex.urls)."""
+    urls = ("https://A.example.org/", "http://a.example.org", "https://b.example.org/x/")
+
+    async def insert(database_url: str) -> None:
+        engine = make_engine(database_url)
+        async with engine.begin() as connection:
+            for client_url in urls:
+                await connection.execute(
+                    sqlalchemy.text(
+                        "INSERT INTO index_entry (uuid, client_url, state, permit, created_at,"
+                        " updated_at, metadata_version, metadata, consecutive_failures,"
+                        " harvest_enabled) VALUES (:uuid, :url, 'Unknown', 'ACCEPTED', now(),"
+                        " now(), 1, '{}', 0, true)"
+                    ),
+                    {"uuid": uuid4(), "url": client_url},
+                )
+        await engine.dispose()
+
+    async def read(database_url: str) -> dict[str, str]:
+        engine = make_engine(database_url)
+        async with engine.connect() as connection:
+            rows = await connection.execute(
+                sqlalchemy.text("SELECT client_url, url_key FROM index_entry")
+            )
+            result = {str(url): str(key) for url, key in rows.all()}
+        await engine.dispose()
+        return result
+
+    with PostgresContainer("postgres:18-alpine", driver="asyncpg") as container:
+        url = container.get_connection_url()
+        config = alembic_config(url)
+        config.attributes["configure_logger"] = False
+        command.upgrade(config, "0016")
+        asyncio.run(insert(url))
+        command.upgrade(config, "head")
+        keys = asyncio.run(read(url))
+    assert keys == {
+        "https://A.example.org/": "//a.example.org",
+        "http://a.example.org": "//a.example.org",
+        "https://b.example.org/x/": "//b.example.org/x",
+    }

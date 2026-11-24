@@ -47,6 +47,7 @@ from fdpindex.models import (
 )
 from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
+from fdpindex.urls import url_key
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -303,7 +304,7 @@ class IndexService:
         self, session: AsyncSession, client_url: str, settings: IndexSettings
     ) -> tuple[IndexEntry, bool]:
         now = utcnow()
-        entry = await session.scalar(select(IndexEntry).where(IndexEntry.client_url == client_url))
+        entry = await _known_entry(session, client_url)
         if entry is not None:
             entry.updated_at = now
             return entry, False
@@ -811,9 +812,7 @@ class IndexService:
             trigger_id, entry_id, new_entry = outcome.event_id, outcome.entry_id, outcome.new_entry
         else:
             async with self._session_factory() as session:
-                existing = await session.scalar(
-                    select(IndexEntry.uuid).where(IndexEntry.client_url == client_url)
-                )
+                existing = await _known_entry(session, client_url)
             trigger_id = await self.admin_trigger(client_url, actor=actor, remote_addr=remote_addr)
             new_entry = existing is None
             entry_id = (await self.get_event(trigger_id)).related_to
@@ -1310,6 +1309,111 @@ class IndexService:
             await session.execute(delete(Event).where(Event.related_to == entry_id))
             await session.delete(entry)
         self._notify(IndexChange("removed", entry_id))
+
+    # --- duplicates (fdpindex.urls) ---------------------------------------------------------
+
+    async def duplicates(self) -> list[DuplicateGroup]:
+        """Entries that are one FDP under variants of its URL, and which one to keep."""
+        async with self._session_factory() as session:
+            keys = (
+                select(IndexEntry.url_key)
+                .group_by(IndexEntry.url_key)
+                .having(func.count() > 1)
+                .scalar_subquery()
+            )
+            rows = (
+                await session.scalars(
+                    select(IndexEntry)
+                    .where(IndexEntry.url_key.in_(keys))
+                    .order_by(IndexEntry.url_key, IndexEntry.created_at)
+                )
+            ).all()
+        groups: dict[str, list[IndexEntry]] = {}
+        for row in rows:
+            groups.setdefault(row.url_key, []).append(row)
+        return [_duplicate_group(key, entries) for key, entries in groups.items()]
+
+    async def merge_duplicates(self) -> list[DuplicateGroup]:
+        """Keep one entry of each group and delete the others, unless the group needs a person."""
+        groups = await self.duplicates()
+        for group in groups:
+            if group.conflicts:
+                continue
+            for entry in group.remove:
+                await self.delete_entry(entry.uuid)
+            group.merged = True
+            log.info(
+                "duplicates_merged",
+                kept=group.keep.client_url,
+                removed=[entry.client_url for entry in group.remove],
+            )
+        return groups
+
+
+async def _known_entry(session: AsyncSession, client_url: str) -> IndexEntry | None:
+    """The entry for this URL or a variant of it; the exact URL first, then the oldest."""
+    candidates = (
+        await session.scalars(
+            select(IndexEntry)
+            .where(IndexEntry.url_key == url_key(client_url))
+            .order_by(IndexEntry.created_at)
+        )
+    ).all()
+    exact = [entry for entry in candidates if entry.client_url == client_url]
+    return (exact or list(candidates) or [None])[0]
+
+
+@dataclass
+class DuplicateGroup:
+    key: str
+    keep: IndexEntry
+    remove: list[IndexEntry]
+    # Why the group is left to an administrator; empty when it can be merged.
+    conflicts: list[str]
+    merged: bool = False
+
+
+_STATE_RANK = {
+    EntryState.VALID: 0,
+    EntryState.UNKNOWN: 1,
+    EntryState.INVALID: 2,
+    EntryState.UNREACHABLE: 3,
+}
+
+
+def _duplicate_group(key: str, entries: list[IndexEntry]) -> DuplicateGroup:
+    """Keep the entry that works, then the one the FDP names as itself, then https, then the oldest."""
+
+    def rank(entry: IndexEntry) -> tuple[int, int, int, float, float]:
+        declared = entry.repository_uri is not None and (
+            entry.repository_uri.rstrip("/") == entry.client_url.strip().rstrip("/")
+        )
+        success = entry.last_success_at.timestamp() if entry.last_success_at else 0.0
+        return (
+            _STATE_RANK.get(entry.state, 9),
+            0 if declared else 1,
+            0 if entry.client_url.lower().startswith("https:") else 1,
+            -success,
+            entry.created_at.timestamp(),
+        )
+
+    keep, *remove = sorted(entries, key=rank)
+    conflicts: list[str] = []
+    if any(entry.permit != keep.permit for entry in remove):
+        conflicts.append(
+            "approval differs: " + ", ".join(sorted({e.permit.value for e in entries}))
+        )
+    for entry in remove:
+        if entry.country and entry.country != keep.country:
+            conflicts.append(f"{entry.client_url} has a country set by an administrator")
+        if entry.harvest_enabled != keep.harvest_enabled:
+            conflicts.append(f"{entry.client_url} differs in whether it is harvested")
+        if (
+            entry.harvest_interval_seconds is not None
+            and entry.harvest_interval_seconds != keep.harvest_interval_seconds
+        ):
+            conflicts.append(f"{entry.client_url} has its own harvest interval")
+    return DuplicateGroup(key=key, keep=keep, remove=remove, conflicts=conflicts)
 
 
 def _order_by(sort: list[str]) -> list[Any]:

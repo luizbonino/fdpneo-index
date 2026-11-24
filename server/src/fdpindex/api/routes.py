@@ -23,6 +23,7 @@ from sqlalchemy import text
 
 from fdpindex import __version__
 from fdpindex.api.schemas import (
+    DuplicateGroupView,
     EntriesInfoView,
     EntryCreateRequest,
     EntryDetailView,
@@ -51,8 +52,8 @@ from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.durations import format_duration, parse_duration
 from fdpindex.errors import BadRequest, NotFound, RateLimited
 from fdpindex.geo import valid as valid_country
-from fdpindex.models import EntryPermit
-from fdpindex.service import IndexService, api_state
+from fdpindex.models import EntryPermit, IndexEntry
+from fdpindex.service import DuplicateGroup, IndexService, api_state
 from fdpindex.settings import IndexSettings, IndexSettingsView, SettingsService
 from fdpindex.webhooks import WebhookService
 
@@ -573,6 +574,53 @@ async def trigger_all(request: Request, index: Index, admin: Admin) -> Response:
     event_id = await index.admin_trigger(None, actor=admin.name, remote_addr=_remote(request))
     index.after_trigger(event_id)
     return Response(status_code=204)
+
+
+# --- duplicates (fdpindex.urls) -------------------------------------------------------------
+
+
+async def _duplicate_views(
+    index: IndexService, groups: list[DuplicateGroup]
+) -> list[DuplicateGroupView]:
+    threshold = await index.valid_threshold()
+
+    def view(entry: IndexEntry) -> EntryView:
+        return EntryView.of(entry, api_state(entry, threshold))
+
+    return [
+        DuplicateGroupView(
+            key=group.key,
+            keep=view(group.keep),
+            remove=[view(entry) for entry in group.remove],
+            conflicts=group.conflicts,
+            merged=group.merged,
+        )
+        for group in groups
+    ]
+
+
+@router.get(
+    "/index/admin/duplicates",
+    tags=["Index"],
+    response_model=list[DuplicateGroupView],
+    dependencies=[Depends(require_admin)],
+    summary="FDPs registered more than once",
+)
+async def duplicates(index: Index) -> list[DuplicateGroupView]:
+    """Entries whose URLs differ only in scheme, case, default port or a trailing slash."""
+    return await _duplicate_views(index, await index.duplicates())
+
+
+@router.post(
+    "/index/admin/duplicates/merge",
+    tags=["Index"],
+    response_model=list[DuplicateGroupView],
+    dependencies=[Depends(require_admin)],
+    summary="Keep one entry per FDP",
+)
+async def merge_duplicates(index: Index) -> list[DuplicateGroupView]:
+    """Delete all but one entry of each group, except groups with conflicts."""
+    return await _duplicate_views(index, await index.merge_duplicates())
 
 
 @router.post("/index/admin/ping-webhook", tags=["Index"], status_code=204)

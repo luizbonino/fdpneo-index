@@ -83,6 +83,12 @@ The first release will contain:
 
 ### Fixed
 
+- One FDP, one entry. URLs that differ only in `http`/`https`, letter case
+  in the host, a default port or a trailing slash were separate entries, so
+  the FDP counted twice; home.fairdatapoint.org had ten such pairs. A ping
+  for a variant now updates the known entry, and
+  `GET /index/admin/duplicates` and `POST /index/admin/duplicates/merge`
+  clean up the existing ones, keeping the entry that works. Migration 0017.
 - Outbound requests: a connection kept open for one host name could carry a
   request for another name at the same address, without that name's
   certificate being checked. The index put the checked address in the URL,

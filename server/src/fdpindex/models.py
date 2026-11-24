@@ -27,9 +27,10 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from fdpindex.db import AwareDateTime, Base, JsonType, utcnow
+from fdpindex.urls import url_key
 
 
 class EntryState(enum.StrEnum):
@@ -85,6 +86,8 @@ class IndexEntry(Base):
 
     uuid: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     client_url: Mapped[str] = mapped_column(String(2048), unique=True, nullable=False)
+    # Under which entries count as one FDP (fdpindex.urls): set with client_url.
+    url_key: Mapped[str] = mapped_column(String(2048), nullable=False)
     state: Mapped[EntryState] = mapped_column(
         _enum(EntryState, "entry_state"), nullable=False, default=EntryState.UNKNOWN
     )
@@ -126,9 +129,15 @@ class IndexEntry(Base):
 
     __table_args__ = (
         Index("ix_index_entry_state_permit", "state", "permit"),
+        Index("ix_index_entry_url_key", "url_key"),
         Index("ix_index_entry_created_at", "created_at"),
         Index("ix_index_entry_next_check_at", "next_check_at"),
     )
+
+    @validates("client_url")
+    def _keep_url_key(self, _key: str, value: str) -> str:
+        self.url_key = url_key(value)
+        return value
 
 
 class Event(Base):

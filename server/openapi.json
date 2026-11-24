@@ -295,6 +295,50 @@
         "title": "ConformanceShare",
         "type": "object"
       },
+      "DuplicateGroupView": {
+        "description": "Entries that are one FDP under variants of its URL (fdpindex.urls).",
+        "properties": {
+          "conflicts": {
+            "description": "Why a merge leaves this group to an administrator; empty when it can merge",
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "keep": {
+            "$ref": "#/components/schemas/EntryView",
+            "description": "The entry kept: working, named by the FDP itself, https, oldest"
+          },
+          "key": {
+            "description": "The URL without scheme, case, default port or trailing slash",
+            "title": "Key",
+            "type": "string"
+          },
+          "merged": {
+            "description": "True when this request merged the group",
+            "title": "Merged",
+            "type": "boolean"
+          },
+          "remove": {
+            "description": "The entries a merge deletes",
+            "items": {
+              "$ref": "#/components/schemas/EntryView"
+            },
+            "title": "Remove",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "keep",
+          "remove",
+          "conflicts",
+          "merged"
+        ],
+        "title": "DuplicateGroupView",
+        "type": "object"
+      },
       "EntriesInfoView": {
         "properties": {
           "entriesCount": {
@@ -3787,6 +3831,58 @@
           }
         },
         "summary": "Ping: announce a running FAIR Data Point",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/admin/duplicates": {
+      "get": {
+        "description": "Entries whose URLs differ only in scheme, case, default port or a trailing slash.",
+        "operationId": "duplicates_index_admin_duplicates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateGroupView"
+                  },
+                  "title": "Response Duplicates Index Admin Duplicates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "FDPs registered more than once",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/admin/duplicates/merge": {
+      "post": {
+        "description": "Delete all but one entry of each group, except groups with conflicts.",
+        "operationId": "merge_duplicates_index_admin_duplicates_merge_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DuplicateGroupView"
+                  },
+                  "title": "Response Merge Duplicates Index Admin Duplicates Merge Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Keep one entry per FDP",
         "tags": [
           "Index"
         ]

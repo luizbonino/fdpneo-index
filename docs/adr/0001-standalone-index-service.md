@@ -54,6 +54,10 @@ harvest of each accepted FDP.
      index has no user database of its own.
    - Repository detection also accepts the FDP-O namespace FDPneo moved to
      and the legacy one (FDPneo ADR-0026).
+   - One FDP is one entry: a ping for a URL that differs from a known one
+     only in `http`/`https`, letter case in the host, a default port or a
+     trailing slash updates that entry, where the reference adds another
+     (`fdpindex.urls`; 2026-11-24).
 
 ## Consequences
 

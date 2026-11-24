@@ -52,6 +52,36 @@ An entry's page, for administrators, has:
 Administrators can also add an FDP on the **Register** page, or with
 `POST /index/entries` (`clientUrl`, optional `permit` and `options`).
 
+### FDPs registered more than once
+
+The index counts URLs that differ only in `http` or `https`, letter case in
+the host, a default port or a trailing slash as one FDP:
+`https://fdp.example.org/` and `http://fdp.example.org` are the same entry.
+A ping for a variant of a known URL updates that entry. The path, its case
+and the query still count, so `https://example.org/fdp` and
+`https://example.org/FDP` stay two entries.
+
+Indexes that ran before this rule, and imports from a Java FDP index, can
+hold such duplicates already. home.fairdatapoint.org had ten pairs. List
+them, and the entry each would keep:
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" https://index.example.org/index/admin/duplicates
+```
+
+The entry kept is the one that works (a valid FDP before one that failed),
+then the one whose URL the FDP itself states, then `https`, then the oldest.
+To delete the others:
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" https://index.example.org/index/admin/duplicates/merge
+```
+
+A merge deletes the other entries as **Delete** does, with their events and
+harvested metadata. It leaves a group alone when its entries differ in
+approval or in an administrator's options (country, harvesting, interval),
+and says why under `conflicts`: decide those on the entries' pages.
+
 ## Where FDPs are
 
 The Statistics page maps the FDPs by country. FDPs rarely say where they

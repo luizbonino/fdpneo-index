@@ -21,6 +21,7 @@ import { absoluteTime, hostOf } from "@/utils/format";
 import StatsChart from "@/components/stats/StatsChart.vue";
 import StatsSparkline from "@/components/stats/StatsSparkline.vue";
 import SparqlLink from "@/components/stats/SparqlLink.vue";
+import StatsMap from "@/components/stats/StatsMap.vue";
 import {
   DATASETS_BY_YEAR,
   FDPS_BY_STATE,
@@ -136,6 +137,35 @@ const conformance = computed(() =>
 const registrations = computed(() => body.value?.registrations ?? []);
 const published = computed(() => body.value?.published ?? []);
 const largest = computed(() => body.value?.largest ?? []);
+
+// --- where (TASKS 15.4) ------------------------------------------------------------------
+
+const SOURCES = ["admin", "stated", "publisher", "domain", "server"] as const;
+const regionNames = computed(() => {
+  try {
+    return new Intl.DisplayNames([currentLocale()], { type: "region" });
+  } catch {
+    return null;
+  }
+});
+function countryName(code: string): string {
+  return regionNames.value?.of(code) ?? code;
+}
+const fdpCountries = computed(() => body.value?.fdps.byCountry ?? []);
+const fdpCounts = computed(() =>
+  Object.fromEntries(fdpCountries.value.map((c) => [c.country, c.fdps])),
+);
+const usedSources = computed(() =>
+  SOURCES.filter((s) => fdpCountries.value.some((c) => (c.bySource[s] ?? 0) > 0)),
+);
+const recordCountries = computed(() => body.value?.records?.byCountry ?? []);
+const recordCounts = computed(() =>
+  Object.fromEntries(recordCountries.value.map((c) => [c.country, c.records])),
+);
+function spatialSearch(country: string) {
+  const values = recordCountries.value.find((c) => c.country === country)?.values ?? [];
+  return values.length ? { name: "search", query: { spatial: values } } : null;
+}
 </script>
 
 <template>
@@ -244,6 +274,92 @@ const largest = computed(() => body.value?.largest ?? []);
             :series="[{ label: t('stats.tiles.records'), data: kinds.map((k) => k.value) }]"
           />
           <SparqlLink :query="RECORDS_BY_TYPE" />
+        </section>
+
+        <section class="card wide" aria-labelledby="h-where-fdps">
+          <h2 id="h-where-fdps">{{ t("stats.whereFdps") }}</h2>
+          <p class="muted small">{{ t("stats.whereFdpsLead") }}</p>
+          <StatsMap
+            v-if="fdpCountries.length"
+            :counts="fdpCounts"
+            :title="t('stats.whereFdps')"
+            :describe="(n: number) => t('stats.fdpCount', n)"
+          />
+          <p class="muted small">
+            {{ t("stats.unplaced", { n: number(body.fdps.unplaced) }, body.fdps.unplaced) }}
+          </p>
+          <details v-if="fdpCountries.length" class="table-view">
+            <summary>{{ t("stats.showTable") }}</summary>
+            <div class="scroll">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ t("stats.country") }}</th>
+                    <th scope="col" class="num">{{ t("stats.tiles.fdps") }}</th>
+                    <th v-for="s in usedSources" :key="s" scope="col" class="num">
+                      {{ t(`stats.sources.${s}`) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="c in fdpCountries" :key="c.country">
+                    <th scope="row">{{ countryName(c.country) }}</th>
+                    <td class="num">{{ number(c.fdps) }}</td>
+                    <td v-for="s in usedSources" :key="s" class="num">
+                      {{ number(c.bySource[s] ?? 0) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+          <dl class="sources small muted">
+            <template v-for="s in SOURCES" :key="s">
+              <dt>{{ t(`stats.sources.${s}`) }}</dt>
+              <dd>{{ t(`stats.sourceHelp.${s}`) }}</dd>
+            </template>
+          </dl>
+          <p v-if="usedSources.includes('server')" class="small muted">
+            {{ t("stats.geoipCredit") }}
+            <a href="https://db-ip.com" rel="noopener">DB-IP</a>
+          </p>
+        </section>
+
+        <section v-if="body.records" class="card wide" aria-labelledby="h-where-data">
+          <h2 id="h-where-data">{{ t("stats.whereData") }}</h2>
+          <p class="muted small">{{ t("stats.whereDataLead") }}</p>
+          <template v-if="recordCountries.length">
+            <StatsMap
+              :counts="recordCounts"
+              :title="t('stats.whereData')"
+              :describe="(n: number) => t('stats.recordCount', n)"
+              :link="spatialSearch"
+            />
+            <details class="table-view">
+              <summary>{{ t("stats.showTable") }}</summary>
+              <div class="scroll">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">{{ t("stats.country") }}</th>
+                      <th scope="col" class="num">{{ t("stats.tiles.records") }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="c in recordCountries" :key="c.country">
+                      <th scope="row">
+                        <router-link :to="spatialSearch(c.country) ?? { name: 'search' }">{{
+                          countryName(c.country)
+                        }}</router-link>
+                      </th>
+                      <td class="num">{{ number(c.records) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </template>
+          <p v-else class="muted">{{ t("stats.noSpatial") }}</p>
         </section>
 
         <section v-if="conformance.length" class="card wide" aria-labelledby="h-conformance">
@@ -458,5 +574,30 @@ const largest = computed(() => body.value?.largest ?? []);
 .host {
   display: block;
   overflow-wrap: anywhere;
+}
+.table-view summary {
+  cursor: pointer;
+  color: var(--fair-text-muted);
+  font-size: var(--fair-text-sm);
+}
+.sources {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px var(--fair-space-3);
+  margin: 0;
+}
+.sources dt {
+  font-weight: 600;
+}
+.sources dd {
+  margin: 0;
+}
+@media (max-width: 560px) {
+  .sources {
+    grid-template-columns: 1fr;
+  }
+  .sources dd {
+    margin-bottom: var(--fair-space-2);
+  }
 }
 </style>

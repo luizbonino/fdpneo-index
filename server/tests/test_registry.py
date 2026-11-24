@@ -261,7 +261,11 @@ def test_registration_and_options_over_http(api: Api) -> None:
     assert api.client.put(f"/index/entries/{entry}", json=put).status_code == 401
     updated = api.client.put(f"/index/entries/{entry}", json=put, headers=ADMIN)
     assert updated.status_code == 200, updated.text
-    assert updated.json()["options"] == {"harvest": False, "harvestInterval": "PT24H"}
+    assert updated.json()["options"] == {
+        "harvest": False,
+        "harvestInterval": "PT24H",
+        "country": None,
+    }
     assert updated.json()["permit"] == "ACCEPTED"  # unchanged without permit
     short = {"options": {"harvestInterval": "PT5M"}}
     assert api.client.put(f"/index/entries/{entry}", json=short, headers=ADMIN).status_code == 400

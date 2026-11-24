@@ -36,6 +36,7 @@ from fdpindex.api.schemas import (
     EventView,
     HarvestView,
     HealthView,
+    LocationView,
     PingRequest,
     RegisterRequest,
     RegistrationView,
@@ -49,6 +50,7 @@ from fdpindex.api.schemas import (
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.durations import format_duration, parse_duration
 from fdpindex.errors import BadRequest, NotFound, RateLimited
+from fdpindex.geo import valid as valid_country
 from fdpindex.models import EntryPermit
 from fdpindex.service import IndexService, api_state
 from fdpindex.settings import IndexSettings, IndexSettingsView, SettingsService
@@ -300,9 +302,17 @@ async def _detail(index: IndexService, entry_id: UUID) -> EntryDetailView:
             harvest_interval=format_duration(timedelta(seconds=entry.harvest_interval_seconds))
             if entry.harvest_interval_seconds
             else None,
+            country=entry.country,
         ),
         expired_time=instant(entry.expired_at),
+        location=_location((await index.locate([entry])).get(entry.uuid)),
     )
+
+
+def _location(found: tuple[str, str] | None) -> LocationView | None:
+    if found is None:
+        return None
+    return LocationView.model_validate({"country": found[0], "source": found[1]})
 
 
 @router.get("/index/entries/{entry_id}", tags=["Index"], response_model=EntryDetailView)
@@ -347,8 +357,16 @@ def _interval(value: str | None) -> timedelta | None:
 async def _apply_options(index: IndexService, entry_id: UUID, options: EntryOptionsRequest) -> None:
     interval = _interval(options.harvest_interval)
     clear = options.harvest_interval == ""
+    country = (options.country or "").strip().upper() or None
+    if country is not None and not valid_country(country):
+        raise BadRequest("country: an ISO 3166-1 alpha-2 code, such as NL")
     await index.update_options(
-        entry_id, harvest_enabled=options.harvest, harvest_interval=interval, clear_interval=clear
+        entry_id,
+        harvest_enabled=options.harvest,
+        harvest_interval=interval,
+        clear_interval=clear,
+        country=country,
+        clear_country=options.country == "",
     )
 
 

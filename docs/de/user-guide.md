@@ -232,6 +232,11 @@ anzeigen**, und **Als SPARQL-Abfrage öffnen** stellt dieselbe Frage in SPARQL,
 wo Sie sie ändern können; SPARQL zählt nach RDF-Typ, die Zahlen können daher
 leicht abweichen.
 
+Zwei Karten zeigen, wo die FDPs sind (verortet durch die Wahl eines
+Administrators, den FDP selbst, seinen Herausgeber, seine Domain oder seinen
+Server, in dieser Reihenfolge), und worüber die Daten sind (die räumliche
+Abdeckung der Einträge); ein Land auf der zweiten Karte sucht seine Einträge.
+
 ## Sprachen
 
 Die Oberfläche gibt es auf Englisch, Niederländisch, Deutsch, Französisch,

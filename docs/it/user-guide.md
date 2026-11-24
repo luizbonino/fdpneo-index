@@ -230,6 +230,11 @@ giorno. Ogni grafico ha **Mostra come tabella**, e **Apri come query SPARQL**
 pone la stessa domanda in SPARQL, dove è possibile modificarla; SPARQL conta
 per tipo RDF, quindi i numeri possono differire leggermente.
 
+Due mappe mostrano dove sono gli FDP (collocati dalla scelta di un
+amministratore, dall'FDP stesso, dal suo editore, dal suo dominio o dal suo
+server, in quest'ordine) e di dove parlano i dati (la copertura spaziale
+delle schede); un paese sulla seconda mappa ne cerca le schede.
+
 ## Lingue
 
 L'interfaccia è disponibile in inglese, olandese, tedesco, francese,

@@ -170,6 +170,18 @@ class EntryDetailView(_Api):
     health: HealthView | None = None
     options: EntryOptionsView | None = None
     expired_time: str | None = Field(default=None, serialization_alias="expiredTime")
+    location: LocationView | None = Field(
+        default=None, description="Where the FDP is, and which source says so (TASKS 15.4)"
+    )
+
+
+class LocationView(_Api):
+    country: str = Field(description="ISO 3166-1 alpha-2")
+    source: Literal["admin", "stated", "publisher", "domain", "server"] = Field(
+        description="admin: set by an administrator; stated: the FDP's r3d:country; "
+        "publisher: its publisher's ROR record; domain: its country-code domain; "
+        "server: where the server that answered is (IP geolocation, after redirects)"
+    )
 
 
 class EntryOptionsView(_Api):
@@ -181,6 +193,10 @@ class EntryOptionsView(_Api):
         serialization_alias="harvestInterval",
         description="Harvest again at least this often (ISO-8601 duration); null: when changed",
     )
+    country: str | None = Field(
+        default=None,
+        description="Set by an administrator (ISO 3166-1 alpha-2); first of the sources",
+    )
 
 
 class EntryOptionsRequest(BaseModel):
@@ -189,6 +205,8 @@ class EntryOptionsRequest(BaseModel):
     harvest: bool | None = None
     # An ISO-8601 duration; "" or null clears it. At least an hour.
     harvest_interval: str | None = Field(default=None, alias="harvestInterval")
+    # ISO 3166-1 alpha-2; "" clears it (TASKS 15.4).
+    country: str | None = None
 
 
 class EntryUpdateRequest(BaseModel):

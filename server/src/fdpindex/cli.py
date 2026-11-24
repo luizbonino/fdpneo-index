@@ -225,6 +225,36 @@ def embeddings_download(
         typer.echo(f"  {name}  sha256:{digest[:16]}…")
 
 
+geoip_app = typer.Typer(help="IP geolocation of FDP servers (TASKS 15.4).", no_args_is_help=True)
+app.add_typer(geoip_app, name="geoip")
+
+
+@geoip_app.command("download")
+def geoip_download(
+    target: str = typer.Argument(..., help="Directory for the database (FDPINDEX_GEOIP_DIR)"),
+) -> None:
+    """Fetch DB-IP Lite's country database (CC BY 4.0): run monthly for current data."""
+    from pathlib import Path
+
+    import httpx
+
+    from fdpindex.config import get_settings
+    from fdpindex.geo import download_geoip
+
+    settings = get_settings()
+
+    def fetch(url: str) -> bytes:
+        response = httpx.get(
+            url, follow_redirects=True, timeout=300, headers={"User-Agent": settings.user_agent}
+        )
+        response.raise_for_status()
+        return response.content
+
+    month, size = download_geoip(Path(target), fetch)
+    typer.echo(f"DB-IP Lite country database of {month} in {target} ({size:,} bytes)")
+    typer.echo("IP geolocation by DB-IP (https://db-ip.com), CC BY 4.0.")
+
+
 def _outbound_run(work: Callable[[OutboundClient], Awaitable[None]]) -> None:
     import asyncio
 

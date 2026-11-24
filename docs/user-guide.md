@@ -214,6 +214,11 @@ second day. Every chart has a table under **Show as a table**, and **Open as
 SPARQL query** asks the same question of SPARQL, where you can change it; SPARQL
 counts by RDF type, so its numbers can differ a little.
 
+Two maps show where the FDPs are (placed by an administrator's choice, the
+FDP's own statement, its publisher, its domain or its server, in that order)
+and where the data is about (the records' spatial coverage); choose a
+country on the second to search its records.
+
 ## Languages
 
 The interface speaks English, Dutch, German, French, Spanish, Italian and

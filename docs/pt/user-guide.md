@@ -229,6 +229,11 @@ segundo dia. Cada gráfico tem **Ver como tabela**, e **Abrir como consulta
 SPARQL** faz a mesma pergunta em SPARQL, onde a pode alterar; o SPARQL conta
 por tipo RDF, pelo que os números podem diferir um pouco.
 
+Dois mapas mostram onde estão os FDP (situados pela escolha de um
+administrador, o próprio FDP, o seu editor, o seu domínio ou o seu servidor,
+por esta ordem) e sobre onde são os dados (a cobertura espacial dos
+registos); um país no segundo mapa pesquisa os seus registos.
+
 ## Idiomas
 
 A interface está disponível em inglês, neerlandês, alemão, francês,

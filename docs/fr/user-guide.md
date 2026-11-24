@@ -239,6 +239,11 @@ Chaque graphique propose **Afficher sous forme de tableau**, et **Ouvrir comme
 requête SPARQL** pose la même question en SPARQL, où vous pouvez la modifier ;
 SPARQL compte par type RDF, ses chiffres peuvent donc différer légèrement.
 
+Deux cartes montrent où sont les FDP (placés par le choix d’un administrateur,
+le FDP lui-même, son éditeur, son domaine ou son serveur, dans cet ordre) et
+sur quoi portent les données (la couverture spatiale des notices) ; un pays
+sur la seconde carte lance la recherche de ses notices.
+
 ## Langues
 
 L’interface est disponible en anglais, néerlandais, allemand, français,

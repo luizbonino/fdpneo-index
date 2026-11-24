@@ -54,6 +54,9 @@ class OutboundResponse:
     truncated: bool = False
     requested_url: str = ""
     request_headers: dict[str, list[str]] = field(default_factory=lambda: {})
+    # The address that answered the last hop (after redirects), when the index connected
+    # to a checked public address; None with private targets allowed (local stacks).
+    address: str | None = None
 
     @property
     def content_type(self) -> str:
@@ -89,6 +92,16 @@ def _blocked_address(address: str) -> bool:
         or ip.is_unspecified
         or any(ip in network for network in _EXTRA_BLOCKED)
     )
+
+
+def _literal(url: str) -> str | None:
+    """The host when it is an IP address literal (no DNS lookup, no pinning)."""
+    host = urlsplit(url).hostname or ""
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return None
+    return host
 
 
 def _headers(raw: httpx.Headers) -> dict[str, list[str]]:
@@ -189,6 +202,7 @@ class OutboundClient:
                 raise OutboundError("failed", f"IO error: {err}") from err
             locations = response.headers.get("location", [])
             if response.status not in _REDIRECTS or not locations:
+                response.address = pinned or _literal(current)
                 response.requested_url = url
                 response.request_headers = {k.lower(): [v] for k, v in request_headers.items()}
                 return response

@@ -23,6 +23,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 import structlog
@@ -30,12 +31,20 @@ from rdflib import Graph
 from sqlalchemy import ColumnElement, and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 
-from fdpindex import exchange
+from fdpindex import exchange, geo
 from fdpindex.db import utcnow
 from fdpindex.durations import format_duration
 from fdpindex.errors import NotFound, PingDenied, RateLimited
 from fdpindex.harvest import KnownNode, harvest
-from fdpindex.models import EntryPermit, EntryState, Event, EventType, HarvestedNode, IndexEntry
+from fdpindex.models import (
+    Concept,
+    EntryPermit,
+    EntryState,
+    Event,
+    EventType,
+    HarvestedNode,
+    IndexEntry,
+)
 from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
 
@@ -45,6 +54,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
     from sqlalchemy.orm import InstrumentedAttribute
 
+    from fdpindex.geo import GeoIp
     from fdpindex.jobs import JobRunner
     from fdpindex.outbound import OutboundClient, OutboundResponse
     from fdpindex.settings import IndexSettings, SettingsService
@@ -122,6 +132,9 @@ class Retrieval:
     content_hash: str | None = None
     etag: str | None = None
     last_modified: str | None = None
+    # Who answered (TASKS 15.4): the host after redirects, and its address's country.
+    served_from: str | None = None
+    server_country: str | None = None
 
 
 def _harvest_due(entry: IndexEntry, now: datetime) -> bool:
@@ -179,8 +192,10 @@ class IndexService:
         harvest_max_bytes: int = 50 * 1024 * 1024,
         harvest_max_seconds: float = 900.0,
         harvest_node_timeout: float = 20.0,
+        geoip: GeoIp | None = None,
     ) -> None:
         self._session_factory = session_factory
+        self._geoip = geoip
         self._settings = settings
         self._outbound = outbound
         self._jobs = jobs
@@ -447,8 +462,18 @@ class IndexService:
         if response is None:
             assert error is not None
             return Retrieval(EntryState.UNREACHABLE, error.message, None, recorded)
+        served_from = urlsplit(response.url).hostname
+        server_country = self._geoip.country(response.address) if self._geoip else None
         if response.status == 304 and (etag or last_modified):
-            return Retrieval(EntryState.VALID, None, None, recorded, not_modified=True)
+            return Retrieval(
+                EntryState.VALID,
+                None,
+                None,
+                recorded,
+                not_modified=True,
+                served_from=served_from,
+                server_country=server_country,
+            )
         if response.status >= 500:
             return Retrieval(EntryState.UNREACHABLE, f"HTTP {response.status}", None, recorded)
         if not 200 <= response.status < 300:
@@ -477,6 +502,8 @@ class IndexService:
             content_hash=hashlib.sha256(response.body.encode("utf-8")).hexdigest(),
             etag=(response.headers.get("etag") or [None])[0],
             last_modified=(response.headers.get("last-modified") or [None])[0],
+            served_from=served_from,
+            server_country=server_country,
         )
 
     async def _finish_retrieval(
@@ -567,6 +594,9 @@ class IndexService:
         entry.state = result.state
         if result.state is not EntryState.VALID:
             return False
+        if result.served_from:
+            entry.served_from = result.served_from
+            entry.server_country = result.server_country
         entry.last_success_at = utcnow()
         entry.expired_at = None  # contact again: no longer expired (TASKS 4.6)
         if result.not_modified or result.metadata is None:
@@ -695,8 +725,10 @@ class IndexService:
         harvest_enabled: bool | None = None,
         harvest_interval: timedelta | None = None,
         clear_interval: bool = False,
+        country: str | None = None,
+        clear_country: bool = False,
     ) -> IndexEntry:
-        """Directory only (no harvest) and the entry's own harvest interval."""
+        """Directory only (no harvest), the entry's own harvest interval, and its country."""
         async with self._session_factory() as session, session.begin():
             entry = await session.get(IndexEntry, entry_id)
             if entry is None:
@@ -708,10 +740,43 @@ class IndexService:
                 entry.harvest_interval_seconds = None
             elif harvest_interval is not None:
                 entry.harvest_interval_seconds = int(harvest_interval.total_seconds())
+            if clear_country:
+                entry.country = None
+            elif country is not None:
+                entry.country = country
         if stop_harvest:
             # Directory only: what was harvested leaves search and SPARQL.
             await self.delete_harvested(entry_id)
         return await self.get_entry(entry_id)
+
+    # --- location (TASKS 15.4) -------------------------------------------------------
+
+    async def locate(self, entries: list[IndexEntry]) -> dict[UUID, tuple[str, str] | None]:
+        """Each entry's country and the source that placed it (``fdpindex.geo``)."""
+        publishers = {
+            str(p) for e in entries if (p := (e.repository_metadata or {}).get("publisher"))
+        }
+        countries: dict[str, str] = {}
+        if publishers:
+            async with self._session_factory() as session:
+                for start in range(0, len(publishers), 500):
+                    chunk = sorted(publishers)[start : start + 500]
+                    rows = await session.execute(
+                        select(Concept.iri, Concept.country).where(
+                            Concept.iri.in_(chunk), Concept.country.is_not(None)
+                        )
+                    )
+                    countries.update({str(iri): str(code) for iri, code in rows.all()})
+        return {
+            e.uuid: geo.locate(
+                admin=e.country,
+                stated=geo.country_of((e.repository_metadata or {}).get("country")),
+                publisher=countries.get(str((e.repository_metadata or {}).get("publisher"))),
+                server=e.server_country,
+                domain=geo.domain_country(e.served_from or urlsplit(e.client_url).hostname),
+            )
+            for e in entries
+        }
 
     # --- registration (TASKS 4.9) ---------------------------------------------------
 

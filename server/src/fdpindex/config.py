@@ -128,6 +128,9 @@ class Settings(BaseSettings):
     # Concept labels from vocabularies (TASKS 8.6, ADR-0006): off by default, because it
     # sends requests to third-party hosts. Only these hosts are asked, each hop of a fetch.
     labels_resolve: bool = False
+    # Where FDPs are (TASKS 15.4): a folder with DB-IP Lite's country database
+    # (`fdpindex geoip download`); without one, servers are not located.
+    geoip_dir: Path | None = None
     labels_hosts: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: list(DEFAULT_LABEL_HOSTS)
     )

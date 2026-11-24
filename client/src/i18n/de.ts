@@ -104,7 +104,10 @@ export const de: Messages = {
         PT168H: "wöchentlich",
       },
       saved: "Optionen gespeichert.",
+      country: "Land",
+      countryAuto: "Aus den anderen Quellen",
     },
+    location: "Standort: {country} · {source}",
     back: "Alle FAIR Data Points",
     open: "FDP öffnen",
     metadata: "Metadaten",
@@ -602,6 +605,37 @@ export const de: Messages = {
     empty: "Noch keine FDPs gelistet.",
     showTable: "Als Tabelle anzeigen",
     openSparql: "Als SPARQL-Abfrage öffnen",
+    whereFdps: "Wo die FDPs sind",
+    whereFdpsLead:
+      "Nur wenige FDPs geben an, wo sie sind. Jeder wird daher nach der ersten Quelle verortet, die es weiß: ein Administrator, der FDP selbst, sein Herausgeber, seine Domain, sein Server.",
+    fdpCount: "Keine FDPs | Ein FDP | {n} FDPs",
+    unplaced:
+      "Jeder FDP ist verortet. | Ein FDP konnte nicht verortet werden. | {n} FDPs konnten nicht verortet werden.",
+    country: "Land",
+    sources: {
+      admin: "Von einem Administrator gesetzt",
+      stated: "Vom FDP angegeben",
+      publisher: "Sein Herausgeber",
+      server: "Sein Server",
+      domain: "Seine Domain",
+    },
+    sourceHelp: {
+      admin: "Ein Land, das auf der Seite des FDP gewählt wurde.",
+      stated: "Das Land in den eigenen Metadaten des FDP (r3d:country).",
+      publisher: "Das Land des ROR-Eintrags seines Herausgebers.",
+      server:
+        "Wo der Server steht, der geantwortet hat, nach Weiterleitungen; ein Cloud- oder CDN-Server verortet den FDP dort, wo dieser Server steht.",
+      domain: "Seine Länderdomain, etwa .nl oder .de.",
+    },
+    geoipCredit: "Serverstandorte: IP-Geolokalisierung durch",
+    whereData: "Worüber die Daten sind",
+    whereDataLead:
+      "Einträge nach dem Land, das ihre räumliche Abdeckung nennt (dct:spatial: EU-Ländercodes und NUTS-Regionen). Wählen Sie ein Land, um seine Einträge zu suchen.",
+    recordCount: "Keine Einträge | Ein Eintrag | {n} Einträge",
+    noSpatial:
+      "Noch kein Eintrag gibt seine räumliche Abdeckung in einer Form an, die der Index verorten kann.",
+    mapArea: "Kartenausschnitt",
+    mapAreas: { europe: "Europa", all: "Ganze Karte" },
     sparqlNote:
       "Die SPARQL-Abfragen zählen nach RDF-Typ, daher können ihre Zahlen leicht von dieser Seite abweichen, die den Eintragstypen der Suche folgt.",
   },

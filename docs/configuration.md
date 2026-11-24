@@ -90,6 +90,17 @@ third-party hosts.
 | `FDPINDEX_LABELS_BROADER_DEPTH` | `2` | Levels of broader concepts resolved |
 | `FDPINDEX_LABELS_INTERVAL_SECONDS` | `60` | How often the resolver looks for work |
 | `FDPINDEX_LABELS_REQUESTS_PER_SECOND` | `2` | Requests per second, across all hosts |
+
+## Where FDPs are
+
+FDPs are placed on the Statistics page's map by a country an administrator
+set, the country the FDP states, its publisher's ROR record (with label
+resolution on), its country-code domain, or where its server is, in that
+order ([Administering](administering.md#where-fdps-are)).
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `FDPINDEX_GEOIP_DIR` | — (the image sets `/app/geoip`) | A folder with DB-IP Lite's country database (`fdpindex geoip download <folder>`), to locate the server that answered each retrieval. Without it, servers are not located |
 | `FDPINDEX_LABELS_MAX_BYTES` | `2097152` | The largest vocabulary response read |
 
 ## SPARQL

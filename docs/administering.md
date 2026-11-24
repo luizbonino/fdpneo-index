@@ -46,8 +46,47 @@ An entry's page, for administrators, has:
   (12 hours, a day, a week) also harvests it on that schedule, for FDPs
   whose datasets change without their root changing.
 
+- **Country**: where the FDP is, for the Statistics page's map. Leave it at
+  *From the other sources* unless those place it wrongly (below).
+
 Administrators can also add an FDP on the **Register** page, or with
 `POST /index/entries` (`clientUrl`, optional `permit` and `options`).
+
+## Where FDPs are
+
+The Statistics page maps the FDPs by country. FDPs rarely say where they
+are, so each is placed by the first of these that knows, and the page says
+which placed how many:
+
+1. **Set by an administrator**: the *Country* option on the FDP's page.
+2. **Stated by the FDP**: `r3d:country` in its own metadata (an ISO code,
+   an EU country authority IRI or an English name).
+3. **Its publisher**: the country of the publisher's ROR record, when label
+   resolution is on (`FDPINDEX_LABELS_RESOLVE`).
+4. **Its domain**: a country-code domain (`.nl`, `.de`) of the host that
+   answered, after redirects. Domains used as generic ones (`.io`, `.co`,
+   `.ai` …) do not count.
+5. **Its server**: where the server that answered the last retrieval is,
+   after redirects, from DB-IP Lite's country database. A w3id.org address
+   counts as the server it redirects to. This is the hosting company's
+   country: an FDP run in Leiden on a server in Germany is placed in Germany,
+   unless one of the sources above places it first.
+
+FDPs nothing can place (unreachable ones with a generic domain) are counted
+apart. The server image includes DB-IP's database of the month it was built
+in; rebuild monthly to keep it current:
+
+```sh
+GEOIP_MONTH=$(date +%Y-%m) docker compose -f deploy/compose.yaml --env-file deploy/.env build server
+```
+
+Without the database (`FDPINDEX_GEOIP_DIR` unset, or a build without network
+access) servers are simply not located. The page credits DB-IP, as its
+licence (CC BY 4.0) asks.
+
+The page also maps **where the data is about**: records by the country their
+`dct:spatial` names, from EU country codes and NUTS regions, each country
+linking to a search for its records.
 
 ## Settings
 

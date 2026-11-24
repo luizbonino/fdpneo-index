@@ -29,17 +29,41 @@ class _Camel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
 
 
+class FdpCountry(_Camel):
+    country: str = Field(description="ISO 3166-1 alpha-2")
+    fdps: int
+    by_source: dict[str, int] = Field(
+        alias="bySource",
+        description="How many were placed by each source: admin, stated, publisher, domain, server",
+    )
+
+
+class RecordCountry(_Camel):
+    country: str = Field(description="ISO 3166-1 alpha-2")
+    records: int = Field(
+        description="Records whose dct:spatial names this country or a region in it"
+    )
+    values: list[str] = Field(description="The spatial IRIs seen for it (at most 50)")
+
+
 class FdpCounts(_Camel):
     total: int = Field(description="FDPs in the public list")
     by_state: dict[str, int] = Field(
         alias="byState", description="By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN"
     )
+    by_country: list[FdpCountry] = Field(
+        alias="byCountry", description="Where the FDPs are (see the entry's `location`)"
+    )
+    unplaced: int = Field(description="FDPs no source could place")
 
 
 class RecordCounts(_Camel):
     total: int = Field(description="Records visitors find in search")
     by_kind: dict[str, int] = Field(
         alias="byKind", description="By kind: fdp, catalog, dataset, series, service …"
+    )
+    by_country: list[RecordCountry] = Field(
+        alias="byCountry", description="Where the data is about: dct:spatial by country"
     )
 
 

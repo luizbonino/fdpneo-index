@@ -157,7 +157,10 @@ class Vocabularies:
                             "lang": "en",
                         },
                         {"value": "UT", "types": ["acronym"], "lang": None},
-                    ]
+                    ],
+                    "locations": [
+                        {"geonames_id": 2755251, "geonames_details": {"country_code": "NL"}}
+                    ],
                 },
             )
         if host == "www.ebi.ac.uk":
@@ -259,6 +262,7 @@ async def test_concepts_are_resolved_from_their_vocabularies(
     factory = services.session_factory
     assert (await _status(factory, WIKIDATA)).status is ConceptStatus.RESOLVED
     assert (await _status(factory, ROR)).source == "ror"
+    assert (await _status(factory, ROR)).country == "NL"  # where the publisher is (15.4)
     assert (await _status(factory, EDAM)).source == "ols"
     mesh = await _status(factory, MESH)
     assert (mesh.source, mesh.broader) == ("rdf", [MESH_PARENT])

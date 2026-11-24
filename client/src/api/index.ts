@@ -26,6 +26,8 @@ export interface EntryOptions {
   harvest?: boolean;
   /** ISO-8601 duration; "" clears it. */
   harvestInterval?: string;
+  /** ISO 3166-1 alpha-2, set by an administrator; "" clears it (TASKS 15.4). */
+  country?: string;
 }
 
 export type EntryState = "ACTIVE" | "INACTIVE" | "UNREACHABLE" | "INVALID" | "UNKNOWN";

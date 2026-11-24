@@ -104,7 +104,10 @@ export const pt: Messages = {
         PT168H: "todas as semanas",
       },
       saved: "Opções guardadas.",
+      country: "País",
+      countryAuto: "A partir das outras fontes",
     },
+    location: "Localização: {country} · {source}",
     back: "Todos os FAIR Data Points",
     open: "Abrir o FDP",
     metadata: "Metadados",
@@ -598,6 +601,37 @@ export const pt: Messages = {
     empty: "Ainda não há FDP listados.",
     showTable: "Ver como tabela",
     openSparql: "Abrir como consulta SPARQL",
+    whereFdps: "Onde estão os FDP",
+    whereFdpsLead:
+      "Poucos FDP dizem onde estão, por isso cada um é situado pela primeira fonte que o sabe: um administrador, o próprio FDP, o seu editor, o seu domínio, o seu servidor.",
+    fdpCount: "Nenhum FDP | Um FDP | {n} FDP",
+    unplaced:
+      "Todos os FDP estão situados. | Um FDP não pôde ser situado. | {n} FDP não puderam ser situados.",
+    country: "País",
+    sources: {
+      admin: "Definido por um administrador",
+      stated: "Indicado pelo FDP",
+      publisher: "O seu editor",
+      server: "O seu servidor",
+      domain: "O seu domínio",
+    },
+    sourceHelp: {
+      admin: "Um país escolhido na página do FDP.",
+      stated: "O país nos metadados do próprio FDP (r3d:country).",
+      publisher: "O país do registo ROR do seu editor.",
+      server:
+        "Onde está o servidor que respondeu, depois dos redirecionamentos; um servidor na nuvem ou de uma CDN situa o FDP onde esse servidor está.",
+      domain: "O seu domínio de país, como .nl ou .de.",
+    },
+    geoipCredit: "Localização dos servidores: geolocalização IP por",
+    whereData: "Sobre onde são os dados",
+    whereDataLead:
+      "Registos pelo país que a sua cobertura espacial indica (dct:spatial: códigos de país da UE e regiões NUTS). Escolha um país para pesquisar os seus registos.",
+    recordCount: "Nenhum registo | Um registo | {n} registos",
+    noSpatial:
+      "Ainda nenhum registo indica a sua cobertura espacial numa forma que o índice saiba situar.",
+    mapArea: "Área do mapa",
+    mapAreas: { europe: "Europa", all: "Mapa completo" },
     sparqlNote:
       "As consultas SPARQL contam por tipo RDF, pelo que os seus números podem diferir um pouco desta página, que segue os tipos de registo da pesquisa.",
   },

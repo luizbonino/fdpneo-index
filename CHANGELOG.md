@@ -69,6 +69,13 @@ The first release will contain:
   month, datasets by year of issue, conformance shares and the FDPs with most
   records, counted as visitors see the index; charts with tables and "Open as
   SPARQL query" links.
+- **Where FDPs are, and where their data is about**: two maps on the
+  Statistics page. An FDP is placed by an administrator's choice, its own
+  `r3d:country`, its publisher's ROR record, its country-code domain or its
+  server's address (DB-IP Lite, after redirects), in that order, and its page
+  says which; records by the country their `dct:spatial` names (EU country
+  codes, NUTS), each country a search. `fdpindex geoip download`; the image
+  includes the month's database (`GEOIP_MONTH`).
 - **`deploy/compose.proxy.yaml`**: the client joins the Docker network of a
   reverse proxy on the same host, such as Caddy.
 - **Operations**: Compose stack with an optional Keycloak profile, trusted

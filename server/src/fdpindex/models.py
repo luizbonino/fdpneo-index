@@ -117,6 +117,12 @@ class IndexEntry(Base):
     last_harvest_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
     # Set when the expiry policy marked the entry; cleared by a successful retrieval.
     expired_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # --- location (TASKS 15.4) ---
+    # An administrator's choice (ISO 3166-1 alpha-2), first among the sources (geo.py).
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    # The host that answered the last valid retrieval, after redirects, and its country.
+    served_from: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    server_country: Mapped[str | None] = mapped_column(String(2), nullable=True)
 
     __table_args__ = (
         Index("ix_index_entry_state_permit", "state", "permit"),
@@ -387,6 +393,8 @@ class Concept(Base):
     broader: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
     # The same concept elsewhere (TASKS 8.11): skos:exactMatch, owl:sameAs, Wikidata P486.
     exact_matches: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    # An organisation's country (ROR), ISO 3166-1 alpha-2: where a publisher is (TASKS 15.4).
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True)
     fetched_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
     due_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
 

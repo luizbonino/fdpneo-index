@@ -34,6 +34,7 @@ from fdpindex.conformance.workers import ValidationPool, default_workers
 from fdpindex.db import create_schema, make_engine, make_session_factory
 from fdpindex.deployment import deployment_profile
 from fdpindex.errors import register_exception_handlers
+from fdpindex.geo import GeoIp
 from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
@@ -154,6 +155,13 @@ def create_app(
             resolver=resolver or system_resolver,
         )
         jobs = JobRunner(config.worker_concurrency)
+        geoip = GeoIp.open(config.geoip_dir)
+        if config.geoip_dir is not None and geoip is None:
+            log.warning(
+                "geoip_database_missing",
+                directory=str(config.geoip_dir),
+                hint="run `fdpindex geoip download` to locate FDP servers",
+            )
         settings_service = SettingsService(factory, auto_permit_default=config.auto_permit)
         webhooks = WebhookService(
             factory, settings_service, outbound, jobs, body_limit=config.event_body_max_chars
@@ -169,6 +177,7 @@ def create_app(
             harvest_max_bytes=config.harvest_max_bytes,
             harvest_max_seconds=config.harvest_max_seconds,
             harvest_node_timeout=config.harvest_node_timeout_seconds,
+            geoip=geoip,
         )
         verifier = (
             OidcVerifier(
@@ -250,6 +259,8 @@ def create_app(
                 await sparql.pool.close()
                 sparql.store.close()
             await http.aclose()
+            if geoip is not None:
+                geoip.close()
             if engine is not None:
                 await engine.dispose()
 

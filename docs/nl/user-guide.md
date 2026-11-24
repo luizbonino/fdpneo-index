@@ -231,6 +231,11 @@ nieuwe index toont pas vanaf de tweede dag een lijn. Onder elke grafiek staat
 SPARQL, waar u die kunt aanpassen; SPARQL telt per RDF-type, dus de getallen
 kunnen iets afwijken.
 
+Twee kaarten tonen waar de FDP's zijn (geplaatst door de keuze van een
+beheerder, de FDP zelf, de uitgever, het domein of de server, in die
+volgorde) en waarover de data gaat (de ruimtelijke dekking van de records);
+kies een land op de tweede kaart om de records ervan te zoeken.
+
 ## Talen
 
 De interface is beschikbaar in het Engels, Nederlands, Duits, Frans, Spaans,

@@ -1241,6 +1241,8 @@ export interface components {
       health?: components["schemas"]["HealthView"] | null;
       /** Lastretrievaltime */
       lastRetrievalTime: string | null;
+      /** @description Where the FDP is, and which source says so (TASKS 15.4) */
+      location?: components["schemas"]["LocationView"] | null;
       /** Modificationtime */
       modificationTime: string;
       options?: components["schemas"]["EntryOptionsView"] | null;
@@ -1254,6 +1256,8 @@ export interface components {
     };
     /** EntryOptionsRequest */
     EntryOptionsRequest: {
+      /** Country */
+      country?: string | null;
       /** Harvest */
       harvest?: boolean | null;
       /** Harvestinterval */
@@ -1264,6 +1268,11 @@ export interface components {
      * @description Per-FDP options (TASKS 4.7).
      */
     EntryOptionsView: {
+      /**
+       * Country
+       * @description Set by an administrator (ISO 3166-1 alpha-2); first of the sources
+       */
+      country?: string | null;
       /**
        * Harvest
        * @description False: directory only, checked but never harvested
@@ -1535,8 +1544,30 @@ export interface components {
        */
       placement: "main" | "more" | "hidden";
     };
+    /** FdpCountry */
+    FdpCountry: {
+      /**
+       * Bysource
+       * @description How many were placed by each source: admin, stated, publisher, domain, server
+       */
+      bySource: {
+        [key: string]: number;
+      };
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /** Fdps */
+      fdps: number;
+    };
     /** FdpCounts */
     FdpCounts: {
+      /**
+       * Bycountry
+       * @description Where the FDPs are (see the entry's `location`)
+       */
+      byCountry: components["schemas"]["FdpCountry"][];
       /**
        * Bystate
        * @description By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN
@@ -1549,6 +1580,11 @@ export interface components {
        * @description FDPs in the public list
        */
       total: number;
+      /**
+       * Unplaced
+       * @description FDPs no source could place
+       */
+      unplaced: number;
     };
     /**
      * FilterRequest
@@ -1763,6 +1799,20 @@ export interface components {
       examples: components["schemas"]["Example"][];
       /** Groups */
       groups: string[];
+    };
+    /** LocationView */
+    LocationView: {
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /**
+       * Source
+       * @description admin: set by an administrator; stated: the FDP's r3d:country; publisher: its publisher's ROR record; domain: its country-code domain; server: where the server that answered is (IP geolocation, after redirects)
+       * @enum {string}
+       */
+      source: "admin" | "stated" | "publisher" | "domain" | "server";
     };
     /** MonthCount */
     MonthCount: {
@@ -2025,8 +2075,31 @@ export interface components {
        */
       visitors: boolean;
     };
+    /** RecordCountry */
+    RecordCountry: {
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /**
+       * Records
+       * @description Records whose dct:spatial names this country or a region in it
+       */
+      records: number;
+      /**
+       * Values
+       * @description The spatial IRIs seen for it (at most 50)
+       */
+      values: string[];
+    };
     /** RecordCounts */
     RecordCounts: {
+      /**
+       * Bycountry
+       * @description Where the data is about: dct:spatial by country
+       */
+      byCountry: components["schemas"]["RecordCountry"][];
       /**
        * Bykind
        * @description By kind: fdp, catalog, dataset, series, service …

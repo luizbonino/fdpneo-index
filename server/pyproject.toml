@@ -49,6 +49,7 @@ dependencies = [
   "pyyaml>=6.0.2",
   # Conformance (Phase 11): SHACL validation of harvested records, pure Python.
   "pyshacl>=0.30",
+  "maxminddb>=3.3.0",
 ]
 
 [project.optional-dependencies]

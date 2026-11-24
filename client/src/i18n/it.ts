@@ -103,7 +103,10 @@ export const it: Messages = {
         PT168H: "ogni settimana",
       },
       saved: "Opzioni salvate.",
+      country: "Paese",
+      countryAuto: "Dalle altre fonti",
     },
+    location: "Posizione: {country} · {source}",
     back: "Tutti i FAIR Data Point",
     open: "Aprire l'FDP",
     metadata: "Metadati",
@@ -599,6 +602,37 @@ export const it: Messages = {
     empty: "Nessun FDP è ancora elencato.",
     showTable: "Mostra come tabella",
     openSparql: "Apri come query SPARQL",
+    whereFdps: "Dove sono gli FDP",
+    whereFdpsLead:
+      "Pochi FDP dicono dove si trovano, quindi ognuno viene collocato dalla prima fonte che lo sa: un amministratore, l'FDP stesso, il suo editore, il suo dominio, il suo server.",
+    fdpCount: "Nessun FDP | Un FDP | {n} FDP",
+    unplaced:
+      "Ogni FDP è collocato. | Un FDP non è stato collocato. | {n} FDP non sono stati collocati.",
+    country: "Paese",
+    sources: {
+      admin: "Scelto da un amministratore",
+      stated: "Indicato dall'FDP",
+      publisher: "Il suo editore",
+      server: "Il suo server",
+      domain: "Il suo dominio",
+    },
+    sourceHelp: {
+      admin: "Un paese scelto nella pagina dell'FDP.",
+      stated: "Il paese nei metadati dell'FDP stesso (r3d:country).",
+      publisher: "Il paese della scheda ROR del suo editore.",
+      server:
+        "Dove si trova il server che ha risposto, dopo i reindirizzamenti; un server cloud o CDN colloca l'FDP dove si trova quel server.",
+      domain: "Il suo dominio nazionale, come .nl o .de.",
+    },
+    geoipCredit: "Posizione dei server: geolocalizzazione IP di",
+    whereData: "Di dove parlano i dati",
+    whereDataLead:
+      "Schede per il paese indicato nella loro copertura spaziale (dct:spatial: codici paese UE e regioni NUTS). Scegli un paese per cercarne le schede.",
+    recordCount: "Nessuna scheda | Una scheda | {n} schede",
+    noSpatial:
+      "Nessuna scheda indica ancora la propria copertura spaziale in una forma che l'indice sappia collocare.",
+    mapArea: "Area della mappa",
+    mapAreas: { europe: "Europa", all: "Mappa intera" },
     sparqlNote:
       "Le query SPARQL contano per tipo RDF, quindi i loro numeri possono differire leggermente da questa pagina, che segue i tipi di scheda della ricerca.",
   },

@@ -409,6 +409,17 @@
             ],
             "title": "Lastretrievaltime"
           },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the FDP is, and which source says so (TASKS 15.4)"
+          },
           "modificationTime": {
             "title": "Modificationtime",
             "type": "string"
@@ -456,6 +467,17 @@
       "EntryOptionsRequest": {
         "additionalProperties": false,
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "harvest": {
             "anyOf": [
               {
@@ -485,6 +507,18 @@
       "EntryOptionsView": {
         "description": "Per-FDP options (TASKS 4.7).",
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set by an administrator (ISO 3166-1 alpha-2); first of the sources",
+            "title": "Country"
+          },
           "harvest": {
             "description": "False: directory only, checked but never harvested",
             "title": "Harvest",
@@ -1094,8 +1128,44 @@
         "title": "FacetSetting",
         "type": "object"
       },
+      "FdpCountry": {
+        "properties": {
+          "bySource": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "How many were placed by each source: admin, stated, publisher, domain, server",
+            "title": "Bysource",
+            "type": "object"
+          },
+          "country": {
+            "description": "ISO 3166-1 alpha-2",
+            "title": "Country",
+            "type": "string"
+          },
+          "fdps": {
+            "title": "Fdps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "country",
+          "fdps",
+          "bySource"
+        ],
+        "title": "FdpCountry",
+        "type": "object"
+      },
       "FdpCounts": {
         "properties": {
+          "byCountry": {
+            "description": "Where the FDPs are (see the entry's `location`)",
+            "items": {
+              "$ref": "#/components/schemas/FdpCountry"
+            },
+            "title": "Bycountry",
+            "type": "array"
+          },
           "byState": {
             "additionalProperties": {
               "type": "integer"
@@ -1108,11 +1178,18 @@
             "description": "FDPs in the public list",
             "title": "Total",
             "type": "integer"
+          },
+          "unplaced": {
+            "description": "FDPs no source could place",
+            "title": "Unplaced",
+            "type": "integer"
           }
         },
         "required": [
           "total",
-          "byState"
+          "byState",
+          "byCountry",
+          "unplaced"
         ],
         "title": "FdpCounts",
         "type": "object"
@@ -1663,6 +1740,33 @@
           "examples"
         ],
         "title": "Library",
+        "type": "object"
+      },
+      "LocationView": {
+        "properties": {
+          "country": {
+            "description": "ISO 3166-1 alpha-2",
+            "title": "Country",
+            "type": "string"
+          },
+          "source": {
+            "description": "admin: set by an administrator; stated: the FDP's r3d:country; publisher: its publisher's ROR record; domain: its country-code domain; server: where the server that answered is (IP geolocation, after redirects)",
+            "enum": [
+              "admin",
+              "stated",
+              "publisher",
+              "domain",
+              "server"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "country",
+          "source"
+        ],
+        "title": "LocationView",
         "type": "object"
       },
       "MonthCount": {
@@ -2304,8 +2408,45 @@
         "title": "PropertySettings",
         "type": "object"
       },
+      "RecordCountry": {
+        "properties": {
+          "country": {
+            "description": "ISO 3166-1 alpha-2",
+            "title": "Country",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records whose dct:spatial names this country or a region in it",
+            "title": "Records",
+            "type": "integer"
+          },
+          "values": {
+            "description": "The spatial IRIs seen for it (at most 50)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "country",
+          "records",
+          "values"
+        ],
+        "title": "RecordCountry",
+        "type": "object"
+      },
       "RecordCounts": {
         "properties": {
+          "byCountry": {
+            "description": "Where the data is about: dct:spatial by country",
+            "items": {
+              "$ref": "#/components/schemas/RecordCountry"
+            },
+            "title": "Bycountry",
+            "type": "array"
+          },
           "byKind": {
             "additionalProperties": {
               "type": "integer"
@@ -2322,7 +2463,8 @@
         },
         "required": [
           "total",
-          "byKind"
+          "byKind",
+          "byCountry"
         ],
         "title": "RecordCounts",
         "type": "object"

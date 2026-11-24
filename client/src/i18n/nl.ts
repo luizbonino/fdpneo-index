@@ -103,7 +103,10 @@ export const nl: Messages = {
         PT168H: "elke week",
       },
       saved: "Opties opgeslagen.",
+      country: "Land",
+      countryAuto: "Uit de andere bronnen",
     },
+    location: "Locatie: {country} · {source}",
     back: "Alle FAIR Data Points",
     open: "FDP openen",
     metadata: "Metadata",
@@ -597,6 +600,37 @@ export const nl: Messages = {
     empty: "Er zijn nog geen FDP's vermeld.",
     showTable: "Als tabel tonen",
     openSparql: "Openen als SPARQL-query",
+    whereFdps: "Waar de FDP's zijn",
+    whereFdpsLead:
+      "Weinig FDP's vermelden waar ze zijn, dus elke FDP wordt geplaatst door de eerste bron die het weet: een beheerder, de FDP zelf, de uitgever, het domein, de server.",
+    fdpCount: "Geen FDP's | Eén FDP | {n} FDP's",
+    unplaced:
+      "Elke FDP is geplaatst. | Eén FDP kon niet worden geplaatst. | {n} FDP's konden niet worden geplaatst.",
+    country: "Land",
+    sources: {
+      admin: "Ingesteld door een beheerder",
+      stated: "Vermeld door de FDP",
+      publisher: "De uitgever",
+      server: "De server",
+      domain: "Het domein",
+    },
+    sourceHelp: {
+      admin: "Een land gekozen op de pagina van de FDP.",
+      stated: "Het land in de eigen metadata van de FDP (r3d:country).",
+      publisher: "Het land van het ROR-record van de uitgever.",
+      server:
+        "Waar de server staat die antwoordde, na doorverwijzingen; een cloud- of CDN-server plaatst de FDP waar die server staat.",
+      domain: "Het landendomein, zoals .nl of .de.",
+    },
+    geoipCredit: "Locatie van servers: IP-geolocatie door",
+    whereData: "Waarover de data gaat",
+    whereDataLead:
+      "Records per land dat hun ruimtelijke dekking noemt (dct:spatial: EU-landcodes en NUTS-regio's). Kies een land om de records ervan te zoeken.",
+    recordCount: "Geen records | Eén record | {n} records",
+    noSpatial:
+      "Nog geen enkel record vermeldt zijn ruimtelijke dekking in een vorm die de index kan plaatsen.",
+    mapArea: "Kaartgebied",
+    mapAreas: { europe: "Europa", all: "Hele kaart" },
     sparqlNote:
       "De SPARQL-query's tellen per RDF-type, dus hun getallen kunnen iets afwijken van deze pagina, die de recordtypen van het zoeken volgt.",
   },

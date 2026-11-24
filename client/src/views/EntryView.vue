@@ -14,6 +14,8 @@ import StatusHelp from "@/components/StatusHelp.vue";
 import EventTimeline from "@/components/EventTimeline.vue";
 import ConformanceReport from "@/components/conformance/ConformanceReport.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
+import { currentLocale } from "@/i18n";
+import { NUMERIC_TO_ALPHA2 } from "@/components/stats/countryCodes";
 
 const props = defineProps<{ uuid: string }>();
 const { t } = useI18n();
@@ -92,6 +94,31 @@ function setHarvestInterval(harvestInterval: string) {
   void run(() => api.setOptions(props.uuid, { harvestInterval }), t("entry.options.saved"));
 }
 
+/** Where the FDP is (TASKS 15.4): its country by name, and which source placed it. */
+const regions = computed(() => {
+  try {
+    return new Intl.DisplayNames([currentLocale()], { type: "region" });
+  } catch {
+    return null;
+  }
+});
+const countryChoices = computed(() =>
+  Object.values(NUMERIC_TO_ALPHA2)
+    .map((code) => ({ code, name: regions.value?.of(code) ?? code }))
+    .sort((a, b) => a.name.localeCompare(b.name, currentLocale())),
+);
+const location = computed(() => {
+  const found = detail.value?.location;
+  if (!found) return null;
+  return {
+    country: regions.value?.of(found.country) ?? found.country,
+    source: t(`stats.sources.${found.source}`),
+  };
+});
+function setCountry(country: string) {
+  void run(() => api.setOptions(props.uuid, { country }), t("entry.options.saved"));
+}
+
 function checkNow() {
   const url = detail.value?.clientUrl ?? "";
   void run(() => api.trigger(url), t("entry.checkStarted", { url }));
@@ -155,6 +182,9 @@ async function remove() {
             <span class="muted small">{{ t(`state.help.${detail.state}`) }}</span>
             <StatusHelp :permits="session.isAdmin" />
           </div>
+          <p v-if="location" class="muted small">
+            {{ t("entry.location", location) }}
+          </p>
         </div>
       </header>
 
@@ -202,6 +232,20 @@ async function remove() {
             >
               <option v-for="value in HARVEST_INTERVALS" :key="value" :value="value">
                 {{ t(`entry.options.intervals.${value || "changed"}`) }}
+              </option>
+            </select>
+          </label>
+          <label class="row">
+            <span class="small">{{ t("entry.options.country") }}</span>
+            <select
+              class="input select"
+              :value="detail.options.country ?? ''"
+              :disabled="busy"
+              @change="setCountry(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">{{ t("entry.options.countryAuto") }}</option>
+              <option v-for="c in countryChoices" :key="c.code" :value="c.code">
+                {{ c.name }}
               </option>
             </select>
           </label>

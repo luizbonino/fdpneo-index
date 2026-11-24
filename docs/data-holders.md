@@ -55,6 +55,14 @@ and the harvested metadata to preview or download.
   and can group them.
 - **Text in the wrong language**: give literals language tags
   (`"Cancer registry"@en`, `"Kankerregister"@nl`).
+- **Your FDP is in the wrong country on the Statistics map**, or on none:
+  state it in your FDP's metadata with `r3d:country`, as an EU country IRI
+  (`<http://publications.europa.eu/resource/authority/country/NLD>`) or an
+  ISO code (`"NL"`). Otherwise the index guesses from your domain or your
+  server's address, and a server in another country places you there.
+- **Your datasets are not on the "where the data is about" map**: give them
+  `dct:spatial` with an EU country IRI or a NUTS region
+  (`<http://data.europa.eu/nuts/code/NL33>`).
 
 ## The conformance report
 

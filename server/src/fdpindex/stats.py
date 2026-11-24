@@ -29,11 +29,13 @@ import structlog
 from sqlalchemy import delete, func, select
 
 from fdpindex.db import utcnow
+from fdpindex.geo import SOURCES, spatial_country
 from fdpindex.models import (
     ConformanceResult,
     EntryPermit,
     IndexEntry,
     SearchResource,
+    SearchValue,
     StatsDaily,
 )
 from fdpindex.service import API_STATES
@@ -108,10 +110,13 @@ class StatsService:
 
     async def current(self, *, conformance: bool = True) -> dict[str, Any]:
         counts = await self._index.counts([EntryPermit.ACCEPTED], public=True)
+        by_country, unplaced = await self._fdp_countries()
         result: dict[str, Any] = {
             "fdps": {
                 "total": counts["ALL"],
                 "byState": {state: counts[state] for state in API_STATES},
+                "byCountry": by_country,
+                "unplaced": unplaced,
             },
             "records": None,
             "largest": [],
@@ -132,11 +137,60 @@ class StatsService:
                 ).all()
             )
             by_kind = {kind: int(kinds.get(kind, 0)) for kind in KINDS}
-            result["records"] = {"total": sum(by_kind.values()), "byKind": by_kind}
+            result["records"] = {
+                "total": sum(by_kind.values()),
+                "byKind": by_kind,
+                "byCountry": await self._record_countries(session, visible),
+            }
             result["largest"] = await self._largest(session, visible)
             if conformance and self._conformance is not None:
                 result["conformance"] = await self._conformance_shares(session, visible)
         return result
+
+    async def _fdp_countries(self) -> tuple[list[dict[str, Any]], int]:
+        """FDPs in the public list by country, with the sources that placed them (geo.py)."""
+        entries = await self._index.all_entries([EntryPermit.ACCEPTED], public=True)
+        located = await self._index.locate(entries)
+        per: dict[str, dict[str, int]] = defaultdict(lambda: dict.fromkeys(SOURCES, 0))
+        unplaced = 0
+        for found in located.values():
+            if found is None:
+                unplaced += 1
+            else:
+                per[found[0]][found[1]] += 1
+        ordered = sorted(per.items(), key=lambda item: (-sum(item[1].values()), item[0]))
+        rows: list[dict[str, Any]] = [
+            {"country": country, "fdps": sum(sources.values()), "bySource": sources}
+            for country, sources in ordered
+        ]
+        return rows, unplaced
+
+    async def _record_countries(
+        self, session: AsyncSession, visible: list[Any]
+    ) -> list[dict[str, Any]]:
+        """Records visitors find by the country their ``dct:spatial`` names; a record about
+        several regions of one country counts once there. ``values`` are the spatial IRIs
+        seen for the country, for a search link (at most 50)."""
+        rows = (
+            await session.execute(
+                select(SearchValue.resource_id, SearchValue.value)
+                .join(R, R.id == SearchValue.resource_id)
+                .join(E, E.uuid == R.entry_uuid)
+                .where(*visible, SearchValue.field == "spatial")
+            )
+        ).all()
+        records: dict[str, set[int]] = defaultdict(set)
+        values: dict[str, set[str]] = defaultdict(set)
+        for resource_id, value in rows:
+            country = spatial_country(str(value))
+            if country is not None:
+                records[country].add(int(resource_id))
+                values[country].add(str(value))
+        ordered = sorted(records.items(), key=lambda item: (-len(item[1]), item[0]))
+        return [
+            {"country": country, "records": len(ids), "values": sorted(values[country])[:50]}
+            for country, ids in ordered
+        ]
 
     async def _largest(self, session: AsyncSession, visible: list[Any]) -> list[dict[str, Any]]:
         rows = (

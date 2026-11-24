@@ -44,7 +44,7 @@ import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import quote, urlsplit
 from uuid import UUID
 
@@ -112,6 +112,7 @@ class Resolution:
     source: str
     names: ConceptNames = field(default_factory=ConceptNames)
     error: str | None = None
+    country: str | None = None  # an organisation's (ROR), ISO 3166-1 alpha-2
 
 
 class _Throttled(Exception):  # a condition, not an error of ours
@@ -437,7 +438,8 @@ class ConceptResolver:
         if status != 200:
             return Resolution(ConceptStatus.MISSING, "ror", error=f"HTTP {status}")
         names = ConceptNames()
-        for name in json.loads(body).get("names", []):
+        record = json.loads(body)
+        for name in record.get("names", []):
             lang = str(name.get("lang") or "")
             value = str(name.get("value") or "")
             types = name.get("types") or []
@@ -449,8 +451,20 @@ class ConceptResolver:
                 names.labels.setdefault(lang, value)
             elif "alias" in types or "acronym" in types:
                 names.synonyms.setdefault(lang, []).append(value)
+        locations = cast("list[dict[str, Any]]", record.get("locations") or [])
+        codes = [
+            str(
+                cast("dict[str, Any]", place.get("geonames_details") or {}).get("country_code")
+                or ""
+            )
+            for place in locations
+        ]
+        country = next((code.upper() for code in codes if code), None)
         return Resolution(
-            ConceptStatus.RESOLVED if names.labels else ConceptStatus.MISSING, "ror", names
+            ConceptStatus.RESOLVED if names.labels else ConceptStatus.MISSING,
+            "ror",
+            names,
+            country=country,
         )
 
     async def _ols(self, iri: str) -> Resolution:
@@ -559,6 +573,7 @@ class ConceptResolver:
                     days = self.settings.retry_days
                 row.status = result.status
                 row.source = result.source
+                row.country = result.country
                 row.error = result.error[:512] if result.error else None
                 row.fetched_at = now
                 row.due_at = now + timedelta(days=days)

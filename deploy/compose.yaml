@@ -31,7 +31,12 @@ services:
     restart: unless-stopped
 
   server:
-    build: ../server
+    build:
+      context: ../server
+      # Fetch the month's IP geolocation database (TASKS 15.4):
+      #   GEOIP_MONTH=$(date +%Y-%m) docker compose … build
+      args:
+        GEOIP_MONTH: ${GEOIP_MONTH:-}
     image: ${SERVER_IMAGE:-fdpneo-index-server}:${SERVER_IMAGE_TAG:-dev}
     environment:
       FDPINDEX_DATABASE_URL: postgresql+asyncpg://fdpindex:${POSTGRES_PASSWORD}@postgres:5432/fdpindex

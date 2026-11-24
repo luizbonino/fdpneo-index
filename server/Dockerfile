@@ -34,8 +34,19 @@ COPY --from=builder --chown=fdpindex:fdpindex /app /app
 # The SPARQL store (a cache derived from PostgreSQL); mount a volume here.
 RUN mkdir -p /app/data/sparql && chown -R fdpindex:fdpindex /app/data
 
+# Where FDP servers are (TASKS 15.4): DB-IP Lite's country database (CC BY 4.0).
+# GEOIP_MONTH (e.g. 2026-11) keys this layer, so a build in a new month fetches
+# the new database instead of reusing the cached one. A build without network
+# access leaves it out; servers are then not located.
+ARG GEOIP_MONTH=""
+RUN echo "GeoIP database for ${GEOIP_MONTH:-this build}" \
+    && (/app/.venv/bin/fdpindex geoip download /app/geoip \
+        || echo "GeoIP database not fetched: FDP servers will not be located") \
+    && mkdir -p /app/geoip && chown -R fdpindex:fdpindex /app/geoip
+
 ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    FDPINDEX_GEOIP_DIR=/app/geoip
 
 USER fdpindex
 EXPOSE 8000

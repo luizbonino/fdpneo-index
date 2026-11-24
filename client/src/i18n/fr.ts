@@ -103,7 +103,10 @@ export const fr: Messages = {
         PT168H: "toutes les semaines",
       },
       saved: "Options enregistrées.",
+      country: "Pays",
+      countryAuto: "D’après les autres sources",
     },
+    location: "Emplacement : {country} · {source}",
     back: "Tous les FAIR Data Points",
     open: "Ouvrir le FDP",
     metadata: "Métadonnées",
@@ -600,6 +603,37 @@ export const fr: Messages = {
     empty: "Aucun FDP n’est encore listé.",
     showTable: "Afficher sous forme de tableau",
     openSparql: "Ouvrir comme requête SPARQL",
+    whereFdps: "Où sont les FDP",
+    whereFdpsLead:
+      "Peu de FDP indiquent où ils se trouvent : chacun est donc placé par la première source qui le sait : un administrateur, le FDP lui-même, son éditeur, son domaine, son serveur.",
+    fdpCount: "Aucun FDP | Un FDP | {n} FDP",
+    unplaced:
+      "Tous les FDP sont placés. | Un FDP n’a pas pu être placé. | {n} FDP n’ont pas pu être placés.",
+    country: "Pays",
+    sources: {
+      admin: "Choisi par un administrateur",
+      stated: "Indiqué par le FDP",
+      publisher: "Son éditeur",
+      server: "Son serveur",
+      domain: "Son domaine",
+    },
+    sourceHelp: {
+      admin: "Un pays choisi sur la page du FDP.",
+      stated: "Le pays indiqué dans les métadonnées du FDP lui-même (r3d:country).",
+      publisher: "Le pays de la fiche ROR de son éditeur.",
+      server:
+        "L’endroit où se trouve le serveur qui a répondu, après redirections ; un serveur cloud ou CDN place le FDP là où se trouve ce serveur.",
+      domain: "Son domaine national, comme .nl ou .de.",
+    },
+    geoipCredit: "Emplacement des serveurs : géolocalisation IP par",
+    whereData: "Sur quoi portent les données",
+    whereDataLead:
+      "Notices par pays nommé dans leur couverture spatiale (dct:spatial : codes pays de l’UE et régions NUTS). Choisissez un pays pour rechercher ses notices.",
+    recordCount: "Aucune notice | Une notice | {n} notices",
+    noSpatial:
+      "Aucune notice n’indique encore sa couverture spatiale sous une forme que l’index sait placer.",
+    mapArea: "Zone de la carte",
+    mapAreas: { europe: "Europe", all: "Carte entière" },
     sparqlNote:
       "Les requêtes SPARQL comptent par type RDF : leurs chiffres peuvent donc différer légèrement de cette page, qui suit les types de notices de la recherche.",
   },

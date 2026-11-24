@@ -231,6 +231,11 @@ como tabla**, y **Abrir como consulta SPARQL** plantea la misma pregunta en
 SPARQL, donde se puede modificar; SPARQL cuenta por tipo RDF, por lo que sus
 cifras pueden diferir un poco.
 
+Dos mapas muestran dónde están los FDP (situados por la elección de un
+administrador, el propio FDP, su editor, su dominio o su servidor, en ese
+orden) y de dónde tratan los datos (la cobertura espacial de los registros);
+un país del segundo mapa busca sus registros.
+
 ## Idiomas
 
 La interfaz está disponible en inglés, neerlandés, alemán, francés, español,

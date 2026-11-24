@@ -36,8 +36,8 @@ task are listed in the last column.
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 9/9 | – | – | ✅ Done | – |
-| 15 Statistics and provenance | A Statistics page with counts over time; harvest provenance in PROV-O | 1/3 | – | 2 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; then 15.3 |
-| **Total** | | **128/133** | **–** | **5** | | |
+| 15 Statistics and provenance | A Statistics page with counts over time and maps; harvest provenance in PROV-O | 2/4 | – | 2 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; then 15.3 |
+| **Total** | | **129/134** | **–** | **5** | | |
 
 ## Phase 0 — Foundations
 
@@ -254,3 +254,4 @@ copy it republishes came from.
 - [x] 15.1 Statistics page and API: FDPs and records now (by state, by type), the FDPs with most records, conformance shares, FDPs by month of registration, datasets by year of `dct:issued`, and counts over time from daily snapshots; counted as visitors see the index; each chart with a table view and, where SPARQL can ask the same, an "Open as SPARQL query" link — *done: `GET /index/stats` (public; conformance shares follow the `reports` setting), `stats_daily` (migration 0015) filled hourly (`FDPINDEX_STATS_SNAPSHOT_SECONDS`), the Statistics page in seven languages. One endpoint rather than SPARQL alone (agreed 2026-11-24): history needs storage, the search's record types and registration dates are not in the SPARQL store, and SPARQL's per-visitor limits and optional status would make the page fragile*
 - [ ] 15.2 Harvest provenance, design: what to publish about each harvest and each copy in PROV-O, where, and for whom — *proposal in [`docs/design/provenance.md`](docs/design/provenance.md), five questions for review*
 - [ ] 15.3 Harvest provenance, build: a provenance graph in SPARQL, `/index/harvests/{id}`, `prov:wasGeneratedBy` in the catalogue feed, provenance lines on resource and FDP pages (after 15.2)
+- [x] 15.4 Where FDPs are, and where their data is about: two maps on the Statistics page — *done (sources agreed 2026-11-24: all of them): an FDP's country from an administrator's choice, its `r3d:country`, its publisher's ROR record, its country-code domain (generic ones such as `.io` left out), or the address that answered its last retrieval after redirects (DB-IP Lite, CC BY 4.0, bundled in the image per month); the domain before the server, because a Leiden FDP on a server in Germany is in the Netherlands. Records by the country of their `dct:spatial` (EU country codes, NUTS). SVG maps from Natural Earth borders, no tiles; fitted to the mainlands with counts, a Europe view when most counts are there. On the real-data copy: 90 of 122 FDPs placed, in 19 countries; records about 19 countries*

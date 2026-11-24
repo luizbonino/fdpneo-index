@@ -90,10 +90,8 @@ class FakeNetwork:
         self.serve(f"{FDP}/dataset/d1", DATASET_TTL)
 
     def handler(self, request: httpx.Request) -> httpx.Response:
-        # The index connects to the vetted IP and names the host in Host (DNS pinning).
-        host = request.headers.get("host")
-        if host and host != request.url.netloc.decode("ascii"):
-            request.url = request.url.copy_with(netloc=host.encode("ascii"))
+        # Requests keep the host name; pinning happens where PinnedTransport opens
+        # the socket, and this fake stands in for that transport.
         self.requests.append(request)
         url = str(request.url)
         if url in self.failing:

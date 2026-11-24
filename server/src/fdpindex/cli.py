@@ -156,10 +156,8 @@ def vocab_update(
     from importlib import resources
     from pathlib import Path
 
-    import httpx
-
     from fdpindex.config import get_settings
-    from fdpindex.outbound import OutboundClient
+    from fdpindex.outbound import OutboundClient, outbound_http
     from fdpindex.search.vocab_update import VocabFetcher, write_pack
 
     settings = get_settings()
@@ -168,7 +166,7 @@ def vocab_update(
     )
 
     async def run() -> None:
-        async with httpx.AsyncClient(follow_redirects=False) as http:
+        async with outbound_http() as http:
             client = OutboundClient(
                 http,
                 allow_private=False,
@@ -258,15 +256,13 @@ def geoip_download(
 def _outbound_run(work: Callable[[OutboundClient], Awaitable[None]]) -> None:
     import asyncio
 
-    import httpx
-
     from fdpindex.config import get_settings
-    from fdpindex.outbound import OutboundClient
+    from fdpindex.outbound import OutboundClient, outbound_http
 
     settings = get_settings()
 
     async def run() -> None:
-        async with httpx.AsyncClient(follow_redirects=False) as http:
+        async with outbound_http() as http:
             client = OutboundClient(
                 http,
                 allow_private=False,

@@ -9,11 +9,16 @@ Metadata retrieval, harvesting and webhook delivery all go through
 * follows redirects itself, re-checking every hop, up to a limit;
 * stops reading a response body after a size limit.
 
-The connection is pinned to the address that was checked: the request goes
-to that IP, with the original host in ``Host`` and as the TLS server name
-(SNI and certificate check), so a host that changes its DNS answer between
-check and connection (DNS rebinding) cannot redirect it to an internal
-address.
+The connection is pinned to the address that was checked, so a host that
+changes its DNS answer between check and connection (DNS rebinding) cannot
+redirect it to an internal address. The pinning happens where the socket is
+opened (:class:`PinnedTransport`): the URL keeps the host name, so ``Host``,
+the TLS server name and the certificate check all use the name, and the
+connection pool keeps connections per name. An earlier version put the
+address in the URL instead; the pool, keyed on the URL's host, then let a
+connection opened for one name carry requests for another name at the same
+address, whose certificate was never checked (security audit 2026-11-23,
+follow-up to F-01).
 """
 
 from __future__ import annotations
@@ -21,14 +26,16 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import socket
+from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urljoin, urlsplit
 
+import httpcore
 import httpx
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Collection, Mapping
+    from collections.abc import Awaitable, Callable, Collection, Iterable, Mapping
 
 _REDIRECTS = frozenset({301, 302, 303, 307, 308})
 
@@ -62,6 +69,75 @@ class OutboundResponse:
     def content_type(self) -> str:
         values = self.headers.get("content-type") or [""]
         return values[0].split(";", 1)[0].strip().lower()
+
+
+# Where a request may connect, by host name: set by OutboundClient for the
+# duration of each request, read by the network backend when it opens a socket.
+_PINS: ContextVar[dict[str, str] | None] = ContextVar("fdpindex_outbound_pins", default=None)
+
+
+class _PinnedBackend(httpcore.AsyncNetworkBackend):
+    """Opens each connection to the address its request was checked against.
+
+    Fails closed: a connection for a host the current request has not checked
+    (no pin) is refused rather than resolved again.
+    """
+
+    def __init__(self, inner: httpcore.AsyncNetworkBackend | None = None) -> None:
+        # httpcore exports a stand-in AnyIOBackend when anyio is missing, which pyright
+        # sees too; anyio is installed with httpx, so this is the real backend.
+        self._inner = inner or cast("httpcore.AsyncNetworkBackend", httpcore.AnyIOBackend())
+
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,  # noqa: ASYNC109  # httpcore's signature
+        local_address: str | None = None,
+        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
+    ) -> httpcore.AsyncNetworkStream:
+        address = (_PINS.get() or {}).get(host)
+        if address is None:
+            raise httpcore.ConnectError(f"no checked address for {host}")
+        return await self._inner.connect_tcp(
+            address,
+            port,
+            timeout=timeout,
+            local_address=local_address,
+            socket_options=socket_options,
+        )
+
+    async def sleep(self, seconds: float) -> None:
+        await self._inner.sleep(seconds)
+
+
+class PinnedTransport(httpx.AsyncHTTPTransport):
+    """httpx's transport, with each connection opened to the checked address.
+
+    Only :class:`OutboundClient` sets the addresses, so a client on this
+    transport is of no use to anything else: its requests fail to connect.
+    ``inner`` is the network backend underneath (tests pass a mock one).
+    """
+
+    def __init__(self, inner: httpcore.AsyncNetworkBackend | None = None) -> None:
+        super().__init__()
+        limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+        self._pool = httpcore.AsyncConnectionPool(
+            ssl_context=httpx.create_ssl_context(),
+            max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
+            keepalive_expiry=limits.keepalive_expiry,
+            network_backend=_PinnedBackend(inner),
+        )
+
+
+def outbound_http(transport: httpx.AsyncBaseTransport | None = None) -> httpx.AsyncClient:
+    """The HTTP client for :class:`OutboundClient`: pinned connections, no redirects.
+
+    With an explicit transport, httpx also ignores ``HTTP(S)_PROXY``: a proxy
+    would resolve the name itself, after the check.
+    """
+    return httpx.AsyncClient(transport=transport or PinnedTransport(), follow_redirects=False)
 
 
 async def system_resolver(host: str, port: int) -> list[str]:
@@ -220,16 +296,26 @@ class OutboundClient:
         pinned: str | None,
     ) -> OutboundResponse:
         target = httpx.URL(url)
-        send_headers = dict(headers)
-        extensions: dict[str, str] = {}
-        if pinned is not None:
-            # Connect to the checked address; keep the name for Host, SNI and TLS checks.
-            send_headers["Host"] = target.netloc.decode("ascii")
-            if target.scheme == "https":
-                extensions["sni_hostname"] = target.host
-            target = target.copy_with(host=pinned)
+        host = target.raw_host.decode("ascii")
+        # The socket goes to the checked address; the URL, Host, TLS name and the
+        # pool all keep the name. Without a checked address (an IP literal, or
+        # private targets allowed) the host itself is the pin.
+        token = _PINS.set({host: pinned or host})
+        try:
+            return await self._receive(method, target, headers, content, url)
+        finally:
+            _PINS.reset(token)
+
+    async def _receive(
+        self,
+        method: str,
+        target: httpx.URL,
+        headers: Mapping[str, str],
+        content: str | None,
+        url: str,
+    ) -> OutboundResponse:
         async with self._http.stream(
-            method, target, headers=send_headers, content=content, extensions=extensions
+            method, target, headers=dict(headers), content=content
         ) as resp:
             chunks: list[bytes] = []
             size = 0

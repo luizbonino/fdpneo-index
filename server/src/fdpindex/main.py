@@ -38,7 +38,7 @@ from fdpindex.geo import GeoIp
 from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
-from fdpindex.outbound import OutboundClient, system_resolver
+from fdpindex.outbound import OutboundClient, outbound_http, system_resolver
 from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
 from fdpindex.search.profile_store import ProfileStore, set_default_overlay
@@ -145,7 +145,7 @@ def create_app(
             if create_tables:
                 await create_schema(engine)
             factory = make_session_factory(engine)
-        http = httpx.AsyncClient(transport=transport, follow_redirects=False)
+        http = outbound_http(transport)
         outbound = OutboundClient(
             http,
             allow_private=config.outbound_allow_private,

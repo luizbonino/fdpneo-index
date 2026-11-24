@@ -83,6 +83,16 @@ The first release will contain:
 
 ### Fixed
 
+- Outbound requests: a connection kept open for one host name could carry a
+  request for another name at the same address, without that name's
+  certificate being checked. The index put the checked address in the URL,
+  and connections are pooled by the URL's host. The address is now chosen
+  where the socket is opened, and the URL keeps the name, so connections are
+  per name and still kept open between requests to one FDP. A request
+  without a checked address no longer connects at all. `HTTP(S)_PROXY` is
+  ignored for outbound requests, as a proxy would resolve the name itself
+  after the check. (Found while fixing F-01 of the 2026-11-23 audit in the
+  FDPneo server.)
 - SPARQL: one harvested node the store could not parse (an IRI such as
   `<;https://example.org/>`, which rdflib accepts) failed every sync pass, so
   no snapshot was published and SPARQL stayed empty or stale. Such nodes are

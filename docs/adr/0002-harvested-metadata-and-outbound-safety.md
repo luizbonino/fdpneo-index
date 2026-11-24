@@ -41,6 +41,12 @@ through one client that:
 - resolves the host and refuses loopback, private, link-local, multicast and
   reserved addresses unless `FDPINDEX_OUTBOUND_ALLOW_PRIVATE=true` (needed for
   a local evaluation stack);
+- connects to the address it checked, not to a fresh DNS answer, so a host
+  that changes its answer in between (DNS rebinding) cannot point the
+  request inward. The pinning happens where the socket is opened: the URL,
+  `Host`, the TLS name and the certificate check keep the host name, and
+  connections are kept per name, so a connection checked for one name never
+  carries another name's request (2026-11-24);
 - follows at most 5 redirects, re-checking each target;
 - stops reading a response after `FDPINDEX_OUTBOUND_MAX_BYTES`
   (default 5 MiB);

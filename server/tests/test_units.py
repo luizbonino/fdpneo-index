@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import ssl
 from datetime import timedelta
 
+import httpcore
 import httpx
 import pytest
 from pydantic import ValidationError
 
 from fdpindex.durations import format_duration, parse_duration
 from fdpindex.harvest import harvest, serialise
-from fdpindex.outbound import OutboundClient, OutboundError
+from fdpindex.outbound import OutboundClient, OutboundError, PinnedTransport, outbound_http
 from fdpindex.rdf import extract_repository_metadata, parse_rdf
 from fdpindex.settings import IndexSettings, default_settings
 from tests.conftest import FDP, ROOT_TTL, FakeNetwork, public_resolver
@@ -296,37 +298,99 @@ def test_json_ld_with_a_remote_context_is_refused_without_fetching_it() -> None:
         assert len(parse_rdf(inline, "application/ld+json", "https://x.example/")) == 1
 
 
+_OK = [b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"] * 3
+
+
+class _RecordingNetwork(httpcore.AsyncNetworkBackend):
+    """A network that records where each socket goes and the TLS name it uses."""
+
+    def __init__(self) -> None:
+        self.connects: list[tuple[str, int]] = []
+        self.tls_names: list[str | None] = []
+
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,  # noqa: ASYNC109
+        local_address: str | None = None,
+        socket_options: object = None,
+    ) -> httpcore.AsyncNetworkStream:
+        self.connects.append((host, port))
+        network = self
+
+        class Stream(httpcore.AsyncMockStream):
+            async def start_tls(
+                self,
+                ssl_context: ssl.SSLContext,
+                server_hostname: str | None = None,
+                timeout: float | None = None,  # noqa: ASYNC109
+            ) -> httpcore.AsyncNetworkStream:
+                network.tls_names.append(server_hostname)
+                return self
+
+        return Stream(list(_OK))
+
+
+def _pinned_client(
+    network: _RecordingNetwork, answers: dict[str, list[list[str]]]
+) -> tuple[httpx.AsyncClient, OutboundClient]:
+    """DNS answers each host's lists in turn, the last one from then on."""
+
+    async def resolver(host: str, port: int) -> list[str]:
+        queue = answers[host]
+        return queue.pop(0) if len(queue) > 1 else queue[0]
+
+    http = outbound_http(PinnedTransport(network))
+    return http, OutboundClient(
+        http,
+        allow_private=False,
+        max_bytes=1000,
+        max_redirects=0,
+        user_agent="test",
+        resolver=resolver,
+    )
+
+
 async def test_connections_are_pinned_to_the_vetted_address() -> None:
-    """DNS rebinding: the index connects to the address it checked, not a fresh lookup."""
-    seen: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen.append(request)
-        return httpx.Response(200, text="ok")
-
-    answers = iter([["93.184.216.34"], ["10.0.0.5"]])  # a second lookup would rebind
-
-    async def rebinding(host: str, port: int) -> list[str]:
-        return next(answers)
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
-        client = OutboundClient(
-            http,
-            allow_private=False,
-            max_bytes=1000,
-            max_redirects=0,
-            user_agent="test",
-            resolver=rebinding,
-        )
+    """DNS rebinding: the socket goes to the address the index checked, never a fresh lookup."""
+    network = _RecordingNetwork()
+    # A second lookup would rebind to an internal address.
+    http, client = _pinned_client(network, {"fdp.example.org": [["93.184.216.34"], ["10.0.0.5"]]})
+    async with http:
         response = await client.request(
             "GET", "https://fdp.example.org:8443/x?y=1", timeout_seconds=5
         )
     assert response.status == 200 and response.url == "https://fdp.example.org:8443/x?y=1"
-    [request] = seen
-    assert request.url.host == "93.184.216.34" and request.url.port == 8443
-    assert request.url.raw_path == b"/x?y=1"
-    assert request.headers["host"] == "fdp.example.org:8443"
-    assert request.extensions["sni_hostname"] == "fdp.example.org"
+    assert response.address == "93.184.216.34"
+    assert network.connects == [("93.184.216.34", 8443)]
+    # The certificate is checked against the name, not the address.
+    assert network.tls_names == ["fdp.example.org"]
+
+
+async def test_names_sharing_an_address_do_not_share_connections() -> None:
+    """A kept-open connection serves only the name its certificate was checked for."""
+    network = _RecordingNetwork()
+    shared = [["93.184.216.34"]]
+    http, client = _pinned_client(network, {"a.example.org": shared, "b.example.org": shared})
+    async with http:
+        for url in (
+            "https://a.example.org/1",
+            "https://a.example.org/2",  # same name: the connection is reused
+            "https://b.example.org/1",  # same address, other name: a new connection
+        ):
+            assert (await client.request("GET", url, timeout_seconds=5)).status == 200
+    assert network.connects == [("93.184.216.34", 443)] * 2
+    assert network.tls_names == ["a.example.org", "b.example.org"]
+
+
+async def test_the_pinned_transport_refuses_requests_it_has_not_checked() -> None:
+    """Fails closed: on its own, without OutboundClient's check, nothing connects."""
+    network = _RecordingNetwork()
+    async with outbound_http(PinnedTransport(network)) as http:
+        with pytest.raises(httpx.ConnectError, match="no checked address"):
+            await http.get("https://fdp.example.org/")
+    assert network.connects == []
 
 
 @pytest.mark.parametrize("address", ["100.64.0.1", "100.100.100.200", "192.0.0.8"])

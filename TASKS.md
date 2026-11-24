@@ -36,8 +36,8 @@ task are listed in the last column.
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 9/9 | – | – | ✅ Done | – |
-| 15 Statistics and provenance | A Statistics page with counts over time and maps; harvest provenance in PROV-O | 2/4 | – | 2 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; then 15.3 |
-| **Total** | | **129/134** | **–** | **5** | | |
+| 15 Statistics and provenance | A Statistics page with counts over time and maps; harvest provenance in PROV-O; metadata health and complete harvests | 4/12 | – | 8 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`, 15.6 of `docs/design/metadata-health.md`; the builds follow |
+| **Total** | | **131/142** | **–** | **11** | | |
 
 ## Phase 0 — Foundations
 
@@ -248,10 +248,17 @@ features landed. This phase organises it by audience and publishes it.
 
 ## Phase 15 — Statistics and provenance
 
-The index's own story: how much it holds and how that changes, and where each
-copy it republishes came from.
+The index's own story: how much it holds and how that changes, where each
+copy it republishes came from, and how complete each FDP's metadata is.
 
 - [x] 15.1 Statistics page and API: FDPs and records now (by state, by type), the FDPs with most records, conformance shares, FDPs by month of registration, datasets by year of `dct:issued`, and counts over time from daily snapshots; counted as visitors see the index; each chart with a table view and, where SPARQL can ask the same, an "Open as SPARQL query" link — *done: `GET /index/stats` (public; conformance shares follow the `reports` setting), `stats_daily` (migration 0015) filled hourly (`FDPINDEX_STATS_SNAPSHOT_SECONDS`), the Statistics page in seven languages. One endpoint rather than SPARQL alone (agreed 2026-11-24): history needs storage, the search's record types and registration dates are not in the SPARQL store, and SPARQL's per-visitor limits and optional status would make the page fragile*
 - [ ] 15.2 Harvest provenance, design: what to publish about each harvest and each copy in PROV-O, where, and for whom — *proposal in [`docs/design/provenance.md`](docs/design/provenance.md), five questions for review*
 - [ ] 15.3 Harvest provenance, build: a provenance graph in SPARQL, `/index/harvests/{id}`, `prov:wasGeneratedBy` in the catalogue feed, provenance lines on resource and FDP pages (after 15.2)
 - [x] 15.4 Where FDPs are, and where their data is about: two maps on the Statistics page — *done (sources agreed 2026-11-24: all of them): an FDP's country from an administrator's choice, its `r3d:country`, its publisher's ROR record, its country-code domain (generic ones such as `.io` left out), or the address that answered its last retrieval after redirects (DB-IP Lite, CC BY 4.0, bundled in the image per month); the domain before the server, because a Leiden FDP on a server in Germany is in the Netherlands. Records by the country of their `dct:spatial` (EU country codes, NUTS). SVG maps from Natural Earth borders, no tiles; fitted to the mainlands with counts, a Europe view when most counts are there. On the real-data copy: 90 of 122 FDPs placed, in 19 countries; records about 19 countries*
+- [x] 15.5 One FDP, one entry: URLs that differ only in `http`/`https`, letter case in the host, a default port or a trailing slash are one FDP — *done: `url_key` (migration 0017) matched on registration; `GET /index/admin/duplicates` and `POST /index/admin/duplicates/merge` keep the entry that works and leave groups with differing approval or options to an administrator. home.fairdatapoint.org had ten pairs. With it, the harvest follows `dcat:service` and `dcat:accessService` where a page has no LDP containers (on the real-data copy all 64 such links were already harvested through LDP)*
+- [ ] 15.6 Metadata health and complete harvests, design: FDPcrawleR's view (SWAT4HCLS 2026) built in, without tying the index to one network — *proposal in [`docs/design/metadata-health.md`](docs/design/metadata-health.md), six questions for review*
+- [ ] 15.7 Harvest budgets that resume instead of caps, and per-FDP trust (after 15.6)
+- [ ] 15.8 Metadata health per FDP and summed on the Statistics page: reach, shape, LDP/DCAT mismatches, empty containers, dead ends, failures by level, the index's own stops (after 15.6)
+- [ ] 15.9 Expectations as configuration (required reach, record rules as packs), with an ERDERA example (after 15.6)
+- [ ] 15.10 External FAIR tests through the FTR result format, off by default (optional, after 15.6)
+- [ ] 15.11 Check an FDP before registering it (after 15.8)

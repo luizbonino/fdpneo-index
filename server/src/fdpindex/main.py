@@ -348,7 +348,8 @@ async def _start_conformance(
     # Conformance reaches the other surfaces (TASKS 11.4): search values and the search
     # minimum, the SPARQL store's minimum, and the public directory.
     if search is not None:
-        search.indexer.conformance_specs = service.specs
+        # The search also offers "meets what it declares" (TASKS 15.13); the feed does not.
+        search.indexer.conformance_specs = service.search_specs
         search.conformance_minimum = lambda: service.minimum_specification("search")
         service.listeners.append(search.indexer.touch)
     if sparql is not None and sparql.sync is not None:

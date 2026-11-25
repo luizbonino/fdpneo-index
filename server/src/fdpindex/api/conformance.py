@@ -142,6 +142,10 @@ async def _active(service: ConformanceService) -> list[tuple[str, str]]:
     return active
 
 
+async def _roles(service: ConformanceService) -> dict[str, str]:
+    return {DECLARED: "declared", **await service.roles()}
+
+
 @router.get(
     "/index/conformance/packs",
     summary="SHACL profile packs",
@@ -217,7 +221,7 @@ async def get_entry_report(request: Request, entry_id: UUID, caller: Caller) -> 
     async with request.app.state.session_factory() as session:
         if await session.get(IndexEntry, entry_id) is None:
             raise NotFound(f"Entry '{entry_id}' not found")
-        return await entry_report(session, entry_id, await _active(service))
+        return await entry_report(session, entry_id, await _active(service), await _roles(service))
 
 
 @router.get(
@@ -270,7 +274,7 @@ async def get_record(request: Request, public_id: str, caller: Caller) -> Record
     service = await _readable(request, caller)
     order = [p for p, _ in await _active(service)]
     async with request.app.state.session_factory() as session:
-        report = await record_report(session, public_id[:64], order)
+        report = await record_report(session, public_id[:64], order, await _roles(service))
     if report is None:
         raise NotFound(f"No conformance results for '{public_id}'")
     return report

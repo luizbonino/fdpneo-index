@@ -97,7 +97,10 @@ state a temporal coverage are left out once this filter is set.
 
 **Meets profile** keeps records that this index checked against a metadata
 profile (DCAT-AP, HealthDCAT-AP …) and found without violations; a
-dataset's result says which profiles it meets. On indexes for health data,
+dataset's result says which profiles it meets. **Meets what it declares**
+keeps records that meet the profiles they name themselves
+(`dct:conformsTo`), such as their FDP's own; the other profiles are checked
+whether or not a record claims them. On indexes for health data,
 **Quality certificate** keeps datasets whose holder states a quality
 certificate; the certificate itself is on the dataset's page. Some indexes
 show only records that meet a profile.

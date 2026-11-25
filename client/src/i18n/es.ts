@@ -874,6 +874,18 @@ export const es: Messages = {
         "Ningún registro sin perfil | Un registro no declara ningún perfil | {n} registros no declaran ningún perfil",
       unresolved:
         "Todos los perfiles declarados se pudieron leer | Un registro nombra un perfil que no se pudo leer | {n} registros nombran un perfil que no se pudo leer",
+      ownProfile: "el perfil propio del FDP",
+      names: "declara {names}",
+    },
+    lens: {
+      choose: "Ver a través de otro perfil",
+      none: "Ninguno",
+      notClaimed: "Una lente: ningún registro de este FDP lo declara",
+      claimed:
+        "Una lente: ningún registro de este FDP lo declara | Una lente: un registro de este FDP lo declara | Una lente: {n} registros de este FDP lo declaran",
+      recordNotClaimed: "Una lente: este registro no lo reclama",
+      recordClaimed: "Una lente, que este registro también declara",
+      statsNote: "Una lente: comprobado lo reclamen o no los registros",
     },
     lead: "Cómo se comparan los metadatos de este FDP con lo que declara cada registro y con los perfiles que exige este índice. Un registro es conforme cuando no tiene infracciones; los avisos son recomendaciones.",
     recordLead:
@@ -926,10 +938,13 @@ export const es: Messages = {
       MaxLength: "demasiado largo",
     },
     settings: {
+      role: "Papel de {name}",
+      roleRequired: "Exigido por este índice",
+      roleLens: "Una lente para los visitantes",
       declaredHelp:
         "Comprobar cada registro con los perfiles que nombra con dct:conformsTo: el SHACL propio del FDP, leído de su sitio, o un perfil de abajo cuya especificación nombra. Activado por defecto.",
       requiredHelp:
-        "Perfiles que exige este índice: cada registro se comprueba con ellos, los declare o no. Desactivados por defecto.",
+        "Los perfiles de abajo son lentes por defecto: los visitantes pueden mirar a través de ellos y se presentan como perfiles que el FDP no reclama. Haga uno exigido para someter cada registro a él.",
       heading: "Conformidad",
       lead: "Los perfiles con los que se comprueban los registros recolectados, en segundo plano tras cada recolección. Si se cambian, se vuelven a comprobar todos los FDP.",
       profiles: "Comprobar con",

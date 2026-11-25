@@ -872,6 +872,18 @@ export const pt: Messages = {
         "Nenhum registo sem perfil | Um registo não declara perfil | {n} registos não declaram perfil",
       unresolved:
         "Todos os perfis declarados eram legíveis | Um registo nomeia um perfil que não foi possível ler | {n} registos nomeiam um perfil que não foi possível ler",
+      ownProfile: "o perfil próprio do FDP",
+      names: "declara {names}",
+    },
+    lens: {
+      choose: "Ver através de outro perfil",
+      none: "Nenhum",
+      notClaimed: "Uma lente: nenhum registo deste FDP a declara",
+      claimed:
+        "Uma lente: nenhum registo deste FDP a declara | Uma lente: um registo deste FDP a declara | Uma lente: {n} registos deste FDP a declaram",
+      recordNotClaimed: "Uma lente: este registo não a reivindica",
+      recordClaimed: "Uma lente, que este registo também declara",
+      statsNote: "Uma lente: verificada quer os registos a reivindiquem quer não",
     },
     lead: "Como os metadados deste FDP se comparam com o que cada registo declara e com os perfis que este índice exige. Um registo está conforme quando não tem violações; os avisos são recomendações.",
     recordLead:
@@ -923,10 +935,13 @@ export const pt: Messages = {
       MaxLength: "demasiado longo",
     },
     settings: {
+      role: "Papel de {name}",
+      roleRequired: "Exigido por este índice",
+      roleLens: "Uma lente para os visitantes",
       declaredHelp:
         "Verificar cada registo face aos perfis que nomeia com dct:conformsTo: o SHACL próprio do FDP, lido do seu sítio, ou um perfil abaixo cuja especificação nomeia. Ativo por omissão.",
       requiredHelp:
-        "Perfis que este índice exige: cada registo é verificado face a eles, quer os declare quer não. Desativados por omissão.",
+        "Os perfis abaixo são lentes por omissão: os visitantes podem ver através deles e são apresentados como perfis que o FDP não reivindica. Torne um exigido para avaliar cada registo face a ele.",
       heading: "Conformidade",
       lead: "Os perfis com que os registos recolhidos são verificados, em segundo plano após cada recolha. Alterá-los volta a verificar todos os FDP.",
       profiles: "Verificar face a",

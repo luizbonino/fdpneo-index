@@ -1192,6 +1192,13 @@ export interface components {
        */
       kinds?:
         ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+      /**
+       * Role
+       * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
+       * @default lens
+       * @enum {string}
+       */
+      role: "required" | "lens";
     };
     /** ActivePack */
     "ActivePack-Output": {
@@ -1211,6 +1218,13 @@ export interface components {
        */
       kinds:
         ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+      /**
+       * Role
+       * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
+       * @default lens
+       * @enum {string}
+       */
+      role: "required" | "lens";
     };
     /** Chart */
     Chart: {
@@ -1299,6 +1313,13 @@ export interface components {
        * @description The profile pack's id
        */
       pack: string;
+      /**
+       * Role
+       * @description declared: what records name; required: every record is held to it; lens: a profile visitors may look through, not claimed (TASKS 15.13)
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
       /**
        * Specification
        * @description The specification's IRI
@@ -2253,6 +2274,12 @@ export interface components {
       /** Pack */
       pack: string;
       /**
+       * Role
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
+      /**
        * Status
        * @enum {string}
        */
@@ -2270,6 +2297,12 @@ export interface components {
     };
     /** PackSummary */
     PackSummary: {
+      /**
+       * Claimed
+       * @description Records that declare this pack's specification themselves
+       * @default 0
+       */
+      claimed: number;
       /** Conforms */
       conforms: number;
       /**
@@ -2289,6 +2322,13 @@ export interface components {
        * @description Records validated against the pack
        */
       records: number;
+      /**
+       * Role
+       * @description declared, required or lens
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
       /**
        * Undeclared
        * @description For `declared`: records that declare no profile

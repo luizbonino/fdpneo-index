@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from datetime import timedelta
 from typing import Any
+from uuid import UUID
 
 import httpx
 import pytest
@@ -79,6 +80,13 @@ def serve(network: FakeNetwork) -> None:
     # CORE does not answer (404), as on many FDPs.
 
 
+def harvest(api: Api) -> None:
+    """Harvest the FDP again now (a trigger right after the ping waits for the rate limit)."""
+    api.call(api.app.state.index.harvest_entry, UUID(api.entry))
+    api.settle()
+    api.settle()
+
+
 @pytest.fixture
 def api(network: FakeNetwork) -> Iterator[Api]:
     serve(network)
@@ -137,11 +145,11 @@ def test_by_default_records_are_checked_against_what_they_declare(api: Api) -> N
 
 def test_a_known_specification_uses_its_pack(api: Api, network: FakeNetwork) -> None:
     network.serve(f"{FDP}/dataset/good", declaring("good", f"{DCAT_AP}/"))
-    api.client.post("/index/admin/trigger", json={"clientUrl": FDP}, headers=ADMIN)
-    api.settle()
+    harvest(api)
     good = api.client.get(f"/index/conformance/records/{rid('good', api.entry)}").json()
     [result] = good["results"]
     # Checked against DCAT-AP 3.0.1, which the record declares, without fetching anything.
+    assert (result["pack"], result["variant"]) == ("declared", ",dcat-ap,")
     assert result["status"] in {"conforms", "violations"}
     assert not any(str(r.url).startswith("https://semiceu") for r in network.requests)
 
@@ -193,3 +201,51 @@ async def test_resolved_profiles_are_kept_for_a_day(services: Any, network: Fake
     again = await resolver.resolve([PROFILE], origins)
     assert again[PROFILE].kind == "unresolved"
     assert "no SHACL" in (again[PROFILE].reason or "")
+
+
+# --- lenses (TASKS 15.13) ------------------------------------------------------------------
+
+
+def test_a_lens_says_which_records_claim_it(api: Api, network: FakeNetwork) -> None:
+    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "declared": True}  # a lens by default
+    response = api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
+    assert response.status_code == 200, response.text
+    assert response.json()["packs"][0]["role"] == "lens"
+    # The "good" dataset now declares DCAT-AP 3.0.1 besides nothing else.
+    network.serve(f"{FDP}/dataset/good", declaring("good", f"{DCAT_AP}/"))
+    harvest(api)
+
+    report = api.client.get(f"/index/conformance/entries/{api.entry}").json()
+    roles = [(p["pack"], p["role"], p["claimed"]) for p in report["packs"]]
+    assert roles == [("declared", "declared", 0), ("dcat-ap", "lens", 1)]
+    good = api.client.get(f"/index/conformance/records/{rid('good', api.entry)}").json()
+    declared_result = next(r for r in good["results"] if r["pack"] == "declared")
+    assert declared_result["variant"] == ",dcat-ap,"
+    assert {r["pack"]: r["role"] for r in good["results"]} == {
+        "declared": "declared",
+        "dcat-ap": "lens",
+    }
+    bad = api.client.get(f"/index/conformance/records/{rid('bad', api.entry)}").json()
+    assert next(r for r in bad["results"] if r["pack"] == "declared")["variant"] == ",profile,"
+
+    body["packs"] = [{"key": "dcat-ap@3.0.1", "role": "required"}]
+    api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
+    report = api.client.get(f"/index/conformance/entries/{api.entry}").json()
+    assert report["packs"][1]["role"] == "required"
+
+
+def test_search_offers_what_records_declare(
+    search_api: SearchApi,  # noqa: F811
+    network: FakeNetwork,
+) -> None:
+    serve(network)
+    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "declared": True}
+    search_api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
+    harvest(search_api)
+    facets = search_api.client.get("/index/search", params={"facets": "conformance"}).json()[
+        "facets"
+    ]["conformance"]["buckets"]
+    values = {v["value"]: v for v in facets}
+    declared_value = values["urn:fdpneo-index:conformance:declared"]
+    assert declared_value["label"] == "Meets what it declares"
+    assert declared_value["count"] == 1  # the "good" dataset meets its FDP's profile

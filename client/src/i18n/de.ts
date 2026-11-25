@@ -876,6 +876,18 @@ export const de: Messages = {
         "Kein Datensatz ohne Profil | Ein Datensatz nennt kein Profil | {n} Datensätze nennen kein Profil",
       unresolved:
         "Alle angegebenen Profile waren lesbar | Ein Datensatz nennt ein Profil, das nicht gelesen werden konnte | {n} Datensätze nennen ein Profil, das nicht gelesen werden konnte",
+      ownProfile: "das eigene Profil des FDP",
+      names: "nennt {names}",
+    },
+    lens: {
+      choose: "Durch ein anderes Profil sehen",
+      none: "Keines",
+      notClaimed: "Eine Linse: kein Datensatz dieses FDP nennt es",
+      claimed:
+        "Eine Linse: kein Datensatz dieses FDP nennt es | Eine Linse: ein Datensatz dieses FDP nennt es | Eine Linse: {n} Datensätze dieses FDP nennen es",
+      recordNotClaimed: "Eine Linse: dieser Datensatz beansprucht es nicht",
+      recordClaimed: "Eine Linse, die dieser Datensatz auch nennt",
+      statsNote: "Eine Linse: geprüft, ob Datensätze es beanspruchen oder nicht",
     },
     lead: "Wie die Metadaten dieses FDP zu dem stehen, was jeder Datensatz angibt, und zu den Profilen, die dieser Index verlangt. Ein Datensatz ist konform, wenn er keine Verstöße hat; Warnungen sind Empfehlungen.",
     recordLead:
@@ -928,10 +940,13 @@ export const de: Messages = {
       MaxLength: "zu lang",
     },
     settings: {
+      role: "Rolle von {name}",
+      roleRequired: "Von diesem Index verlangt",
+      roleLens: "Eine Linse für Besucher",
       declaredHelp:
         "Jeden Datensatz gegen die Profile prüfen, die er mit dct:conformsTo nennt: das eigene SHACL des FDP, von seiner Website geladen, oder ein Profil unten, dessen Spezifikation er nennt. Standardmäßig an.",
       requiredHelp:
-        "Profile, die dieser Index verlangt: Jeder Datensatz wird gegen sie geprüft, ob er sie beansprucht oder nicht. Standardmäßig aus.",
+        "Profile unten sind standardmäßig Linsen: Besucher können durch sie sehen, und sie gelten als Profile, die der FDP nicht beansprucht. Machen Sie eines verbindlich, um jeden Datensatz daran zu messen.",
       heading: "Konformität",
       lead: "Die Profile, gegen die abgerufene Einträge nach jedem Abruf im Hintergrund geprüft werden. Eine Änderung prüft alle FDPs erneut.",
       profiles: "Prüfen gegen",

@@ -854,6 +854,18 @@ export const en = {
         "No records declare a profile | One record declares no profile | {n} records declare no profile",
       unresolved:
         "No declared profile was unreadable | One record names a profile that could not be read | {n} records name a profile that could not be read",
+      ownProfile: "its FDP’s own profile",
+      names: "declares {names}",
+    },
+    lens: {
+      choose: "Look through another profile",
+      none: "None",
+      notClaimed: "A lens: none of this FDP’s records declare it",
+      claimed:
+        "A lens: none of this FDP’s records declare it | A lens: one of this FDP’s records declares it | A lens: {n} of this FDP’s records declare it",
+      recordNotClaimed: "A lens: this record does not claim it",
+      recordClaimed: "A lens, which this record also declares",
+      statsNote: "A lens: checked whether or not records claim it",
     },
     lead: "How this FDP's metadata compares to what each record declares, and to any profiles this index requires. A record conforms when it has no violations; warnings are recommendations.",
     recordLead:
@@ -905,10 +917,13 @@ export const en = {
       MaxLength: "too long",
     },
     settings: {
+      role: "Role of {name}",
+      roleRequired: "Required by this index",
+      roleLens: "A lens visitors may look through",
       declaredHelp:
         "Check each record against the profiles it names with dct:conformsTo: the FDP’s own SHACL, fetched from its site, or a profile below whose specification it names. On by default.",
       requiredHelp:
-        "Profiles this index requires: every record is checked against them, whether or not it claims them. Off by default.",
+        "Profiles below are lenses by default: visitors may look through them, and they are worded as profiles the FDP does not claim. Make one required to hold every record to it.",
       heading: "Conformance",
       lead: "The profiles harvested records are checked against, in the background after each harvest. Changing them checks every FDP again.",
       profiles: "Check against",

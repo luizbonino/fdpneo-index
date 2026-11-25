@@ -103,7 +103,9 @@ def dcat_ap_by_default(app: FastAPI) -> None:
     """These tests are about packs: DCAT-AP active, as the default was until 2026-11-25,
     and the check against what records declare (TASKS 15.12, tested apart) off."""
     settings = app.state.conformance_settings
-    settings.defaults = ConformanceSettings(packs=[ActivePack(key="dcat-ap@3.0.1")], declared=False)
+    settings.defaults = ConformanceSettings(
+        packs=[ActivePack(key="dcat-ap@3.0.1", role="required")], declared=False
+    )
     settings._cached = None  # pyright: ignore[reportPrivateUsage]
 
 
@@ -202,7 +204,7 @@ def test_settings_add_a_pack_and_hide_reports(api: Api) -> None:
     assert api.client.get("/index/conformance/settings").status_code == 401
     current = api.client.get("/index/conformance/settings", headers=ADMIN).json()
     assert current == {
-        "packs": [{"key": "dcat-ap@3.0.1", "kinds": None, "files": None}],
+        "packs": [{"key": "dcat-ap@3.0.1", "role": "required", "kinds": None, "files": None}],
         "declared": False,
         "reports": "public",
         "surfaces": {"search": None, "sparql": None, "feed": None, "directory": None},

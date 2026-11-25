@@ -24,6 +24,8 @@ const settings = useQuery({
 const active = ref<string[]>([]);
 const reports = ref<"public" | "admin">("public");
 const declared = ref(true);
+// Each active pack's role (TASKS 15.13): required, or a lens (the default).
+const roles = ref<Record<string, "required" | "lens">>({});
 const SURFACES = ["search", "sparql", "directory", "feed"] as const;
 type Surface = (typeof SURFACES)[number];
 const surfaces = ref<Record<Surface, string>>({ search: "", sparql: "", directory: "", feed: "" });
@@ -32,6 +34,7 @@ const saving = ref(false);
 
 function load(value: ConformanceSettings) {
   active.value = value.packs.map((p) => p.key);
+  roles.value = Object.fromEntries(value.packs.map((p) => [p.key, p.role]));
   declared.value = value.declared;
   reports.value = value.reports;
   surfaces.value = {
@@ -66,6 +69,7 @@ const dirty = computed(() => {
     value.reports !== reports.value ||
     value.declared !== declared.value ||
     value.packs.map((p) => p.key).join() !== active.value.join() ||
+    value.packs.some((p) => p.role !== (roles.value[p.key] ?? "lens")) ||
     JSON.stringify(value.surfaces) !== JSON.stringify(chosenSurfaces())
   );
 });
@@ -77,6 +81,7 @@ function title(key: string): string {
 }
 
 function toggle(key: string, on: boolean) {
+  if (on && !roles.value[key]) roles.value = { ...roles.value, [key]: "lens" };
   active.value = on ? [...active.value, key] : active.value.filter((k) => k !== key);
 }
 
@@ -88,7 +93,10 @@ async function save() {
     // Keep each pack's kinds and files as they were.
     const kept = new Map(current.packs.map((p) => [p.key, p]));
     const saved = await conformanceApi.saveSettings({
-      packs: active.value.map((key) => kept.get(key) ?? { key, kinds: null, files: null }),
+      packs: active.value.map((key) => ({
+        ...(kept.get(key) ?? { key, kinds: null, files: null }),
+        role: roles.value[key] ?? "lens",
+      })),
       declared: declared.value,
       reports: reports.value,
       surfaces: chosenSurfaces(),
@@ -143,6 +151,15 @@ async function validateAll() {
               · {{ t("conformance.settings.operatorPack") }}</template
             >
           </span>
+          <select
+            v-if="active.includes(pack.key)"
+            v-model="roles[pack.key]"
+            class="input select role"
+            :aria-label="t('conformance.settings.role', { name: title(pack.key) })"
+          >
+            <option value="lens">{{ t("conformance.settings.roleLens") }}</option>
+            <option value="required">{{ t("conformance.settings.roleRequired") }}</option>
+          </select>
         </span>
       </label>
     </fieldset>

@@ -64,6 +64,9 @@ log = structlog.get_logger(__name__)
 
 BATCH = 25  # records per worker call
 DECLARED = "declared"  # the pseudo-pack of what records declare (TASKS 15.12)
+# Raised when the declared check changes what it stores, so every entry is checked again
+# on upgrade (2: the result names what was declared, TASKS 15.13).
+DECLARED_VERSION = 2
 DECLARED_TITLE = {
     "en": "What it declares",
     "nl": "Wat het opgeeft",
@@ -72,6 +75,18 @@ DECLARED_TITLE = {
     "es": "Lo que declara",
     "it": "Ciò che dichiara",
     "pt": "O que declara",
+}
+# What visitors filter search on for "meets what it declares" (TASKS 15.13): an internal
+# value, never republished (the feed uses specs(), which leaves it out).
+DECLARED_IRI = "urn:fdpneo-index:conformance:declared"
+DECLARED_SEARCH_TITLE = {
+    "en": "Meets what it declares",
+    "nl": "Voldoet aan wat het opgeeft",
+    "de": "Erfüllt, was er angibt",
+    "fr": "Conforme à ce qu’il déclare",  # noqa: RUF001  # French apostrophe
+    "es": "Cumple lo que declara",
+    "it": "Rispetta ciò che dichiara",
+    "pt": "Cumpre o que declara",
 }
 _ORDER = {"violation": 0, "warning": 1, "info": 2}
 
@@ -129,6 +144,19 @@ class ConformanceService:
             for a in settings.packs
             if a.key in packs
         }
+
+    async def search_specs(self) -> dict[str, tuple[str, dict[str, str]]]:
+        """specs(), and what records declare, for the search's "Meets profile" filter."""
+        specs = await self.specs()
+        if await self.declared_on():
+            specs = {DECLARED: (DECLARED_IRI, DECLARED_SEARCH_TITLE), **specs}
+        return specs
+
+    async def roles(self) -> dict[str, str]:
+        """Each active pack's role by pack id: ``required`` or ``lens`` (TASKS 15.13)."""
+        settings = await self.settings.get()
+        packs = self.settings.packs
+        return {packs[a.key].id: a.role for a in settings.packs if a.key in packs}
 
     async def minimum(self, surface: str) -> str | None:
         """The pack id a surface requires visitors' records to conform to, if any."""
@@ -266,7 +294,9 @@ class ConformanceService:
         """What the entry was validated with. With declared checks on, the day is part of
         it: declared profiles are resolved again daily (``declared.FRESH``)."""
         described = [(u.pack.key, u.digest, sorted(u.kinds)) for u in uses]
-        payload = json.dumps([self._profile().hash, described, declared_on and day])
+        payload = json.dumps(
+            [self._profile().hash, described, declared_on and day, declared_on and DECLARED_VERSION]
+        )
         return hashlib.sha256(payload.encode()).hexdigest()
 
     async def declared_on(self) -> bool:
@@ -337,23 +367,29 @@ class ConformanceService:
 
     def _declared_uses(
         self, record: Record, targets: dict[str, Target]
-    ) -> tuple[str, list[PackUse], Outcome | None]:
+    ) -> tuple[str, list[PackUse], Outcome | None, str | None]:
         """What the record declares: a digest of its resolution, the shapes to validate
-        against, or the outcome when there is nothing to validate."""
+        against, or the outcome when there is nothing to validate, and what it declared
+        that could be checked (``,dcat-ap,profile,``: pack ids, and ``profile`` for an FDP's
+        own), kept as the result's ``variant`` so reports know which packs a record claims."""
         iris = declared(record.nodes[0], record.iri)
         resolved = [targets[i] for i in iris if i in targets]
+        # "2": the result names what was declared (``variant``) since TASKS 15.13.
         digest = hashlib.sha256(
-            json.dumps([(t.iri, t.kind, t.digest or t.reason) for t in resolved]).encode()
+            json.dumps([2, [(t.iri, t.kind, t.digest or t.reason) for t in resolved]]).encode()
         ).hexdigest()
         if not iris:
-            return digest, [], Outcome(status="undeclared")
+            return digest, [], Outcome(status="undeclared"), None
         jobs: list[PackUse] = []
+        names: set[str] = set()
         packs = self.settings.packs
         for target in resolved:
             if target.kind == "pack" and target.pack_key in packs:
                 pack = packs[target.pack_key]
+                names.add(pack.id)
                 jobs.append(PackUse(directory=str(pack.directory), key=pack.key, files=None))
             elif target.kind == "shapes" and target.shapes is not None:
+                names.add("profile")
                 jobs.append(
                     PackUse(
                         directory="",
@@ -364,12 +400,9 @@ class ConformanceService:
                 )
         if not jobs:
             reasons = "; ".join(f"{t.iri}: {t.reason}" for t in resolved if t.reason)
-            return (
-                digest,
-                [],
-                Outcome(status="unresolved", error=reasons[:500] or None),
-            )
-        return digest, jobs, None
+            return digest, [], Outcome(status="unresolved", error=reasons[:500] or None), None
+        label = f",{','.join(sorted(names))},"
+        return digest, jobs, None, label if len(label) <= 64 else None
 
     async def _validate_records(
         self,
@@ -400,7 +433,7 @@ class ConformanceService:
                 ).all()
             }
         wanted: set[tuple[str, str]] = set()
-        work: list[tuple[Record, list[_Use], tuple[str, list[PackUse]] | None]] = []
+        work: list[tuple[Record, list[_Use], tuple[str, list[PackUse], str | None] | None]] = []
         ready: list[tuple[Record, list[_Written]]] = []
         for record in records:
             stale: list[_Use] = []
@@ -411,16 +444,16 @@ class ConformanceService:
                 seen = existing.get((record.iri, use.pack.id))
                 if force or seen is None or seen[1:] != (record.content_hash, use.digest):
                     stale.append(use)
-            declared_job: tuple[str, list[PackUse]] | None = None
+            declared_job: tuple[str, list[PackUse], str | None] | None = None
             if targets is not None:
                 wanted.add((record.iri, DECLARED))
-                digest, jobs, outcome = self._declared_uses(record, targets)
+                digest, jobs, outcome, label = self._declared_uses(record, targets)
                 seen = existing.get((record.iri, DECLARED))
                 if force or seen is None or seen[1:] != (record.content_hash, digest):
                     if outcome is not None:
                         ready.append((record, [(DECLARED, DECLARED, digest, outcome)]))
                     else:
-                        declared_job = (digest, jobs)
+                        declared_job = (digest, jobs, label)
             if stale or declared_job is not None:
                 work.append((record, stale, declared_job))
         gone = [v[0] for k, v in existing.items() if k not in wanted]
@@ -448,7 +481,9 @@ class ConformanceService:
                     for u, o in zip(us, results[: len(us)], strict=True)
                 ]
                 if d is not None:
-                    rows.append((DECLARED, DECLARED, d[0], _merge(results[len(us) :])))
+                    merged = _merge(results[len(us) :])
+                    merged.variant = d[2]
+                    rows.append((DECLARED, DECLARED, d[0], merged))
                 written.append((record, rows))
             await self._write(entry_id, written)
             done += len(batch)

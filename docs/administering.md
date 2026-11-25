@@ -205,9 +205,15 @@ promised:
   profile, no shapes, not readable. A record that names nothing *declares no
   profile*, which is not counted against it.
 
-**Profiles this index requires** (off by default; DCAT-AP 3.0.1 was on
-until 2026-11-25). Every record is checked against them whether or not it
-claims them, and the reports say they are this index's requirements:
+**Profiles you switch on** (none by default; DCAT-AP 3.0.1 was on until
+2026-11-25) are checked against every record, whether or not it claims
+them, in one of two roles:
+
+- **A lens** (the default): visitors may look through it, one at a time, on
+  an FDP's page and on the Statistics page. It is worded as a profile the
+  FDP does not claim, or says how many of its records declare it.
+- **Required by this index**: always shown, as this index's requirement.
+  The EHDS deployment profile makes HealthDCAT-AP and DCAT-AP required.
 
 | Profile | Applies to | Notes |
 |---|---|---|

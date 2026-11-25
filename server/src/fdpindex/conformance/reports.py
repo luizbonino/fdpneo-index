@@ -36,6 +36,9 @@ TOP_PROBLEMS = 20
 Severity = Literal["violation", "warning", "info"]
 # undeclared and unresolved only for the pseudo-pack "declared" (TASKS 15.12).
 Status = Literal["conforms", "violations", "error", "undeclared", "unresolved"]
+# declared: what records name; required: every record is held to it; lens: visitors may
+# look through it, as a profile the FDP does not claim (TASKS 15.13).
+Role = Literal["declared", "required", "lens"]
 _SEVERITY_ORDER = case(
     (ConformanceFinding.severity == "violation", 0),
     (ConformanceFinding.severity == "warning", 1),
@@ -62,6 +65,10 @@ class Problem(_Camel):
 class PackSummary(_Camel):
     pack: str = Field(description="The pack's id")
     version: str | None
+    role: Role = Field(default="required", description="declared, required or lens")
+    claimed: int = Field(
+        default=0, description="Records that declare this pack's specification themselves"
+    )
     records: int = Field(description="Records validated against the pack")
     conforms: int
     violations: int = Field(description="Records with violations")
@@ -117,6 +124,7 @@ class FindingView(_Camel):
 class PackResult(_Camel):
     pack: str
     version: str
+    role: Role = "required"
     variant: str | None
     status: Status
     violations: int
@@ -141,9 +149,14 @@ def _when(moment: datetime | None) -> str | None:
 
 
 async def entry_report(
-    session: AsyncSession, entry_id: UUID, packs: list[tuple[str, str]]
+    session: AsyncSession,
+    entry_id: UUID,
+    packs: list[tuple[str, str]],
+    roles: dict[str, str] | None = None,
 ) -> EntryReport:
-    """``packs``: the active packs as ``(id, version)``, in the deployment's order."""
+    """``packs``: the active packs as ``(id, version)``, in the deployment's order;
+    ``roles``: each one's role (``declared``, ``required``, ``lens``)."""
+    roles = roles or {}
     state = await session.get(ConformanceEntryState, entry_id)
     rows = (
         await session.execute(
@@ -163,6 +176,21 @@ async def entry_report(
         )
     ).all()
     by_pack = {str(r[0]): r for r in rows}
+    # Which packs the FDP's records claim: the declared results name them (``variant``).
+    claimed: dict[str, int] = {}
+    for variant, n in (
+        await session.execute(
+            select(ConformanceResult.variant, func.count())
+            .where(
+                ConformanceResult.entry_uuid == entry_id,
+                ConformanceResult.pack == "declared",
+                ConformanceResult.variant.is_not(None),
+            )
+            .group_by(ConformanceResult.variant)
+        )
+    ).all():
+        for name in str(variant).strip(",").split(","):
+            claimed[name] = claimed.get(name, 0) + int(n)
     versions = dict(packs)
     order = [p for p, _ in packs] + sorted(set(by_pack) - set(versions))
     summaries: list[PackSummary] = []
@@ -172,6 +200,8 @@ async def entry_report(
             PackSummary(
                 pack=pack,
                 version=versions.get(pack),
+                role=cast("Role", roles.get(pack, "required")),
+                claimed=claimed.get(pack, 0),
                 records=int(row[1]) if row else 0,
                 conforms=int(row[2] or 0) if row else 0,
                 violations=int(row[3] or 0) if row else 0,
@@ -294,8 +324,12 @@ async def record_page(
 
 
 async def record_report(
-    session: AsyncSession, public_id: str, order: list[str]
+    session: AsyncSession,
+    public_id: str,
+    order: list[str],
+    roles: dict[str, str] | None = None,
 ) -> RecordReport | None:
+    roles = roles or {}
     results = list(
         await session.scalars(
             select(ConformanceResult).where(ConformanceResult.public_id == public_id)
@@ -337,6 +371,7 @@ async def record_report(
             PackResult(
                 pack=r.pack,
                 version=r.pack_version,
+                role=cast("Role", roles.get(r.pack, "required")),
                 variant=r.variant,
                 status=cast("Status", r.status),
                 violations=r.violations,

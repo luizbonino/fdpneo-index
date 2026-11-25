@@ -13,7 +13,7 @@ conformance reports.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
@@ -85,6 +85,11 @@ class KindShare(_Camel):
 
 class ConformanceShare(_Camel):
     pack: str = Field(description="The profile pack's id")
+    role: Literal["declared", "required", "lens"] = Field(
+        default="required",
+        description="declared: what records name; required: every record is held to it; "
+        "lens: a profile visitors may look through, not claimed (TASKS 15.13)",
+    )
     specification: str = Field(description="The specification's IRI")
     title: dict[str, str] = Field(description="The pack's title by language")
     checked: int = Field(description="Records checked against it")

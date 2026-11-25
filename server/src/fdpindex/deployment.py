@@ -48,7 +48,10 @@ PROFILES: dict[DeploymentName, DeploymentProfile] = {
     "ehds": DeploymentProfile(
         "ehds",
         ConformanceSettings(
-            packs=[ActivePack(key="healthdcat-ap@release-8"), ActivePack(key="dcat-ap@3.0.1")],
+            packs=[
+                ActivePack(key="healthdcat-ap@release-8", role="required"),
+                ActivePack(key="dcat-ap@3.0.1", role="required"),
+            ],
             surfaces=Surfaces(feed="healthdcat-ap"),
         ),
         search_example="healthdcat-ap",

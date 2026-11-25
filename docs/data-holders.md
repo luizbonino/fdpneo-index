@@ -118,8 +118,10 @@ holds inline) against **what it declares**: the profiles it names with
 the index reads that profile's SHACL from your FDP and checks the record
 against it. A record that names nothing declares no profile, which is not
 held against it. Some indexes also **require** profiles of their own
-(HealthDCAT-AP in health indexes, for instance); the report says which
-checks are your declarations and which are the index's requirements. A
+(HealthDCAT-AP in health indexes, for instance), or offer other profiles as
+**lenses** visitors may look through; the report says which checks are your
+declarations, which are the index's requirements, and which are lenses you
+did not claim. A
 record **conforms** to a profile when it has no **violations**;
 **warnings** are the profile's recommendations.
 

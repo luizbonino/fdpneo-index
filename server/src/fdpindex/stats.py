@@ -238,6 +238,7 @@ class StatsService:
         """Per active profile: of the records visitors find, how many were checked and met it."""
         assert self._conformance is not None
         specs = await self._conformance.specs()
+        roles = await self._conformance.roles()
         declared_on = await self._conformance.declared_on()
         wanted = [*specs, *([DECLARED] if declared_on else [])]
         rows = (
@@ -270,6 +271,7 @@ class StatsService:
             shares.append(
                 {
                     "pack": DECLARED,
+                    "role": "declared",
                     "specification": "",
                     "title": DECLARED_TITLE,
                     "checked": sum(checked[DECLARED].values()),
@@ -288,6 +290,7 @@ class StatsService:
         return shares + [
             {
                 "pack": pack,
+                "role": roles.get(pack, "required"),
                 "specification": specification,
                 "title": title,
                 "checked": sum(checked[pack].values()),

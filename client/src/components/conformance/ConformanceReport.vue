@@ -15,7 +15,6 @@ import { useServiceInfo } from "@/composables/queries";
 import {
   componentName,
   conformanceApi,
-  DECLARED,
   packTitle,
   SEVERITY_TONE,
   type Problem,
@@ -39,6 +38,25 @@ const hidden = computed(
     report.error.value instanceof ApiError && [401, 403, 404].includes(report.error.value.status),
 );
 const validated = computed(() => (report.data.value?.packs ?? []).some((p) => p.records > 0));
+
+// Lenses (TASKS 15.13): profiles visitors may look through, one at a time, worded as not
+// claimed. What records declare and what the index requires are always shown.
+const lens = ref("");
+const lenses = computed(() => (report.data.value?.packs ?? []).filter((p) => p.role === "lens"));
+const shown = computed(() =>
+  (report.data.value?.packs ?? []).filter((p) => p.role !== "lens" || p.pack === lens.value),
+);
+const problems = computed(() => {
+  const visible = new Set(shown.value.map((p) => p.pack));
+  return (report.data.value?.problems ?? []).filter((p) => visible.has(p.pack));
+});
+function basis(pack: { pack: string; role: string; claimed: number }): string {
+  if (pack.role === "declared") return t("conformance.declared.basis");
+  if (pack.role === "required") return t("conformance.declared.required");
+  return pack.claimed
+    ? t("conformance.lens.claimed", { n: pack.claimed }, pack.claimed)
+    : t("conformance.lens.notClaimed");
+}
 
 const open = ref<string | null>(null);
 function problemKey(p: Problem): string {
@@ -94,6 +112,13 @@ function title(id: string): string {
     <p class="muted small">{{ t("conformance.lead") }}</p>
     <p v-if="!validated" class="muted">{{ t("conformance.notYet") }}</p>
     <template v-else>
+      <label v-if="lenses.length" class="row lens small">
+        <span>{{ t("conformance.lens.choose") }}</span>
+        <select v-model="lens" class="input select">
+          <option value="">{{ t("conformance.lens.none") }}</option>
+          <option v-for="p in lenses" :key="p.pack" :value="p.pack">{{ title(p.pack) }}</option>
+        </select>
+      </label>
       <div class="table-scroll">
         <table class="table">
           <caption class="visually-hidden">
@@ -111,16 +136,10 @@ function title(id: string): string {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="pack in report.data.value.packs" :key="pack.pack">
+            <tr v-for="pack in shown" :key="pack.pack">
               <th scope="row">
                 {{ title(pack.pack) }}
-                <span class="muted small block">
-                  {{
-                    pack.pack === DECLARED
-                      ? t("conformance.declared.basis")
-                      : t("conformance.declared.required")
-                  }}
-                </span>
+                <span class="muted small block">{{ basis(pack) }}</span>
                 <span v-if="pack.undeclared || pack.unresolved" class="muted small block">
                   <template v-if="pack.undeclared">
                     {{
@@ -160,9 +179,9 @@ function title(id: string): string {
         </table>
       </div>
 
-      <h3 v-if="report.data.value.problems.length">{{ t("conformance.problems") }}</h3>
+      <h3 v-if="problems.length">{{ t("conformance.problems") }}</h3>
       <ul class="problems">
-        <li v-for="problem in report.data.value.problems" :key="problemKey(problem)">
+        <li v-for="problem in problems" :key="problemKey(problem)">
           <div class="problem">
             <span :class="['chip', SEVERITY_TONE[problem.severity]]">
               {{ t(`conformance.severity.${problem.severity}`) }}
@@ -299,5 +318,12 @@ h3 {
 }
 .block {
   display: block;
+}
+.lens {
+  gap: var(--fair-space-2);
+}
+.lens select {
+  width: auto;
+  max-width: 20rem;
 }
 </style>

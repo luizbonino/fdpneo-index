@@ -875,6 +875,18 @@ export const fr: Messages = {
         "Aucune fiche sans profil | Une fiche ne déclare aucun profil | {n} fiches ne déclarent aucun profil",
       unresolved:
         "Tous les profils déclarés étaient lisibles | Une fiche nomme un profil illisible | {n} fiches nomment un profil illisible",
+      ownProfile: "le profil propre du FDP",
+      names: "déclare {names}",
+    },
+    lens: {
+      choose: "Voir à travers un autre profil",
+      none: "Aucun",
+      notClaimed: "Une lentille : aucune fiche de ce FDP ne la déclare",
+      claimed:
+        "Une lentille : aucune fiche de ce FDP ne la déclare | Une lentille : une fiche de ce FDP la déclare | Une lentille : {n} fiches de ce FDP la déclarent",
+      recordNotClaimed: "Une lentille : cette fiche ne s’en réclame pas",
+      recordClaimed: "Une lentille, que cette fiche déclare aussi",
+      statsNote: "Une lentille : vérifiée que les fiches s’en réclament ou non",
     },
     lead: "Comment les métadonnées de ce FDP se comparent à ce que déclare chaque fiche, et aux profils qu’exige cet index. Une fiche est conforme quand elle n’a aucune violation ; les avertissements sont des recommandations.",
     recordLead:
@@ -928,10 +940,13 @@ export const fr: Messages = {
       MaxLength: "trop long",
     },
     settings: {
+      role: "Rôle de {name}",
+      roleRequired: "Exigé par cet index",
+      roleLens: "Une lentille pour les visiteurs",
       declaredHelp:
         "Vérifier chaque fiche selon les profils qu’elle nomme avec dct:conformsTo : le SHACL propre du FDP, lu sur son site, ou un profil ci-dessous dont elle nomme la spécification. Activé par défaut.",
       requiredHelp:
-        "Profils exigés par cet index : chaque fiche est vérifiée selon eux, qu’elle s’en réclame ou non. Désactivés par défaut.",
+        "Les profils ci-dessous sont des lentilles par défaut : les visiteurs peuvent voir à travers, et ils sont présentés comme des profils dont le FDP ne se réclame pas. Rendez-en un exigé pour y soumettre chaque fiche.",
       heading: "Conformité",
       lead: "Les profils selon lesquels les notices moissonnées sont vérifiées, en arrière-plan après chaque moissonnage. Les modifier entraîne une nouvelle vérification de tous les FDP.",
       profiles: "Vérifier selon",

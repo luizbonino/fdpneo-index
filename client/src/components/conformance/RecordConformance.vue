@@ -21,6 +21,26 @@ const report = useQuery({
 });
 const packs = useQuery({ queryKey: ["conformance-packs"], queryFn: conformanceApi.packs });
 
+/** What the record declares, from its declared result (",dcat-ap,profile,"). */
+const declaredNames = computed(() => {
+  const found = report.data.value?.results.find((r) => r.pack === "declared");
+  return (found?.variant ?? "").split(",").filter(Boolean);
+});
+function variantText(result: { pack: string; variant?: string | null }): string {
+  if (result.pack !== "declared") return result.variant ?? "";
+  const names = declaredNames.value.map((n) =>
+    n === "profile"
+      ? t("conformance.declared.ownProfile")
+      : packTitle(packs.data.value, n, locale.value),
+  );
+  return t("conformance.declared.names", { names: names.join(", ") });
+}
+function lensNote(pack: string): string {
+  return declaredNames.value.includes(pack)
+    ? t("conformance.lens.recordClaimed")
+    : t("conformance.lens.recordNotClaimed");
+}
+
 const STATUS_TONE: Record<string, string> = {
   conforms: "ok",
   violations: "bad",
@@ -42,12 +62,13 @@ const STATUS_TONE: Record<string, string> = {
     <details
       v-for="result in report.data.value.results"
       :key="result.pack"
-      :open="!['conforms', 'undeclared'].includes(result.status)"
+      :open="result.role !== 'lens' && !['conforms', 'undeclared'].includes(result.status)"
       class="pack"
     >
       <summary>
         <strong>{{ packTitle(packs.data.value, result.pack, locale) }}</strong>
-        <span v-if="result.variant" class="muted small">({{ result.variant }})</span>
+        <span v-if="result.variant" class="muted small">({{ variantText(result) }})</span>
+        <span v-if="result.role === 'lens'" class="muted small">{{ lensNote(result.pack) }}</span>
         <span :class="['chip', STATUS_TONE[result.status]]">
           {{ t(`conformance.status.${result.status}`) }}
         </span>

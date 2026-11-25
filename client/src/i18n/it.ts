@@ -874,6 +874,18 @@ export const it: Messages = {
         "Nessun record senza profilo | Un record non dichiara alcun profilo | {n} record non dichiarano alcun profilo",
       unresolved:
         "Tutti i profili dichiarati erano leggibili | Un record nomina un profilo non leggibile | {n} record nominano un profilo non leggibile",
+      ownProfile: "il profilo proprio del FDP",
+      names: "dichiara {names}",
+    },
+    lens: {
+      choose: "Guarda attraverso un altro profilo",
+      none: "Nessuno",
+      notClaimed: "Una lente: nessun record di questo FDP lo dichiara",
+      claimed:
+        "Una lente: nessun record di questo FDP lo dichiara | Una lente: un record di questo FDP lo dichiara | Una lente: {n} record di questo FDP lo dichiarano",
+      recordNotClaimed: "Una lente: questo record non lo rivendica",
+      recordClaimed: "Una lente, che questo record dichiara anche",
+      statsNote: "Una lente: controllato che i record lo rivendichino o no",
     },
     lead: "Come i metadati di questo FDP si confrontano con ciò che dichiara ogni record e con i profili richiesti da questo indice. Un record è conforme quando non ha violazioni; gli avvisi sono raccomandazioni.",
     recordLead:
@@ -925,10 +937,13 @@ export const it: Messages = {
       MaxLength: "troppo lungo",
     },
     settings: {
+      role: "Ruolo di {name}",
+      roleRequired: "Richiesto da questo indice",
+      roleLens: "Una lente per i visitatori",
       declaredHelp:
         "Controllare ogni record rispetto ai profili che nomina con dct:conformsTo: lo SHACL proprio del FDP, letto dal suo sito, o un profilo qui sotto di cui nomina la specifica. Attivo per impostazione predefinita.",
       requiredHelp:
-        "Profili richiesti da questo indice: ogni record viene controllato rispetto a essi, che li dichiari o no. Disattivati per impostazione predefinita.",
+        "I profili qui sotto sono lenti per impostazione predefinita: i visitatori possono guardarci attraverso, e sono presentati come profili che il FDP non rivendica. Rendetene uno richiesto per misurarvi ogni record.",
       heading: "Conformità",
       lead: "I profili rispetto ai quali vengono verificate le schede raccolte, in background dopo ogni raccolta. Se vengono modificati, ogni FDP viene verificato di nuovo.",
       profiles: "Verificare rispetto a",

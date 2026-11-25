@@ -84,7 +84,12 @@ The first release will contain:
   bundled pack whose specification they name. "Declares no profile" is not
   held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
   on by default**, and the profiles an administrator activates are shown as
-  this index's requirements. Migration 0020.
+  this index's requirements or as lenses. Migration 0020.
+- **Lenses** (TASKS 15.13): a profile an administrator switches on is a lens
+  by default, which visitors look through one at a time on an FDP's page
+  and the Statistics page, worded as not claimed (or with how many records
+  declare it); or required, always shown. Search's **Meets profile** filter
+  offers "Meets what it declares".
 - **Maps** on the Statistics page open on the world, with a view of each
   continent that has FDPs or records, and its count.
 - **Metadata health** (TASKS 15.8): after every harvest, how far an FDP's

@@ -5,6 +5,9 @@
   validated against (the manifest's defaults when unset).
 * **declared**: check each record against what it declares with
   ``dct:conformsTo`` (TASKS 15.12): on by default.
+* **packs' roles** (TASKS 15.13): a pack is *required* (every record is held
+  to it) or a *lens* (the default: visitors may look through it, and it is
+  worded as a profile the FDP does not claim).
 * **reports**: who may read conformance reports, ``public`` (the default,
   like the metadata they describe) or ``admin``.
 
@@ -48,6 +51,12 @@ class _Camel(BaseModel):
 
 class ActivePack(_Camel):
     key: str = Field(description="id@version, as GET /index/conformance/packs lists it")
+    role: Literal["required", "lens"] = Field(
+        default="lens",
+        description="required: every record is held to it, shown as this index's "
+        "requirement; lens: visitors may look through it, worded as not claimed "
+        "(TASKS 15.13)",
+    )
     kinds: list[Kind] | None = Field(
         default=None, description="Record kinds validated; null for the pack's own"
     )

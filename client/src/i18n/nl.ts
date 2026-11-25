@@ -871,6 +871,18 @@ export const nl: Messages = {
         "Geen records zonder profiel | Eén record noemt geen profiel | {n} records noemen geen profiel",
       unresolved:
         "Alle opgegeven profielen waren leesbaar | Eén record noemt een profiel dat niet gelezen kon worden | {n} records noemen een profiel dat niet gelezen kon worden",
+      ownProfile: "het eigen profiel van de FDP",
+      names: "noemt {names}",
+    },
+    lens: {
+      choose: "Bekijk door een ander profiel",
+      none: "Geen",
+      notClaimed: "Een lens: geen van de records van deze FDP noemt het",
+      claimed:
+        "Een lens: geen van de records van deze FDP noemt het | Een lens: één record van deze FDP noemt het | Een lens: {n} records van deze FDP noemen het",
+      recordNotClaimed: "Een lens: dit record claimt het niet",
+      recordClaimed: "Een lens, die dit record ook noemt",
+      statsNote: "Een lens: getoetst of records het nu claimen of niet",
     },
     lead: "Hoe de metadata van deze FDP zich verhoudt tot wat elk record opgeeft, en tot de profielen die deze index vereist. Een record voldoet als het geen schendingen heeft; waarschuwingen zijn aanbevelingen.",
     recordLead:
@@ -924,10 +936,13 @@ export const nl: Messages = {
       MaxLength: "te lang",
     },
     settings: {
+      role: "Rol van {name}",
+      roleRequired: "Vereist door deze index",
+      roleLens: "Een lens voor bezoekers",
       declaredHelp:
         "Toets elk record aan de profielen die het noemt met dct:conformsTo: de eigen SHACL van de FDP, opgehaald van zijn site, of een profiel hieronder waarvan het de specificatie noemt. Standaard aan.",
       requiredHelp:
-        "Profielen die deze index vereist: elk record wordt eraan getoetst, of het ze nu claimt of niet. Standaard uit.",
+        "Profielen hieronder zijn standaard lenzen: bezoekers kunnen erdoor kijken, en ze worden genoemd als profielen die de FDP niet claimt. Maak er een vereist om elk record eraan te houden.",
       heading: "Conformiteit",
       lead: "De profielen waaraan opgehaalde records worden getoetst, op de achtergrond na elke keer ophalen. Bij een wijziging wordt elke FDP opnieuw gecontroleerd.",
       profiles: "Toetsen aan",

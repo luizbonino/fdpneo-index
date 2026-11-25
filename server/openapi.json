@@ -47,6 +47,16 @@
             ],
             "description": "Record kinds validated; null for the pack's own",
             "title": "Kinds"
+          },
+          "role": {
+            "default": "lens",
+            "description": "required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)",
+            "enum": [
+              "required",
+              "lens"
+            ],
+            "title": "Role",
+            "type": "string"
           }
         },
         "required": [
@@ -101,10 +111,21 @@
             ],
             "description": "Record kinds validated; null for the pack's own",
             "title": "Kinds"
+          },
+          "role": {
+            "default": "lens",
+            "description": "required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)",
+            "enum": [
+              "required",
+              "lens"
+            ],
+            "title": "Role",
+            "type": "string"
           }
         },
         "required": [
           "key",
+          "role",
           "kinds",
           "files"
         ],
@@ -281,6 +302,17 @@
           "pack": {
             "description": "The profile pack's id",
             "title": "Pack",
+            "type": "string"
+          },
+          "role": {
+            "default": "required",
+            "description": "declared: what records name; required: every record is held to it; lens: a profile visitors may look through, not claimed (TASKS 15.13)",
+            "enum": [
+              "declared",
+              "required",
+              "lens"
+            ],
+            "title": "Role",
             "type": "string"
           },
           "specification": {
@@ -2403,6 +2435,16 @@
             "title": "Pack",
             "type": "string"
           },
+          "role": {
+            "default": "required",
+            "enum": [
+              "declared",
+              "required",
+              "lens"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
           "status": {
             "enum": [
               "conforms",
@@ -2466,6 +2508,12 @@
       },
       "PackSummary": {
         "properties": {
+          "claimed": {
+            "default": 0,
+            "description": "Records that declare this pack's specification themselves",
+            "title": "Claimed",
+            "type": "integer"
+          },
           "conforms": {
             "title": "Conforms",
             "type": "integer"
@@ -2495,6 +2543,17 @@
             "description": "Records validated against the pack",
             "title": "Records",
             "type": "integer"
+          },
+          "role": {
+            "default": "required",
+            "description": "declared, required or lens",
+            "enum": [
+              "declared",
+              "required",
+              "lens"
+            ],
+            "title": "Role",
+            "type": "string"
           },
           "undeclared": {
             "default": 0,

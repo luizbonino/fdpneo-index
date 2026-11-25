@@ -11,7 +11,7 @@
  * horizontal bars in one hue for the splits; columns for months and years; a
  * meter list for conformance; a table for the largest FDPs.
  */
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ENTRY_STATES } from "@/api";
@@ -128,12 +128,18 @@ const kinds = computed(() => {
     )
     .sort((a, b) => b.value - a.value);
 });
-const conformance = computed(() =>
+const allShares = computed(() =>
   (body.value?.conformance ?? []).map((share) => ({
     ...share,
     name: localized(share.title, share.pack),
     share: share.checked ? share.conforms / share.checked : 0,
   })),
+);
+// Lenses (TASKS 15.13): one at a time, on request; declared and required always.
+const lens = ref("");
+const lensShares = computed(() => allShares.value.filter((s) => s.role === "lens"));
+const conformance = computed(() =>
+  allShares.value.filter((s) => s.role !== "lens" || s.pack === lens.value),
 );
 const registrations = computed(() => body.value?.registrations ?? []);
 const published = computed(() => body.value?.published ?? []);
@@ -365,12 +371,24 @@ function spatialSearch(country: string) {
 
         <HealthStats v-if="body.health && body.health.fdps" :summary="body.health" />
 
-        <section v-if="conformance.length" class="card wide" aria-labelledby="h-conformance">
+        <section v-if="allShares.length" class="card wide" aria-labelledby="h-conformance">
           <h2 id="h-conformance">{{ t("stats.conformance") }}</h2>
           <p class="muted small">{{ t("stats.conformanceLead") }}</p>
+          <label v-if="lensShares.length" class="row lens small">
+            <span>{{ t("conformance.lens.choose") }}</span>
+            <select v-model="lens" class="input select">
+              <option value="">{{ t("conformance.lens.none") }}</option>
+              <option v-for="s in lensShares" :key="s.pack" :value="s.pack">{{ s.name }}</option>
+            </select>
+          </label>
           <ul class="meters">
             <li v-for="share in conformance" :key="share.pack" class="meter">
-              <span class="meter-name">{{ share.name }}</span>
+              <span class="meter-name"
+                >{{ share.name }}
+                <span v-if="share.role === 'lens'" class="small muted block">{{
+                  t("conformance.lens.statsNote")
+                }}</span></span
+              >
               <span
                 class="meter-track"
                 role="meter"
@@ -612,5 +630,15 @@ function spatialSearch(country: string) {
   .sources dd {
     margin-bottom: var(--fair-space-2);
   }
+}
+.lens {
+  gap: var(--fair-space-2);
+}
+.lens select {
+  width: auto;
+  max-width: 20rem;
+}
+.block {
+  display: block;
 }
 </style>

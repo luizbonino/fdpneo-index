@@ -41,7 +41,9 @@ GET /index/search?type=dataset&theme=http://publications.europa.eu/resource/auth
 ```
 
 **Records that meet a profile** this index checks (the "Meets profile"
-filter; values are the profiles' specification IRIs):
+filter; values are the profiles' specification IRIs, and
+`urn:fdpneo-index:conformance:declared` for records that meet what they
+declare themselves):
 
 ```http
 GET /index/search?type=dataset&conformance=https://semiceu.github.io/DCAT-AP/releases/3.0.1/

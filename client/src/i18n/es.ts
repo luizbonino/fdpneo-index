@@ -866,9 +866,18 @@ export const es: Messages = {
   },
   conformance: {
     heading: "Conformidad",
-    lead: "Cómo se ajustan los metadatos de este FDP a los perfiles con los que este índice los comprueba. Un registro es conforme cuando no tiene infracciones; las advertencias son recomendaciones.",
+    declared: {
+      title: "Lo que declara",
+      basis: "Comprobado con los perfiles que cada registro nombra con dct:conformsTo",
+      required: "Exigido por este índice",
+      undeclared:
+        "Ningún registro sin perfil | Un registro no declara ningún perfil | {n} registros no declaran ningún perfil",
+      unresolved:
+        "Todos los perfiles declarados se pudieron leer | Un registro nombra un perfil que no se pudo leer | {n} registros nombran un perfil que no se pudo leer",
+    },
+    lead: "Cómo se comparan los metadatos de este FDP con lo que declara cada registro y con los perfiles que exige este índice. Un registro es conforme cuando no tiene infracciones; los avisos son recomendaciones.",
     recordLead:
-      "Este registro, comprobado con los perfiles del índice. Las infracciones incumplen las reglas de un perfil; las advertencias son recomendaciones.",
+      "Este registro comprobado con lo que declara y con los perfiles que exige este índice. Las infracciones rompen las reglas de un perfil; los avisos son recomendaciones.",
     notYet:
       "Sin comprobar todavía: los registros se comprueban en segundo plano tras cada recolección.",
     validateAgain: "Volver a comprobar",
@@ -895,7 +904,13 @@ export const es: Messages = {
     value: "valor: {value}",
     firstFifty: "Se muestran los 50 primeros hallazgos.",
     severity: { violation: "Infracción", warning: "Advertencia", info: "Información" },
-    status: { conforms: "Conforme", violations: "Infracciones", error: "Sin comprobar" },
+    status: {
+      conforms: "Conforme",
+      violations: "Infracciones",
+      error: "Sin comprobar",
+      undeclared: "No declara perfil",
+      unresolved: "Perfil no legible",
+    },
     component: {
       MinCount: "falta",
       MaxCount: "indicado demasiadas veces",
@@ -911,6 +926,10 @@ export const es: Messages = {
       MaxLength: "demasiado largo",
     },
     settings: {
+      declaredHelp:
+        "Comprobar cada registro con los perfiles que nombra con dct:conformsTo: el SHACL propio del FDP, leído de su sitio, o un perfil de abajo cuya especificación nombra. Activado por defecto.",
+      requiredHelp:
+        "Perfiles que exige este índice: cada registro se comprueba con ellos, los declare o no. Desactivados por defecto.",
       heading: "Conformidad",
       lead: "Los perfiles con los que se comprueban los registros recolectados, en segundo plano tras cada recolección. Si se cambian, se vuelven a comprobar todos los FDP.",
       profiles: "Comprobar con",

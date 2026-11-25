@@ -15,6 +15,7 @@ import { useServiceInfo } from "@/composables/queries";
 import {
   componentName,
   conformanceApi,
+  DECLARED,
   packTitle,
   SEVERITY_TONE,
   type Problem,
@@ -113,6 +114,26 @@ function title(id: string): string {
             <tr v-for="pack in report.data.value.packs" :key="pack.pack">
               <th scope="row">
                 {{ title(pack.pack) }}
+                <span class="muted small block">
+                  {{
+                    pack.pack === DECLARED
+                      ? t("conformance.declared.basis")
+                      : t("conformance.declared.required")
+                  }}
+                </span>
+                <span v-if="pack.undeclared || pack.unresolved" class="muted small block">
+                  <template v-if="pack.undeclared">
+                    {{
+                      t("conformance.declared.undeclared", { n: pack.undeclared }, pack.undeclared)
+                    }}
+                  </template>
+                  <template v-if="pack.undeclared && pack.unresolved"> · </template>
+                  <template v-if="pack.unresolved">
+                    {{
+                      t("conformance.declared.unresolved", { n: pack.unresolved }, pack.unresolved)
+                    }}
+                  </template>
+                </span>
                 <span
                   v-if="pack.lastValidated"
                   class="muted small when"
@@ -275,5 +296,8 @@ h3 {
   .problem {
     grid-template-columns: 1fr;
   }
+}
+.block {
+  display: block;
 }
 </style>

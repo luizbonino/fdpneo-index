@@ -846,9 +846,18 @@ export const en = {
   },
   conformance: {
     heading: "Conformance",
-    lead: "How this FDP's metadata compares to the profiles this index checks it against. A record conforms when it has no violations; warnings are recommendations.",
+    declared: {
+      title: "What it declares",
+      basis: "Checked against the profiles each record names with dct:conformsTo",
+      required: "Required by this index",
+      undeclared:
+        "No records declare a profile | One record declares no profile | {n} records declare no profile",
+      unresolved:
+        "No declared profile was unreadable | One record names a profile that could not be read | {n} records name a profile that could not be read",
+    },
+    lead: "How this FDP's metadata compares to what each record declares, and to any profiles this index requires. A record conforms when it has no violations; warnings are recommendations.",
     recordLead:
-      "This record checked against the index's profiles. Violations break a profile's rules; warnings are recommendations.",
+      "This record checked against what it declares, and against any profiles this index requires. Violations break a profile's rules; warnings are recommendations.",
     notYet: "Not checked yet: records are checked in the background after each harvest.",
     validateAgain: "Check again",
     validating: "Checking again in the background.",
@@ -874,7 +883,13 @@ export const en = {
     value: "value: {value}",
     firstFifty: "The first 50 findings are shown.",
     severity: { violation: "Violation", warning: "Warning", info: "Info" },
-    status: { conforms: "Conforms", violations: "Violations", error: "Not checked" },
+    status: {
+      conforms: "Conforms",
+      violations: "Violations",
+      error: "Not checked",
+      undeclared: "Declares no profile",
+      unresolved: "Profile not readable",
+    },
     component: {
       MinCount: "missing",
       MaxCount: "given too often",
@@ -890,6 +905,10 @@ export const en = {
       MaxLength: "too long",
     },
     settings: {
+      declaredHelp:
+        "Check each record against the profiles it names with dct:conformsTo: the FDP’s own SHACL, fetched from its site, or a profile below whose specification it names. On by default.",
+      requiredHelp:
+        "Profiles this index requires: every record is checked against them, whether or not it claims them. Off by default.",
       heading: "Conformance",
       lead: "The profiles harvested records are checked against, in the background after each harvest. Changing them checks every FDP again.",
       profiles: "Check against",

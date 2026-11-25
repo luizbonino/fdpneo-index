@@ -78,6 +78,13 @@ The first release will contain:
   includes the month's database (`GEOIP_MONTH`).
 - **`deploy/compose.proxy.yaml`**: the client joins the Docker network of a
   reverse proxy on the same host, such as Caddy.
+- **Records are checked against what they declare** (TASKS 15.12): the
+  profiles they name with `dct:conformsTo`, an FDP profile's own SHACL
+  (read from the FDP's site under the outbound rules, kept for a day) or a
+  bundled pack whose specification they name. "Declares no profile" is not
+  held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
+  on by default**, and the profiles an administrator activates are shown as
+  this index's requirements. Migration 0020.
 - **Maps** on the Statistics page open on the world, with a view of each
   continent that has FDPs or records, and its count.
 - **Metadata health** (TASKS 15.8): after every harvest, how far an FDP's

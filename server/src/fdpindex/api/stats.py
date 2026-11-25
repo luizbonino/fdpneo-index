@@ -90,6 +90,10 @@ class ConformanceShare(_Camel):
     checked: int = Field(description="Records checked against it")
     conforms: int = Field(description="Records that meet it")
     by_kind: dict[str, KindShare] = Field(alias="byKind")
+    undeclared: int = Field(
+        default=0,
+        description="For `declared`: records that declare no profile, not counted as checked",
+    )
 
 
 class MonthCount(_Camel):

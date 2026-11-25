@@ -23,6 +23,7 @@ const settings = useQuery({
 
 const active = ref<string[]>([]);
 const reports = ref<"public" | "admin">("public");
+const declared = ref(true);
 const SURFACES = ["search", "sparql", "directory", "feed"] as const;
 type Surface = (typeof SURFACES)[number];
 const surfaces = ref<Record<Surface, string>>({ search: "", sparql: "", directory: "", feed: "" });
@@ -31,6 +32,7 @@ const saving = ref(false);
 
 function load(value: ConformanceSettings) {
   active.value = value.packs.map((p) => p.key);
+  declared.value = value.declared;
   reports.value = value.reports;
   surfaces.value = {
     search: value.surfaces.search ?? "",
@@ -62,6 +64,7 @@ const dirty = computed(() => {
   if (!value) return false;
   return (
     value.reports !== reports.value ||
+    value.declared !== declared.value ||
     value.packs.map((p) => p.key).join() !== active.value.join() ||
     JSON.stringify(value.surfaces) !== JSON.stringify(chosenSurfaces())
   );
@@ -86,6 +89,7 @@ async function save() {
     const kept = new Map(current.packs.map((p) => [p.key, p]));
     const saved = await conformanceApi.saveSettings({
       packs: active.value.map((key) => kept.get(key) ?? { key, kinds: null, files: null }),
+      declared: declared.value,
       reports: reports.value,
       surfaces: chosenSurfaces(),
     });
@@ -117,6 +121,14 @@ async function validateAll() {
     <p class="muted small">{{ t("conformance.settings.lead") }}</p>
     <fieldset class="plain stack">
       <legend class="label">{{ t("conformance.settings.profiles") }}</legend>
+      <label class="check pack">
+        <input v-model="declared" type="checkbox" />
+        <span>
+          <strong>{{ t("conformance.declared.title") }}</strong>
+          <span class="muted small block">{{ t("conformance.settings.declaredHelp") }}</span>
+        </span>
+      </label>
+      <p class="muted small">{{ t("conformance.settings.requiredHelp") }}</p>
       <label v-for="pack in packs.data.value ?? []" :key="pack.key" class="check pack">
         <input
           type="checkbox"

@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 from sqlalchemy import delete, func, select
 
+from fdpindex.conformance.service import DECLARED, DECLARED_TITLE
 from fdpindex.db import utcnow
 from fdpindex.findings import FAILURE_KINDS, FINDINGS, LEVELS, NOTES
 from fdpindex.geo import SOURCES, spatial_country
@@ -237,6 +238,8 @@ class StatsService:
         """Per active profile: of the records visitors find, how many were checked and met it."""
         assert self._conformance is not None
         specs = await self._conformance.specs()
+        declared_on = await self._conformance.declared_on()
+        wanted = [*specs, *([DECLARED] if declared_on else [])]
         rows = (
             await session.execute(
                 select(
@@ -247,17 +250,42 @@ class StatsService:
                 )
                 .join(R, R.public_id == ConformanceResult.public_id)
                 .join(E, E.uuid == R.entry_uuid)
-                .where(*visible, ConformanceResult.pack.in_(list(specs)))
+                .where(*visible, ConformanceResult.pack.in_(wanted))
                 .group_by(ConformanceResult.pack, ConformanceResult.kind, ConformanceResult.status)
             )
         ).all()
         checked: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         conforming: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        undeclared = 0
         for pack, kind, status, n in rows:
+            if status == "undeclared":
+                undeclared += int(n)
+                continue  # nothing to check: not counted as checked
             checked[pack][kind] += int(n)
             if status == "conforms":
                 conforming[pack][kind] += int(n)
-        return [
+        shares: list[dict[str, Any]] = []
+        if declared_on:
+            # What records declare (TASKS 15.12): first, as the default judgement.
+            shares.append(
+                {
+                    "pack": DECLARED,
+                    "specification": "",
+                    "title": DECLARED_TITLE,
+                    "checked": sum(checked[DECLARED].values()),
+                    "conforms": sum(conforming[DECLARED].values()),
+                    "undeclared": undeclared,
+                    "byKind": {
+                        kind: {
+                            "checked": checked[DECLARED][kind],
+                            "conforms": conforming[DECLARED][kind],
+                        }
+                        for kind in KINDS
+                        if checked[DECLARED][kind]
+                    },
+                }
+            )
+        return shares + [
             {
                 "pack": pack,
                 "specification": specification,

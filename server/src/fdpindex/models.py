@@ -254,6 +254,27 @@ class HarvestWalk(Base):
     __table_args__ = (Index("ix_harvest_walk_continue_at", "continue_at"),)
 
 
+class DeclaredProfile(Base):
+    """A profile records declare with ``dct:conformsTo``, as the index resolved it (TASKS 15.12).
+
+    ``status``: ``shapes`` (``shapes`` holds the SHACL its validation resources
+    name, as N-Triples), ``no-shapes`` (a profile without them, or not a profile),
+    ``failed`` (could not be fetched), ``refused`` (on a site the FDP's harvest may
+    not read). Fetched again after a day.
+    """
+
+    __tablename__ = "declared_profile"
+
+    iri: Mapped[str] = mapped_column(String(2048), primary_key=True)
+    fetched_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    shapes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # The SHACL documents read, and the profiles followed (prof:isProfileOf).
+    sources: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
 class MetadataHealth(Base):
     """An FDP's metadata health (TASKS 15.8): what its last walk found (``fdpindex.findings``).
 

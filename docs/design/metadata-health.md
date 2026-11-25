@@ -1,7 +1,7 @@
 # Metadata health and complete harvests (TASKS 15.6–15.11)
 
-Status: reviewed (2026-11-24); the decisions are in §5. 3.1 and 3.2 are
-built (TASKS 15.7, 15.8). Updated with ERDERA's onboarding benchmark (3.3,
+Status: reviewed (2026-11-24); the decisions are in §5. 3.1, 3.2 and the
+declared part of 3.7 are built (TASKS 15.7, 15.8, 15.12). Updated with ERDERA's onboarding benchmark (3.3,
 3.4) on 2026-11-24, and with what an FDP promised (3.7) on 2026-11-25.
 
 ## 1. Why
@@ -419,7 +419,7 @@ results instead.
 - 15.11 Check before registering (3.5).
 - 15.12 Declared conformance (3.7): follow `dct:conformsTo` to the FDP's
   profile and SHACL, or to a bundled pack; the default when no pack is
-  chosen; DCAT-AP opt-in; "declares no profile".
+  chosen; DCAT-AP opt-in; "declares no profile". Done.
 - 15.13 Lenses (3.7): visitors choose among the activated packs on an FDP's
   page, in search and in the Statistics, worded as not claimed.
 - The error-text fix (§4) goes first, on its own. Done.

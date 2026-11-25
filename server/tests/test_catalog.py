@@ -109,7 +109,11 @@ def test_formats_and_one_record(api: SearchApi) -> None:
 
 
 def test_a_strict_feed_keeps_conforming_records(api: SearchApi) -> None:
-    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "surfaces": {"feed": "dcat-ap"}}
+    body = {
+        "packs": [{"key": "dcat-ap@3.0.1"}],
+        "declared": False,
+        "surfaces": {"feed": "dcat-ap"},
+    }
     assert (
         api.client.put("/index/conformance/settings", json=body, headers=ADMIN).status_code == 200
     )

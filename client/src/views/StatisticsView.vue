@@ -391,6 +391,16 @@ function spatialSearch(country: string) {
                       checked: number(share.checked),
                     })
                   }}
+                  <template v-if="share.undeclared">
+                    ·
+                    {{
+                      t(
+                        "conformance.declared.undeclared",
+                        { n: number(share.undeclared) },
+                        share.undeclared,
+                      )
+                    }}
+                  </template>
                 </span>
               </span>
             </li>

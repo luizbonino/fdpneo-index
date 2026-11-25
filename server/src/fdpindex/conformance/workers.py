@@ -41,6 +41,9 @@ class PackUse:
     directory: str
     key: str
     files: tuple[str, ...] | None
+    # Shapes as N-Triples instead of a pack's folder: a profile a record declares
+    # (TASKS 15.12); ``key`` then names them with their digest.
+    shapes: str | None = None
 
 
 @dataclass(frozen=True)
@@ -73,6 +76,11 @@ def run_jobs(jobs: Sequence[Job]) -> list[list[Outcome]]:
             continue
         outcomes: list[Outcome] = []
         for use in job.packs:
+            if use.shapes is not None:
+                outcomes.append(
+                    _validator.validate_shapes(graph, use.key, use.shapes, root=job.root)
+                )
+                continue
             pack = _packs.get(use.directory)
             if pack is None:
                 pack = _packs[use.directory] = load_pack(Path(use.directory))

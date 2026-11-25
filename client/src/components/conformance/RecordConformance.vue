@@ -21,7 +21,13 @@ const report = useQuery({
 });
 const packs = useQuery({ queryKey: ["conformance-packs"], queryFn: conformanceApi.packs });
 
-const STATUS_TONE: Record<string, string> = { conforms: "ok", violations: "bad", error: "warn" };
+const STATUS_TONE: Record<string, string> = {
+  conforms: "ok",
+  violations: "bad",
+  error: "warn",
+  undeclared: "neutral",
+  unresolved: "warn",
+};
 </script>
 
 <template>
@@ -36,7 +42,7 @@ const STATUS_TONE: Record<string, string> = { conforms: "ok", violations: "bad",
     <details
       v-for="result in report.data.value.results"
       :key="result.pack"
-      :open="result.status !== 'conforms'"
+      :open="!['conforms', 'undeclared'].includes(result.status)"
       class="pack"
     >
       <summary>

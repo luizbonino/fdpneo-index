@@ -474,11 +474,20 @@ async def test_semantic_search_finds_meaning_the_words_miss(
 async def test_conformance_in_worker_processes(
     index: tuple[IndexService, JobRunner, FakeNetwork, object],
 ) -> None:
-    """Validation in spawned workers, results and reports on PostgreSQL (TASKS 11.3)."""
+    """Validation in spawned workers, results and reports on PostgreSQL (TASKS 11.3).
+
+    DCAT-AP as a required pack, and the dataset declaring the FDP's own profile, whose
+    shapes travel to the workers as text (TASKS 15.12).
+    """
+    from fdpindex.conformance.declared import DeclaredResolver
     from fdpindex.conformance.packs import discover
     from fdpindex.conformance.reports import entry_report, record_page
     from fdpindex.conformance.service import ConformanceService
-    from fdpindex.conformance.settings import ConformanceSettingsService
+    from fdpindex.conformance.settings import (
+        ActivePack,
+        ConformanceSettings,
+        ConformanceSettingsService,
+    )
     from fdpindex.conformance.workers import ValidationPool
     from fdpindex.models import ConformanceResult, IndexEntry
     from fdpindex.search.profile_store import ProfileStore
@@ -489,6 +498,30 @@ async def test_conformance_in_worker_processes(
         await session.execute(delete(ConformanceResult))
         await session.commit()
     network.standard_fdp()
+    fdp = "https://fdp.example.org"
+    dataset = network.pages[f"{fdp}/dataset/d1"]
+    network.serve(
+        f"{fdp}/dataset/d1",
+        dataset[2].replace(
+            "a dcat:Dataset ;",
+            f"a dcat:Dataset ;\n    dct:conformsTo <{fdp}/profile/p1> ;",
+        ),
+    )
+    network.serve(
+        f"{fdp}/profile/p1",
+        f"""@prefix prof: <http://www.w3.org/ns/dx/prof/> .
+<{fdp}/profile/p1> a prof:Profile ; prof:hasResource [
+    prof:hasRole <http://www.w3.org/ns/dx/prof/role/Validation> ;
+    prof:hasArtifact <{fdp}/metadata-schemas/s1> ] .""",
+    )
+    network.serve(
+        f"{fdp}/metadata-schemas/s1",
+        """@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+<https://example.org/s#D> a sh:NodeShape ; sh:targetClass dcat:Dataset ;
+    sh:property [ sh:path dct:description ; sh:minCount 1 ] .""",
+    )
     outcome = await service.accept_ping(
         "https://fdp.example.org",
         remote_addr="203.0.113.9",
@@ -500,8 +533,14 @@ async def test_conformance_in_worker_processes(
     service.after_trigger(outcome.event_id)
     await jobs.drain()
     profile = await ProfileStore(factory).effective()  # type: ignore[arg-type]
-    settings = ConformanceSettingsService(factory, discover())  # type: ignore[arg-type]
-    conformance = ConformanceService(factory, settings, lambda: profile, ValidationPool(2))  # type: ignore[arg-type]
+    packs = discover()
+    settings = ConformanceSettingsService(  # type: ignore[arg-type]
+        factory, packs, ConformanceSettings(packs=[ActivePack(key="dcat-ap@3.0.1")])
+    )
+    resolver = DeclaredResolver(factory, service._outbound, lambda: packs)  # type: ignore[arg-type]
+    conformance = ConformanceService(  # type: ignore[arg-type]
+        factory, settings, lambda: profile, ValidationPool(2), resolver=resolver
+    )
     try:
         await conformance.sync_once()
     finally:
@@ -509,7 +548,9 @@ async def test_conformance_in_worker_processes(
     async with factory() as session:  # type: ignore[operator]
         entry = await session.scalar(select(IndexEntry.uuid))
         assert entry is not None
-        report = await entry_report(session, entry, [("dcat-ap", "3.0.1")])
+        report = await entry_report(
+            session, entry, [("declared", "declared"), ("dcat-ap", "3.0.1")]
+        )
         page = await record_page(
             session,
             entry_id=entry,
@@ -522,11 +563,15 @@ async def test_conformance_in_worker_processes(
             limit=10,
         )
     assert report.records == 3  # root, catalogue, dataset
-    assert report.packs[0].records == 3
+    declared, dcat_ap = report.packs
+    # The dataset declares the FDP's profile, which asks for a description it lacks; the
+    # root and the catalogue declare nothing.
+    assert (declared.violations, declared.undeclared) == (1, 2)
+    assert dcat_ap.records == 3
     # The test FDP's catalogue and dataset lack descriptions (DCAT-AP mandatory).
-    assert report.packs[0].violations >= 2
+    assert dcat_ap.violations >= 2
     assert report.problems and report.problems[0].severity == "violation"
-    assert page.total == report.packs[0].violations
+    assert page.total == dcat_ap.violations
 
 
 def test_the_url_key_migration_fills_existing_entries() -> None:

@@ -34,7 +34,8 @@ if TYPE_CHECKING:
 
 TOP_PROBLEMS = 20
 Severity = Literal["violation", "warning", "info"]
-Status = Literal["conforms", "violations", "error"]
+# undeclared and unresolved only for the pseudo-pack "declared" (TASKS 15.12).
+Status = Literal["conforms", "violations", "error", "undeclared", "unresolved"]
 _SEVERITY_ORDER = case(
     (ConformanceFinding.severity == "violation", 0),
     (ConformanceFinding.severity == "warning", 1),
@@ -66,6 +67,13 @@ class PackSummary(_Camel):
     violations: int = Field(description="Records with violations")
     errors: int = Field(description="Records that could not be validated")
     with_warnings: int = Field(alias="withWarnings", description="Records with warnings")
+    undeclared: int = Field(
+        default=0, description="For `declared`: records that declare no profile"
+    )
+    unresolved: int = Field(
+        default=0,
+        description="For `declared`: records whose declared profiles could not be resolved",
+    )
     last_validated: str | None = Field(alias="lastValidated")
 
 
@@ -147,6 +155,8 @@ async def entry_report(
                 func.sum(case((ConformanceResult.status == "error", 1), else_=0)),
                 func.sum(case((ConformanceResult.warnings > 0, 1), else_=0)),
                 func.max(ConformanceResult.validated_at),
+                func.sum(case((ConformanceResult.status == "undeclared", 1), else_=0)),
+                func.sum(case((ConformanceResult.status == "unresolved", 1), else_=0)),
             )
             .where(ConformanceResult.entry_uuid == entry_id)
             .group_by(ConformanceResult.pack)
@@ -167,6 +177,8 @@ async def entry_report(
                 violations=int(row[3] or 0) if row else 0,
                 errors=int(row[4] or 0) if row else 0,
                 withWarnings=int(row[5] or 0) if row else 0,
+                undeclared=int(row[7] or 0) if row else 0,
+                unresolved=int(row[8] or 0) if row else 0,
                 lastValidated=_when(row[6]) if row else None,
             )
         )

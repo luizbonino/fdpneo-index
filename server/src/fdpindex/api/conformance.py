@@ -31,6 +31,7 @@ from fdpindex.conformance.reports import (
     record_page,
     record_report,
 )
+from fdpindex.conformance.service import DECLARED
 from fdpindex.conformance.settings import ConformanceSettings, ConformanceSettingsView
 from fdpindex.errors import BadRequest, Forbidden, NotFound, Unauthorized
 from fdpindex.models import IndexEntry
@@ -132,9 +133,13 @@ async def _readable(request: Request, caller: Principal) -> ConformanceService:
 
 
 async def _active(service: ConformanceService) -> list[tuple[str, str]]:
+    """What records are checked against: what they declare first (TASKS 15.12), then packs."""
     settings = await service.settings.get()
     packs = service.settings.packs
-    return [(packs[a.key].id, packs[a.key].version) for a in settings.packs if a.key in packs]
+    active = [(packs[a.key].id, packs[a.key].version) for a in settings.packs if a.key in packs]
+    if await service.declared_on():
+        active.insert(0, (DECLARED, DECLARED))
+    return active
 
 
 @router.get(
@@ -225,10 +230,11 @@ async def list_records(
     request: Request,
     caller: Caller,
     pack: Annotated[
-        str | None, Query(description="A pack id; the first active pack by default")
+        str | None,
+        Query(description="A pack id, or `declared`; the first active by default"),
     ] = None,
     entry: UUID | None = None,
-    status: Literal["conforms", "violations", "error"] | None = None,
+    status: Literal["conforms", "violations", "error", "undeclared", "unresolved"] | None = None,
     path: Annotated[str | None, Query(max_length=2048)] = None,
     component: Annotated[str | None, Query(max_length=128)] = None,
     severity: Literal["violation", "warning", "info"] | None = None,

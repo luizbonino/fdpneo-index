@@ -191,14 +191,32 @@ description) with the blank nodes and inline descriptions of its page; a
 dataset's record includes its distributions. A record **conforms** to a
 profile when it has no violations; warnings are recommendations.
 
+**What it declares** (on by default). Each record is checked against the
+profiles it names itself with `dct:conformsTo`, not against one it never
+promised:
+
+- an FDP profile (the FDP software's `/profile/{uuid}`): the index reads its
+  validation resources, the FDP's own SHACL (`/metadata-schemas/{uuid}`),
+  and those of the profiles it builds on, from the FDP's own site (or a site
+  you allowed for that FDP), and keeps them for a day;
+- the specification of a profile below (DCAT-AP 3.0.1, for instance): that
+  profile's shapes;
+- anything else is *unresolved*, with the reason: on another site, not a
+  profile, no shapes, not readable. A record that names nothing *declares no
+  profile*, which is not counted against it.
+
+**Profiles this index requires** (off by default; DCAT-AP 3.0.1 was on
+until 2026-11-25). Every record is checked against them whether or not it
+claims them, and the reports say they are this index's requirements:
+
 | Profile | Applies to | Notes |
 |---|---|---|
-| `dcat-ap@3.0.1` | FDP roots, catalogues, datasets, series, services | SEMIC's shapes; recommended properties are warnings. **On by default** |
+| `dcat-ap@3.0.1` | FDP roots, catalogues, datasets, series, services | SEMIC's shapes; recommended properties are warnings |
 | `healthdcat-ap@release-8` | datasets, series | a draft release; the shapes follow the dataset's `dct:accessRights` (public, restricted, non-public) |
 | `health-ri-core@2.0.3` | catalogues, datasets, series, services | the Dutch Health-RI v2 model |
 
-**Settings → Conformance** chooses the profiles and who may read the
-reports: everyone (the default, like the metadata they describe) or
+**Settings → Conformance** turns the declared check on or off, chooses the
+required profiles and who may read the reports: everyone (the default, like the metadata they describe) or
 administrators only. Changing the profiles checks every FDP again in the
 background; **Check every FDP again** forces it. The API
 (`/index/conformance/settings`) also narrows a profile to some kinds of

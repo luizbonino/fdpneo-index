@@ -864,9 +864,18 @@ export const pt: Messages = {
   },
   conformance: {
     heading: "Conformidade",
-    lead: "Como os metadados deste FDP se comparam com os perfis com que o índice os verifica. Um registo está conforme quando não tem violações; os avisos são recomendações.",
+    declared: {
+      title: "O que declara",
+      basis: "Verificado face aos perfis que cada registo nomeia com dct:conformsTo",
+      required: "Exigido por este índice",
+      undeclared:
+        "Nenhum registo sem perfil | Um registo não declara perfil | {n} registos não declaram perfil",
+      unresolved:
+        "Todos os perfis declarados eram legíveis | Um registo nomeia um perfil que não foi possível ler | {n} registos nomeiam um perfil que não foi possível ler",
+    },
+    lead: "Como os metadados deste FDP se comparam com o que cada registo declara e com os perfis que este índice exige. Um registo está conforme quando não tem violações; os avisos são recomendações.",
     recordLead:
-      "Este registo verificado face aos perfis do índice. As violações infringem as regras de um perfil; os avisos são recomendações.",
+      "Este registo verificado face ao que declara e aos perfis que este índice exige. As violações quebram as regras de um perfil; os avisos são recomendações.",
     notYet: "Ainda não verificado: os registos são verificados em segundo plano após cada recolha.",
     validateAgain: "Verificar novamente",
     validating: "A verificar novamente em segundo plano.",
@@ -892,7 +901,13 @@ export const pt: Messages = {
     value: "valor: {value}",
     firstFifty: "São mostradas as primeiras 50 constatações.",
     severity: { violation: "Violação", warning: "Aviso", info: "Informação" },
-    status: { conforms: "Conforme", violations: "Violações", error: "Não verificado" },
+    status: {
+      conforms: "Conforme",
+      violations: "Violações",
+      error: "Não verificado",
+      undeclared: "Não declara perfil",
+      unresolved: "Perfil ilegível",
+    },
     component: {
       MinCount: "em falta",
       MaxCount: "indicado demasiadas vezes",
@@ -908,6 +923,10 @@ export const pt: Messages = {
       MaxLength: "demasiado longo",
     },
     settings: {
+      declaredHelp:
+        "Verificar cada registo face aos perfis que nomeia com dct:conformsTo: o SHACL próprio do FDP, lido do seu sítio, ou um perfil abaixo cuja especificação nomeia. Ativo por omissão.",
+      requiredHelp:
+        "Perfis que este índice exige: cada registo é verificado face a eles, quer os declare quer não. Desativados por omissão.",
       heading: "Conformidade",
       lead: "Os perfis com que os registos recolhidos são verificados, em segundo plano após cada recolha. Alterá-los volta a verificar todos os FDP.",
       profiles: "Verificar face a",

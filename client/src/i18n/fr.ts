@@ -867,9 +867,18 @@ export const fr: Messages = {
   },
   conformance: {
     heading: "Conformité",
-    lead: "Comment les métadonnées de ce FDP se situent par rapport aux profils selon lesquels cet index les vérifie. Une notice est conforme lorsqu’elle ne présente aucune violation ; les avertissements sont des recommandations.",
+    declared: {
+      title: "Ce qu’il déclare",
+      basis: "Vérifié selon les profils que chaque fiche nomme avec dct:conformsTo",
+      required: "Exigé par cet index",
+      undeclared:
+        "Aucune fiche sans profil | Une fiche ne déclare aucun profil | {n} fiches ne déclarent aucun profil",
+      unresolved:
+        "Tous les profils déclarés étaient lisibles | Une fiche nomme un profil illisible | {n} fiches nomment un profil illisible",
+    },
+    lead: "Comment les métadonnées de ce FDP se comparent à ce que déclare chaque fiche, et aux profils qu’exige cet index. Une fiche est conforme quand elle n’a aucune violation ; les avertissements sont des recommandations.",
     recordLead:
-      "Cette notice, vérifiée selon les profils de l’index. Les violations enfreignent les règles d’un profil ; les avertissements sont des recommandations.",
+      "Cette fiche vérifiée selon ce qu’elle déclare, et selon les profils qu’exige cet index. Les violations enfreignent les règles d’un profil ; les avertissements sont des recommandations.",
     notYet:
       "Pas encore vérifié : les notices sont vérifiées en arrière-plan après chaque moissonnage.",
     validateAgain: "Vérifier à nouveau",
@@ -897,7 +906,13 @@ export const fr: Messages = {
     value: "valeur : {value}",
     firstFifty: "Les 50 premiers résultats sont affichés.",
     severity: { violation: "Violation", warning: "Avertissement", info: "Info" },
-    status: { conforms: "Conforme", violations: "Violations", error: "Non vérifié" },
+    status: {
+      conforms: "Conforme",
+      violations: "Violations",
+      error: "Non vérifié",
+      undeclared: "Ne déclare aucun profil",
+      unresolved: "Profil illisible",
+    },
     component: {
       MinCount: "manquant",
       MaxCount: "indiqué trop souvent",
@@ -913,6 +928,10 @@ export const fr: Messages = {
       MaxLength: "trop long",
     },
     settings: {
+      declaredHelp:
+        "Vérifier chaque fiche selon les profils qu’elle nomme avec dct:conformsTo : le SHACL propre du FDP, lu sur son site, ou un profil ci-dessous dont elle nomme la spécification. Activé par défaut.",
+      requiredHelp:
+        "Profils exigés par cet index : chaque fiche est vérifiée selon eux, qu’elle s’en réclame ou non. Désactivés par défaut.",
       heading: "Conformité",
       lead: "Les profils selon lesquels les notices moissonnées sont vérifiées, en arrière-plan après chaque moissonnage. Les modifier entraîne une nouvelle vérification de tous les FDP.",
       profiles: "Vérifier selon",

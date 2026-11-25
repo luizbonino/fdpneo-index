@@ -1240,6 +1240,12 @@ export interface components {
     };
     /** ConformanceSettings */
     ConformanceSettings: {
+      /**
+       * Declared
+       * @description Check each record against what it declares with dct:conformsTo
+       * @default true
+       */
+      declared: boolean;
       /** Packs */
       packs?: components["schemas"]["ActivePack-Input"][];
       /**
@@ -1253,6 +1259,12 @@ export interface components {
     };
     /** ConformanceSettingsView */
     ConformanceSettingsView: {
+      /**
+       * Declared
+       * @description Check each record against what it declares with dct:conformsTo
+       * @default true
+       */
+      declared: boolean;
       /** Isdefault */
       isDefault: boolean;
       /** Packs */
@@ -1299,6 +1311,12 @@ export interface components {
       title: {
         [key: string]: string;
       };
+      /**
+       * Undeclared
+       * @description For `declared`: records that declare no profile, not counted as checked
+       * @default 0
+       */
+      undeclared: number;
     };
     /**
      * DuplicateGroupView
@@ -2238,7 +2256,7 @@ export interface components {
        * Status
        * @enum {string}
        */
-      status: "conforms" | "violations" | "error";
+      status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
       /** Validatedat */
       validatedAt: string | null;
       /** Variant */
@@ -2271,6 +2289,18 @@ export interface components {
        * @description Records validated against the pack
        */
       records: number;
+      /**
+       * Undeclared
+       * @description For `declared`: records that declare no profile
+       * @default 0
+       */
+      undeclared: number;
+      /**
+       * Unresolved
+       * @description For `declared`: records whose declared profiles could not be resolved
+       * @default 0
+       */
+      unresolved: number;
       /** Version */
       version: string | null;
       /**
@@ -2532,7 +2562,7 @@ export interface components {
        * Status
        * @enum {string}
        */
-      status: "conforms" | "violations" | "error";
+      status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
       /** Title */
       title: string | null;
       /** Validatedat */
@@ -3366,10 +3396,10 @@ export interface operations {
   list_records_index_conformance_records_get: {
     parameters: {
       query?: {
-        /** @description A pack id; the first active pack by default */
+        /** @description A pack id, or `declared`; the first active by default */
         pack?: string | null;
         entry?: string | null;
-        status?: ("conforms" | "violations" | "error") | null;
+        status?: ("conforms" | "violations" | "error" | "undeclared" | "unresolved") | null;
         path?: string | null;
         component?: string | null;
         severity?: ("violation" | "warning" | "info") | null;

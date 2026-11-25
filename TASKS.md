@@ -36,8 +36,8 @@ task are listed in the last column.
 | 12 Sources beyond FDPs | Connector protocol, DCAT-AP sources, CKAN and Molgenis | 0/3 | – | 3 | ⬜ Not started | All three |
 | 13 Internationalisation | Every string translatable, locale switching, first translations, multilingual admin texts | 6/6 | – | – | ✅ Done | – |
 | 14 Documentation | Guides per audience (seekers, data holders, administrators, operators, integrators, agent builders), a docs site | 9/9 | – | – | ✅ Done | – |
-| 15 Statistics and provenance | A Statistics page with counts over time and maps; harvest provenance in PROV-O; metadata health and complete harvests | 7/14 | – | 7 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; 15.9–15.13 designed and reviewed |
-| **Total** | | **134/144** | **–** | **10** | | |
+| 15 Statistics and provenance | A Statistics page with counts over time and maps; harvest provenance in PROV-O; metadata health and complete harvests | 8/14 | – | 6 | 🟡 In progress | 15.2 awaits review of `docs/design/provenance.md`; 15.9–15.11 and 15.13 designed and reviewed |
+| **Total** | | **135/144** | **–** | **9** | | |
 
 ## Phase 0 — Foundations
 
@@ -262,5 +262,5 @@ copy it republishes came from, and how complete each FDP's metadata is.
 - [ ] 15.9 Network profiles: a template with its schema, a settings page, a public "Expectations" page, a generic default and an ERDERA example
 - [ ] 15.10 Triggering other tools (FAIR assessment, network tests) and showing their results; FTR results read as they are. First case: a network profile's FAIR Testing Resources benchmarks (ERDERA's Onboarding Benchmark, FAIRsharing.2d49c0) run through FAIR Champion
 - [ ] 15.11 Check an FDP before registering it, open or admin-only as the approval policy says (after 15.8)
-- [ ] 15.12 Declared conformance: check records against what they declare (`dct:conformsTo` → the FDP's profile and SHACL, or a bundled pack); the default when an administrator chose no pack; DCAT-AP opt-in; "declares no profile" (design note metadata-health 3.7, decision 8)
+- [x] 15.12 Declared conformance — *done: `fdpindex.conformance.declared` resolves each record's `dct:conformsTo` to a pack (by specification IRI) or to an FDP profile's SHACL (W3C Profiles Vocabulary, `prof:role/Validation` artifacts and `prof:isProfileOf` parents, fetched only from the FDP's own or allowed sites, cached a day in `declared_profile`, migration 0020); results as the pseudo-pack `declared` with `undeclared` and `unresolved` statuses; on by default, DCAT-AP opt-in; reports, record pages, Statistics and the settings page show it; the EHDS profile keeps HealthDCAT-AP and DCAT-AP as requirements*
 - [ ] 15.13 Lenses: visitors look at an FDP, search and the Statistics through another activated pack, worded as not claimed (3.7, decision 9)

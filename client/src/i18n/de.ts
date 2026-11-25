@@ -868,9 +868,18 @@ export const de: Messages = {
   },
   conformance: {
     heading: "Konformität",
-    lead: "Wie die Metadaten dieses FDP im Vergleich zu den Profilen abschneiden, gegen die dieser Index sie prüft. Ein Eintrag ist konform, wenn er keine Verstöße hat; Warnungen sind Empfehlungen.",
+    declared: {
+      title: "Was er angibt",
+      basis: "Geprüft gegen die Profile, die jeder Datensatz mit dct:conformsTo nennt",
+      required: "Von diesem Index verlangt",
+      undeclared:
+        "Kein Datensatz ohne Profil | Ein Datensatz nennt kein Profil | {n} Datensätze nennen kein Profil",
+      unresolved:
+        "Alle angegebenen Profile waren lesbar | Ein Datensatz nennt ein Profil, das nicht gelesen werden konnte | {n} Datensätze nennen ein Profil, das nicht gelesen werden konnte",
+    },
+    lead: "Wie die Metadaten dieses FDP zu dem stehen, was jeder Datensatz angibt, und zu den Profilen, die dieser Index verlangt. Ein Datensatz ist konform, wenn er keine Verstöße hat; Warnungen sind Empfehlungen.",
     recordLead:
-      "Dieser Eintrag, geprüft gegen die Profile des Index. Verstöße verletzen die Regeln eines Profils; Warnungen sind Empfehlungen.",
+      "Dieser Datensatz, geprüft gegen das, was er angibt, und gegen die Profile, die dieser Index verlangt. Verstöße brechen die Regeln eines Profils; Warnungen sind Empfehlungen.",
     notYet: "Noch nicht geprüft: Einträge werden nach jedem Abruf im Hintergrund geprüft.",
     validateAgain: "Erneut prüfen",
     validating: "Wird im Hintergrund erneut geprüft.",
@@ -897,7 +906,13 @@ export const de: Messages = {
     value: "Wert: {value}",
     firstFifty: "Die ersten 50 Befunde werden angezeigt.",
     severity: { violation: "Verstoß", warning: "Warnung", info: "Info" },
-    status: { conforms: "Konform", violations: "Verstöße", error: "Nicht geprüft" },
+    status: {
+      conforms: "Konform",
+      violations: "Verstöße",
+      error: "Nicht geprüft",
+      undeclared: "Nennt kein Profil",
+      unresolved: "Profil nicht lesbar",
+    },
     component: {
       MinCount: "fehlt",
       MaxCount: "zu oft angegeben",
@@ -913,6 +928,10 @@ export const de: Messages = {
       MaxLength: "zu lang",
     },
     settings: {
+      declaredHelp:
+        "Jeden Datensatz gegen die Profile prüfen, die er mit dct:conformsTo nennt: das eigene SHACL des FDP, von seiner Website geladen, oder ein Profil unten, dessen Spezifikation er nennt. Standardmäßig an.",
+      requiredHelp:
+        "Profile, die dieser Index verlangt: Jeder Datensatz wird gegen sie geprüft, ob er sie beansprucht oder nicht. Standardmäßig aus.",
       heading: "Konformität",
       lead: "Die Profile, gegen die abgerufene Einträge nach jedem Abruf im Hintergrund geprüft werden. Eine Änderung prüft alle FDPs erneut.",
       profiles: "Prüfen gegen",

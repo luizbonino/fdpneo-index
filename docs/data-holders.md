@@ -113,10 +113,15 @@ every kind of child a record may have.
 
 The index checks every harvested **record** (a catalogue, dataset, dataset
 series or data service, with its distributions and the descriptions it
-holds inline) against the **profiles** the index uses: DCAT-AP 3 by default,
-HealthDCAT-AP and Health-RI core in health indexes. A record **conforms**
-to a profile when it has no **violations**; **warnings** are the profile's
-recommendations.
+holds inline) against **what it declares**: the profiles it names with
+`dct:conformsTo`. The FDP software names its own profile on every record;
+the index reads that profile's SHACL from your FDP and checks the record
+against it. A record that names nothing declares no profile, which is not
+held against it. Some indexes also **require** profiles of their own
+(HealthDCAT-AP in health indexes, for instance); the report says which
+checks are your declarations and which are the index's requirements. A
+record **conforms** to a profile when it has no **violations**;
+**warnings** are the profile's recommendations.
 
 Your FDP's page has a **Conformance** section: per profile, how many records
 conform, and the most frequent problems. **Show records** lists the records

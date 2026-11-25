@@ -11,6 +11,13 @@ indexer, no events. ``conformance_entry_state`` records each entry's node
 fingerprint and the settings it was validated with; the start-up reconcile
 compares them and finds exactly the entries left to do, so an interrupted
 pass resumes on its own.
+
+Besides the active packs, each record is checked against what it declares
+with ``dct:conformsTo`` (TASKS 15.12; ``fdpindex.conformance.declared``), and
+the result is kept as the pseudo-pack ``declared``: ``conforms``,
+``violations`` or ``error`` as for a pack (against all it declares at once),
+``undeclared`` when it declares nothing, ``unresolved`` when nothing it
+declares could be resolved to shapes.
 """
 
 from __future__ import annotations
@@ -25,8 +32,10 @@ from uuid import UUID
 import structlog
 from sqlalchemy import delete, exists, insert, select
 
+from fdpindex.conformance.declared import DeclaredResolver, Target, declared
 from fdpindex.conformance.records import Record, assemble
 from fdpindex.conformance.settings import kinds_of, pack_digest
+from fdpindex.conformance.validator import Finding, Outcome
 from fdpindex.conformance.workers import Job, PackUse
 from fdpindex.db import utcnow
 from fdpindex.models import (
@@ -47,7 +56,6 @@ if TYPE_CHECKING:
 
     from fdpindex.conformance.packs import Pack
     from fdpindex.conformance.settings import ActivePack, ConformanceSettingsService
-    from fdpindex.conformance.validator import Outcome
     from fdpindex.conformance.workers import ValidationPool
     from fdpindex.search.profile import Profile
     from fdpindex.service import IndexChange
@@ -55,6 +63,17 @@ if TYPE_CHECKING:
 log = structlog.get_logger(__name__)
 
 BATCH = 25  # records per worker call
+DECLARED = "declared"  # the pseudo-pack of what records declare (TASKS 15.12)
+DECLARED_TITLE = {
+    "en": "What it declares",
+    "nl": "Wat het opgeeft",
+    "de": "Was er angibt",
+    "fr": "Ce qu’il déclare",  # noqa: RUF001  # French apostrophe
+    "es": "Lo que declara",
+    "it": "Ciò che dichiara",
+    "pt": "O que declara",
+}
+_ORDER = {"violation": 0, "warning": 1, "info": 2}
 
 
 class _Use:
@@ -77,8 +96,10 @@ class ConformanceService:
         pool: ValidationPool,
         *,
         debounce: float = 1.0,
+        resolver: DeclaredResolver | None = None,
     ) -> None:
         self._session_factory = session_factory
+        self._resolver = resolver
         self.settings = settings
         self._profile = profile
         self._pool = pool
@@ -241,10 +262,15 @@ class ConformanceService:
         packs = self.settings.packs
         return [_Use(packs[a.key], a) for a in settings.packs if a.key in packs]
 
-    def _settings_hash(self, uses: Sequence[_Use]) -> str:
+    def _settings_hash(self, uses: Sequence[_Use], declared_on: bool, day: str) -> str:
+        """What the entry was validated with. With declared checks on, the day is part of
+        it: declared profiles are resolved again daily (``declared.FRESH``)."""
         described = [(u.pack.key, u.digest, sorted(u.kinds)) for u in uses]
-        payload = json.dumps([self._profile().hash, described])
+        payload = json.dumps([self._profile().hash, described, declared_on and day])
         return hashlib.sha256(payload.encode()).hexdigest()
+
+    async def declared_on(self) -> bool:
+        return (await self.settings.get()).declared and self._resolver is not None
 
     async def validate_entry(self, entry_id: UUID, *, force: bool = False) -> int:
         """Validate an entry's changed records. Returns how many records were validated."""
@@ -253,6 +279,9 @@ class ConformanceService:
         async with self._session_factory() as session:
             entry = await session.get(IndexEntry, entry_id)
             accepted = entry is not None and entry.permit is EntryPermit.ACCEPTED
+            origins = (
+                [entry.client_url, *(entry.harvest_origins or [])] if entry is not None else []
+            )
             rows = (
                 await session.execute(
                     select(
@@ -262,12 +291,13 @@ class ConformanceService:
             ).all()
             state = await session.get(ConformanceEntryState, entry_id)
         uses = await self._uses()
-        if not accepted or not rows or not uses:
-            if state is not None or not accepted or not uses:
+        declared_on = await self.declared_on()
+        if not accepted or not rows or not (uses or declared_on):
+            if state is not None or not accepted or not (uses or declared_on):
                 await self._clear(entry_id)
             return 0
         wanted = fingerprint(str(h) for _, _, h in rows)
-        settings_hash = self._settings_hash(uses)
+        settings_hash = self._settings_hash(uses, declared_on, utcnow().date().isoformat())
         if (
             not force
             and state is not None
@@ -277,7 +307,11 @@ class ConformanceService:
             return 0
         nodes = [(str(i), str(nt), str(h)) for i, nt, h in rows]
         records = await asyncio.to_thread(assemble, str(entry_id), nodes, self._profile())
-        done = await self._validate_records(entry_id, records, uses, force=force)
+        targets: dict[str, Target] | None = None
+        if declared_on and self._resolver is not None:
+            iris = sorted({iri for r in records for iri in declared(r.nodes[0], r.iri)})
+            targets = await self._resolver.resolve(iris, origins)
+        done = await self._validate_records(entry_id, records, uses, targets, force=force)
         async with self._session_factory() as session, session.begin():
             state = await session.get(ConformanceEntryState, entry_id)
             if state is None:
@@ -301,8 +335,50 @@ class ConformanceService:
         self._removed = False
         return done
 
+    def _declared_uses(
+        self, record: Record, targets: dict[str, Target]
+    ) -> tuple[str, list[PackUse], Outcome | None]:
+        """What the record declares: a digest of its resolution, the shapes to validate
+        against, or the outcome when there is nothing to validate."""
+        iris = declared(record.nodes[0], record.iri)
+        resolved = [targets[i] for i in iris if i in targets]
+        digest = hashlib.sha256(
+            json.dumps([(t.iri, t.kind, t.digest or t.reason) for t in resolved]).encode()
+        ).hexdigest()
+        if not iris:
+            return digest, [], Outcome(status="undeclared")
+        jobs: list[PackUse] = []
+        packs = self.settings.packs
+        for target in resolved:
+            if target.kind == "pack" and target.pack_key in packs:
+                pack = packs[target.pack_key]
+                jobs.append(PackUse(directory=str(pack.directory), key=pack.key, files=None))
+            elif target.kind == "shapes" and target.shapes is not None:
+                jobs.append(
+                    PackUse(
+                        directory="",
+                        key=f"declared:{target.digest}",
+                        files=None,
+                        shapes=target.shapes,
+                    )
+                )
+        if not jobs:
+            reasons = "; ".join(f"{t.iri}: {t.reason}" for t in resolved if t.reason)
+            return (
+                digest,
+                [],
+                Outcome(status="unresolved", error=reasons[:500] or None),
+            )
+        return digest, jobs, None
+
     async def _validate_records(
-        self, entry_id: UUID, records: list[Record], uses: list[_Use], *, force: bool
+        self,
+        entry_id: UUID,
+        records: list[Record],
+        uses: list[_Use],
+        targets: dict[str, Target] | None,
+        *,
+        force: bool,
     ) -> int:
         async with self._session_factory() as session:
             existing = {
@@ -324,7 +400,8 @@ class ConformanceService:
                 ).all()
             }
         wanted: set[tuple[str, str]] = set()
-        work: list[tuple[Record, list[_Use]]] = []
+        work: list[tuple[Record, list[_Use], tuple[str, list[PackUse]] | None]] = []
+        ready: list[tuple[Record, list[_Written]]] = []
         for record in records:
             stale: list[_Use] = []
             for use in uses:
@@ -334,38 +411,59 @@ class ConformanceService:
                 seen = existing.get((record.iri, use.pack.id))
                 if force or seen is None or seen[1:] != (record.content_hash, use.digest):
                     stale.append(use)
-            if stale:
-                work.append((record, stale))
+            declared_job: tuple[str, list[PackUse]] | None = None
+            if targets is not None:
+                wanted.add((record.iri, DECLARED))
+                digest, jobs, outcome = self._declared_uses(record, targets)
+                seen = existing.get((record.iri, DECLARED))
+                if force or seen is None or seen[1:] != (record.content_hash, digest):
+                    if outcome is not None:
+                        ready.append((record, [(DECLARED, DECLARED, digest, outcome)]))
+                    else:
+                        declared_job = (digest, jobs)
+            if stale or declared_job is not None:
+                work.append((record, stale, declared_job))
         gone = [v[0] for k, v in existing.items() if k not in wanted]
         if gone:
             await self._delete_results(gone)
             self._removed = True
-        done = 0
+        if ready:
+            await self._write(entry_id, ready)
+        done = len(ready)
         for start in range(0, len(work), BATCH):
             batch = work[start : start + BATCH]
             jobs = [
-                Job(root=r.iri, nodes=r.nodes, packs=tuple(u.job for u in us)) for r, us in batch
+                Job(
+                    root=r.iri,
+                    nodes=r.nodes,
+                    packs=tuple(u.job for u in us) + tuple(d[1] if d else ()),
+                )
+                for r, us, d in batch
             ]
             outcomes = await self._pool.run(jobs)
-            await self._write(entry_id, batch, outcomes)
+            written: list[tuple[Record, list[_Written]]] = []
+            for (record, us, d), results in zip(batch, outcomes, strict=True):
+                rows: list[_Written] = [
+                    (u.pack.id, u.pack.version, u.digest, o)
+                    for u, o in zip(us, results[: len(us)], strict=True)
+                ]
+                if d is not None:
+                    rows.append((DECLARED, DECLARED, d[0], _merge(results[len(us) :])))
+                written.append((record, rows))
+            await self._write(entry_id, written)
             done += len(batch)
         return done
 
-    async def _write(
-        self,
-        entry_id: UUID,
-        batch: list[tuple[Record, list[_Use]]],
-        outcomes: list[list[Outcome]],
-    ) -> None:
+    async def _write(self, entry_id: UUID, batch: list[tuple[Record, list[_Written]]]) -> None:
         now = utcnow()
         async with self._session_factory() as session, session.begin():
-            for (record, uses), results in zip(batch, outcomes, strict=True):
-                for use, outcome in zip(uses, results, strict=True):
+            for record, results in batch:
+                for pack_id, version, digest, outcome in results:
                     old = await session.scalar(
                         select(ConformanceResult.id).where(
                             ConformanceResult.entry_uuid == entry_id,
                             ConformanceResult.record_iri == record.iri,
-                            ConformanceResult.pack == use.pack.id,
+                            ConformanceResult.pack == pack_id,
                         )
                     )
                     if old is not None:
@@ -380,9 +478,9 @@ class ConformanceService:
                         record_iri=record.iri,
                         public_id=record.public_id,
                         kind=record.kind,
-                        pack=use.pack.id,
-                        pack_version=use.pack.version,
-                        pack_digest=use.digest,
+                        pack=pack_id,
+                        pack_version=version,
+                        pack_digest=digest,
                         variant=outcome.variant,
                         status=outcome.status,
                         violations=outcome.violations,
@@ -425,6 +523,30 @@ class ConformanceService:
             )
         if ids:
             self._changed(entry_id)
+
+
+_Written = tuple[str, str, str, "Outcome"]  # pack id, version, digest, outcome
+
+
+def _merge(outcomes: Sequence[Outcome]) -> Outcome:
+    """One outcome for all a record declares: it must meet each of them."""
+    findings: list[Finding] = sorted(
+        (f for o in outcomes for f in o.findings), key=lambda f: _ORDER[f.severity]
+    )
+    merged = Outcome(
+        status="conforms",
+        violations=sum(o.violations for o in outcomes),
+        warnings=sum(o.warnings for o in outcomes),
+        infos=sum(o.infos for o in outcomes),
+        findings=findings[:50],
+    )
+    errors = [o.error for o in outcomes if o.status == "error" and o.error]
+    if merged.violations:
+        merged.status = "violations"
+    elif any(o.status == "error" for o in outcomes):
+        merged.status = "error"
+        merged.error = "; ".join(errors)[:500] or None
+    return merged
 
 
 def _finding(result_id: int, finding: Any) -> dict[str, Any]:

@@ -63,7 +63,11 @@ def test_what_the_index_holds_now(api: SearchApi) -> None:
 
 
 def test_records_are_counted_as_visitors_find_them(api: SearchApi) -> None:
-    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "surfaces": {"search": "dcat-ap"}}
+    body = {
+        "packs": [{"key": "dcat-ap@3.0.1"}],
+        "declared": False,
+        "surfaces": {"search": "dcat-ap"},
+    }
     response = api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
     assert response.status_code == 200, response.text
     api.settle()
@@ -73,7 +77,7 @@ def test_records_are_counted_as_visitors_find_them(api: SearchApi) -> None:
 
 
 def test_conformance_shares_follow_who_may_read_reports(api: SearchApi) -> None:
-    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "reports": "admin"}
+    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "declared": False, "reports": "admin"}
     response = api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
     assert response.status_code == 200, response.text
     api.call(api.app.state.stats.snapshot)

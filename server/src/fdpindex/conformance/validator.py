@@ -42,7 +42,8 @@ MAX_MESSAGE = 500
 MAX_VALUE = 200
 
 Severity = Literal["violation", "warning", "info"]
-Status = Literal["conforms", "violations", "error"]
+# undeclared and unresolved: what a record declares (TASKS 15.12), never from a pack.
+Status = Literal["conforms", "violations", "error", "undeclared", "unresolved"]
 _SEVERITY: dict[Node, Severity] = {
     SH.Violation: "violation",
     SH.Warning: "warning",
@@ -173,6 +174,8 @@ class ShaclValidator:
     ) -> None:
         self._vocabularies = vocabularies
         self._shapes: dict[tuple[str, str, str | None, tuple[str, ...] | None], Graph] = {}
+        # Shapes not from a pack, by key (TASKS 15.12).
+        self._loose: dict[str, Graph] = {}
         self._lock = threading.Lock()
 
     def shapes(self, pack: Pack, variant: str | None, files: Sequence[str] | None = None) -> Graph:
@@ -228,6 +231,40 @@ class ShaclValidator:
         return self._outcome(
             report, shapes, own=self.judged(record, pack), variant=variant, root=root
         )
+
+    def validate_shapes(
+        self, record: Graph, key: str, shapes: str, *, root: str | None = None
+    ) -> Outcome:
+        """Validate against shapes given as N-Triples, not a pack: a profile an FDP declares
+        (TASKS 15.12). ``key`` names them for the cache (it carries their digest)."""
+        try:
+            with self._lock:
+                graph = self._loose.get(key)
+                if graph is None:
+                    graph = Graph()
+                    graph.parse(data=shapes, format="nt")
+                    repair(graph)
+                    if len(self._loose) > 64:
+                        self._loose.clear()
+                    self._loose[key] = graph
+            data = Graph()
+            for triple in record:
+                data.add(triple)
+            _conforms, report, _text_report = shacl_validate(  # pyright: ignore[reportUnknownVariableType]
+                data,
+                shacl_graph=graph,
+                inference="none",
+                abort_on_first=False,
+                allow_infos=True,
+                allow_warnings=True,
+                meta_shacl=False,
+                advanced=False,
+                inplace=True,
+            )
+        except Exception as err:
+            return Outcome(status="error", error=_clip(str(err), MAX_MESSAGE))
+        assert isinstance(report, Graph)
+        return self._outcome(report, graph, own=set(record.subjects()), variant=None, root=root)
 
     def judged(self, record: Graph, pack: Pack) -> set[Node]:
         """The record's subjects, less the vocabulary concepts it describes in passing.

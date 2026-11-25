@@ -27,6 +27,7 @@ from fdpindex.api.stats import router as stats_router
 from fdpindex.auth import Authenticator, OidcVerifier
 from fdpindex.catalog.feed import CatalogFeed, CatalogMeta
 from fdpindex.config import Settings, get_settings
+from fdpindex.conformance.declared import DeclaredResolver
 from fdpindex.conformance.packs import discover as discover_packs
 from fdpindex.conformance.service import ConformanceService
 from fdpindex.conformance.settings import ConformanceSettingsService
@@ -225,7 +226,7 @@ def create_app(
         )
         app.state.conformance_settings = conformance_settings
         conformance = await _start_conformance(
-            config, factory, index, search, conformance_settings, sparql
+            config, factory, index, search, conformance_settings, sparql, outbound
         )
         app.state.conformance = conformance
         app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
@@ -323,6 +324,7 @@ async def _start_conformance(
     search: SearchService | None,
     settings: ConformanceSettingsService,
     sparql: SparqlService | None = None,
+    outbound: OutboundClient | None = None,
 ) -> ConformanceService | None:
     if not config.conformance_enabled:
         return None
@@ -337,7 +339,11 @@ async def _start_conformance(
         return fixed
 
     workers = config.conformance_workers if config.conformance_workers >= 0 else default_workers()
-    service = ConformanceService(factory, settings, profile, ValidationPool(workers))
+    # What records declare is fetched from their FDPs (TASKS 15.12), under the outbound rules.
+    resolver = DeclaredResolver(factory, outbound, lambda: settings.packs)
+    service = ConformanceService(
+        factory, settings, profile, ValidationPool(workers), resolver=resolver
+    )
     index.add_listener(service.notify)
     # Conformance reaches the other surfaces (TASKS 11.4): search values and the search
     # minimum, the SPARQL store's minimum, and the public directory.

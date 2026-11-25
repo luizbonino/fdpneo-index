@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from fdpindex.auth import token_digest
 from fdpindex.config import Settings
 from fdpindex.conformance.records import assemble
+from fdpindex.conformance.settings import ActivePack, ConformanceSettings
 from fdpindex.main import create_app
 from fdpindex.search.profile_store import ProfileStore
 from fdpindex.search.project import public_id
@@ -98,6 +99,14 @@ class Api:
         return self.client.get("/index/entries").json()["content"][0]["uuid"]
 
 
+def dcat_ap_by_default(app: FastAPI) -> None:
+    """These tests are about packs: DCAT-AP active, as the default was until 2026-11-25,
+    and the check against what records declare (TASKS 15.12, tested apart) off."""
+    settings = app.state.conformance_settings
+    settings.defaults = ConformanceSettings(packs=[ActivePack(key="dcat-ap@3.0.1")], declared=False)
+    settings._cached = None  # pyright: ignore[reportPrivateUsage]
+
+
 @pytest.fixture
 def api(network: FakeNetwork) -> Iterator[Api]:
     serve(network)
@@ -118,6 +127,7 @@ def api(network: FakeNetwork) -> Iterator[Api]:
     )
     with TestClient(app) as client:
         api = Api(client, app)
+        dcat_ap_by_default(app)
         client.post("/", json={"clientUrl": FDP})
         api.settle()
         yield api
@@ -193,6 +203,7 @@ def test_settings_add_a_pack_and_hide_reports(api: Api) -> None:
     current = api.client.get("/index/conformance/settings", headers=ADMIN).json()
     assert current == {
         "packs": [{"key": "dcat-ap@3.0.1", "kinds": None, "files": None}],
+        "declared": False,
         "reports": "public",
         "surfaces": {"search": None, "sparql": None, "feed": None, "directory": None},
         "isDefault": True,
@@ -202,6 +213,7 @@ def test_settings_add_a_pack_and_hide_reports(api: Api) -> None:
             {"key": "dcat-ap@3.0.1"},
             {"key": "health-ri-core@2.0.3", "kinds": ["dataset"]},
         ],
+        "declared": False,
         "reports": "admin",
     }
     response = api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
@@ -236,7 +248,7 @@ def test_settings_are_checked(api: Api, packs: list[dict[str, Any]], message: st
 
 def test_range_checks_can_be_switched_on(api: Api) -> None:
     files = ["shapes.ttl", "mdr-vocabularies.shape.ttl", "range.ttl"]
-    body = {"packs": [{"key": "dcat-ap@3.0.1", "files": files}]}
+    body = {"packs": [{"key": "dcat-ap@3.0.1", "files": files}], "declared": False}
     assert (
         api.client.put("/index/conformance/settings", json=body, headers=ADMIN).status_code == 200
     )
@@ -344,6 +356,7 @@ def search_api(network: FakeNetwork) -> Iterator[SearchApi]:
     )
     with TestClient(app) as client:
         api = SearchApi(client, app)
+        dcat_ap_by_default(app)
         client.post("/", json={"clientUrl": FDP})
         api.settle()
         yield api
@@ -369,7 +382,11 @@ def test_search_filters_and_counts_conformance(search_api: SearchApi) -> None:
 def test_search_minimum_hides_records_from_visitors(search_api: SearchApi) -> None:
     everything = _search(search_api, type="dataset")["totalResults"]
     assert everything == 3
-    body = {"packs": [{"key": "dcat-ap@3.0.1"}], "surfaces": {"search": "dcat-ap"}}
+    body = {
+        "packs": [{"key": "dcat-ap@3.0.1"}],
+        "declared": False,
+        "surfaces": {"search": "dcat-ap"},
+    }
     response = search_api.client.put("/index/conformance/settings", json=body, headers=ADMIN)
     assert response.status_code == 200, response.text
     search_api.settle()
@@ -387,6 +404,7 @@ def test_directory_minimum(search_api: SearchApi) -> None:
     # Health-RI core does not apply to FDP roots: nothing qualifies for the directory.
     body = {
         "packs": [{"key": "dcat-ap@3.0.1"}, {"key": "health-ri-core@2.0.3"}],
+        "declared": False,
         "surfaces": {"directory": "health-ri-core"},
     }
     assert (

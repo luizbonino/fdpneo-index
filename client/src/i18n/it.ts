@@ -866,9 +866,18 @@ export const it: Messages = {
   },
   conformance: {
     heading: "Conformità",
-    lead: "Come i metadati di questo FDP si confrontano con i profili rispetto ai quali l'indice li verifica. Una scheda è conforme se non ha violazioni; gli avvisi sono raccomandazioni.",
+    declared: {
+      title: "Ciò che dichiara",
+      basis: "Controllato rispetto ai profili che ogni record nomina con dct:conformsTo",
+      required: "Richiesto da questo indice",
+      undeclared:
+        "Nessun record senza profilo | Un record non dichiara alcun profilo | {n} record non dichiarano alcun profilo",
+      unresolved:
+        "Tutti i profili dichiarati erano leggibili | Un record nomina un profilo non leggibile | {n} record nominano un profilo non leggibile",
+    },
+    lead: "Come i metadati di questo FDP si confrontano con ciò che dichiara ogni record e con i profili richiesti da questo indice. Un record è conforme quando non ha violazioni; gli avvisi sono raccomandazioni.",
     recordLead:
-      "Questa scheda verificata rispetto ai profili dell'indice. Le violazioni infrangono le regole di un profilo; gli avvisi sono raccomandazioni.",
+      "Questo record controllato rispetto a ciò che dichiara e ai profili richiesti da questo indice. Le violazioni infrangono le regole di un profilo; gli avvisi sono raccomandazioni.",
     notYet: "Non ancora verificato: le schede vengono verificate in background dopo ogni raccolta.",
     validateAgain: "Verificare di nuovo",
     validating: "Nuova verifica in corso in background.",
@@ -894,7 +903,13 @@ export const it: Messages = {
     value: "valore: {value}",
     firstFifty: "Sono mostrati i primi 50 rilievi.",
     severity: { violation: "Violazione", warning: "Avviso", info: "Informazione" },
-    status: { conforms: "Conforme", violations: "Violazioni", error: "Non verificato" },
+    status: {
+      conforms: "Conforme",
+      violations: "Violazioni",
+      error: "Non verificato",
+      undeclared: "Non dichiara profili",
+      unresolved: "Profilo non leggibile",
+    },
     component: {
       MinCount: "mancante",
       MaxCount: "indicato troppe volte",
@@ -910,6 +925,10 @@ export const it: Messages = {
       MaxLength: "troppo lungo",
     },
     settings: {
+      declaredHelp:
+        "Controllare ogni record rispetto ai profili che nomina con dct:conformsTo: lo SHACL proprio del FDP, letto dal suo sito, o un profilo qui sotto di cui nomina la specifica. Attivo per impostazione predefinita.",
+      requiredHelp:
+        "Profili richiesti da questo indice: ogni record viene controllato rispetto a essi, che li dichiari o no. Disattivati per impostazione predefinita.",
       heading: "Conformità",
       lead: "I profili rispetto ai quali vengono verificate le schede raccolte, in background dopo ogni raccolta. Se vengono modificati, ogni FDP viene verificato di nuovo.",
       profiles: "Verificare rispetto a",

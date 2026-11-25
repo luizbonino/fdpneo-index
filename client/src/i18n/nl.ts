@@ -863,9 +863,18 @@ export const nl: Messages = {
   },
   conformance: {
     heading: "Conformiteit",
-    lead: "Hoe de metadata van deze FDP zich verhoudt tot de profielen waaraan deze index die toetst. Een record is conform als er geen schendingen zijn; waarschuwingen zijn aanbevelingen.",
+    declared: {
+      title: "Wat het opgeeft",
+      basis: "Getoetst aan de profielen die elk record noemt met dct:conformsTo",
+      required: "Vereist door deze index",
+      undeclared:
+        "Geen records zonder profiel | Eén record noemt geen profiel | {n} records noemen geen profiel",
+      unresolved:
+        "Alle opgegeven profielen waren leesbaar | Eén record noemt een profiel dat niet gelezen kon worden | {n} records noemen een profiel dat niet gelezen kon worden",
+    },
+    lead: "Hoe de metadata van deze FDP zich verhoudt tot wat elk record opgeeft, en tot de profielen die deze index vereist. Een record voldoet als het geen schendingen heeft; waarschuwingen zijn aanbevelingen.",
     recordLead:
-      "Dit record, getoetst aan de profielen van de index. Schendingen overtreden de regels van een profiel; waarschuwingen zijn aanbevelingen.",
+      "Dit record getoetst aan wat het opgeeft, en aan de profielen die deze index vereist. Schendingen breken de regels van een profiel; waarschuwingen zijn aanbevelingen.",
     notYet:
       "Nog niet gecontroleerd: records worden na elke keer ophalen op de achtergrond gecontroleerd.",
     validateAgain: "Opnieuw controleren",
@@ -893,7 +902,13 @@ export const nl: Messages = {
     value: "waarde: {value}",
     firstFifty: "De eerste 50 bevindingen worden getoond.",
     severity: { violation: "Schending", warning: "Waarschuwing", info: "Info" },
-    status: { conforms: "Conform", violations: "Schendingen", error: "Niet gecontroleerd" },
+    status: {
+      conforms: "Conform",
+      violations: "Schendingen",
+      error: "Niet gecontroleerd",
+      undeclared: "Noemt geen profiel",
+      unresolved: "Profiel niet leesbaar",
+    },
     component: {
       MinCount: "ontbreekt",
       MaxCount: "te vaak opgegeven",
@@ -909,6 +924,10 @@ export const nl: Messages = {
       MaxLength: "te lang",
     },
     settings: {
+      declaredHelp:
+        "Toets elk record aan de profielen die het noemt met dct:conformsTo: de eigen SHACL van de FDP, opgehaald van zijn site, of een profiel hieronder waarvan het de specificatie noemt. Standaard aan.",
+      requiredHelp:
+        "Profielen die deze index vereist: elk record wordt eraan getoetst, of het ze nu claimt of niet. Standaard uit.",
       heading: "Conformiteit",
       lead: "De profielen waaraan opgehaalde records worden getoetst, op de achtergrond na elke keer ophalen. Bij een wijziging wordt elke FDP opnieuw gecontroleerd.",
       profiles: "Toetsen aan",

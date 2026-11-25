@@ -183,6 +183,12 @@
       "ConformanceSettings": {
         "additionalProperties": false,
         "properties": {
+          "declared": {
+            "default": true,
+            "description": "Check each record against what it declares with dct:conformsTo",
+            "title": "Declared",
+            "type": "boolean"
+          },
           "packs": {
             "items": {
               "$ref": "#/components/schemas/ActivePack-Input"
@@ -211,6 +217,12 @@
       "ConformanceSettingsView": {
         "additionalProperties": false,
         "properties": {
+          "declared": {
+            "default": true,
+            "description": "Check each record against what it declares with dct:conformsTo",
+            "title": "Declared",
+            "type": "boolean"
+          },
           "isDefault": {
             "title": "Isdefault",
             "type": "boolean"
@@ -239,6 +251,7 @@
         },
         "required": [
           "packs",
+          "declared",
           "reports",
           "surfaces",
           "isDefault"
@@ -282,6 +295,12 @@
             "description": "The pack's title by language",
             "title": "Title",
             "type": "object"
+          },
+          "undeclared": {
+            "default": 0,
+            "description": "For `declared`: records that declare no profile, not counted as checked",
+            "title": "Undeclared",
+            "type": "integer"
           }
         },
         "required": [
@@ -2388,7 +2407,9 @@
             "enum": [
               "conforms",
               "violations",
-              "error"
+              "error",
+              "undeclared",
+              "unresolved"
             ],
             "title": "Status",
             "type": "string"
@@ -2473,6 +2494,18 @@
           "records": {
             "description": "Records validated against the pack",
             "title": "Records",
+            "type": "integer"
+          },
+          "undeclared": {
+            "default": 0,
+            "description": "For `declared`: records that declare no profile",
+            "title": "Undeclared",
+            "type": "integer"
+          },
+          "unresolved": {
+            "default": 0,
+            "description": "For `declared`: records whose declared profiles could not be resolved",
+            "title": "Unresolved",
             "type": "integer"
           },
           "version": {
@@ -3084,7 +3117,9 @@
             "enum": [
               "conforms",
               "violations",
-              "error"
+              "error",
+              "undeclared",
+              "unresolved"
             ],
             "title": "Status",
             "type": "string"
@@ -4726,7 +4761,7 @@
         "operationId": "list_records_index_conformance_records_get",
         "parameters": [
           {
-            "description": "A pack id; the first active pack by default",
+            "description": "A pack id, or `declared`; the first active by default",
             "in": "query",
             "name": "pack",
             "required": false,
@@ -4739,7 +4774,7 @@
                   "type": "null"
                 }
               ],
-              "description": "A pack id; the first active pack by default",
+              "description": "A pack id, or `declared`; the first active by default",
               "title": "Pack"
             }
           },
@@ -4770,7 +4805,9 @@
                   "enum": [
                     "conforms",
                     "violations",
-                    "error"
+                    "error",
+                    "undeclared",
+                    "unresolved"
                   ],
                   "type": "string"
                 },

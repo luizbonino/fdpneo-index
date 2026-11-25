@@ -3,11 +3,15 @@
 * **packs**: the packs this deployment validates against, in order; per pack
   the record kinds (narrower than the manifest's, never wider) and the files
   validated against (the manifest's defaults when unset).
+* **declared**: check each record against what it declares with
+  ``dct:conformsTo`` (TASKS 15.12): on by default.
 * **reports**: who may read conformance reports, ``public`` (the default,
   like the metadata they describe) or ``admin``.
 
-Stored as the fifth row of ``index_settings``. Without one, DCAT-AP 3.0.1 is
-validated and reports are public.
+Stored as the fifth row of ``index_settings``. Without one, records are
+checked against what they declare and no pack is active: the index judges an
+FDP by what it promised (design note metadata-health, decision 8). Until
+2026-11-25 DCAT-AP 3.0.1 was active by default.
 """
 
 from __future__ import annotations
@@ -29,7 +33,7 @@ if TYPE_CHECKING:
     from fdpindex.conformance.packs import Pack
 
 _ROW_ID = 5
-DEFAULT_PACKS = ("dcat-ap@3.0.1",)
+DEFAULT_PACKS: tuple[str, ...] = ()
 MAX_PACKS = 10
 
 
@@ -70,6 +74,10 @@ class Surfaces(_Camel):
 class ConformanceSettings(_Camel):
     packs: list[ActivePack] = Field(
         default_factory=lambda: [ActivePack(key=k) for k in DEFAULT_PACKS], max_length=MAX_PACKS
+    )
+    declared: bool = Field(
+        default=True,
+        description="Check each record against what it declares with dct:conformsTo",
     )
     reports: Literal["public", "admin"] = Field(
         default="public", description="Who may read conformance reports"
@@ -185,6 +193,7 @@ class ConformanceSettingsService:
 def _view(settings: ConformanceSettings, defaults: ConformanceSettings) -> ConformanceSettingsView:
     return ConformanceSettingsView(
         packs=settings.packs,
+        declared=settings.declared,
         reports=settings.reports,
         surfaces=settings.surfaces,
         isDefault=settings == defaults,

@@ -436,6 +436,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/entries/{entry_id}/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the index found in an FDP's metadata
+     * @description Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).
+     *
+     *     Computed from the stored pages after each harvest; null until the first
+     *     report. Who may read it follows the conformance `reports` setting.
+     */
+    get: operations["get_entry_health_index_entries__entry_id__health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/events/{event_id}": {
     parameters: {
       query?: never;
@@ -445,6 +468,26 @@ export interface paths {
     };
     /** Get Event */
     get: operations["get_event_index_events__event_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Every FDP's metadata health
+     * @description One row per FDP in the public list with a health report (TASKS 15.8).
+     */
+    get: operations["health_table_index_health_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1846,6 +1889,151 @@ export interface components {
        */
       reharvestOnChange: boolean;
     };
+    /** HealthFailureView */
+    HealthFailureView: {
+      /** Count */
+      count: number;
+      /**
+       * Examples
+       * @description Up to five pages that failed
+       */
+      examples: string[];
+      /**
+       * Kind
+       * @description not-found, http-error, timeout, unparsable, too-large, refused, other
+       */
+      kind: string;
+    };
+    /** HealthFindingView */
+    HealthFindingView: {
+      /**
+       * Code
+       * @description Findings: linked-only-in-dcat, not-linked-in-dcat, catalog-without-datasets. Notes: dataset-without-distributions, distribution-without-access
+       */
+      code: string;
+      /** Count */
+      count: number;
+      /**
+       * Examples
+       * @description Up to five pages or links it concerns
+       */
+      examples: string[];
+    };
+    /** HealthRow */
+    HealthRow: {
+      /** Clienturl */
+      clientUrl: string;
+      /**
+       * Failed
+       * @description Pages that could not be read
+       */
+      failed: number;
+      /**
+       * Findings
+       * @description Count per finding
+       */
+      findings: {
+        [key: string]: number;
+      };
+      /**
+       * Levels
+       * @description Pages per level
+       */
+      levels: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description Count per note
+       */
+      notes?: {
+        [key: string]: number;
+      };
+      /** Pages */
+      pages: number;
+      /**
+       * Partial
+       * @description The harvest stopped at its page limit
+       */
+      partial: boolean;
+      /** Reach */
+      reach: string | null;
+      /** Status */
+      status: string;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /** HealthStopsView */
+    HealthStopsView: {
+      /**
+       * Atceiling
+       * @description The harvest stopped at its page limit
+       */
+      atCeiling: boolean;
+      /**
+       * Offsite
+       * @description Links to other sites, not followed
+       */
+      offSite: number;
+      /**
+       * Unread
+       * @description Pages left unread when the harvest stopped at its limit
+       */
+      unread: number;
+    };
+    /**
+     * HealthSummary
+     * @description Metadata health over the FDPs in the public list that have a report (TASKS 15.8).
+     */
+    HealthSummary: {
+      /**
+       * Byreach
+       * @description By the deepest level reached: none, fdp, catalog, dataset, distribution, dataservice
+       */
+      byReach: {
+        [key: string]: number;
+      };
+      /**
+       * Bystatus
+       * @description fine, findings, unreadable
+       */
+      byStatus: {
+        [key: string]: number;
+      };
+      /**
+       * Failures
+       * @description Pages that failed, by kind
+       */
+      failures: {
+        [key: string]: number;
+      };
+      /**
+       * Fdps
+       * @description FDPs with a health report
+       */
+      fdps: number;
+      /**
+       * Findings
+       * @description FDPs with each finding
+       */
+      findings: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description FDPs with each note (DCAT's advice)
+       */
+      notes?: {
+        [key: string]: number;
+      };
+      /**
+       * Partial
+       * @description FDPs whose harvest stopped at its page limit
+       */
+      partial: number;
+    };
     /**
      * HealthView
      * @description Liveness-check state of an entry (addition, ADR-0004).
@@ -1949,6 +2137,63 @@ export interface components {
        * @enum {string}
        */
       source: "admin" | "stated" | "publisher" | "domain" | "server";
+    };
+    /**
+     * MetadataHealthView
+     * @description What the index found in an FDP's metadata (TASKS 15.8).
+     */
+    MetadataHealthView: {
+      /**
+       * Complete
+       * @description The harvest read every page it found; null when not known
+       */
+      complete: boolean | null;
+      /** Computedat */
+      computedAt: string;
+      /**
+       * Failures
+       * @description Pages that could not be read, by kind
+       */
+      failures: components["schemas"]["HealthFailureView"][];
+      /**
+       * Findings
+       * @description Against the FDP specification, which every FDP claims
+       */
+      findings: components["schemas"]["HealthFindingView"][];
+      /**
+       * Harvestedat
+       * @description When the harvest it describes ended
+       */
+      harvestedAt: string | null;
+      /**
+       * Levels
+       * @description Pages per level, and other pages
+       */
+      levels: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description DCAT's advice, which an FDP never promised: not counted in status
+       */
+      notes?: components["schemas"]["HealthFindingView"][];
+      /**
+       * Pages
+       * @description Pages the index holds
+       */
+      pages: number;
+      /**
+       * Reach
+       * @description The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read
+       */
+      reach: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "fine" | "findings" | "unreadable";
+      /** @description Where the index stopped by its own rules */
+      stops: components["schemas"]["HealthStopsView"];
     };
     /** MonthCount */
     MonthCount: {
@@ -2571,6 +2816,8 @@ export interface components {
       fdps: components["schemas"]["FdpCounts"];
       /** Generatedat */
       generatedAt: string;
+      /** @description Null when health reports are for administrators */
+      health?: components["schemas"]["HealthSummary"] | null;
       history: components["schemas"]["History"];
       /**
        * Largest
@@ -3589,6 +3836,44 @@ export interface operations {
       };
     };
   };
+  get_entry_health_index_entries__entry_id__health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MetadataHealthView"] | null;
+        };
+      };
+      /** @description Reports are for administrators */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   get_event_index_events__event_id__get: {
     parameters: {
       query?: never;
@@ -3617,6 +3902,33 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
         };
+      };
+    };
+  };
+  health_table_index_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HealthRow"][];
+        };
+      };
+      /** @description Reports are for administrators */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

@@ -932,4 +932,85 @@ export const nl: Messages = {
     feedHelp: "De opgehaalde metadata als DCAT-AP-catalogus, ook via OAI-PMH op /index/oai",
     version: "Versie {version}",
   },
+  health: {
+    title: "Kwaliteit van de metadata",
+    lead: "Hoe ver de metadata van deze FDP reikt, en wat de index bij de laatste oogst vond.",
+    statsLead:
+      "Hoe ver de metadata van elke FDP reikt, van de FDP tot de datadiensten, en wat de index vond. Na elke oogst opnieuw bepaald.",
+    checked: "Gecontroleerd {when}",
+    none: "Nog geen rapport: dat volgt na de volgende oogst.",
+    status: {
+      fine: "Niets gevonden",
+      findings: "Met bevindingen",
+      unreadable: "Niet leesbaar",
+    },
+    reachLabel: "Pagina’s per niveau",
+    reaches: "Reikt tot: {level}",
+    reachNone: "Er kon niets worden gelezen.",
+    otherPages: "{n} andere pagina’s",
+    levels: {
+      fdp: "FDP",
+      catalog: "Catalogi",
+      dataset: "Datasets",
+      distribution: "Distributies",
+      dataservice: "Datadiensten",
+    },
+    stops: {
+      ceiling:
+        "De oogst stopte bij de paginalimiet; {n} pagina’s zijn niet gelezen. Een beheerder kan de limiet voor deze FDP verhogen.",
+      offSite: "{n} links naar andere sites zijn niet gevolgd.",
+    },
+    examples: "Voorbeelden",
+    notesTitle: "Opmerkingen",
+    notesLead:
+      "DCAT raadt deze aan. De FDP-specificatie vraagt er niet om, dus ze tellen niet mee tegen de FDP.",
+    withNote: "FDP’s met opmerkingen",
+    failuresTitle: "Pagina’s die niet gelezen konden worden",
+    failures: {
+      "not-found": "Niet gevonden (404, 410)",
+      "http-error": "Andere HTTP-fouten",
+      timeout: "Time-out",
+      unparsable: "Niet leesbaar als RDF",
+      "too-large": "Te groot",
+      refused: "Geweigerd door de regels van de index",
+      other: "Verbinding mislukt",
+    },
+    incomplete: "De laatste oogst bereikte niet elke pagina; er kunnen bevindingen ontbreken.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Alleen via DCAT gelinkt",
+        fix: "Deze records worden vanuit een ander record gelinkt (bijvoorbeeld met dcat:accessService) maar staan in geen enkele LDP-container. De index volgt de containers van de FDP, zoals de FDP-specificatie voorschrijft, en oogst ze dus niet. Neem ze op in de container van hun ouder, zoals de FDP-software doet wanneer ze als kinderen worden aangemaakt.",
+      },
+      "not-linked-in-dcat": {
+        title: "Alleen in een LDP-container",
+        fix: "De ouder noemt deze records in zijn LDP-container maar linkt ze niet met de member-relatie van de container (bijvoorbeeld dcat:dataset). Tools die alleen DCAT lezen, vinden ze niet. Voeg die link toe aan de metadata van de ouder.",
+      },
+      "catalog-without-datasets": {
+        title: "Catalogi zonder datasets of diensten",
+        fix: "Voeg datasets of datadiensten toe aan deze catalogi, of verwijder catalogi die niet meer worden gebruikt.",
+      },
+      "dataset-without-distributions": {
+        title: "Datasets zonder distributies",
+        fix: "Een distributie vertelt hoe je aan de data komt: een download, een API of een landingspagina. Geef elke dataset er minstens één.",
+      },
+      "distribution-without-access": {
+        title: "Distributies zonder toegang",
+        fix: "Geef elke distributie een dcat:accessURL, een dcat:downloadURL of een dcat:accessService, zodat mensen en tools bij de data kunnen.",
+      },
+    },
+    partial: "Gestopt bij de paginalimiet",
+    reaching: "FDP’s waarvan de metadata elk niveau bereikt",
+    withFinding: "FDP’s per bevinding",
+    level: "Niveau",
+    finding: "Bevinding",
+    table: "FDP’s en hun bevindingen",
+    csv: "CSV downloaden",
+    columns: {
+      fdp: "FDP",
+      reach: "Reikt tot",
+      pages: "Pagina’s",
+      findings: "Bevindingen",
+      failed: "Mislukte pagina’s",
+    },
+  },
 };

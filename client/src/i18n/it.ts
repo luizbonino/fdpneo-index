@@ -934,4 +934,86 @@ export const it: Messages = {
       "I metadati raccolti come catalogo DCAT-AP, disponibili anche tramite OAI-PMH su /index/oai",
     version: "Versione {version}",
   },
+  health: {
+    title: "Qualità dei metadati",
+    lead: "Fin dove arrivano i metadati di questo FDP e cosa ha trovato l’indice nell’ultima raccolta.",
+    statsLead:
+      "Fin dove arrivano i metadati di ogni FDP, dal FDP ai suoi servizi di dati, e cosa ha trovato l’indice. Ricalcolato dopo ogni raccolta.",
+    checked: "Controllato {when}",
+    none: "Nessun rapporto per ora: verrà creato dopo la prossima raccolta.",
+    status: {
+      fine: "Nessun rilievo",
+      findings: "Con rilievi",
+      unreadable: "Non leggibile",
+    },
+    reachLabel: "Pagine per livello",
+    reaches: "Arriva a: {level}",
+    reachNone: "Non è stato possibile leggere nulla.",
+    otherPages: "{n} altre pagine",
+    levels: {
+      fdp: "FDP",
+      catalog: "Cataloghi",
+      dataset: "Dataset",
+      distribution: "Distribuzioni",
+      dataservice: "Servizi di dati",
+    },
+    stops: {
+      ceiling:
+        "La raccolta si è fermata al limite di pagine; {n} pagine non sono state lette. Un amministratore può alzare il limite per questo FDP.",
+      offSite: "{n} link ad altri siti non sono stati seguiti.",
+    },
+    examples: "Esempi",
+    notesTitle: "Note",
+    notesLead:
+      "DCAT le raccomanda. La specifica FDP non le richiede, quindi non contano contro il FDP.",
+    withNote: "FDP con note",
+    failuresTitle: "Pagine che non è stato possibile leggere",
+    failures: {
+      "not-found": "Non trovate (404, 410)",
+      "http-error": "Altri errori HTTP",
+      timeout: "Tempo scaduto",
+      unparsable: "Non leggibili come RDF",
+      "too-large": "Troppo grandi",
+      refused: "Rifiutate dalle regole dell’indice",
+      other: "Connessione non riuscita",
+    },
+    incomplete:
+      "L’ultima raccolta non ha raggiunto tutte le pagine; alcuni rilievi potrebbero mancare.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Collegati solo tramite DCAT",
+        fix: "Questi record sono collegati da un altro record (per esempio con dcat:accessService) ma non sono in alcun contenitore LDP. L’indice segue i contenitori del FDP, come prevede la specifica FDP, quindi non li raccoglie. Inseriteli nel contenitore del loro genitore, come fa il software FDP quando vengono creati come suoi figli.",
+      },
+      "not-linked-in-dcat": {
+        title: "Solo in un contenitore LDP",
+        fix: "Il genitore elenca questi record nel suo contenitore LDP ma non li collega con la relazione di membro del contenitore (per esempio dcat:dataset). Gli strumenti che leggono solo DCAT non li trovano. Aggiungete quel collegamento ai metadati del genitore.",
+      },
+      "catalog-without-datasets": {
+        title: "Cataloghi senza dataset né servizi",
+        fix: "Aggiungete dataset o servizi di dati a questi cataloghi, oppure rimuovete i cataloghi non più usati.",
+      },
+      "dataset-without-distributions": {
+        title: "Dataset senza distribuzioni",
+        fix: "Una distribuzione dice come ottenere i dati: un download, un’API o una pagina di presentazione. Datene almeno una a ogni dataset.",
+      },
+      "distribution-without-access": {
+        title: "Distribuzioni senza accesso",
+        fix: "Date a ogni distribuzione un dcat:accessURL, un dcat:downloadURL o un dcat:accessService, così persone e strumenti raggiungono i dati.",
+      },
+    },
+    partial: "Fermati al limite di pagine",
+    reaching: "FDP i cui metadati arrivano a ogni livello",
+    withFinding: "FDP per rilievo",
+    level: "Livello",
+    finding: "Rilievo",
+    table: "Gli FDP e i loro rilievi",
+    csv: "Scarica CSV",
+    columns: {
+      fdp: "FDP",
+      reach: "Arriva a",
+      pages: "Pagine",
+      findings: "Rilievi",
+      failed: "Pagine non lette",
+    },
+  },
 };

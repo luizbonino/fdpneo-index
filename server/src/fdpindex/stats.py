@@ -3,8 +3,9 @@
 Counted as visitors see the index: FDPs as the public FDP list counts them
 (accepted, expired ones left out when the policy hides them, the directory's
 minimum conformance), records as visitors' searches find them
-(``SearchService.visitor_conditions``). Conformance shares follow the
-``reports`` setting: with admin-only reports, only administrators get them.
+(``SearchService.visitor_conditions``). Conformance shares and metadata
+health (TASKS 15.8) follow the ``reports`` setting: with admin-only reports,
+only administrators get them.
 
 History comes from two places:
 
@@ -29,6 +30,7 @@ import structlog
 from sqlalchemy import delete, func, select
 
 from fdpindex.db import utcnow
+from fdpindex.findings import FAILURE_KINDS, FINDINGS, LEVELS, NOTES
 from fdpindex.geo import SOURCES, spatial_country
 from fdpindex.models import (
     ConformanceResult,
@@ -73,7 +75,7 @@ class StatsService:
         self._index = index
         self._search = search
         self._conformance = conformance
-        self._cache: dict[tuple[bool, int], tuple[float, dict[str, Any]]] = {}
+        self._cache: dict[tuple[bool, bool, int], tuple[float, dict[str, Any]]] = {}
 
     def invalidate(self) -> None:
         """Forget the cached view (taken again within a minute otherwise)."""
@@ -88,27 +90,34 @@ class StatsService:
             return True
         return (await self._conformance.settings.get()).reports == "public"
 
+    async def health_readable(self, *, admin: bool) -> bool:
+        """Metadata health follows the conformance reports' ``reports`` setting."""
+        if admin or self._conformance is None:
+            return True
+        return (await self._conformance.settings.get()).reports == "public"
+
     async def view(self, *, admin: bool, days: int) -> dict[str, Any]:
         """The Statistics page's data, cached for a minute."""
         readable = await self.conformance_readable(admin=admin)
-        key = (readable, days)
+        health = await self.health_readable(admin=admin)
+        key = (readable, health, days)
         cached = self._cache.get(key)
         if cached is not None and time.monotonic() - cached[0] < CACHE_SECONDS:
             return cached[1]
-        current = await self.current(conformance=readable)
+        current = await self.current(conformance=readable, health=health)
         result: dict[str, Any] = {
             "generatedAt": utcnow().isoformat(),
             **current,
             "registrations": await self.registrations(),
             "published": await self.published(),
-            "history": await self.history(days, conformance=readable),
+            "history": await self.history(days, conformance=readable, health=health),
         }
         self._cache[key] = (time.monotonic(), result)
         return result
 
     # --- now ----------------------------------------------------------------------------
 
-    async def current(self, *, conformance: bool = True) -> dict[str, Any]:
+    async def current(self, *, conformance: bool = True, health: bool = True) -> dict[str, Any]:
         counts = await self._index.counts([EntryPermit.ACCEPTED], public=True)
         by_country, unplaced = await self._fdp_countries()
         result: dict[str, Any] = {
@@ -121,6 +130,7 @@ class StatsService:
             "records": None,
             "largest": [],
             "conformance": None,
+            "health": await self.health_summary() if health else None,
         }
         if self._search is None:
             return result
@@ -263,6 +273,78 @@ class StatsService:
             for pack, (specification, title) in specs.items()
         ]
 
+    # --- metadata health (TASKS 15.8) -----------------------------------------------------
+
+    async def _health_reports(self) -> list[tuple[IndexEntry, dict[str, Any]]]:
+        entries = await self._index.all_entries([EntryPermit.ACCEPTED], public=True)
+        reports = await self._index.health_reports([e.uuid for e in entries])
+        return [(e, reports[e.uuid].report or {}) for e in entries if e.uuid in reports]
+
+    async def health_summary(self) -> dict[str, Any]:
+        """FDPs in the public list by reach and status, and how many have each finding."""
+        rows = await self._health_reports()
+        by_reach = dict.fromkeys(("none", *LEVELS), 0)
+        by_status = dict.fromkeys(("fine", "findings", "unreadable"), 0)
+        findings = dict.fromkeys(FINDINGS, 0)
+        notes = dict.fromkeys(NOTES, 0)
+        failures = dict.fromkeys(FAILURE_KINDS, 0)
+        partial = 0
+        for _entry, report in rows:
+            by_reach[report.get("reach") or "none"] += 1
+            by_status[report.get("status") or "unreadable"] += 1
+            found: list[dict[str, Any]] = report.get("findings") or []
+            noted: list[dict[str, Any]] = report.get("notes") or []
+            failed: list[dict[str, Any]] = report.get("failures") or []
+            stops: dict[str, Any] = report.get("stops") or {}
+            for finding in found:
+                if finding["code"] in findings:
+                    findings[finding["code"]] += 1
+            for note in noted:
+                if note["code"] in notes:
+                    notes[note["code"]] += 1
+            for failure in failed:
+                if failure["kind"] in failures:
+                    failures[failure["kind"]] += int(failure["count"])
+            if stops.get("atCeiling"):
+                partial += 1
+        return {
+            "fdps": len(rows),
+            "byReach": by_reach,
+            "byStatus": by_status,
+            "findings": findings,
+            "notes": notes,
+            "failures": failures,
+            "partial": partial,
+        }
+
+    async def health_table(self) -> list[dict[str, Any]]:
+        """One row per FDP in the public list that has a report, for the Statistics table."""
+        rows = await self._health_reports()
+        out: list[dict[str, Any]] = []
+        for entry, report in rows:
+            levels: dict[str, Any] = report.get("levels") or {}
+            found: list[dict[str, Any]] = report.get("findings") or []
+            noted: list[dict[str, Any]] = report.get("notes") or []
+            failed: list[dict[str, Any]] = report.get("failures") or []
+            stops: dict[str, Any] = report.get("stops") or {}
+            out.append(
+                {
+                    "uuid": str(entry.uuid),
+                    "clientUrl": entry.client_url,
+                    "title": (entry.repository_metadata or {}).get("title"),
+                    "reach": report.get("reach"),
+                    "status": report.get("status") or "unreadable",
+                    "pages": int(report.get("pages") or 0),
+                    "levels": {name: int(levels.get(name) or 0) for name in LEVELS},
+                    "findings": {f["code"]: int(f["count"]) for f in found},
+                    "notes": {f["code"]: int(f["count"]) for f in noted},
+                    "failed": sum(int(f["count"]) for f in failed),
+                    "partial": bool(stops.get("atCeiling")),
+                }
+            )
+        out.sort(key=lambda row: (row["title"] or row["clientUrl"]).lower())
+        return out
+
     # --- dates the data carries ---------------------------------------------------------
 
     async def registrations(self) -> list[dict[str, Any]]:
@@ -325,6 +407,12 @@ class StatsService:
             metrics["records.total"] = records["total"]
             for kind, n in records["byKind"].items():
                 metrics[f"records.kind.{kind}"] = n
+        health: dict[str, Any] | None = current["health"]
+        if health is not None:
+            for reach, n in health["byReach"].items():
+                metrics[f"health.reach.{reach}"] = n
+            for status, n in health["byStatus"].items():
+                metrics[f"health.status.{status}"] = n
         shares: list[dict[str, Any]] = current["conformance"] or []
         for share in shares:
             metrics[f"conformance.{share['pack']}.checked"] = share["checked"]
@@ -335,7 +423,9 @@ class StatsService:
         self.invalidate()
         return metrics
 
-    async def history(self, days: int, *, conformance: bool = True) -> dict[str, Any]:
+    async def history(
+        self, days: int, *, conformance: bool = True, health: bool = True
+    ) -> dict[str, Any]:
         """Every day from the first snapshot within ``days`` until today; ``None`` where
         no snapshot was taken (the index was down), so charts show the gap."""
         today = utcnow().date()
@@ -356,6 +446,8 @@ class StatsService:
         series: dict[str, list[int | None]] = {}
         for day, metric, value in rows:
             if metric.startswith("conformance.") and not conformance:
+                continue
+            if metric.startswith("health.") and not health:
                 continue
             series.setdefault(metric, [None] * len(dates))[position[day]] = int(value)
         return {"days": [d.isoformat() for d in dates], "series": series}

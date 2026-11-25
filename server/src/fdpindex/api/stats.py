@@ -1,11 +1,14 @@
 """Statistics API (TASKS 15.1).
 
 * ``GET /index/stats``: what the index holds now (FDPs by state, records by
-  kind, the FDPs with most records, conformance shares), FDPs by month of
-  registration, datasets by year of issue, and the daily history.
+  kind, the FDPs with most records, conformance shares, metadata health),
+  FDPs by month of registration, datasets by year of issue, and the daily
+  history.
+* ``GET /index/health``: every FDP's metadata health in one table (TASKS 15.8).
 
 Public, and counted as visitors see the index (``fdpindex.stats``);
-conformance shares only for those who may read conformance reports.
+conformance shares and metadata health only for those who may read
+conformance reports.
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from fdpindex.auth import Principal, current_principal
+from fdpindex.errors import Forbidden, Unauthorized
 
 if TYPE_CHECKING:
     from fdpindex.stats import StatsService
@@ -107,6 +111,38 @@ class History(_Camel):
     )
 
 
+class HealthSummary(_Camel):
+    """Metadata health over the FDPs in the public list that have a report (TASKS 15.8)."""
+
+    fdps: int = Field(description="FDPs with a health report")
+    by_reach: dict[str, int] = Field(
+        alias="byReach",
+        description="By the deepest level reached: none, fdp, catalog, dataset, distribution, "
+        "dataservice",
+    )
+    by_status: dict[str, int] = Field(alias="byStatus", description="fine, findings, unreadable")
+    findings: dict[str, int] = Field(description="FDPs with each finding")
+    notes: dict[str, int] = Field(
+        default_factory=lambda: {}, description="FDPs with each note (DCAT's advice)"
+    )
+    failures: dict[str, int] = Field(description="Pages that failed, by kind")
+    partial: int = Field(description="FDPs whose harvest stopped at its page limit")
+
+
+class HealthRow(_Camel):
+    uuid: str
+    client_url: str = Field(alias="clientUrl")
+    title: str | None
+    reach: str | None
+    status: str
+    pages: int
+    levels: dict[str, int] = Field(description="Pages per level")
+    findings: dict[str, int] = Field(description="Count per finding")
+    notes: dict[str, int] = Field(default_factory=lambda: {}, description="Count per note")
+    failed: int = Field(description="Pages that could not be read")
+    partial: bool = Field(description="The harvest stopped at its page limit")
+
+
 class Statistics(_Camel):
     generated_at: str = Field(alias="generatedAt")
     fdps: FdpCounts
@@ -120,6 +156,9 @@ class Statistics(_Camel):
     )
     published: list[YearCount] = Field(description="Datasets by year of dct:issued")
     history: History
+    health: HealthSummary | None = Field(
+        default=None, description="Null when health reports are for administrators"
+    )
 
 
 def _service(request: Request) -> StatsService:
@@ -134,3 +173,19 @@ async def statistics(
 ) -> Statistics:
     view = await _service(request).view(admin=caller.is_admin, days=days)
     return Statistics.model_validate(view)
+
+
+@router.get(
+    "/index/health",
+    response_model=list[HealthRow],
+    summary="Every FDP's metadata health",
+    responses={401: {"description": "Reports are for administrators"}},
+)
+async def health_table(request: Request, caller: Caller) -> list[HealthRow]:
+    """One row per FDP in the public list with a health report (TASKS 15.8)."""
+    service = _service(request)
+    if not await service.health_readable(admin=caller.is_admin):
+        if caller.anonymous:
+            raise Unauthorized("Health reports are for administrators")
+        raise Forbidden("Health reports are for administrators")
+    return [HealthRow.model_validate(row) for row in await service.health_table()]

@@ -1,8 +1,8 @@
 # Metadata health and complete harvests (TASKS 15.6–15.11)
 
-Status: reviewed (2026-11-24); the decisions are in §5. 3.1 is built (TASKS
-15.7); the rest of §3 is not. Updated the same day with ERDERA's onboarding
-benchmark (3.3, 3.4).
+Status: reviewed (2026-11-24); the decisions are in §5. 3.1 and 3.2 are
+built (TASKS 15.7, 15.8). Updated with ERDERA's onboarding benchmark (3.3,
+3.4) on 2026-11-24, and with what an FDP promised (3.7) on 2026-11-25.
 
 ## 1. Why
 
@@ -124,7 +124,8 @@ The limits should stop abuse, not cut real FDPs short. A harvest becomes a
   fails keeps its stored version and is retried by the next walk; one failed
   page no longer holds up removals elsewhere in the FDP.
 - **A ceiling per walk** stays, so a site generating pages endlessly cannot
-  keep a worker forever: 50,000 pages by default. An administrator can raise
+  keep a worker forever: 100,000 pages by default (raised from 50,000 on
+  2026-11-25: `fdp.lovd.nl` has about 69,000). An administrator can raise
   the budget per run or the ceiling for an accepted FDP, or allow it another
   site (for example a separate host for distributions), on its page, like the
   harvest interval today. FDPs that only pinged keep the defaults.
@@ -140,16 +141,38 @@ about an hour and a half the first time, and later walks are mostly 304s.
 Computed after each walk from the pages it read, for every deployment.
 Nothing here depends on a project.
 
+What is shown:
+
+| Part | Meaning |
+| --- | --- |
+| Reach | The deepest level reached, per FDP (FDPcrawleR's drop-off), and pages per level by the `rdf:type` of the page's subject |
+| Failures | Pages that could not be read, by kind: not found, other HTTP errors, timed out, not readable as RDF, too large, refused by the index's rules, connection failed |
+| Stops | The index's own: links to other sites not followed, pages left unread at the walk's ceiling |
+
+**Findings** rest on what every FDP claims by registering as one, the FDP
+specification; they make an FDP's status "has findings":
+
 | Finding | Meaning |
 | --- | --- |
-| Pages read and failed, by level | FDP, catalogue, dataset, distribution, data service; failures by kind (HTTP status, timeout, cannot parse, too large, refused by the index's rules) |
-| Shape | How many catalogues, datasets, distributions and data services; how many datasets have no distribution, distributions no access URL or service |
-| Reach | The deepest level reached, per FDP (FDPcrawleR's drop-off) |
-| Linked only in DCAT | A DCAT link (`dcat:dataset`, `dcat:distribution`, `dcat:service`, `dcat:accessService`) to a page in no LDP container: the harvest does not follow it, so the record is not in the index |
-| Not linked in DCAT | A child in an LDP container that its parent does not link with the DCAT or FDP-O property |
-| Empty container | An LDP container with no members |
-| Dead end | A catalogue without datasets, a dataset without distributions |
-| Not followed | Links to other sites, pages beyond the ceiling |
+| Linked only in DCAT | A DCAT link (`dcat:dataset`, `dcat:distribution`, `dcat:service`, `dcat:accessService` …) to a page on the FDP's site in no LDP container and not described inline: the harvest does not follow it, so the record is not in the index |
+| Listed only in an LDP container | A child in an LDP container that its parent does not link with the container's member relation (`dcat:dataset`, `fdp-o:metadataCatalog`, or the FDP's own, such as `adms:sample`) |
+| Catalogue without datasets or services | A dead end |
+
+**Notes** are DCAT's advice, which an FDP never promised (DCAT makes
+distributions optional). They are shown with their fix, and counted on the
+Statistics page, but do not change the FDP's status (decision 7):
+
+| Note | Meaning |
+| --- | --- |
+| Dataset without distributions | No `dcat:distribution` and no distribution among its children |
+| Distribution without access | No `dcat:accessURL`, `dcat:downloadURL` or `dcat:accessService` |
+
+An empty LDP container is neither: FDP software makes a container for every
+kind of child a page may have (on 70 FDPs on 2026-11-25, 56 had one).
+
+On those 70 FDPs (2026-11-25): 46 with nothing found and 24 with findings
+(all of them children listed only in a container); notes on 24 (datasets
+without distributions) and 7 (distributions without access).
 
 Each finding comes with a sentence on how to fix it, written for the FDP's
 maintainer (the data holders' guide gets a section with the same text).
@@ -304,6 +327,42 @@ PROV-O. The health findings are computed from the same reports, so the two
 share their storage: the walk's record holds what was read and what failed;
 the health view is derived from it.
 
+### 3.7 What an FDP promised: declared, required, and a lens
+
+The conformance packs (TASKS 11.x) check every record against the profiles an
+administrator activates, and DCAT-AP 3.0.1 is active by default. So the index
+judges FDPs against a profile none of them promised to meet. Most FDPs do say
+what they meet: on the copy of 70 FDPs (60,117 pages, 2026-11-25), 61 FDPs
+declare `dct:conformsTo` on their records (about 10,000 pages), most often
+their own FDP profile (`/profile/{uuid}`), a few DCAT-AP 3.0.1, HealthDCAT-AP
+release 6 or the SPHN schema. An FDP profile is a W3C Profiles Vocabulary
+profile (`prof:Profile`, `prof:isProfileOf` its core profile) whose resource
+with role `prof:role/Validation` is the FDP's own SHACL
+(`/metadata-schemas/{uuid}`); on `fdp.healthdata.nl` that is Health-RI core,
+plateau 2.
+
+Three judgements, kept apart, each saying what it rests on:
+
+1. **Declared** (the default when the administrator chose nothing). Each
+   record is checked against what it declares: for an FDP profile, the SHACL
+   its validation resources name, its core profile's included, fetched from
+   the FDP's own site (or an origin allowed for it) under the outbound rules
+   and cached by URL and ETag; for a known specification IRI, the bundled
+   pack. A record that declares nothing "declares no profile": neutral.
+2. **Required by this index**: the packs and network profile (3.3) an
+   administrator sets, shown on the Expectations page. A record that misses
+   them "does not meet this index's requirements", not "does not conform":
+   the FDP chose to join a network whose rules are public.
+3. **A visitor's lens**: on an FDP's page, in search and in the Statistics,
+   a visitor may look through another profile, among the packs the
+   administrator activated (computed in the background), worded "checked
+   against X, which this FDP does not claim". Checking any profile on
+   request is left out: it means validating up to 100,000 records.
+
+DCAT-AP becomes a pack an administrator activates, not the default. The
+testbed shows DCAT-AP results today, so visitors there will see declared
+results instead.
+
 ## 4. Changes to what exists
 
 - **Data-service links.** On 2026-11-24 (`72cff8f`) the fallback for pages
@@ -335,6 +394,14 @@ the health view is derived from it.
 5. **Check before registering follows the approval policy** (3.5).
 6. **The harvest follows the FDP specification: LDP.** DCAT links outside it
    are reported, not followed.
+7. **Findings rest on what an FDP promised** (2026-11-25): the FDP
+   specification. DCAT's advice (datasets without distributions,
+   distributions without access) is shown as notes, which do not count
+   against the FDP.
+8. **Conformance is checked against what a record declares by default**
+   (3.7); DCAT-AP and the other packs are opt-in.
+9. **Visitors may look through another profile**, among the packs the
+   administrator activated (3.7).
 
 ## 6. Tasks
 
@@ -342,7 +409,7 @@ the health view is derived from it.
 - 15.7 Walks that continue over budgeted runs, and per-FDP budgets (3.1);
   the data-service fallback taken out (§4). Done.
 - 15.8 The built-in findings, per FDP and summed (3.2, 3.5), with the data
-  holders' guide.
+  holders' guide. Done.
 - 15.9 Network profiles: the template, its schema, the settings page, the
   "Expectations" page, a generic default and an ERDERA example that names
   its Onboarding Benchmark (3.3).
@@ -350,4 +417,9 @@ the health view is derived from it.
   with a profile's benchmarks run through FAIR Champion; the call agreed
   with its maintainers first.
 - 15.11 Check before registering (3.5).
+- 15.12 Declared conformance (3.7): follow `dct:conformsTo` to the FDP's
+  profile and SHACL, or to a bundled pack; the default when no pack is
+  chosen; DCAT-AP opt-in; "declares no profile".
+- 15.13 Lenses (3.7): visitors choose among the activated packs on an FDP's
+  page, in search and in the Statistics, worded as not claimed.
 - The error-text fix (§4) goes first, on its own. Done.

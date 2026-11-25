@@ -78,6 +78,16 @@ The first release will contain:
   includes the month's database (`GEOIP_MONTH`).
 - **`deploy/compose.proxy.yaml`**: the client joins the Docker network of a
   reverse proxy on the same host, such as Caddy.
+- **Metadata health** (TASKS 15.8): after every harvest, how far an FDP's
+  metadata reaches (FDP → catalogue → dataset → distribution → data
+  service), the pages that could not be read by kind, the index's own stops,
+  findings against the FDP specification (records linked only through DCAT,
+  children listed only in an LDP container, catalogues without datasets) and
+  notes with DCAT's advice that do not count against the FDP. On the FDP's
+  page, summed on the Statistics page with a table and CSV download, and at
+  `GET /index/entries/{uuid}/health` and `GET /index/health`. Readable as
+  conformance reports are. Migration 0019; FDPs harvested earlier get a
+  report from the next sweep.
 - **Operations**: Compose stack with an optional Keycloak profile, trusted
   reverse proxy, backup and restore (docs/operations.md).
 
@@ -91,7 +101,8 @@ The first release will contain:
 - Large FDPs are harvested in full. A harvest stopped at 2,000 pages, so
   an FDP larger than that was never held whole (two FDPs on
   home.fairdatapoint.org). It is now a walk over runs of that size, a few
-  minutes apart, up to 50,000 pages, and continues where it stopped; an FDP
+  minutes apart, up to 100,000 pages (50,000 until 2026-11-25:
+  `fdp.lovd.nl` has about 69,000), and continues where it stopped; an FDP
   answering `429`, or `503` with `Retry-After`, is left alone for that
   long. Administrators can set an FDP's own budget and other sites it may
   read. Migration 0018. A page that fails but has a stored version still

@@ -162,7 +162,7 @@ def test_budget_options_through_the_api(api: Api) -> None:  # noqa: F811  # impo
     ]
     url = f"/index/entries/{entry['uuid']}"
     options = api.client.get(url).json()["options"]
-    assert (options["harvestPagesPerRun"], options["harvestPagesPerWalk"]) == (2000, 50_000)
+    assert (options["harvestPagesPerRun"], options["harvestPagesPerWalk"]) == (2000, 100_000)
     assert (options["harvestBudgetSet"], options["harvestOrigins"]) == (False, [])
 
     body = {

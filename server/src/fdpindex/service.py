@@ -35,6 +35,7 @@ from fdpindex import exchange, geo
 from fdpindex.db import utcnow
 from fdpindex.durations import format_duration
 from fdpindex.errors import NotFound, PingDenied, RateLimited
+from fdpindex.findings import Page, WalkSummary, analyse, page_key, read_page
 from fdpindex.harvest import KnownNode, harvest
 from fdpindex.models import (
     Concept,
@@ -45,6 +46,7 @@ from fdpindex.models import (
     HarvestedNode,
     HarvestWalk,
     IndexEntry,
+    MetadataHealth,
 )
 from fdpindex.outbound import OutboundError
 from fdpindex.rdf import ACCEPT, RdfParseError, extract_repository_metadata, parse_rdf
@@ -66,6 +68,10 @@ log = structlog.get_logger(__name__)
 
 # Failed nodes listed in a Harvest event (the count covers all of them).
 MAX_REPORTED_FAILURES = 20
+# Failed pages a walk keeps for the health report.
+MAX_HEALTH_FAILURES = 1000
+# Pages read per database round when a health report is computed.
+HEALTH_BATCH = 2000
 
 EVENTS_IN_DETAIL = 10
 
@@ -139,6 +145,10 @@ class Retrieval:
     server_country: str | None = None
 
 
+def _read_pages(batch: list[tuple[str, str]], root: str) -> list[Page]:
+    return [read_page(iri, text, root=page_key(iri) == root) for iri, text in batch]
+
+
 def _instant(moment: datetime | None) -> str | None:
     """As ``java.time.Instant.toString()``, for event payloads."""
     if moment is None:
@@ -201,7 +211,7 @@ class IndexService:
         harvest_max_bytes: int = 50 * 1024 * 1024,
         harvest_max_seconds: float = 900.0,
         harvest_node_timeout: float = 20.0,
-        harvest_walk_max_nodes: int = 50_000,
+        harvest_walk_max_nodes: int = 100_000,
         harvest_continue_seconds: float = 600.0,
         geoip: GeoIp | None = None,
     ) -> None:
@@ -220,6 +230,7 @@ class IndexService:
         self._harvest_continue_seconds = harvest_continue_seconds
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_waiting: dict[UUID, set[UUID]] = {}
+        self._health_running: set[UUID] = set()
         self._listeners: list[Callable[[IndexChange], None]] = []
         # Set when conformance runs (TASKS 11.4): a condition on IndexEntry that public
         # lists add, or None when the directory shows every FDP.
@@ -1094,6 +1105,22 @@ class IndexService:
                         stale += 1
                 complete = bool(read_in_walk) and not walk.failed and not at_ceiling
                 outcome = "complete" if complete else "partial" if read_in_walk else "failed"
+                # What the walk found, for the metadata health report (TASKS 15.8).
+                summary = {
+                    "failed": dict(list(walk.failed.items())[:MAX_HEALTH_FAILURES]),
+                    "unread": len(result.queue),
+                    "offSite": walk.skipped_off_origin,
+                    "atCeiling": at_ceiling,
+                    "complete": complete,
+                }
+                health = await session.get(MetadataHealth, entry_id)
+                if health is None:
+                    session.add(
+                        MetadataHealth(entry_uuid=entry_id, walk=summary, walk_finished_at=now)
+                    )
+                else:
+                    health.walk = summary
+                    health.walk_finished_at = now
                 if walk in session.new:  # a walk done in one run is never stored
                     session.expunge(walk)
                 else:
@@ -1195,6 +1222,9 @@ class IndexService:
         async with self._session_factory() as session, session.begin():
             await session.execute(delete(HarvestedNode).where(HarvestedNode.entry_uuid == entry_id))
             await session.execute(delete(HarvestWalk).where(HarvestWalk.entry_uuid == entry_id))
+            await session.execute(
+                delete(MetadataHealth).where(MetadataHealth.entry_uuid == entry_id)
+            )
         self._notify(IndexChange("removed", entry_id))
 
     async def harvested_ntriples(self, entry_id: UUID) -> str:
@@ -1219,6 +1249,130 @@ class IndexService:
             return graph
 
         return await asyncio.to_thread(parse)
+
+    # --- metadata health (TASKS 15.8) --------------------------------------------------
+
+    async def metadata_health(self, entry_id: UUID) -> MetadataHealth | None:
+        async with self._session_factory() as session:
+            return await session.get(MetadataHealth, entry_id)
+
+    async def health_reports(self, entry_ids: list[UUID]) -> dict[UUID, MetadataHealth]:
+        """The computed reports of these entries."""
+        if not entry_ids:
+            return {}
+        async with self._session_factory() as session:
+            rows = await session.scalars(
+                select(MetadataHealth).where(
+                    MetadataHealth.entry_uuid.in_(entry_ids), MetadataHealth.report.is_not(None)
+                )
+            )
+            return {row.entry_uuid: row for row in rows}
+
+    async def schedule_health(self, *, batch: int = 2) -> int:
+        """Compute the health reports that are due; return how many were started.
+
+        Due: a walk ended after the report was computed, or an accepted FDP has
+        harvested pages and no report (harvested before TASKS 15.8). An FDP whose
+        walk is in progress waits for it to end.
+        """
+        started: list[UUID] = []
+        async with self._session_factory() as session, session.begin():
+            has_pages = (
+                select(HarvestedNode.id).where(HarvestedNode.entry_uuid == IndexEntry.uuid).exists()
+            )
+            has_health = (
+                select(MetadataHealth.entry_uuid)
+                .where(MetadataHealth.entry_uuid == IndexEntry.uuid)
+                .exists()
+            )
+            for entry_id in await session.scalars(
+                select(IndexEntry.uuid).where(
+                    IndexEntry.permit == EntryPermit.ACCEPTED, has_pages, ~has_health
+                )
+            ):
+                session.add(MetadataHealth(entry_uuid=entry_id, walk={}))
+            walking = (
+                select(HarvestWalk.entry_uuid)
+                .where(HarvestWalk.entry_uuid == MetadataHealth.entry_uuid)
+                .exists()
+            )
+            due = await session.scalars(
+                select(MetadataHealth.entry_uuid)
+                .where(
+                    or_(
+                        MetadataHealth.computed_at.is_(None),
+                        MetadataHealth.computed_at < MetadataHealth.walk_finished_at,
+                    ),
+                    ~walking,
+                )
+                .order_by(MetadataHealth.walk_finished_at.desc().nulls_last())
+                .limit(batch + len(self._health_running))
+            )
+            for entry_id in due:
+                if entry_id not in self._health_running and len(started) < batch:
+                    started.append(entry_id)
+        for entry_id in started:
+            self._health_running.add(entry_id)
+            self._jobs.submit(
+                f"metadata-health:{entry_id}", lambda eid=entry_id: self.compute_health(eid)
+            )
+        return len(started)
+
+    async def compute_health(self, entry_id: UUID) -> None:
+        """Compute an FDP's health report from its stored pages (``fdpindex.findings``)."""
+        try:
+            started = utcnow()
+            async with self._session_factory() as session:
+                entry = await session.get(IndexEntry, entry_id)
+                health = await session.get(MetadataHealth, entry_id)
+                if entry is None or health is None:
+                    return
+                client_url = entry.client_url
+                origins = list(entry.harvest_origins or [])
+                walk = dict(health.walk or {})
+            root = page_key(client_url)
+            pages: list[Page] = []
+            last = 0
+            while True:
+                async with self._session_factory() as session:
+                    rows = (
+                        await session.execute(
+                            select(HarvestedNode.id, HarvestedNode.node_iri, HarvestedNode.ntriples)
+                            .where(HarvestedNode.entry_uuid == entry_id, HarvestedNode.id > last)
+                            .order_by(HarvestedNode.id)
+                            .limit(HEALTH_BATCH)
+                        )
+                    ).all()
+                if not rows:
+                    break
+                last = rows[-1][0]
+                batch = [(str(iri), str(text)) for _id, iri, text in rows]
+                pages.extend(await asyncio.to_thread(_read_pages, batch, root))
+            summary = WalkSummary(
+                failed=walk.get("failed") or {},
+                unread=int(walk.get("unread") or 0),
+                off_site=int(walk.get("offSite") or 0),
+                at_ceiling=bool(walk.get("atCeiling")),
+                complete=walk.get("complete"),
+            )
+            report = await asyncio.to_thread(analyse, client_url, pages, summary, origins=origins)
+            async with self._session_factory() as session, session.begin():
+                health = await session.get(MetadataHealth, entry_id)
+                if health is None:
+                    return
+                health.report = report
+                health.reach = report["reach"]
+                health.status = report["status"]
+                health.computed_at = started
+            log.info(
+                "metadata_health_computed",
+                entry=str(entry_id),
+                pages=report["pages"],
+                reach=report["reach"],
+                status=report["status"],
+            )
+        finally:
+            self._health_running.discard(entry_id)
 
     async def harvest_walk(self, entry_id: UUID) -> HarvestWalk | None:
         """The entry's walk in progress, if any (TASKS 15.7)."""

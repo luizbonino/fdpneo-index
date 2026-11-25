@@ -912,4 +912,85 @@ export const en = {
     feedHelp: "The harvested metadata as a DCAT-AP catalogue, also over OAI-PMH at /index/oai",
     version: "Version {version}",
   },
+  health: {
+    title: "Metadata health",
+    lead: "How far this FDP's metadata reaches, and what the index found when it last harvested it.",
+    statsLead:
+      "How far each FDP's metadata reaches, from the FDP to its data services, and what the index found. Worked out after every harvest.",
+    checked: "Checked {when}",
+    none: "No report yet: one is made after the next harvest.",
+    status: {
+      fine: "Nothing found",
+      findings: "Has findings",
+      unreadable: "Could not be read",
+    },
+    reachLabel: "Pages per level",
+    reaches: "Reaches: {level}",
+    reachNone: "Nothing could be read.",
+    otherPages: "{n} other pages",
+    levels: {
+      fdp: "FDP",
+      catalog: "Catalogues",
+      dataset: "Datasets",
+      distribution: "Distributions",
+      dataservice: "Data services",
+    },
+    stops: {
+      ceiling:
+        "The harvest stopped at its page limit with {n} pages unread. An administrator can raise the limit for this FDP.",
+      offSite: "{n} links to other sites were not followed.",
+    },
+    examples: "Examples",
+    notesTitle: "Notes",
+    notesLead:
+      "DCAT recommends these. The FDP specification does not ask for them, so they do not count against the FDP.",
+    withNote: "FDPs with notes",
+    failuresTitle: "Pages that could not be read",
+    failures: {
+      "not-found": "Not found (404, 410)",
+      "http-error": "Other HTTP errors",
+      timeout: "Timed out",
+      unparsable: "Not readable as RDF",
+      "too-large": "Too large",
+      refused: "Refused by the index's rules",
+      other: "Connection failed",
+    },
+    incomplete: "The last harvest did not reach every page, so some findings may be missing.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Linked only through DCAT",
+        fix: "These records are linked from another record (for example with dcat:accessService) but are in no LDP container. The index follows the FDP's containers, as the FDP specification says, so it does not harvest them. List them in their parent's container, as the FDP software does when they are created as its children.",
+      },
+      "not-linked-in-dcat": {
+        title: "Listed only in an LDP container",
+        fix: "The parent lists these records in its LDP container but does not link them with the container's member relation (for example dcat:dataset). Tools that read DCAT alone do not find them. Add that link to the parent's metadata.",
+      },
+      "catalog-without-datasets": {
+        title: "Catalogues without datasets or services",
+        fix: "Add datasets or data services to these catalogues, or remove catalogues that are no longer used.",
+      },
+      "dataset-without-distributions": {
+        title: "Datasets without distributions",
+        fix: "A distribution says how to get the data: a download, an API or a landing page. Add at least one to each dataset.",
+      },
+      "distribution-without-access": {
+        title: "Distributions without access",
+        fix: "Give each distribution a dcat:accessURL, a dcat:downloadURL or a dcat:accessService, so people and tools can reach the data.",
+      },
+    },
+    partial: "Stopped at the page limit",
+    reaching: "FDPs whose metadata reaches each level",
+    withFinding: "FDPs with each finding",
+    level: "Level",
+    finding: "Finding",
+    table: "FDPs and their findings",
+    csv: "Download CSV",
+    columns: {
+      fdp: "FDP",
+      reach: "Reaches",
+      pages: "Pages",
+      findings: "Findings",
+      failed: "Failed pages",
+    },
+  },
 };

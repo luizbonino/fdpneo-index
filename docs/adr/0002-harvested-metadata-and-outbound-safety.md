@@ -67,7 +67,8 @@ most `FDPINDEX_HARVEST_MAX_NODES` pages (default 2000), 50 MiB and 15
 minutes, then stores its queue; the next run starts
 `FDPINDEX_HARVEST_CONTINUE_SECONDS` later, or when the FDP's `Retry-After`
 says. A walk reads at most `FDPINDEX_HARVEST_WALK_MAX_NODES` pages (default
-50,000). An administrator can raise both for one FDP. Records are removed
+100,000; 50,000 until 2026-11-25). An administrator can raise both for one
+FDP. Records are removed
 only by the run that ends a walk that reached everything below the pages it
 read. Until 2026-11-24 a harvest was a single run, so an FDP larger than the
 limit was never held in full.

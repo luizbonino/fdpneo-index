@@ -12,6 +12,7 @@ import StateBadge from "@/components/StateBadge.vue";
 import PermitBadge from "@/components/PermitBadge.vue";
 import StatusHelp from "@/components/StatusHelp.vue";
 import EventTimeline from "@/components/EventTimeline.vue";
+import MetadataHealth from "@/components/health/MetadataHealth.vue";
 import ConformanceReport from "@/components/conformance/ConformanceReport.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
 import { currentLocale } from "@/i18n";
@@ -436,6 +437,7 @@ async function remove() {
         </template>
       </section>
 
+      <MetadataHealth v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />
       <ConformanceReport v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />
     </template>
   </div>

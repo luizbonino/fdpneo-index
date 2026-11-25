@@ -142,6 +142,62 @@ class EventPageView(_Api):
     size: int
 
 
+class HealthFindingView(_Api):
+    code: str = Field(
+        description="Findings: linked-only-in-dcat, not-linked-in-dcat, "
+        "catalog-without-datasets. Notes: dataset-without-distributions, "
+        "distribution-without-access"
+    )
+    count: int
+    examples: list[str] = Field(description="Up to five pages or links it concerns")
+
+
+class HealthFailureView(_Api):
+    kind: str = Field(
+        description="not-found, http-error, timeout, unparsable, too-large, refused, other"
+    )
+    count: int
+    examples: list[str] = Field(description="Up to five pages that failed")
+
+
+class HealthStopsView(_Api):
+    off_site: int = Field(
+        serialization_alias="offSite", description="Links to other sites, not followed"
+    )
+    unread: int = Field(description="Pages left unread when the harvest stopped at its limit")
+    at_ceiling: bool = Field(
+        serialization_alias="atCeiling", description="The harvest stopped at its page limit"
+    )
+
+
+class MetadataHealthView(_Api):
+    """What the index found in an FDP's metadata (TASKS 15.8)."""
+
+    computed_at: str = Field(serialization_alias="computedAt")
+    harvested_at: str | None = Field(
+        serialization_alias="harvestedAt", description="When the harvest it describes ended"
+    )
+    reach: str | None = Field(
+        description="The deepest level reached: fdp, catalog, dataset, distribution, "
+        "dataservice; null when nothing could be read"
+    )
+    status: Literal["fine", "findings", "unreadable"]
+    pages: int = Field(description="Pages the index holds")
+    levels: dict[str, int] = Field(description="Pages per level, and other pages")
+    findings: list[HealthFindingView] = Field(
+        description="Against the FDP specification, which every FDP claims"
+    )
+    notes: list[HealthFindingView] = Field(
+        default_factory=lambda: [],
+        description="DCAT's advice, which an FDP never promised: not counted in status",
+    )
+    failures: list[HealthFailureView] = Field(description="Pages that could not be read, by kind")
+    stops: HealthStopsView = Field(description="Where the index stopped by its own rules")
+    complete: bool | None = Field(
+        description="The harvest read every page it found; null when not known"
+    )
+
+
 class HarvestWalkView(_Api):
     """A harvest walk with runs still to go (TASKS 15.7)."""
 

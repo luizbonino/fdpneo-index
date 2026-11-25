@@ -266,7 +266,7 @@ def test_registration_and_options_over_http(api: Api) -> None:
         "harvestInterval": "PT24H",
         "country": None,
         "harvestPagesPerRun": 2000,
-        "harvestPagesPerWalk": 50_000,
+        "harvestPagesPerWalk": 100_000,
         "harvestBudgetSet": False,
         "harvestOrigins": [],
     }

@@ -88,8 +88,29 @@ const colours = computed(() => {
   };
 });
 
+/** A long label on a horizontal bar, over lines of about 20 characters, so it fits a phone. */
+function wrap(label: string, width = 20): string | string[] {
+  if (label.length <= width) return label;
+  const lines: string[] = [];
+  let line = "";
+  for (const word of label.split(" ")) {
+    if (line && line.length + 1 + word.length > width) {
+      lines.push(line);
+      line = word;
+    } else line = line ? `${line} ${word}` : word;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+const chartLabels = computed(() =>
+  props.kind === "barh" ? props.labels.map((l) => wrap(l)) : props.labels,
+);
+const lineCount = computed(() =>
+  Math.max(1, ...chartLabels.value.map((l) => (Array.isArray(l) ? l.length : 1))),
+);
+
 const data = computed(() => ({
-  labels: props.labels,
+  labels: chartLabels.value,
   datasets: props.series.map((s) => {
     const colour = s.role === "context" ? colours.value.context : colours.value.accent;
     if (props.kind === "line") {
@@ -191,7 +212,9 @@ const options = computed(() => {
 });
 
 const height = computed(() =>
-  props.kind === "barh" ? Math.max(120, props.labels.length * 34 + 40) : props.height,
+  props.kind === "barh"
+    ? Math.max(120, props.labels.length * (34 + (lineCount.value - 1) * 14) + 40)
+    : props.height,
 );
 
 const summary = computed(() => {

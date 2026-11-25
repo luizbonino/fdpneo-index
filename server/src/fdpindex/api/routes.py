@@ -39,6 +39,7 @@ from fdpindex.api.schemas import (
     HarvestWalkView,
     HealthView,
     LocationView,
+    MetadataHealthView,
     PingRequest,
     RegisterRequest,
     RegistrationView,
@@ -51,7 +52,7 @@ from fdpindex.api.schemas import (
 )
 from fdpindex.auth import Principal, current_principal, require_admin
 from fdpindex.durations import format_duration, parse_duration
-from fdpindex.errors import BadRequest, NotFound, RateLimited
+from fdpindex.errors import BadRequest, Forbidden, NotFound, RateLimited, Unauthorized
 from fdpindex.geo import valid as valid_country
 from fdpindex.models import EntryPermit, EventType, IndexEntry
 from fdpindex.service import DuplicateGroup, IndexService, api_state
@@ -342,6 +343,43 @@ def _location(found: tuple[str, str] | None) -> LocationView | None:
 async def get_entry(entry_id: UUID, index: Index, caller: Caller) -> EntryDetailView:
     await _visible(index, caller, entry_id)
     return await _detail(index, entry_id)
+
+
+@router.get(
+    "/index/entries/{entry_id}/health",
+    tags=["Index"],
+    response_model=MetadataHealthView | None,
+    summary="What the index found in an FDP's metadata",
+    responses={401: {"description": "Reports are for administrators"}},
+)
+async def get_entry_health(
+    entry_id: UUID, request: Request, index: Index, caller: Caller
+) -> MetadataHealthView | None:
+    """Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).
+
+    Computed from the stored pages after each harvest; null until the first
+    report. Who may read it follows the conformance `reports` setting.
+    """
+    await _visible(index, caller, entry_id)
+    if not await request.app.state.stats.health_readable(admin=caller.is_admin):
+        if caller.anonymous:
+            raise Unauthorized("Health reports are for administrators")
+        raise Forbidden("Health reports are for administrators")
+    health = await index.metadata_health(entry_id)
+    if health is None or health.report is None or health.computed_at is None:
+        return None
+    return MetadataHealthView.model_validate(
+        {
+            **health.report,
+            "computed_at": instant(health.computed_at),
+            "harvested_at": instant(health.walk_finished_at),
+            "stops": {
+                "off_site": health.report["stops"]["offSite"],
+                "unread": health.report["stops"]["unread"],
+                "at_ceiling": health.report["stops"]["atCeiling"],
+            },
+        }
+    )
 
 
 @router.put("/index/entries/{entry_id}", tags=["Index"], response_model=EntryDetailView)

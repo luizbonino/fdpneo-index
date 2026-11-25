@@ -254,6 +254,28 @@ class HarvestWalk(Base):
     __table_args__ = (Index("ix_harvest_walk_continue_at", "continue_at"),)
 
 
+class MetadataHealth(Base):
+    """An FDP's metadata health (TASKS 15.8): what its last walk found (``fdpindex.findings``).
+
+    The run that ends a walk stores ``walk`` and ``walk_finished_at``; the
+    health sweep computes ``report`` from the stored pages when ``computed_at``
+    is older.
+    """
+
+    __tablename__ = "metadata_health"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    walk_finished_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # failed (IRI -> reason), unread, offSite, atCeiling, complete
+    walk: Mapped[dict[str, Any]] = mapped_column(JsonType, nullable=False, default=dict)
+    computed_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    reach: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    report: Mapped[dict[str, Any] | None] = mapped_column(JsonType, nullable=True)
+
+
 # --- search projection (search design §3.1, ADR-0005) ------------------------------
 
 # Full-text vectors exist in PostgreSQL only; unit tests on SQLite match on search_text.

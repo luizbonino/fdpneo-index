@@ -931,4 +931,85 @@ export const pt: Messages = {
     feedHelp: "Os metadados recolhidos como catálogo DCAT-AP, também por OAI-PMH em /index/oai",
     version: "Versão {version}",
   },
+  health: {
+    title: "Qualidade dos metadados",
+    lead: "Até onde chegam os metadados deste FDP e o que o índice encontrou na última recolha.",
+    statsLead:
+      "Até onde chegam os metadados de cada FDP, do FDP aos seus serviços de dados, e o que o índice encontrou. Calculado após cada recolha.",
+    checked: "Verificado {when}",
+    none: "Ainda sem relatório: será feito após a próxima recolha.",
+    status: {
+      fine: "Nada encontrado",
+      findings: "Com observações",
+      unreadable: "Não foi possível ler",
+    },
+    reachLabel: "Páginas por nível",
+    reaches: "Chega a: {level}",
+    reachNone: "Não foi possível ler nada.",
+    otherPages: "{n} outras páginas",
+    levels: {
+      fdp: "FDP",
+      catalog: "Catálogos",
+      dataset: "Conjuntos de dados",
+      distribution: "Distribuições",
+      dataservice: "Serviços de dados",
+    },
+    stops: {
+      ceiling:
+        "A recolha parou no limite de páginas; ficaram {n} páginas por ler. Um administrador pode aumentar o limite deste FDP.",
+      offSite: "{n} ligações para outros sítios não foram seguidas.",
+    },
+    examples: "Exemplos",
+    notesTitle: "Notas",
+    notesLead:
+      "O DCAT recomenda-as. A especificação FDP não as exige, por isso não contam contra o FDP.",
+    withNote: "FDP com notas",
+    failuresTitle: "Páginas que não foi possível ler",
+    failures: {
+      "not-found": "Não encontradas (404, 410)",
+      "http-error": "Outros erros HTTP",
+      timeout: "Tempo esgotado",
+      unparsable: "Não legíveis como RDF",
+      "too-large": "Demasiado grandes",
+      refused: "Recusadas pelas regras do índice",
+      other: "Falha de ligação",
+    },
+    incomplete: "A última recolha não chegou a todas as páginas; podem faltar observações.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Ligados apenas por DCAT",
+        fix: "Estes registos são ligados a partir de outro registo (por exemplo com dcat:accessService) mas não estão em nenhum contentor LDP. O índice segue os contentores do FDP, como diz a especificação FDP, e por isso não os recolhe. Inclua-os no contentor do seu pai, como faz o software FDP quando são criados como seus filhos.",
+      },
+      "not-linked-in-dcat": {
+        title: "Apenas num contentor LDP",
+        fix: "O pai lista estes registos no seu contentor LDP mas não os liga com a relação de membro do contentor (por exemplo dcat:dataset). As ferramentas que só leem DCAT não os encontram. Acrescente essa ligação aos metadados do pai.",
+      },
+      "catalog-without-datasets": {
+        title: "Catálogos sem conjuntos de dados nem serviços",
+        fix: "Acrescente conjuntos de dados ou serviços de dados a estes catálogos, ou retire os catálogos que já não são usados.",
+      },
+      "dataset-without-distributions": {
+        title: "Conjuntos de dados sem distribuições",
+        fix: "Uma distribuição diz como obter os dados: uma transferência, uma API ou uma página de entrada. Dê pelo menos uma a cada conjunto de dados.",
+      },
+      "distribution-without-access": {
+        title: "Distribuições sem acesso",
+        fix: "Dê a cada distribuição um dcat:accessURL, um dcat:downloadURL ou um dcat:accessService, para que pessoas e ferramentas cheguem aos dados.",
+      },
+    },
+    partial: "Parados no limite de páginas",
+    reaching: "FDP cujos metadados chegam a cada nível",
+    withFinding: "FDP por observação",
+    level: "Nível",
+    finding: "Observação",
+    table: "Os FDP e as suas observações",
+    csv: "Descarregar CSV",
+    columns: {
+      fdp: "FDP",
+      reach: "Chega a",
+      pages: "Páginas",
+      findings: "Observações",
+      failed: "Páginas falhadas",
+    },
+  },
 };

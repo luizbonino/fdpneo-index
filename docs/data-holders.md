@@ -37,7 +37,7 @@ change without their root changing.
 - **Conditional requests** (`ETag`, `Last-Modified`) save both sides work:
   serve them if you can.
 - **Large FDPs** are read in runs of up to 2 000 pages, a few minutes apart,
-  until every page has been read (up to 50 000 by default; an administrator
+  until every page has been read (up to 100 000 by default; an administrator
   can allow more). Unchanged pages answer `304 Not Modified`, so later
   harvests are quick. A page that cannot be read keeps its previous version.
 - **Asking the index to wait**: answer `429 Too Many Requests`, or `503` with
@@ -50,6 +50,42 @@ change without their root changing.
 **Your FDP's page** in the index (the directory, then your FDP) shows its
 state, the events of its pings and checks, how many pages were harvested,
 and the harvested metadata to preview or download.
+
+## Metadata health
+
+Your FDP's page has a **Metadata health** section, worked out after every
+harvest; the Statistics page sums it over all FDPs and has a table with CSV
+download. It shows how far your metadata reaches (FDP → catalogues →
+datasets → distributions → data services, with the pages at each level),
+the pages that could not be read and why, and where the index stopped by
+its own rules (links to other sites, a page limit). Who may see it follows
+the same setting as the conformance report.
+
+**Findings** are about what every FDP takes on by being one, the FDP
+specification. They mark your FDP as having findings:
+
+- **Linked only through DCAT.** A record is linked from another (for
+  example with `dcat:accessService`) but is in no LDP container. The index
+  follows your FDP's containers, as the FDP specification says, so it does
+  not harvest it. List it in its parent's container, as the FDP software
+  does when you create it as a child.
+- **Listed only in an LDP container.** The parent lists a record in its LDP
+  container but does not link it with the container's member relation (for
+  example `dcat:dataset`). Tools that read DCAT alone do not find it. Add
+  that link to the parent's metadata.
+- **Catalogue without datasets or services.** Add datasets or data services
+  to it, or remove a catalogue that is no longer used.
+
+**Notes** are DCAT's advice, which your FDP never promised. They are shown
+with how to act on them, but do not count against your FDP:
+
+- **Dataset without distributions.** A distribution says how to get the
+  data: a download, an API or a landing page.
+- **Distribution without access.** Give it a `dcat:accessURL`, a
+  `dcat:downloadURL` or a `dcat:accessService`.
+
+An empty LDP container is not a problem: the FDP software makes one for
+every kind of child a record may have.
 
 ## Why my metadata looks as it does in search
 

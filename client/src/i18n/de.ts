@@ -936,4 +936,85 @@ export const de: Messages = {
     feedHelp: "Die abgerufenen Metadaten als DCAT-AP-Katalog, auch über OAI-PMH unter /index/oai",
     version: "Version {version}",
   },
+  health: {
+    title: "Qualität der Metadaten",
+    lead: "Wie weit die Metadaten dieses FDP reichen und was der Index beim letzten Harvest gefunden hat.",
+    statsLead:
+      "Wie weit die Metadaten jedes FDP reichen, vom FDP bis zu seinen Datendiensten, und was der Index gefunden hat. Nach jedem Harvest neu ermittelt.",
+    checked: "Geprüft {when}",
+    none: "Noch kein Bericht: Er entsteht nach dem nächsten Harvest.",
+    status: {
+      fine: "Nichts gefunden",
+      findings: "Mit Befunden",
+      unreadable: "Nicht lesbar",
+    },
+    reachLabel: "Seiten pro Ebene",
+    reaches: "Reicht bis: {level}",
+    reachNone: "Es konnte nichts gelesen werden.",
+    otherPages: "{n} weitere Seiten",
+    levels: {
+      fdp: "FDP",
+      catalog: "Kataloge",
+      dataset: "Datensätze",
+      distribution: "Distributionen",
+      dataservice: "Datendienste",
+    },
+    stops: {
+      ceiling:
+        "Der Harvest hielt am Seitenlimit an; {n} Seiten wurden nicht gelesen. Ein Administrator kann das Limit für diesen FDP erhöhen.",
+      offSite: "{n} Links auf andere Websites wurden nicht verfolgt.",
+    },
+    examples: "Beispiele",
+    notesTitle: "Hinweise",
+    notesLead:
+      "DCAT empfiehlt dies. Die FDP-Spezifikation verlangt es nicht, daher zählt es nicht gegen den FDP.",
+    withNote: "FDPs mit Hinweisen",
+    failuresTitle: "Seiten, die nicht gelesen werden konnten",
+    failures: {
+      "not-found": "Nicht gefunden (404, 410)",
+      "http-error": "Andere HTTP-Fehler",
+      timeout: "Zeitüberschreitung",
+      unparsable: "Nicht als RDF lesbar",
+      "too-large": "Zu groß",
+      refused: "Von den Regeln des Index abgelehnt",
+      other: "Verbindung fehlgeschlagen",
+    },
+    incomplete: "Der letzte Harvest hat nicht jede Seite erreicht; es können Befunde fehlen.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Nur über DCAT verlinkt",
+        fix: "Diese Datensätze werden von einem anderen Datensatz verlinkt (etwa mit dcat:accessService), stehen aber in keinem LDP-Container. Der Index folgt den Containern des FDP, wie es die FDP-Spezifikation vorsieht, und erntet sie daher nicht. Nehmen Sie sie in den Container ihres Elternelements auf, wie es die FDP-Software tut, wenn sie als dessen Kinder angelegt werden.",
+      },
+      "not-linked-in-dcat": {
+        title: "Nur in einem LDP-Container",
+        fix: "Das Elternelement führt diese Datensätze in seinem LDP-Container, verlinkt sie aber nicht mit der Member-Relation des Containers (etwa dcat:dataset). Werkzeuge, die nur DCAT lesen, finden sie nicht. Ergänzen Sie diesen Link in den Metadaten des Elternelements.",
+      },
+      "catalog-without-datasets": {
+        title: "Kataloge ohne Datensätze oder Dienste",
+        fix: "Fügen Sie diesen Katalogen Datensätze oder Datendienste hinzu, oder entfernen Sie Kataloge, die nicht mehr genutzt werden.",
+      },
+      "dataset-without-distributions": {
+        title: "Datensätze ohne Distributionen",
+        fix: "Eine Distribution sagt, wie man an die Daten kommt: ein Download, eine API oder eine Landingpage. Geben Sie jedem Datensatz mindestens eine.",
+      },
+      "distribution-without-access": {
+        title: "Distributionen ohne Zugang",
+        fix: "Geben Sie jeder Distribution eine dcat:accessURL, eine dcat:downloadURL oder einen dcat:accessService, damit Menschen und Werkzeuge die Daten erreichen.",
+      },
+    },
+    partial: "Am Seitenlimit angehalten",
+    reaching: "FDPs, deren Metadaten jede Ebene erreichen",
+    withFinding: "FDPs je Befund",
+    level: "Ebene",
+    finding: "Befund",
+    table: "FDPs und ihre Befunde",
+    csv: "CSV herunterladen",
+    columns: {
+      fdp: "FDP",
+      reach: "Reicht bis",
+      pages: "Seiten",
+      findings: "Befunde",
+      failed: "Fehlgeschlagene Seiten",
+    },
+  },
 };

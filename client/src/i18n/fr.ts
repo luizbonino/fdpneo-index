@@ -937,4 +937,86 @@ export const fr: Messages = {
       "Les métadonnées moissonnées sous forme de catalogue DCAT-AP, également via OAI-PMH à /index/oai",
     version: "Version {version}",
   },
+  health: {
+    title: "Qualité des métadonnées",
+    lead: "Jusqu’où vont les métadonnées de ce FDP, et ce que l’index a trouvé lors du dernier moissonnage.",
+    statsLead:
+      "Jusqu’où vont les métadonnées de chaque FDP, du FDP à ses services de données, et ce que l’index a trouvé. Recalculé après chaque moissonnage.",
+    checked: "Vérifié {when}",
+    none: "Pas encore de rapport : il sera établi après le prochain moissonnage.",
+    status: {
+      fine: "Rien à signaler",
+      findings: "Avec constats",
+      unreadable: "Illisible",
+    },
+    reachLabel: "Pages par niveau",
+    reaches: "Atteint : {level}",
+    reachNone: "Rien n’a pu être lu.",
+    otherPages: "{n} autres pages",
+    levels: {
+      fdp: "FDP",
+      catalog: "Catalogues",
+      dataset: "Jeux de données",
+      distribution: "Distributions",
+      dataservice: "Services de données",
+    },
+    stops: {
+      ceiling:
+        "Le moissonnage s’est arrêté à sa limite de pages ; {n} pages n’ont pas été lues. Un administrateur peut relever la limite pour ce FDP.",
+      offSite: "{n} liens vers d’autres sites n’ont pas été suivis.",
+    },
+    examples: "Exemples",
+    notesTitle: "Remarques",
+    notesLead:
+      "DCAT les recommande. La spécification FDP ne les demande pas : elles ne comptent donc pas contre le FDP.",
+    withNote: "FDP avec remarques",
+    failuresTitle: "Pages qui n’ont pas pu être lues",
+    failures: {
+      "not-found": "Introuvables (404, 410)",
+      "http-error": "Autres erreurs HTTP",
+      timeout: "Délai dépassé",
+      unparsable: "Illisibles en RDF",
+      "too-large": "Trop volumineuses",
+      refused: "Refusées par les règles de l’index",
+      other: "Échec de connexion",
+    },
+    incomplete:
+      "Le dernier moissonnage n’a pas atteint toutes les pages ; des constats peuvent manquer.",
+    findings: {
+      "linked-only-in-dcat": {
+        title: "Liés seulement par DCAT",
+        fix: "Ces fiches sont liées depuis une autre fiche (par exemple avec dcat:accessService) mais ne figurent dans aucun conteneur LDP. L’index suit les conteneurs du FDP, comme le prévoit la spécification FDP, et ne les moissonne donc pas. Ajoutez-les au conteneur de leur parent, comme le fait le logiciel FDP lorsqu’elles sont créées comme ses enfants.",
+      },
+      "not-linked-in-dcat": {
+        title: "Présentes seulement dans un conteneur LDP",
+        fix: "Le parent liste ces fiches dans son conteneur LDP sans les lier par la relation de membre du conteneur (par exemple dcat:dataset). Les outils qui ne lisent que DCAT ne les trouvent pas. Ajoutez ce lien aux métadonnées du parent.",
+      },
+      "catalog-without-datasets": {
+        title: "Catalogues sans jeux de données ni services",
+        fix: "Ajoutez des jeux de données ou des services de données à ces catalogues, ou retirez les catalogues qui ne servent plus.",
+      },
+      "dataset-without-distributions": {
+        title: "Jeux de données sans distribution",
+        fix: "Une distribution indique comment obtenir les données : un téléchargement, une API ou une page d’accueil. Donnez-en au moins une à chaque jeu de données.",
+      },
+      "distribution-without-access": {
+        title: "Distributions sans accès",
+        fix: "Donnez à chaque distribution un dcat:accessURL, un dcat:downloadURL ou un dcat:accessService, pour que personnes et outils atteignent les données.",
+      },
+    },
+    partial: "Arrêtés à la limite de pages",
+    reaching: "FDP dont les métadonnées atteignent chaque niveau",
+    withFinding: "FDP par constat",
+    level: "Niveau",
+    finding: "Constat",
+    table: "Les FDP et leurs constats",
+    csv: "Télécharger le CSV",
+    columns: {
+      fdp: "FDP",
+      reach: "Atteint",
+      pages: "Pages",
+      findings: "Constats",
+      failed: "Pages en échec",
+    },
+  },
 };

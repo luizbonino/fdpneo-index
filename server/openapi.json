@@ -1672,6 +1672,243 @@
         "title": "HealthCheckSettings",
         "type": "object"
       },
+      "HealthFailureView": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "description": "Up to five pages that failed",
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "kind": {
+            "description": "not-found, http-error, timeout, unparsable, too-large, refused, other",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "count",
+          "examples"
+        ],
+        "title": "HealthFailureView",
+        "type": "object"
+      },
+      "HealthFindingView": {
+        "properties": {
+          "code": {
+            "description": "Findings: linked-only-in-dcat, not-linked-in-dcat, catalog-without-datasets. Notes: dataset-without-distributions, distribution-without-access",
+            "title": "Code",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "description": "Up to five pages or links it concerns",
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "count",
+          "examples"
+        ],
+        "title": "HealthFindingView",
+        "type": "object"
+      },
+      "HealthRow": {
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "failed": {
+            "description": "Pages that could not be read",
+            "title": "Failed",
+            "type": "integer"
+          },
+          "findings": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Count per finding",
+            "title": "Findings",
+            "type": "object"
+          },
+          "levels": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Pages per level",
+            "title": "Levels",
+            "type": "object"
+          },
+          "notes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Count per note",
+            "title": "Notes",
+            "type": "object"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "partial": {
+            "description": "The harvest stopped at its page limit",
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reach"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "clientUrl",
+          "title",
+          "reach",
+          "status",
+          "pages",
+          "levels",
+          "findings",
+          "failed",
+          "partial"
+        ],
+        "title": "HealthRow",
+        "type": "object"
+      },
+      "HealthStopsView": {
+        "properties": {
+          "atCeiling": {
+            "description": "The harvest stopped at its page limit",
+            "title": "Atceiling",
+            "type": "boolean"
+          },
+          "offSite": {
+            "description": "Links to other sites, not followed",
+            "title": "Offsite",
+            "type": "integer"
+          },
+          "unread": {
+            "description": "Pages left unread when the harvest stopped at its limit",
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offSite",
+          "unread",
+          "atCeiling"
+        ],
+        "title": "HealthStopsView",
+        "type": "object"
+      },
+      "HealthSummary": {
+        "description": "Metadata health over the FDPs in the public list that have a report (TASKS 15.8).",
+        "properties": {
+          "byReach": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "By the deepest level reached: none, fdp, catalog, dataset, distribution, dataservice",
+            "title": "Byreach",
+            "type": "object"
+          },
+          "byStatus": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "fine, findings, unreadable",
+            "title": "Bystatus",
+            "type": "object"
+          },
+          "failures": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Pages that failed, by kind",
+            "title": "Failures",
+            "type": "object"
+          },
+          "fdps": {
+            "description": "FDPs with a health report",
+            "title": "Fdps",
+            "type": "integer"
+          },
+          "findings": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "FDPs with each finding",
+            "title": "Findings",
+            "type": "object"
+          },
+          "notes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "FDPs with each note (DCAT's advice)",
+            "title": "Notes",
+            "type": "object"
+          },
+          "partial": {
+            "description": "FDPs whose harvest stopped at its page limit",
+            "title": "Partial",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fdps",
+          "byReach",
+          "byStatus",
+          "findings",
+          "failures",
+          "partial"
+        ],
+        "title": "HealthSummary",
+        "type": "object"
+      },
       "HealthView": {
         "description": "Liveness-check state of an entry (addition, ADR-0004).",
         "properties": {
@@ -1941,6 +2178,115 @@
           "source"
         ],
         "title": "LocationView",
+        "type": "object"
+      },
+      "MetadataHealthView": {
+        "description": "What the index found in an FDP's metadata (TASKS 15.8).",
+        "properties": {
+          "complete": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The harvest read every page it found; null when not known",
+            "title": "Complete"
+          },
+          "computedAt": {
+            "title": "Computedat",
+            "type": "string"
+          },
+          "failures": {
+            "description": "Pages that could not be read, by kind",
+            "items": {
+              "$ref": "#/components/schemas/HealthFailureView"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "findings": {
+            "description": "Against the FDP specification, which every FDP claims",
+            "items": {
+              "$ref": "#/components/schemas/HealthFindingView"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "harvestedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the harvest it describes ended",
+            "title": "Harvestedat"
+          },
+          "levels": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Pages per level, and other pages",
+            "title": "Levels",
+            "type": "object"
+          },
+          "notes": {
+            "description": "DCAT's advice, which an FDP never promised: not counted in status",
+            "items": {
+              "$ref": "#/components/schemas/HealthFindingView"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "pages": {
+            "description": "Pages the index holds",
+            "title": "Pages",
+            "type": "integer"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read",
+            "title": "Reach"
+          },
+          "status": {
+            "enum": [
+              "fine",
+              "findings",
+              "unreadable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stops": {
+            "$ref": "#/components/schemas/HealthStopsView",
+            "description": "Where the index stopped by its own rules"
+          }
+        },
+        "required": [
+          "computedAt",
+          "harvestedAt",
+          "reach",
+          "status",
+          "pages",
+          "levels",
+          "findings",
+          "failures",
+          "stops",
+          "complete"
+        ],
+        "title": "MetadataHealthView",
         "type": "object"
       },
       "MonthCount": {
@@ -3440,6 +3786,17 @@
           "generatedAt": {
             "title": "Generatedat",
             "type": "string"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when health reports are for administrators"
           },
           "history": {
             "$ref": "#/components/schemas/History"
@@ -5190,6 +5547,61 @@
         ]
       }
     },
+    "/index/entries/{entry_id}/health": {
+      "get": {
+        "description": "Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).\n\nComputed from the stored pages after each harvest; null until the first\nreport. Who may read it follows the conformance `reports` setting.",
+        "operationId": "get_entry_health_index_entries__entry_id__health_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MetadataHealthView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Entry Health Index Entries  Entry Id  Health Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Reports are for administrators"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "What the index found in an FDP's metadata",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
     "/index/events/{event_id}": {
       "get": {
         "operationId": "get_event_index_events__event_id__get",
@@ -5230,6 +5642,35 @@
         "summary": "Get Event",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/health": {
+      "get": {
+        "description": "One row per FDP in the public list with a health report (TASKS 15.8).",
+        "operationId": "health_table_index_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HealthRow"
+                  },
+                  "title": "Response Health Table Index Health Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Reports are for administrators"
+          }
+        },
+        "summary": "Every FDP's metadata health",
+        "tags": [
+          "Statistics"
         ]
       }
     },

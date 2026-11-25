@@ -22,6 +22,20 @@ export type WebhookEvent = Schemas["WebhookEvent"];
 export type ServiceInfo = Schemas["ServiceInfo"];
 export type Registration = Schemas["RegistrationView"];
 export type Statistics = Schemas["Statistics"];
+export type MetadataHealth = Schemas["MetadataHealthView"];
+export type HealthRow = Schemas["HealthRow"];
+/** The structural findings and failure kinds, in display order (TASKS 15.8). */
+export const HEALTH_LEVELS = ["fdp", "catalog", "dataset", "distribution", "dataservice"] as const;
+export const HEALTH_FINDINGS = [
+  "linked-only-in-dcat",
+  "not-linked-in-dcat",
+  "catalog-without-datasets",
+] as const;
+/** DCAT's advice, which an FDP never promised: shown, not counted against it. */
+export const HEALTH_NOTES = [
+  "dataset-without-distributions",
+  "distribution-without-access",
+] as const;
 export interface EntryOptions {
   harvest?: boolean;
   /** ISO-8601 duration; "" clears it. */
@@ -83,6 +97,8 @@ export const api = {
   counts: (permit = "accepted") =>
     request<{ entriesCount: Record<string, number> }>(`/index/entries/info${query({ permit })}`),
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),
+  entryHealth: (uuid: string) => request<MetadataHealth | null>(`/index/entries/${uuid}/health`),
+  healthTable: () => request<HealthRow[]>("/index/health"),
   setPermit: (uuid: string, permit: Permit) =>
     request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { permit } }),
   setOptions: (uuid: string, options: EntryOptions) =>

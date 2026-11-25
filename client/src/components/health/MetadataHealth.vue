@@ -8,7 +8,8 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
-import { api, HEALTH_LEVELS } from "@/api";
+import { api, HEALTH_LEVELS, type HealthRequirement } from "@/api";
+import { shortIri } from "@/sparql/results";
 import { ApiError } from "@/api/client";
 import { session } from "@/auth/session";
 import { absoluteTime, relativeTime } from "@/utils/format";
@@ -31,6 +32,13 @@ const reachIndex = computed(() =>
 );
 const TONE = { fine: "ok", findings: "warn", unreadable: "bad" } as const;
 const number = (n: number) => new Intl.NumberFormat().format(n);
+/** A network profile's requirement as a sentence (TASKS 15.9). */
+function requirement(item: HealthRequirement): string {
+  const level = item.level ? t(`health.levels.${item.level}`) : "";
+  if (item.code === "reach") return t("health.requirement.reach", { level });
+  const property = item.property ? shortIri(item.property) : "";
+  return t(`health.requirement.${item.code}`, { level, property, n: item.count });
+}
 </script>
 
 <template>
@@ -93,6 +101,43 @@ const number = (n: number) => new Intl.NumberFormat().format(n);
           </details>
         </li>
       </ul>
+
+      <template v-if="report.requirements?.length">
+        <h3>{{ t("health.requirementsTitle") }}</h3>
+        <p class="muted small">
+          {{ t("health.requirementsLead") }}
+          <router-link :to="{ name: 'expectations' }">{{ t("expectations.title") }}</router-link>
+        </p>
+        <ul class="findings">
+          <li v-for="(item, i) in report.requirements" :key="`r${i}`">
+            <strong>
+              {{ requirement(item) }}
+              <span v-if="item.code !== 'reach'" class="chip warn">{{ number(item.count) }}</span>
+            </strong>
+            <details v-if="item.examples.length">
+              <summary class="small">{{ t("health.examples") }}</summary>
+              <ul class="examples small">
+                <li v-for="iri in item.examples" :key="iri">
+                  <a :href="iri" target="_blank" rel="noopener noreferrer" class="mono">{{
+                    iri
+                  }}</a>
+                </li>
+              </ul>
+            </details>
+          </li>
+        </ul>
+      </template>
+      <template v-if="report.recommendations?.length">
+        <h3>{{ t("health.recommendationsTitle") }}</h3>
+        <ul class="findings">
+          <li v-for="(item, i) in report.recommendations" :key="`c${i}`">
+            <strong>
+              {{ requirement(item) }}
+              <span class="chip info">{{ number(item.count) }}</span>
+            </strong>
+          </li>
+        </ul>
+      </template>
 
       <template v-if="report.notes?.length">
         <h3>{{ t("health.notesTitle") }}</h3>

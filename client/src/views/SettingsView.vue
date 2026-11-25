@@ -16,6 +16,7 @@ import DurationInput from "@/components/DurationInput.vue";
 import FacetSettings from "@/components/search/FacetSettings.vue";
 import ProfileEditor from "@/components/search/ProfileEditor.vue";
 import SavedSearches from "@/components/search/SavedSearches.vue";
+import NetworkProfileSettings from "@/components/network/NetworkProfileSettings.vue";
 import ConformanceSettings from "@/components/conformance/ConformanceSettings.vue";
 
 const { t } = useI18n();
@@ -339,6 +340,7 @@ function fieldError(path: string): string | undefined {
     <ProfileEditor class="facet-settings" />
     <SavedSearches class="facet-settings" />
     <ConformanceSettings class="facet-settings" />
+    <NetworkProfileSettings class="facet-settings" />
   </div>
 </template>
 

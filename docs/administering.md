@@ -182,6 +182,17 @@ of individuals, typical ages, health category, coding systems, and Yes/No
 filters such as "Concerns personal data"); nothing changes until you save.
 See [search-and-sparql.md](search-and-sparql.md#the-search-profile).
 
+## Network profile
+
+**Settings → Network profile** says what this index expects of the FDPs it
+lists, as YAML: the level their metadata must reach, what each level must
+and should have, vocabularies, SHACL shapes and the network's own tests
+([Network profiles](network-profiles.md)). Start from the generic profile,
+which expects nothing beyond the FDP specification, or ERDERA's example. It
+shows on the public **Expectations** page; requirements show in each FDP's
+metadata health, and the shapes as the conformance check *This network's
+rules*. A change computes every report again in the background.
+
 ## Conformance
 
 The index checks every harvested record against SHACL *profiles* in the

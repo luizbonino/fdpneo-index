@@ -160,6 +160,19 @@ class HealthFailureView(_Api):
     examples: list[str] = Field(description="Up to five pages that failed")
 
 
+class HealthRequirementView(_Api):
+    """What the network profile asks that the FDP does not meet (TASKS 15.9)."""
+
+    code: Literal["reach", "requires", "recommends", "vocabulary"] = Field(
+        description="reach: does not reach the level; requires/recommends: records at the "
+        "level lack the property; vocabulary: values not from the expected vocabulary"
+    )
+    level: str | None
+    property: str | None = Field(description="The property's IRI")
+    count: int = Field(description="Records concerned (1 for reach)")
+    examples: list[str]
+
+
 class HealthStopsView(_Api):
     off_site: int = Field(
         serialization_alias="offSite", description="Links to other sites, not followed"
@@ -190,6 +203,14 @@ class MetadataHealthView(_Api):
     notes: list[HealthFindingView] = Field(
         default_factory=lambda: [],
         description="DCAT's advice, which an FDP never promised: not counted in status",
+    )
+    requirements: list[HealthRequirementView] = Field(
+        default_factory=lambda: [],
+        description="The network profile's requirements the FDP does not meet",
+    )
+    recommendations: list[HealthRequirementView] = Field(
+        default_factory=lambda: [],
+        description="The network profile's recommendations the FDP does not follow",
     )
     failures: list[HealthFailureView] = Field(description="Pages that could not be read, by kind")
     stops: HealthStopsView = Field(description="Where the index stopped by its own rules")

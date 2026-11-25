@@ -496,6 +496,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/network-profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** What this index expects of the FDPs it lists */
+    get: operations["get_profile_index_network_profile_get"];
+    /**
+     * Set the network profile (administrators)
+     * @description The health reports are computed again, and the network's SHACL checked.
+     */
+    put: operations["put_profile_index_network_profile_put"];
+    post?: never;
+    /** Return to the installed or generic profile (administrators) */
+    delete: operations["reset_profile_index_network_profile_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/network-profile/examples": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The bundled network profiles */
+    get: operations["profile_examples_index_network_profile_examples_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/network-profile/schema": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The network profile template's JSON Schema */
+    get: operations["profile_schema_index_network_profile_schema_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/oai": {
     parameters: {
       query?: never;
@@ -1958,6 +2014,32 @@ export interface components {
        */
       examples: string[];
     };
+    /**
+     * HealthRequirementView
+     * @description What the network profile asks that the FDP does not meet (TASKS 15.9).
+     */
+    HealthRequirementView: {
+      /**
+       * Code
+       * @description reach: does not reach the level; requires/recommends: records at the level lack the property; vocabulary: values not from the expected vocabulary
+       * @enum {string}
+       */
+      code: "reach" | "requires" | "recommends" | "vocabulary";
+      /**
+       * Count
+       * @description Records concerned (1 for reach)
+       */
+      count: number;
+      /** Examples */
+      examples: string[];
+      /** Level */
+      level: string | null;
+      /**
+       * Property
+       * @description The property's IRI
+       */
+      property: string | null;
+    };
     /** HealthRow */
     HealthRow: {
       /** Clienturl */
@@ -1997,6 +2079,12 @@ export interface components {
       partial: boolean;
       /** Reach */
       reach: string | null;
+      /**
+       * Requirements
+       * @description The network profile's requirements it does not meet
+       * @default 0
+       */
+      requirements: number;
       /** Status */
       status: string;
       /** Title */
@@ -2060,6 +2148,12 @@ export interface components {
       findings: {
         [key: string]: number;
       };
+      /**
+       * Missingrequirements
+       * @description FDPs that miss a requirement of the network profile (TASKS 15.9)
+       * @default 0
+       */
+      missingRequirements: number;
       /**
        * Notes
        * @description FDPs with each note (DCAT's advice)
@@ -2156,6 +2250,24 @@ export interface components {
       /** Uuid */
       uuid: string;
     };
+    /** LevelRules */
+    LevelRules: {
+      /**
+       * Recommends
+       * @description Properties a record at this level should have
+       */
+      recommends?: string[];
+      /**
+       * Requires
+       * @description Properties every record at this level must have
+       */
+      requires?: string[];
+      /**
+       * Types
+       * @description Classes (CURIEs or IRIs) that count as this level, besides DCAT's
+       */
+      types?: string[];
+    };
     /** Library */
     Library: {
       /** Examples */
@@ -2227,6 +2339,16 @@ export interface components {
        */
       reach: string | null;
       /**
+       * Recommendations
+       * @description The network profile's recommendations the FDP does not follow
+       */
+      recommendations?: components["schemas"]["HealthRequirementView"][];
+      /**
+       * Requirements
+       * @description The network profile's requirements the FDP does not meet
+       */
+      requirements?: components["schemas"]["HealthRequirementView"][];
+      /**
        * Status
        * @enum {string}
        */
@@ -2243,6 +2365,104 @@ export interface components {
        * @description YYYY-MM
        */
       month: string;
+    };
+    /** NetworkInfo */
+    NetworkInfo: {
+      /**
+       * Contact
+       * @description A mailto: or web address
+       */
+      contact?: string | null;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /**
+       * Homepage
+       * @description Where people read about it
+       */
+      homepage?: string | null;
+      /**
+       * Name
+       * @description The network's name
+       * @default
+       */
+      name: string;
+    };
+    /**
+     * NetworkProfile
+     * @description What a network expects of the FDPs it lists (TASKS 15.9).
+     */
+    NetworkProfile: {
+      /**
+       * Benchmarks
+       * @description FAIR Testing Resources benchmarks, run outside the index (TASKS 15.10)
+       */
+      benchmarks?: string[];
+      /** Levels */
+      levels?: {
+        [key: string]: components["schemas"]["LevelRules"];
+      };
+      network?: components["schemas"]["NetworkInfo"];
+      /**
+       * Prefixes
+       * @description CURIE prefixes beyond the common ones
+       */
+      prefixes?: {
+        [key: string]: string;
+      };
+      /**
+       * Profile
+       * @description The template's version
+       * @default 1
+       * @constant
+       */
+      profile: 1;
+      /**
+       * Reach
+       * @description The level an FDP's metadata must reach; none: no level
+       */
+      reach?: ("fdp" | "catalog" | "dataset" | "distribution" | "dataservice") | null;
+      /**
+       * Shapes
+       * @description SHACL documents every record is checked against (as the check 'network')
+       */
+      shapes?: string[];
+      /**
+       * Vocabularies
+       * @description Per property, the IRI prefixes its values must start with
+       */
+      vocabularies?: {
+        [key: string]: string[];
+      };
+    };
+    /** NetworkProfileUpdate */
+    NetworkProfileUpdate: {
+      /**
+       * Source
+       * @description The profile as YAML
+       */
+      source: string;
+    };
+    /** NetworkProfileView */
+    NetworkProfileView: {
+      /**
+       * Empty
+       * @description It expects nothing beyond the FDP specification
+       */
+      empty: boolean;
+      /**
+       * Isdefault
+       * @description The installed or generic profile, not an edit
+       */
+      isDefault: boolean;
+      profile: components["schemas"]["NetworkProfile"];
+      /**
+       * Source
+       * @description The profile as YAML, as it was written
+       */
+      source: string;
     };
     /** PackFileView */
     PackFileView: {
@@ -2497,6 +2717,15 @@ export interface components {
       severity: "violation" | "warning" | "info";
       /** Shape */
       shape: string | null;
+    };
+    /** ProfileExample */
+    ProfileExample: {
+      /** Name */
+      name: string;
+      /** Source */
+      source: string;
+      /** Title */
+      title: string;
     };
     /** PropertySettings */
     "PropertySettings-Input": {
@@ -3999,6 +4228,128 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  get_profile_index_network_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+    };
+  };
+  put_profile_index_network_profile_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NetworkProfileUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+      /** @description Not a valid profile; the message says why */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_profile_index_network_profile_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+    };
+  };
+  profile_examples_index_network_profile_examples_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProfileExample"][];
+        };
+      };
+    };
+  };
+  profile_schema_index_network_profile_schema_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
       };
     };
   };

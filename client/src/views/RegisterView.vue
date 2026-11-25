@@ -88,6 +88,9 @@ const verdict = computed(() => {
       <div>
         <h1>{{ t("register.title") }}</h1>
         <p class="lead">{{ t("register.lead") }}</p>
+        <p>
+          <router-link :to="{ name: 'expectations' }">{{ t("expectations.link") }}</router-link>
+        </p>
       </div>
     </header>
 

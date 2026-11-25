@@ -28,7 +28,7 @@ from uuid import UUID, uuid4
 
 import structlog
 from rdflib import Graph
-from sqlalchemy import ColumnElement, and_, delete, func, or_, select
+from sqlalchemy import ColumnElement, and_, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from fdpindex import exchange, geo
@@ -60,6 +60,7 @@ if TYPE_CHECKING:
 
     from fdpindex.geo import GeoIp
     from fdpindex.jobs import JobRunner
+    from fdpindex.network import Expectations
     from fdpindex.outbound import OutboundClient, OutboundResponse
     from fdpindex.settings import IndexSettings, SettingsService
     from fdpindex.webhooks import WebhookService
@@ -145,8 +146,12 @@ class Retrieval:
     server_country: str | None = None
 
 
-def _read_pages(batch: list[tuple[str, str]], root: str) -> list[Page]:
-    return [read_page(iri, text, root=page_key(iri) == root) for iri, text in batch]
+def _read_pages(
+    batch: list[tuple[str, str]], root: str, watched: frozenset[str] = frozenset()
+) -> list[Page]:
+    return [
+        read_page(iri, text, root=page_key(iri) == root, watched=watched) for iri, text in batch
+    ]
 
 
 def _instant(moment: datetime | None) -> str | None:
@@ -231,6 +236,8 @@ class IndexService:
         self._harvest_locks: dict[UUID, asyncio.Lock] = {}
         self._harvest_waiting: dict[UUID, set[UUID]] = {}
         self._health_running: set[UUID] = set()
+        # The network profile's requirements (TASKS 15.9), set by the app.
+        self.expectations: Callable[[], Awaitable[Expectations]] | None = None
         self._listeners: list[Callable[[IndexChange], None]] = []
         # Set when conformance runs (TASKS 11.4): a condition on IndexEntry that public
         # lists add, or None when the directory shows every FDP.
@@ -1252,6 +1259,11 @@ class IndexService:
 
     # --- metadata health (TASKS 15.8) --------------------------------------------------
 
+    async def health_expectations_changed(self) -> None:
+        """The network profile changed: every report is computed again (TASKS 15.9)."""
+        async with self._session_factory() as session, session.begin():
+            await session.execute(update(MetadataHealth).values(computed_at=None))
+
     async def metadata_health(self, entry_id: UUID) -> MetadataHealth | None:
         async with self._session_factory() as session:
             return await session.get(MetadataHealth, entry_id)
@@ -1331,6 +1343,8 @@ class IndexService:
                 origins = list(entry.harvest_origins or [])
                 walk = dict(health.walk or {})
             root = page_key(client_url)
+            expected = await self.expectations() if self.expectations is not None else None
+            watched = expected.watched if expected is not None else frozenset[str]()
             pages: list[Page] = []
             last = 0
             while True:
@@ -1347,7 +1361,7 @@ class IndexService:
                     break
                 last = rows[-1][0]
                 batch = [(str(iri), str(text)) for _id, iri, text in rows]
-                pages.extend(await asyncio.to_thread(_read_pages, batch, root))
+                pages.extend(await asyncio.to_thread(_read_pages, batch, root, watched))
             summary = WalkSummary(
                 failed=walk.get("failed") or {},
                 unread=int(walk.get("unread") or 0),
@@ -1355,7 +1369,9 @@ class IndexService:
                 at_ceiling=bool(walk.get("atCeiling")),
                 complete=walk.get("complete"),
             )
-            report = await asyncio.to_thread(analyse, client_url, pages, summary, origins=origins)
+            report = await asyncio.to_thread(
+                lambda: analyse(client_url, pages, summary, origins=origins, expectations=expected)
+            )
             async with self._session_factory() as session, session.begin():
                 health = await session.get(MetadataHealth, entry_id)
                 if health is None:

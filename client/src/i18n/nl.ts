@@ -8,6 +8,7 @@ export const nl: Messages = {
     skip: "Naar de inhoud",
   },
   nav: {
+    expectations: "Verwachtingen",
     directory: "Overzicht",
     search: "Zoeken",
     register: "FDP registreren",
@@ -862,6 +863,7 @@ export const nl: Messages = {
     triples: "Opgehaalde triples (Turtle)",
   },
   conformance: {
+    network: { title: "De regels van dit netwerk" },
     heading: "Conformiteit",
     declared: {
       title: "Wat het opgeeft",
@@ -976,6 +978,16 @@ export const nl: Messages = {
     version: "Versie {version}",
   },
   health: {
+    requirementsTitle: "De eisen van dit netwerk",
+    requirementsLead: "Niet vervuld. Zie",
+    recommendationsTitle: "De aanbevelingen van dit netwerk",
+    missingRequirements: "Mist een eis",
+    requirement: {
+      reach: "Reikt niet tot: {level}",
+      requires: "{level} zonder {property}",
+      recommends: "{level} zonder {property}",
+      vocabulary: "{level} met {property} uit een ander vocabulaire",
+    },
     title: "Kwaliteit van de metadata",
     lead: "Hoe ver de metadata van deze FDP reikt, en wat de index bij de laatste oogst vond.",
     statsLead:
@@ -1055,5 +1067,36 @@ export const nl: Messages = {
       findings: "Bevindingen",
       failed: "Mislukte pagina’s",
     },
+  },
+  expectations: {
+    title: "Wat deze index verwacht",
+    lead: "Waaraan een FDP hier wordt getoetst, naast wat het zelf opgeeft.",
+    link: "Wat deze index van FDP’s verwacht",
+    noneTitle: "Niets buiten de FDP-specificatie",
+    none: "Deze index houdt FDP’s aan niets buiten de FDP-specificatie. Elk record wordt getoetst aan de profielen die het zelf noemt (dct:conformsTo), en het rapport over de metadata laat zien hoe ver de metadata van een FDP reikt zonder een niveau te eisen.",
+    network: "Het netwerk",
+    requirements: "Eisen",
+    reach: "De metadata van een FDP moet reiken tot: {level}.",
+    requires: "Moet hebben",
+    recommends: "Zou moeten hebben",
+    types: "Telt ook als dit niveau",
+    vocabularies: "Waarden uit deze vocabulaires",
+    fromVocab: "uit",
+    shapes: "Regels (SHACL) waaraan elk record wordt getoetst",
+    benchmarks: "De eigen tests van het netwerk",
+    benchmarksLead: "Uitgevoerd door het netwerk buiten deze index, met eigen uitkomsten.",
+    declared:
+      "Records worden ook getoetst aan wat ze zelf opgeven; dat telt nooit tegen een FDP die niets opgeeft.",
+  },
+  networkProfile: {
+    heading: "Netwerkprofiel",
+    lead: "Wat deze index verwacht van de FDP’s die hij toont, als YAML: het niveau dat hun metadata moet bereiken, wat elk niveau moet en zou moeten hebben, vocabulaires, SHACL-shapes en de eigen tests van het netwerk. Het staat op de pagina Verwachtingen; een wijziging toetst elke FDP opnieuw.",
+    startFrom: "Begin met",
+    generic: "Algemeen: niets buiten de FDP-specificatie",
+    view: "Bekijk de pagina Verwachtingen",
+    save: "Opslaan",
+    saved: "Netwerkprofiel opgeslagen.",
+    reset: "Geïnstalleerd profiel gebruiken",
+    resetConfirm: "Dit profiel vervangen door het geïnstalleerde?",
   },
 };

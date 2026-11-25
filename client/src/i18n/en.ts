@@ -6,6 +6,7 @@ export const en = {
     skip: "Skip to content",
   },
   nav: {
+    expectations: "Expectations",
     directory: "Directory",
     search: "Search",
     register: "Register an FDP",
@@ -845,6 +846,7 @@ export const en = {
     triples: "Harvested triples (Turtle)",
   },
   conformance: {
+    network: { title: "This network’s rules" },
     heading: "Conformance",
     declared: {
       title: "What it declares",
@@ -956,6 +958,16 @@ export const en = {
     version: "Version {version}",
   },
   health: {
+    requirementsTitle: "This network’s requirements",
+    requirementsLead: "Not met. See",
+    recommendationsTitle: "This network’s recommendations",
+    missingRequirements: "Miss a requirement",
+    requirement: {
+      reach: "Does not reach: {level}",
+      requires: "{level} without {property}",
+      recommends: "{level} without {property}",
+      vocabulary: "{level} whose {property} is from another vocabulary",
+    },
     title: "Metadata health",
     lead: "How far this FDP's metadata reaches, and what the index found when it last harvested it.",
     statsLead:
@@ -1035,5 +1047,36 @@ export const en = {
       findings: "Findings",
       failed: "Failed pages",
     },
+  },
+  expectations: {
+    title: "What this index expects",
+    lead: "What an FDP listed here is checked against, besides what it declares itself.",
+    link: "What this index expects of FDPs",
+    noneTitle: "Nothing beyond the FDP specification",
+    none: "This index holds FDPs to nothing beyond the FDP specification. Each record is checked against the profiles it names itself (dct:conformsTo), and the metadata health report shows how far an FDP’s metadata reaches without requiring a level.",
+    network: "The network",
+    requirements: "Requirements",
+    reach: "An FDP’s metadata must reach: {level}.",
+    requires: "Must have",
+    recommends: "Should have",
+    types: "Also counts as this level",
+    vocabularies: "Values from these vocabularies",
+    fromVocab: "from",
+    shapes: "Rules (SHACL) every record is checked against",
+    benchmarks: "The network’s own tests",
+    benchmarksLead: "Run by the network outside this index, with their own results.",
+    declared:
+      "Records are also checked against what they declare themselves, which is never held against an FDP that declares nothing.",
+  },
+  networkProfile: {
+    heading: "Network profile",
+    lead: "What this index expects of the FDPs it lists, as YAML: the level their metadata must reach, what each level must and should have, vocabularies, SHACL shapes and the network’s own tests. It shows on the Expectations page; a change checks every FDP again.",
+    startFrom: "Start from",
+    generic: "Generic: nothing beyond the FDP specification",
+    view: "See the Expectations page",
+    save: "Save",
+    saved: "Network profile saved.",
+    reset: "Use the installed profile",
+    resetConfirm: "Replace this profile with the installed one?",
   },
 };

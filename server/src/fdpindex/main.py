@@ -20,6 +20,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from fdpindex import __version__
 from fdpindex.api.catalog import router as catalog_router
 from fdpindex.api.conformance import router as conformance_router
+from fdpindex.api.network import router as network_router
 from fdpindex.api.routes import router
 from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
@@ -39,6 +40,11 @@ from fdpindex.geo import GeoIp
 from fdpindex.health import HealthScheduler
 from fdpindex.jobs import JobRunner
 from fdpindex.logging import configure_logging
+from fdpindex.network import (
+    Expectations,
+    NetworkProfileService,
+    default_source as default_network_profile,
+)
 from fdpindex.outbound import OutboundClient, outbound_http, system_resolver
 from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
@@ -229,6 +235,26 @@ def create_app(
             config, factory, index, search, conformance_settings, sparql, outbound
         )
         app.state.conformance = conformance
+        # What this index expects of its FDPs (TASKS 15.9): health requirements and the
+        # network's SHACL. A change computes the reports again and re-checks the records.
+        network = NetworkProfileService(factory, default_network_profile(config.network_profile))
+        app.state.network_profile = network
+
+        async def expectations() -> Expectations:
+            return (await network.profile()).expectations()
+
+        async def network_shapes() -> list[str]:
+            return list((await network.profile()).shapes)
+
+        async def network_changed() -> None:
+            await index.health_expectations_changed()
+            if conformance is not None:
+                conformance.settings_changed()
+
+        index.expectations = expectations
+        network.listeners.append(network_changed)
+        if conformance is not None:
+            conformance.network_shapes = network_shapes
         app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
         stats = StatsService(factory, index, search, conformance)
         app.state.stats = stats
@@ -288,6 +314,7 @@ def create_app(
     app.include_router(conformance_router)
     app.include_router(catalog_router)
     app.include_router(stats_router)
+    app.include_router(network_router)
     return app
 
 

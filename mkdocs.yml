@@ -61,7 +61,9 @@ nav:
   - Publishing metadata:
       - FDPs and the index: data-holders.md
       - FDPneo servers: with-fdpneo.md
-  - Administering an index: administering.md
+  - Administering an index:
+      - Administering: administering.md
+      - Network profiles: network-profiles.md
   - Running an index:
       - Deploying: deploying.md
       - Configuration: configuration.md

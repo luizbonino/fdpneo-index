@@ -8,6 +8,7 @@ export const pt: Messages = {
     skip: "Saltar para o conteúdo",
   },
   nav: {
+    expectations: "Expectativas",
     directory: "Diretório",
     search: "Pesquisa",
     register: "Registar um FDP",
@@ -863,6 +864,7 @@ export const pt: Messages = {
     triples: "Triplos recolhidos (Turtle)",
   },
   conformance: {
+    network: { title: "As regras desta rede" },
     heading: "Conformidade",
     declared: {
       title: "O que declara",
@@ -975,6 +977,16 @@ export const pt: Messages = {
     version: "Versão {version}",
   },
   health: {
+    requirementsTitle: "Os requisitos desta rede",
+    requirementsLead: "Não cumpridos. Ver",
+    recommendationsTitle: "As recomendações desta rede",
+    missingRequirements: "Falham um requisito",
+    requirement: {
+      reach: "Não chega a: {level}",
+      requires: "{level} sem {property}",
+      recommends: "{level} sem {property}",
+      vocabulary: "{level} cujo {property} é de outro vocabulário",
+    },
     title: "Qualidade dos metadados",
     lead: "Até onde chegam os metadados deste FDP e o que o índice encontrou na última recolha.",
     statsLead:
@@ -1054,5 +1066,36 @@ export const pt: Messages = {
       findings: "Observações",
       failed: "Páginas falhadas",
     },
+  },
+  expectations: {
+    title: "O que este índice espera",
+    lead: "Face a quê um FDP listado aqui é verificado, além do que declara ele próprio.",
+    link: "O que este índice espera dos FDP",
+    noneTitle: "Nada além da especificação FDP",
+    none: "Este índice não exige aos FDP nada além da especificação FDP. Cada registo é verificado face aos perfis que nomeia ele próprio (dct:conformsTo), e o relatório sobre os metadados mostra até onde chegam os de um FDP sem exigir um nível.",
+    network: "A rede",
+    requirements: "Requisitos",
+    reach: "Os metadados de um FDP devem chegar a: {level}.",
+    requires: "Tem de ter",
+    recommends: "Deveria ter",
+    types: "Também conta como este nível",
+    vocabularies: "Valores destes vocabulários",
+    fromVocab: "de",
+    shapes: "Regras (SHACL) face às quais cada registo é verificado",
+    benchmarks: "Os testes próprios da rede",
+    benchmarksLead: "Executados pela rede fora deste índice, com os seus próprios resultados.",
+    declared:
+      "Os registos também são verificados face ao que declaram eles próprios, o que nunca conta contra um FDP que nada declara.",
+  },
+  networkProfile: {
+    heading: "Perfil da rede",
+    lead: "O que este índice espera dos FDP que lista, em YAML: o nível que os seus metadados devem atingir, o que cada nível tem de e deveria ter, vocabulários, formas SHACL e os testes próprios da rede. Aparece na página Expectativas; uma alteração volta a verificar cada FDP.",
+    startFrom: "Começar por",
+    generic: "Genérico: nada além da especificação FDP",
+    view: "Ver a página Expectativas",
+    save: "Guardar",
+    saved: "Perfil da rede guardado.",
+    reset: "Usar o perfil instalado",
+    resetConfirm: "Substituir este perfil pelo instalado?",
   },
 };

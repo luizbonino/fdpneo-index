@@ -29,6 +29,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urldefrag, urlsplit
 
+from fdpindex.network import Expectations
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
@@ -184,10 +186,32 @@ class Page:
     # Subjects described in the page (IRIs), to tell an inline description from a link
     described: set[str] = field(default_factory=lambda: set())
     access: bool = False
+    # The subject's classes, and the network profile's watched predicates it has with
+    # their values (TASKS 15.9).
+    types: frozenset[str] = frozenset()
+    root: bool = False
+    present: frozenset[str] = frozenset()
+    values: dict[str, list[str]] = field(default_factory=lambda: {})
 
 
-def read_page(iri: str, ntriples: str, *, root: bool = False) -> Page:
-    """Reduce a stored page's N-Triples to a :class:`Page`."""
+def level_of(types: frozenset[str], root: bool, extra: Mapping[str, frozenset[str]]) -> str | None:
+    """A page's level: the FDP's root, else by its subject's classes, the network
+    profile's own classes per level included."""
+    if root:
+        return "fdp"
+    for name, wanted in _TYPES:
+        if types & (wanted | extra.get(name, frozenset())):
+            return name
+    return None
+
+
+def read_page(
+    iri: str, ntriples: str, *, root: bool = False, watched: frozenset[str] = frozenset()
+) -> Page:
+    """Reduce a stored page's N-Triples to a :class:`Page`; ``watched`` predicates are
+    reported with their values (a network profile's, TASKS 15.9)."""
+    present: set[str] = set()
+    values: dict[str, list[str]] = defaultdict(list)
     subject_keys = {_key(iri)}
     types: set[str] = set()
     container_types: set[str] = set()
@@ -211,6 +235,10 @@ def read_page(iri: str, ntriples: str, *, root: bool = False) -> Page:
         own = _key(s_iri) in subject_keys
         if own and o_iri is not None and p != RDF_TYPE:
             own_links.append((p, o_iri))
+        if own and p in watched:
+            present.add(p)
+            if len(values[p]) < 20:
+                values[p].append(o_iri if o_iri is not None else o)
         if p not in _KEPT:
             continue
         if p == RDF_TYPE and o_iri is not None:
@@ -226,16 +254,22 @@ def read_page(iri: str, ntriples: str, *, root: bool = False) -> Page:
             access = True
     wanted = NAVIGATION | DCAT_LINKS | {_DCAT + "accessService"} | set(relation.values())
     links = [(p, o) for p, o in own_links if p in wanted]
-    level = "fdp" if root else None
-    if level is None:
-        for name, wanted in _TYPES:
-            if types & wanted:
-                level = name
-                break
+    frozen = frozenset(types)
     containers = {
         c: (relation.get(c), contains.get(c, [])) for c in container_types | set(contains)
     }
-    return Page(iri, level, containers, links, described, access)
+    return Page(
+        iri,
+        level_of(frozen, root, {}),
+        containers,
+        links,
+        described,
+        access,
+        types=frozen,
+        root=root,
+        present=frozenset(present),
+        values=dict(values),
+    )
 
 
 @dataclass
@@ -255,11 +289,16 @@ def analyse(
     walk: WalkSummary,
     *,
     origins: Iterable[str] = (),
+    expectations: Expectations | None = None,
 ) -> dict[str, Any]:
-    """The health report of one FDP from its stored pages and the last walk."""
+    """The health report of one FDP from its stored pages and the last walk, with the
+    network profile's requirements when it has any (TASKS 15.9)."""
     allowed = {_origin(client_url), *(_origin(o) for o in origins)}
+    expected = expectations or Expectations()
     read: dict[str, Page] = {}
     for page in pages:
+        if expected.types:
+            page.level = level_of(page.types, page.root, expected.types)
         read[_key(page.iri)] = page
     members: set[str] = set()
     for page in read.values():
@@ -325,6 +364,7 @@ def analyse(
 
     reached = [name for name in LEVELS if levels[name]]
     reach = reached[-1] if reached else None
+    requirements, recommendations = _expected(read.values(), reach, expected)
     findings = [
         {"code": code, "count": counts[code], "examples": examples[code]}
         for code in FINDINGS
@@ -342,7 +382,7 @@ def analyse(
     ]
     if not read:
         status = "unreadable"
-    elif findings or failure_list:
+    elif findings or failure_list or requirements:
         status = "findings"
     else:
         status = "fine"
@@ -353,6 +393,8 @@ def analyse(
         "pages": len(read),
         "findings": findings,
         "notes": notes,
+        "requirements": requirements,
+        "recommendations": recommendations,
         "failures": failure_list,
         "stops": {
             "offSite": walk.off_site,
@@ -361,3 +403,76 @@ def analyse(
         },
         "complete": walk.complete,
     }
+
+
+def _expected(
+    pages: Iterable[Page], reach: str | None, expected: Expectations
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """What the network profile asks that the FDP does not meet: its required reach,
+    required properties and vocabularies; and its recommended properties."""
+    required: dict[tuple[str, str | None, str | None], list[str]] = defaultdict(list)
+    counts: dict[tuple[str, str | None, str | None], int] = defaultdict(int)
+    recommended: dict[tuple[str, str | None, str | None], list[str]] = defaultdict(list)
+    recommended_counts: dict[tuple[str, str | None, str | None], int] = defaultdict(int)
+
+    def note(
+        into: dict[tuple[str, str | None, str | None], list[str]],
+        tally: dict[tuple[str, str | None, str | None], int],
+        key: tuple[str, str | None, str | None],
+        iri: str,
+    ) -> None:
+        tally[key] += 1
+        if len(into[key]) < EXAMPLES:
+            into[key].append(iri)
+
+    for page in pages:
+        level = page.level
+        if level is None:
+            continue
+        for prop in expected.requires.get(level, ()):
+            if prop not in page.present:
+                note(required, counts, ("requires", level, prop), page.iri)
+        for prop in expected.recommends.get(level, ()):
+            if prop not in page.present:
+                note(recommended, recommended_counts, ("recommends", level, prop), page.iri)
+        for prop, allowed in expected.vocabularies.items():
+            for value in page.values.get(prop, []):
+                if not any(value.startswith(prefix) for prefix in allowed):
+                    note(required, counts, ("vocabulary", level, prop), page.iri)
+                    break
+    requirements: list[dict[str, Any]] = []
+    if expected.reach is not None and (
+        reach is None or LEVELS.index(reach) < LEVELS.index(expected.reach)
+    ):
+        requirements.append(
+            {
+                "code": "reach",
+                "level": expected.reach,
+                "property": None,
+                "count": 1,
+                "examples": [],
+            }
+        )
+    for (code, level, prop), n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        requirements.append(
+            {
+                "code": code,
+                "level": level,
+                "property": prop,
+                "count": n,
+                "examples": required[(code, level, prop)],
+            }
+        )
+    recommendations = [
+        {
+            "code": code,
+            "level": level,
+            "property": prop,
+            "count": n,
+            "examples": recommended[(code, level, prop)],
+        }
+        for (code, level, prop), n in sorted(
+            recommended_counts.items(), key=lambda kv: (-kv[1], kv[0])
+        )
+    ]
+    return requirements, recommendations

@@ -8,6 +8,7 @@ export const de: Messages = {
     skip: "Zum Inhalt springen",
   },
   nav: {
+    expectations: "Erwartungen",
     directory: "Verzeichnis",
     search: "Suche",
     register: "FDP registrieren",
@@ -867,6 +868,7 @@ export const de: Messages = {
     triples: "Abgerufene Tripel (Turtle)",
   },
   conformance: {
+    network: { title: "Die Regeln dieses Netzwerks" },
     heading: "Konformität",
     declared: {
       title: "Was er angibt",
@@ -980,6 +982,16 @@ export const de: Messages = {
     version: "Version {version}",
   },
   health: {
+    requirementsTitle: "Die Anforderungen dieses Netzwerks",
+    requirementsLead: "Nicht erfüllt. Siehe",
+    recommendationsTitle: "Die Empfehlungen dieses Netzwerks",
+    missingRequirements: "Verfehlt eine Anforderung",
+    requirement: {
+      reach: "Reicht nicht bis: {level}",
+      requires: "{level} ohne {property}",
+      recommends: "{level} ohne {property}",
+      vocabulary: "{level} mit {property} aus einem anderen Vokabular",
+    },
     title: "Qualität der Metadaten",
     lead: "Wie weit die Metadaten dieses FDP reichen und was der Index beim letzten Harvest gefunden hat.",
     statsLead:
@@ -1059,5 +1071,36 @@ export const de: Messages = {
       findings: "Befunde",
       failed: "Fehlgeschlagene Seiten",
     },
+  },
+  expectations: {
+    title: "Was dieser Index erwartet",
+    lead: "Woran ein hier gelisteter FDP gemessen wird, neben dem, was er selbst angibt.",
+    link: "Was dieser Index von FDPs erwartet",
+    noneTitle: "Nichts über die FDP-Spezifikation hinaus",
+    none: "Dieser Index verlangt von FDPs nichts über die FDP-Spezifikation hinaus. Jeder Datensatz wird gegen die Profile geprüft, die er selbst nennt (dct:conformsTo), und der Bericht zur Metadatenqualität zeigt, wie weit die Metadaten eines FDP reichen, ohne eine Ebene zu verlangen.",
+    network: "Das Netzwerk",
+    requirements: "Anforderungen",
+    reach: "Die Metadaten eines FDP müssen reichen bis: {level}.",
+    requires: "Muss haben",
+    recommends: "Sollte haben",
+    types: "Zählt auch als diese Ebene",
+    vocabularies: "Werte aus diesen Vokabularen",
+    fromVocab: "aus",
+    shapes: "Regeln (SHACL), gegen die jeder Datensatz geprüft wird",
+    benchmarks: "Die eigenen Tests des Netzwerks",
+    benchmarksLead: "Vom Netzwerk außerhalb dieses Index ausgeführt, mit eigenen Ergebnissen.",
+    declared:
+      "Datensätze werden auch gegen das geprüft, was sie selbst angeben; das zählt nie gegen einen FDP, der nichts angibt.",
+  },
+  networkProfile: {
+    heading: "Netzwerkprofil",
+    lead: "Was dieser Index von den FDPs erwartet, die er listet, als YAML: die Ebene, die ihre Metadaten erreichen müssen, was jede Ebene haben muss und sollte, Vokabulare, SHACL-Shapes und die eigenen Tests des Netzwerks. Es erscheint auf der Seite Erwartungen; eine Änderung prüft jeden FDP erneut.",
+    startFrom: "Beginnen mit",
+    generic: "Allgemein: nichts über die FDP-Spezifikation hinaus",
+    view: "Seite Erwartungen ansehen",
+    save: "Speichern",
+    saved: "Netzwerkprofil gespeichert.",
+    reset: "Installiertes Profil verwenden",
+    resetConfirm: "Dieses Profil durch das installierte ersetzen?",
   },
 };

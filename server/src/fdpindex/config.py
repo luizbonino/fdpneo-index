@@ -126,6 +126,8 @@ class Settings(BaseSettings):
     catalog_contact_email: str | None = None  # OAI-PMH adminEmail
     conformance_enabled: bool = True
     conformance_packs: Path | None = None
+    # A network profile installed at deployment (TASKS 15.9); the generic one otherwise.
+    network_profile: Path | None = None
     conformance_workers: int = Field(default=-1, ge=-1, le=64)
     search_timeout_seconds: float = Field(default=5, gt=0)
     search_admin_timeout_seconds: float = Field(default=30, gt=0)

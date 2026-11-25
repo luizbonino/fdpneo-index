@@ -8,6 +8,7 @@ export const fr: Messages = {
     skip: "Aller au contenu",
   },
   nav: {
+    expectations: "Attentes",
     directory: "Annuaire",
     search: "Recherche",
     register: "Enregistrer un FDP",
@@ -866,6 +867,7 @@ export const fr: Messages = {
     triples: "Triplets moissonnés (Turtle)",
   },
   conformance: {
+    network: { title: "Les règles de ce réseau" },
     heading: "Conformité",
     declared: {
       title: "Ce qu’il déclare",
@@ -981,6 +983,16 @@ export const fr: Messages = {
     version: "Version {version}",
   },
   health: {
+    requirementsTitle: "Les exigences de ce réseau",
+    requirementsLead: "Non remplies. Voir",
+    recommendationsTitle: "Les recommandations de ce réseau",
+    missingRequirements: "Manquent une exigence",
+    requirement: {
+      reach: "N’atteint pas : {level}",
+      requires: "{level} sans {property}",
+      recommends: "{level} sans {property}",
+      vocabulary: "{level} dont {property} vient d’un autre vocabulaire",
+    },
     title: "Qualité des métadonnées",
     lead: "Jusqu’où vont les métadonnées de ce FDP, et ce que l’index a trouvé lors du dernier moissonnage.",
     statsLead:
@@ -1061,5 +1073,36 @@ export const fr: Messages = {
       findings: "Constats",
       failed: "Pages en échec",
     },
+  },
+  expectations: {
+    title: "Ce que cet index attend",
+    lead: "Ce selon quoi un FDP listé ici est vérifié, en plus de ce qu’il déclare lui-même.",
+    link: "Ce que cet index attend des FDP",
+    noneTitle: "Rien au-delà de la spécification FDP",
+    none: "Cet index n’exige des FDP rien au-delà de la spécification FDP. Chaque fiche est vérifiée selon les profils qu’elle nomme elle-même (dct:conformsTo), et le rapport sur les métadonnées montre jusqu’où vont celles d’un FDP sans exiger de niveau.",
+    network: "Le réseau",
+    requirements: "Exigences",
+    reach: "Les métadonnées d’un FDP doivent atteindre : {level}.",
+    requires: "Doit avoir",
+    recommends: "Devrait avoir",
+    types: "Compte aussi comme ce niveau",
+    vocabularies: "Valeurs de ces vocabulaires",
+    fromVocab: "de",
+    shapes: "Règles (SHACL) selon lesquelles chaque fiche est vérifiée",
+    benchmarks: "Les tests propres au réseau",
+    benchmarksLead: "Exécutés par le réseau hors de cet index, avec leurs propres résultats.",
+    declared:
+      "Les fiches sont aussi vérifiées selon ce qu’elles déclarent elles-mêmes, ce qui ne compte jamais contre un FDP qui ne déclare rien.",
+  },
+  networkProfile: {
+    heading: "Profil du réseau",
+    lead: "Ce que cet index attend des FDP qu’il liste, en YAML : le niveau que leurs métadonnées doivent atteindre, ce que chaque niveau doit et devrait avoir, des vocabulaires, des formes SHACL et les tests propres au réseau. Il s’affiche sur la page Attentes ; une modification vérifie de nouveau chaque FDP.",
+    startFrom: "Partir de",
+    generic: "Générique : rien au-delà de la spécification FDP",
+    view: "Voir la page Attentes",
+    save: "Enregistrer",
+    saved: "Profil du réseau enregistré.",
+    reset: "Utiliser le profil installé",
+    resetConfirm: "Remplacer ce profil par celui installé ?",
   },
 };

@@ -6,6 +6,8 @@ import { session, signOut } from "@/auth/session";
 import { useCounts, useServiceInfo } from "@/composables/queries";
 import { cycleTheme, themeMode } from "@/composables/theme";
 import { apiUrl } from "@/api/client";
+import { useQuery } from "@tanstack/vue-query";
+import { api } from "@/api";
 import ToastHost from "@/components/ToastHost.vue";
 import ConfirmHost from "@/components/ConfirmHost.vue";
 import AppMark from "@/components/AppMark.vue";
@@ -14,6 +16,12 @@ import { ENDONYMS, LOCALES, setLocale } from "@/i18n";
 const { t, locale } = useI18n();
 const router = useRouter();
 const info = useServiceInfo();
+// The Expectations page is in the menu when the network expects something (TASKS 15.9).
+const network = useQuery({
+  queryKey: ["network-profile"],
+  queryFn: api.networkProfile,
+  staleTime: 60_000,
+});
 const pending = useCounts("pending");
 const pendingCount = computed(() =>
   session.isAdmin ? (pending.data.value?.entriesCount.ALL ?? 0) : 0,
@@ -47,6 +55,11 @@ async function leave() {
         }}</router-link>
         <router-link :to="{ name: 'statistics' }">{{ t("nav.statistics") }}</router-link>
         <router-link :to="{ name: 'register' }">{{ t("nav.register") }}</router-link>
+        <router-link
+          v-if="network.data.value && !network.data.value.empty"
+          :to="{ name: 'expectations' }"
+          >{{ t("nav.expectations") }}</router-link
+        >
         <template v-if="session.isAdmin">
           <router-link :to="{ name: 'approvals' }">
             {{ t("nav.approvals") }}

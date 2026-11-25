@@ -26,6 +26,7 @@ import asyncio
 import contextlib
 import hashlib
 import json
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -49,7 +50,7 @@ from fdpindex.models import (
 from fdpindex.search.indexer import fingerprint
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Awaitable, Callable, Sequence
 
     from sqlalchemy import ColumnElement
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -88,6 +89,17 @@ DECLARED_SEARCH_TITLE = {
     "it": "Rispetta ciò che dichiara",
     "pt": "Cumpre o que declara",
 }
+# The network profile's SHACL (TASKS 15.9): a required check of its own.
+NETWORK = "network"
+NETWORK_TITLE = {
+    "en": "This network's rules",
+    "nl": "De regels van dit netwerk",
+    "de": "Die Regeln dieses Netzwerks",
+    "fr": "Les règles de ce réseau",
+    "es": "Las reglas de esta red",
+    "it": "Le regole di questa rete",
+    "pt": "As regras desta rede",
+}
 _ORDER = {"violation": 0, "warning": 1, "info": 2}
 
 
@@ -115,6 +127,8 @@ class ConformanceService:
     ) -> None:
         self._session_factory = session_factory
         self._resolver = resolver
+        # The network profile's SHACL documents (TASKS 15.9), set by the app.
+        self.network_shapes: Callable[[], Awaitable[list[str]]] | None = None
         self.settings = settings
         self._profile = profile
         self._pool = pool
@@ -156,7 +170,16 @@ class ConformanceService:
         """Each active pack's role by pack id: ``required`` or ``lens`` (TASKS 15.13)."""
         settings = await self.settings.get()
         packs = self.settings.packs
-        return {packs[a.key].id: a.role for a in settings.packs if a.key in packs}
+        roles = {packs[a.key].id: a.role for a in settings.packs if a.key in packs}
+        if await self.network_on():
+            roles[NETWORK] = "required"
+        return roles
+
+    async def network_on(self) -> bool:
+        return bool(await self._network_shapes()) and self._resolver is not None
+
+    async def _network_shapes(self) -> list[str]:
+        return await self.network_shapes() if self.network_shapes is not None else []
 
     async def minimum(self, surface: str) -> str | None:
         """The pack id a surface requires visitors' records to conform to, if any."""
@@ -290,12 +313,20 @@ class ConformanceService:
         packs = self.settings.packs
         return [_Use(packs[a.key], a) for a in settings.packs if a.key in packs]
 
-    def _settings_hash(self, uses: Sequence[_Use], declared_on: bool, day: str) -> str:
+    def _settings_hash(
+        self, uses: Sequence[_Use], declared_on: bool, day: str, network: Sequence[str] = ()
+    ) -> str:
         """What the entry was validated with. With declared checks on, the day is part of
         it: declared profiles are resolved again daily (``declared.FRESH``)."""
         described = [(u.pack.key, u.digest, sorted(u.kinds)) for u in uses]
         payload = json.dumps(
-            [self._profile().hash, described, declared_on and day, declared_on and DECLARED_VERSION]
+            [
+                self._profile().hash,
+                described,
+                (declared_on or bool(network)) and day,
+                declared_on and DECLARED_VERSION,
+                sorted(network),
+            ]
         )
         return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -322,12 +353,13 @@ class ConformanceService:
             state = await session.get(ConformanceEntryState, entry_id)
         uses = await self._uses()
         declared_on = await self.declared_on()
-        if not accepted or not rows or not (uses or declared_on):
-            if state is not None or not accepted or not (uses or declared_on):
+        network = await self._network_shapes() if self._resolver is not None else []
+        if not accepted or not rows or not (uses or declared_on or network):
+            if state is not None or not accepted or not (uses or declared_on or network):
                 await self._clear(entry_id)
             return 0
         wanted = fingerprint(str(h) for _, _, h in rows)
-        settings_hash = self._settings_hash(uses, declared_on, utcnow().date().isoformat())
+        settings_hash = self._settings_hash(uses, declared_on, utcnow().date().isoformat(), network)
         if (
             not force
             and state is not None
@@ -341,7 +373,14 @@ class ConformanceService:
         if declared_on and self._resolver is not None:
             iris = sorted({iri for r in records for iri in declared(r.nodes[0], r.iri)})
             targets = await self._resolver.resolve(iris, origins)
-        done = await self._validate_records(entry_id, records, uses, targets, force=force)
+        checks: _NetworkCheck | None = None
+        if network and self._resolver is not None:
+            # An administrator chose these documents: fetched from wherever they are.
+            resolved = await self._resolver.resolve(network, network)
+            checks = self._network_uses(list(resolved.values()))
+        done = await self._validate_records(
+            entry_id, records, uses, targets, force=force, network=checks
+        )
         async with self._session_factory() as session, session.begin():
             state = await session.get(ConformanceEntryState, entry_id)
             if state is None:
@@ -404,6 +443,29 @@ class ConformanceService:
         label = f",{','.join(sorted(names))},"
         return digest, jobs, None, label if len(label) <= 64 else None
 
+    def _network_uses(self, resolved: list[Target]) -> _NetworkCheck:
+        """The network profile's SHACL as jobs, with a digest of what was resolved."""
+        digest = hashlib.sha256(
+            json.dumps([(t.iri, t.kind, t.digest or t.reason) for t in resolved]).encode()
+        ).hexdigest()
+        jobs: list[PackUse] = []
+        packs = self.settings.packs
+        for target in resolved:
+            if target.kind == "pack" and target.pack_key in packs:
+                pack = packs[target.pack_key]
+                jobs.append(PackUse(directory=str(pack.directory), key=pack.key, files=None))
+            elif target.kind == "shapes" and target.shapes is not None:
+                jobs.append(
+                    PackUse(
+                        directory="",
+                        key=f"network:{target.digest}",
+                        files=None,
+                        shapes=target.shapes,
+                    )
+                )
+        reasons = "; ".join(f"{t.iri}: {t.reason}" for t in resolved if t.reason)
+        return _NetworkCheck(digest, jobs, reasons[:500] or None)
+
     async def _validate_records(
         self,
         entry_id: UUID,
@@ -412,6 +474,7 @@ class ConformanceService:
         targets: dict[str, Target] | None,
         *,
         force: bool,
+        network: _NetworkCheck | None = None,
     ) -> int:
         async with self._session_factory() as session:
             existing = {
@@ -433,7 +496,14 @@ class ConformanceService:
                 ).all()
             }
         wanted: set[tuple[str, str]] = set()
-        work: list[tuple[Record, list[_Use], tuple[str, list[PackUse], str | None] | None]] = []
+        work: list[
+            tuple[
+                Record,
+                list[_Use],
+                tuple[str, list[PackUse], str | None] | None,
+                list[PackUse] | None,
+            ]
+        ] = []
         ready: list[tuple[Record, list[_Written]]] = []
         for record in records:
             stale: list[_Use] = []
@@ -454,8 +524,18 @@ class ConformanceService:
                         ready.append((record, [(DECLARED, DECLARED, digest, outcome)]))
                     else:
                         declared_job = (digest, jobs, label)
-            if stale or declared_job is not None:
-                work.append((record, stale, declared_job))
+            network_jobs: list[PackUse] | None = None
+            if network is not None:
+                wanted.add((record.iri, NETWORK))
+                seen = existing.get((record.iri, NETWORK))
+                if force or seen is None or seen[1:] != (record.content_hash, network.digest):
+                    if not network.jobs:
+                        failed = Outcome(status="unresolved", error=network.reasons)
+                        ready.append((record, [(NETWORK, NETWORK, network.digest, failed)]))
+                    else:
+                        network_jobs = network.jobs
+            if stale or declared_job is not None or network_jobs is not None:
+                work.append((record, stale, declared_job, network_jobs))
         gone = [v[0] for k, v in existing.items() if k not in wanted]
         if gone:
             await self._delete_results(gone)
@@ -469,21 +549,25 @@ class ConformanceService:
                 Job(
                     root=r.iri,
                     nodes=r.nodes,
-                    packs=tuple(u.job for u in us) + tuple(d[1] if d else ()),
+                    packs=tuple(u.job for u in us) + tuple(d[1] if d else ()) + tuple(n or ()),
                 )
-                for r, us, d in batch
+                for r, us, d, n in batch
             ]
             outcomes = await self._pool.run(jobs)
             written: list[tuple[Record, list[_Written]]] = []
-            for (record, us, d), results in zip(batch, outcomes, strict=True):
+            for (record, us, d, n), results in zip(batch, outcomes, strict=True):
                 rows: list[_Written] = [
                     (u.pack.id, u.pack.version, u.digest, o)
                     for u, o in zip(us, results[: len(us)], strict=True)
                 ]
+                after = len(us)
                 if d is not None:
-                    merged = _merge(results[len(us) :])
+                    merged = _merge(results[after : after + len(d[1])])
                     merged.variant = d[2]
                     rows.append((DECLARED, DECLARED, d[0], merged))
+                    after += len(d[1])
+                if n is not None and network is not None:
+                    rows.append((NETWORK, NETWORK, network.digest, _merge(results[after:])))
                 written.append((record, rows))
             await self._write(entry_id, written)
             done += len(batch)
@@ -561,6 +645,15 @@ class ConformanceService:
 
 
 _Written = tuple[str, str, str, "Outcome"]  # pack id, version, digest, outcome
+
+
+@dataclass(frozen=True)
+class _NetworkCheck:
+    """The network profile's SHACL for one validation pass (TASKS 15.9)."""
+
+    digest: str
+    jobs: list[PackUse]
+    reasons: str | None
 
 
 def _merge(outcomes: Sequence[Outcome]) -> Outcome:

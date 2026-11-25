@@ -136,6 +136,11 @@ class HealthSummary(_Camel):
     )
     failures: dict[str, int] = Field(description="Pages that failed, by kind")
     partial: int = Field(description="FDPs whose harvest stopped at its page limit")
+    missing_requirements: int = Field(
+        default=0,
+        alias="missingRequirements",
+        description="FDPs that miss a requirement of the network profile (TASKS 15.9)",
+    )
 
 
 class HealthRow(_Camel):
@@ -149,6 +154,9 @@ class HealthRow(_Camel):
     findings: dict[str, int] = Field(description="Count per finding")
     notes: dict[str, int] = Field(default_factory=lambda: {}, description="Count per note")
     failed: int = Field(description="Pages that could not be read")
+    requirements: int = Field(
+        default=0, description="The network profile's requirements it does not meet"
+    )
     partial: bool = Field(description="The harvest stopped at its page limit")
 
 

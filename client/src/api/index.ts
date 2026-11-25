@@ -24,6 +24,9 @@ export type Registration = Schemas["RegistrationView"];
 export type Statistics = Schemas["Statistics"];
 export type MetadataHealth = Schemas["MetadataHealthView"];
 export type HealthRow = Schemas["HealthRow"];
+export type NetworkProfileView = Schemas["NetworkProfileView"];
+export type ProfileExample = Schemas["ProfileExample"];
+export type HealthRequirement = Schemas["HealthRequirementView"];
 /** The structural findings and failure kinds, in display order (TASKS 15.8). */
 export const HEALTH_LEVELS = ["fdp", "catalog", "dataset", "distribution", "dataservice"] as const;
 export const HEALTH_FINDINGS = [
@@ -99,6 +102,12 @@ export const api = {
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),
   entryHealth: (uuid: string) => request<MetadataHealth | null>(`/index/entries/${uuid}/health`),
   healthTable: () => request<HealthRow[]>("/index/health"),
+  networkProfile: () => request<NetworkProfileView>("/index/network-profile"),
+  saveNetworkProfile: (source: string) =>
+    request<NetworkProfileView>("/index/network-profile", { method: "PUT", body: { source } }),
+  resetNetworkProfile: () =>
+    request<NetworkProfileView>("/index/network-profile", { method: "DELETE" }),
+  networkExamples: () => request<ProfileExample[]>("/index/network-profile/examples"),
   setPermit: (uuid: string, permit: Permit) =>
     request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { permit } }),
   setOptions: (uuid: string, options: EntryOptions) =>

@@ -1,0 +1,46 @@
+# ERDERA Virtual Platform, as an example of a network profile (TASKS 15.9).
+# Illustrative: the requirements below follow ERDERA's Onboarding Benchmark
+# (FAIRsharing.2d49c0) and its L1 and L2 metrics as published on 2026-11-23.
+# ERDERA's own definitions are authoritative; check them before using this.
+profile: 1
+network:
+  name: ERDERA Virtual Platform
+  homepage: https://fairsharing.org/FAIRsharing.2d49c0
+  description: >-
+    Rare-disease resources (datasets, catalogues, registries, biobanks,
+    terminologies, analytical services) found by the ERDERA Virtual Platform.
+    Level 1 needs the core properties and the VPDiscoverable flag; level 2 a
+    data service with a landing page.
+
+prefixes:
+  ejp: https://w3id.org/ejp-rd/vocabulary#
+
+# The Virtual Platform finds Beacon endpoints through data services.
+reach: dataservice
+
+levels:
+  dataset:
+    # Biobanks and registries count as datasets.
+    types: [ejp:Biobank, ejp:PatientRegistry]
+    requires:
+      - dct:title
+      - dct:description
+      - dcat:theme
+      - dcat:keyword
+      - dcat:contactPoint
+      - dct:language
+      - dct:license
+      - dct:publisher
+      - dcat:landingPage
+      - ejp:vpConnection
+  dataservice:
+    requires: [dct:title, dcat:landingPage]
+    recommends: [dcat:endpointURL, dcat:endpointDescription]
+
+# The Virtual Platform's flag: records it should find say they are discoverable.
+vocabularies:
+  ejp:vpConnection: [https://w3id.org/ejp-rd/vocabulary#]
+
+# ERDERA's own verdict, run outside the index (TASKS 15.10).
+benchmarks:
+  - https://ostrails.github.io/assessment-component-metadata-records/benchmark/ERDERA_Onboard.ttl

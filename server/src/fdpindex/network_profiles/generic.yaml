@@ -1,0 +1,8 @@
+# A network profile (TASKS 15.9): what this index expects of the FDPs it lists.
+# The generic profile expects nothing beyond the FDP specification: an FDP is
+# judged by what it declares (dct:conformsTo), and the metadata health report
+# shows how far its metadata reaches without holding it to a level.
+profile: 1
+network:
+  name: ""
+  description: ""

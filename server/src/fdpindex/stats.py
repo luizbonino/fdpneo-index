@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 from sqlalchemy import delete, func, select
 
-from fdpindex.conformance.service import DECLARED, DECLARED_TITLE
+from fdpindex.conformance.service import DECLARED, DECLARED_TITLE, NETWORK, NETWORK_TITLE
 from fdpindex.db import utcnow
 from fdpindex.findings import FAILURE_KINDS, FINDINGS, LEVELS, NOTES
 from fdpindex.geo import SOURCES, spatial_country
@@ -240,7 +240,8 @@ class StatsService:
         specs = await self._conformance.specs()
         roles = await self._conformance.roles()
         declared_on = await self._conformance.declared_on()
-        wanted = [*specs, *([DECLARED] if declared_on else [])]
+        network_on = await self._conformance.network_on()
+        wanted = [*specs, *([DECLARED] if declared_on else []), *([NETWORK] if network_on else [])]
         rows = (
             await session.execute(
                 select(
@@ -287,6 +288,26 @@ class StatsService:
                     },
                 }
             )
+        if network_on:
+            # The network profile's SHACL (TASKS 15.9): required of every record.
+            shares.append(
+                {
+                    "pack": NETWORK,
+                    "role": "required",
+                    "specification": "",
+                    "title": NETWORK_TITLE,
+                    "checked": sum(checked[NETWORK].values()),
+                    "conforms": sum(conforming[NETWORK].values()),
+                    "byKind": {
+                        kind: {
+                            "checked": checked[NETWORK][kind],
+                            "conforms": conforming[NETWORK][kind],
+                        }
+                        for kind in KINDS
+                        if checked[NETWORK][kind]
+                    },
+                }
+            )
         return shares + [
             {
                 "pack": pack,
@@ -320,7 +341,10 @@ class StatsService:
         notes = dict.fromkeys(NOTES, 0)
         failures = dict.fromkeys(FAILURE_KINDS, 0)
         partial = 0
+        missing_requirements = 0
         for _entry, report in rows:
+            if report.get("requirements"):
+                missing_requirements += 1
             by_reach[report.get("reach") or "none"] += 1
             by_status[report.get("status") or "unreadable"] += 1
             found: list[dict[str, Any]] = report.get("findings") or []
@@ -346,6 +370,7 @@ class StatsService:
             "notes": notes,
             "failures": failures,
             "partial": partial,
+            "missingRequirements": missing_requirements,
         }
 
     async def health_table(self) -> list[dict[str, Any]]:
@@ -370,6 +395,7 @@ class StatsService:
                     "findings": {f["code"]: int(f["count"]) for f in found},
                     "notes": {f["code"]: int(f["count"]) for f in noted},
                     "failed": sum(int(f["count"]) for f in failed),
+                    "requirements": len(report.get("requirements") or []),
                     "partial": bool(stops.get("atCeiling")),
                 }
             )

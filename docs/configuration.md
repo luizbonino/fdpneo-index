@@ -128,6 +128,7 @@ order ([Administering](administering.md#where-fdps-are)).
 | `FDPINDEX_CONFORMANCE_ENABLED` | `true` | Check harvested records against SHACL profiles in the background, with reports per FDP and per record |
 | `FDPINDEX_CONFORMANCE_WORKERS` | CPUs less one, at most 4 | Processes running the checks; `0` runs them in the server's process |
 | `FDPINDEX_CONFORMANCE_PACKS` | — | A directory of your own SHACL profile packs (`<id>/<version>/pack.yaml`), beside the bundled DCAT-AP 3.0.1, HealthDCAT-AP Release 8 and Health-RI core v2.0.3 ([Administering](administering.md#conformance)) |
+| `FDPINDEX_NETWORK_PROFILE` | — | A network profile (YAML) installed at deployment: what this index expects of its FDPs ([Network profiles](network-profiles.md)). The generic profile, which expects nothing beyond the FDP specification, otherwise; the settings page can replace either |
 
 ## The catalogue feed
 

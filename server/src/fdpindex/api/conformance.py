@@ -31,7 +31,7 @@ from fdpindex.conformance.reports import (
     record_page,
     record_report,
 )
-from fdpindex.conformance.service import DECLARED
+from fdpindex.conformance.service import DECLARED, NETWORK
 from fdpindex.conformance.settings import ConformanceSettings, ConformanceSettingsView
 from fdpindex.errors import BadRequest, Forbidden, NotFound, Unauthorized
 from fdpindex.models import IndexEntry
@@ -137,6 +137,8 @@ async def _active(service: ConformanceService) -> list[tuple[str, str]]:
     settings = await service.settings.get()
     packs = service.settings.packs
     active = [(packs[a.key].id, packs[a.key].version) for a in settings.packs if a.key in packs]
+    if await service.network_on():
+        active.insert(0, (NETWORK, NETWORK))
     if await service.declared_on():
         active.insert(0, (DECLARED, DECLARED))
     return active

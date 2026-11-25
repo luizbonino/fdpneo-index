@@ -112,6 +112,7 @@ function downloadCsv() {
     ...HEALTH_FINDINGS,
     ...HEALTH_NOTES,
     "failed",
+    "networkRequirementsMissed",
     "stoppedAtLimit",
   ];
   const lines = [header.join(",")];
@@ -127,6 +128,7 @@ function downloadCsv() {
         ...HEALTH_FINDINGS.map((f) => row.findings[f] ?? 0),
         ...HEALTH_NOTES.map((f) => row.notes?.[f] ?? 0),
         row.failed,
+        row.requirements ?? 0,
         row.partial ? "yes" : "no",
       ]
         .map(csvCell)
@@ -151,6 +153,10 @@ const TONE = { fine: "ok", findings: "warn", unreadable: "bad" } as const;
       <li v-for="status in ['fine', 'findings', 'unreadable'] as const" :key="status">
         <span :class="['chip', TONE[status]]">{{ t(`health.status.${status}`) }}</span>
         <span class="value">{{ number(summary.byStatus[status] ?? 0) }}</span>
+      </li>
+      <li v-if="summary.missingRequirements">
+        <span class="chip warn">{{ t("health.missingRequirements") }}</span>
+        <span class="value">{{ number(summary.missingRequirements) }}</span>
       </li>
       <li v-if="summary.partial">
         <span class="chip info">{{ t("health.partial") }}</span>

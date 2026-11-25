@@ -1779,6 +1779,66 @@
         "title": "HealthFindingView",
         "type": "object"
       },
+      "HealthRequirementView": {
+        "description": "What the network profile asks that the FDP does not meet (TASKS 15.9).",
+        "properties": {
+          "code": {
+            "description": "reach: does not reach the level; requires/recommends: records at the level lack the property; vocabulary: values not from the expected vocabulary",
+            "enum": [
+              "reach",
+              "requires",
+              "recommends",
+              "vocabulary"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "count": {
+            "description": "Records concerned (1 for reach)",
+            "title": "Count",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "property": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The property's IRI",
+            "title": "Property"
+          }
+        },
+        "required": [
+          "code",
+          "level",
+          "property",
+          "count",
+          "examples"
+        ],
+        "title": "HealthRequirementView",
+        "type": "object"
+      },
       "HealthRow": {
         "properties": {
           "clientUrl": {
@@ -1833,6 +1893,12 @@
               }
             ],
             "title": "Reach"
+          },
+          "requirements": {
+            "default": 0,
+            "description": "The network profile's requirements it does not meet",
+            "title": "Requirements",
+            "type": "integer"
           },
           "status": {
             "title": "Status",
@@ -1934,6 +2000,12 @@
             "description": "FDPs with each finding",
             "title": "Findings",
             "type": "object"
+          },
+          "missingRequirements": {
+            "default": 0,
+            "description": "FDPs that miss a requirement of the network profile (TASKS 15.9)",
+            "title": "Missingrequirements",
+            "type": "integer"
           },
           "notes": {
             "additionalProperties": {
@@ -2179,6 +2251,40 @@
         "title": "LargestFdp",
         "type": "object"
       },
+      "LevelRules": {
+        "additionalProperties": false,
+        "properties": {
+          "recommends": {
+            "description": "Properties a record at this level should have",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Recommends",
+            "type": "array"
+          },
+          "requires": {
+            "description": "Properties every record at this level must have",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Requires",
+            "type": "array"
+          },
+          "types": {
+            "description": "Classes (CURIEs or IRIs) that count as this level, besides DCAT's",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "title": "LevelRules",
+        "type": "object"
+      },
       "Library": {
         "additionalProperties": false,
         "properties": {
@@ -2311,6 +2417,22 @@
             "description": "The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read",
             "title": "Reach"
           },
+          "recommendations": {
+            "description": "The network profile's recommendations the FDP does not follow",
+            "items": {
+              "$ref": "#/components/schemas/HealthRequirementView"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "requirements": {
+            "description": "The network profile's requirements the FDP does not meet",
+            "items": {
+              "$ref": "#/components/schemas/HealthRequirementView"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
           "status": {
             "enum": [
               "fine",
@@ -2357,6 +2479,185 @@
           "count"
         ],
         "title": "MonthCount",
+        "type": "object"
+      },
+      "NetworkInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A mailto: or web address",
+            "title": "Contact"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "homepage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where people read about it",
+            "title": "Homepage"
+          },
+          "name": {
+            "default": "",
+            "description": "The network's name",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "NetworkInfo",
+        "type": "object"
+      },
+      "NetworkProfile": {
+        "additionalProperties": false,
+        "description": "What a network expects of the FDPs it lists (TASKS 15.9).",
+        "properties": {
+          "benchmarks": {
+            "description": "FAIR Testing Resources benchmarks, run outside the index (TASKS 15.10)",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Benchmarks",
+            "type": "array"
+          },
+          "levels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LevelRules"
+            },
+            "propertyNames": {
+              "enum": [
+                "fdp",
+                "catalog",
+                "dataset",
+                "distribution",
+                "dataservice"
+              ]
+            },
+            "title": "Levels",
+            "type": "object"
+          },
+          "network": {
+            "$ref": "#/components/schemas/NetworkInfo"
+          },
+          "prefixes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "CURIE prefixes beyond the common ones",
+            "title": "Prefixes",
+            "type": "object"
+          },
+          "profile": {
+            "const": 1,
+            "default": 1,
+            "description": "The template's version",
+            "title": "Profile",
+            "type": "integer"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fdp",
+                  "catalog",
+                  "dataset",
+                  "distribution",
+                  "dataservice"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The level an FDP's metadata must reach; none: no level",
+            "title": "Reach"
+          },
+          "shapes": {
+            "description": "SHACL documents every record is checked against (as the check 'network')",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Shapes",
+            "type": "array"
+          },
+          "vocabularies": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "description": "Per property, the IRI prefixes its values must start with",
+            "title": "Vocabularies",
+            "type": "object"
+          }
+        },
+        "title": "NetworkProfile",
+        "type": "object"
+      },
+      "NetworkProfileUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "description": "The profile as YAML",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "title": "NetworkProfileUpdate",
+        "type": "object"
+      },
+      "NetworkProfileView": {
+        "properties": {
+          "empty": {
+            "description": "It expects nothing beyond the FDP specification",
+            "title": "Empty",
+            "type": "boolean"
+          },
+          "isDefault": {
+            "description": "The installed or generic profile, not an edit",
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/NetworkProfile"
+          },
+          "source": {
+            "description": "The profile as YAML, as it was written",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "profile",
+          "isDefault",
+          "empty"
+        ],
+        "title": "NetworkProfileView",
         "type": "object"
       },
       "PackFileView": {
@@ -2972,6 +3273,29 @@
           "example"
         ],
         "title": "Problem",
+        "type": "object"
+      },
+      "ProfileExample": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "source"
+        ],
+        "title": "ProfileExample",
         "type": "object"
       },
       "PropertySettings-Input": {
@@ -5767,6 +6091,137 @@
         "summary": "Every FDP's metadata health",
         "tags": [
           "Statistics"
+        ]
+      }
+    },
+    "/index/network-profile": {
+      "delete": {
+        "operationId": "reset_profile_index_network_profile_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkProfileView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Return to the installed or generic profile (administrators)",
+        "tags": [
+          "Network profile"
+        ]
+      },
+      "get": {
+        "operationId": "get_profile_index_network_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkProfileView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "What this index expects of the FDPs it lists",
+        "tags": [
+          "Network profile"
+        ]
+      },
+      "put": {
+        "description": "The health reports are computed again, and the network's SHACL checked.",
+        "operationId": "put_profile_index_network_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NetworkProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkProfileView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Not a valid profile; the message says why"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set the network profile (administrators)",
+        "tags": [
+          "Network profile"
+        ]
+      }
+    },
+    "/index/network-profile/examples": {
+      "get": {
+        "operationId": "profile_examples_index_network_profile_examples_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProfileExample"
+                  },
+                  "title": "Response Profile Examples Index Network Profile Examples Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The bundled network profiles",
+        "tags": [
+          "Network profile"
+        ]
+      }
+    },
+    "/index/network-profile/schema": {
+      "get": {
+        "operationId": "profile_schema_index_network_profile_schema_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Profile Schema Index Network Profile Schema Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "The network profile template's JSON Schema",
+        "tags": [
+          "Network profile"
         ]
       }
     },

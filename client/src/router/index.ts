@@ -31,6 +31,11 @@ const routes: RouteRecordRaw[] = [
   },
   { path: "/sparql", name: "sparql", component: () => import("@/views/SparqlView.vue") },
   {
+    path: "/expectations",
+    name: "expectations",
+    component: () => import("@/views/ExpectationsView.vue"),
+  },
+  {
     path: "/statistics",
     name: "statistics",
     component: () => import("@/views/StatisticsView.vue"),

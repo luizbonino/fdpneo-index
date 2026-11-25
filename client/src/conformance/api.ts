@@ -87,6 +87,7 @@ export function componentName(component: string): string {
 /** A pack's title in the reader's language, else English, else its id. */
 export function packTitle(packs: Pack[] | undefined, id: string, locale = "en"): string {
   if (id === DECLARED) return i18n.global.t("conformance.declared.title");
+  if (id === "network") return i18n.global.t("conformance.network.title");
   const pack = packs?.find((p) => p.id === id);
   if (!pack) return id;
   return pack.title[locale] ?? pack.title.en ?? Object.values(pack.title)[0] ?? id;

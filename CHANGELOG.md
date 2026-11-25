@@ -85,6 +85,14 @@ The first release will contain:
   held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
   on by default**, and the profiles an administrator activates are shown as
   this index's requirements or as lenses. Migration 0020.
+- **Network profiles** (TASKS 15.9): what an index expects of its FDPs, as
+  one YAML document with a JSON Schema (reach, per-level required and
+  recommended properties and types, vocabularies, SHACL shapes, the
+  network's own benchmarks). Edited in Settings or installed with
+  `FDPINDEX_NETWORK_PROFILE`; shown on a public Expectations page; checked
+  in each FDP's metadata health and, for shapes, as the required
+  conformance check "This network's rules". The generic default expects
+  nothing beyond the FDP specification; ERDERA's is bundled as an example.
 - **Lenses** (TASKS 15.13): a profile an administrator switches on is a lens
   by default, which visitors look through one at a time on an FDP's page
   and the Statistics page, worded as not claimed (or with how many records

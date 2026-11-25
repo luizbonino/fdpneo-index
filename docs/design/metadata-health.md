@@ -1,6 +1,6 @@
 # Metadata health and complete harvests (TASKS 15.6–15.11)
 
-Status: reviewed (2026-11-24); the decisions are in §5. 3.1, 3.2 and the
+Status: reviewed (2026-11-24); the decisions are in §5. 3.1, 3.2, 3.3 and
 3.7 are built (TASKS 15.7, 15.8, 15.12, 15.13). Updated with ERDERA's onboarding benchmark (3.3,
 3.4) on 2026-11-24, and with what an FDP promised (3.7) on 2026-11-25.
 
@@ -227,15 +227,18 @@ benchmarks:                         # the network's own verdict, run outside the
   - https://ostrails.github.io/assessment-component-metadata-records/benchmark/ERDERA_Onboard.ttl
 ```
 
-- `reach` and `levels` become findings ("does not reach data services";
-  "3 data services have no `dcat:endpointURL`"). The index turns `requires`
-  into SHACL shapes, so one engine checks everything.
+- `reach` and `levels` become the health report's requirements ("does not
+  reach data services"; "3 data services have no `dcat:endpointURL`");
+  `recommends` become recommendations, which do not count. As built they
+  are checked on the stored pages with the findings, not turned into SHACL:
+  cheaper, and the same for every record.
 - `shapes` are conformance packs, as DCAT-AP is one today.
 - `benchmarks` name FAIR Testing Resources benchmarks (or single tests) by
   IRI. The index runs them as 3.4 says and shows their verdict; it does not
   read their rules.
-- The default profile is `reach: dataset` with no requirements and no
-  benchmarks.
+- The default profile expects nothing: no reach, no requirements, no
+  benchmarks (as built, 2026-11-25; the first draft had `reach: dataset`,
+  which the FDP specification does not ask for).
 - The EHDS deployment profile, which is code today, could move to this form
   later.
 
@@ -412,7 +415,7 @@ results instead.
   holders' guide. Done.
 - 15.9 Network profiles: the template, its schema, the settings page, the
   "Expectations" page, a generic default and an ERDERA example that names
-  its Onboarding Benchmark (3.3).
+  its Onboarding Benchmark (3.3). Done.
 - 15.10 Triggering other tools and showing their results (3.4), starting
   with a profile's benchmarks run through FAIR Champion; the call agreed
   with its maintainers first.

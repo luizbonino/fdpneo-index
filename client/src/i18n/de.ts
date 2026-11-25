@@ -643,7 +643,16 @@ export const de: Messages = {
     noSpatial:
       "Noch kein Eintrag gibt seine räumliche Abdeckung in einer Form an, die der Index verorten kann.",
     mapArea: "Kartenausschnitt",
-    mapAreas: { europe: "Europa", all: "Ganze Karte" },
+    mapAreas: {
+      world: "Welt",
+      AF: "Afrika",
+      AS: "Asien",
+      EU: "Europa",
+      NA: "Nordamerika",
+      SA: "Südamerika",
+      OC: "Ozeanien",
+      AN: "Antarktis",
+    },
     sparqlNote:
       "Die SPARQL-Abfragen zählen nach RDF-Typ, daher können ihre Zahlen leicht von dieser Seite abweichen, die den Eintragstypen der Suche folgt.",
   },

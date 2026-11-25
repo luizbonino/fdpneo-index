@@ -641,7 +641,16 @@ export const es: Messages = {
     noSpatial:
       "Todavía ningún registro indica su cobertura espacial de una forma que el índice pueda situar.",
     mapArea: "Zona del mapa",
-    mapAreas: { europe: "Europa", all: "Mapa completo" },
+    mapAreas: {
+      world: "Mundo",
+      AF: "África",
+      AS: "Asia",
+      EU: "Europa",
+      NA: "América del Norte",
+      SA: "América del Sur",
+      OC: "Oceanía",
+      AN: "Antártida",
+    },
     sparqlNote:
       "Las consultas SPARQL cuentan por tipo RDF, así que sus cifras pueden diferir un poco de esta página, que sigue los tipos de registro de la búsqueda.",
   },

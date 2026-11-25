@@ -47,14 +47,29 @@ describe("StatsMap", () => {
     expect(wrapper.findAll(".legend li").length).toBeGreaterThan(1);
   });
 
-  it("offers Europe or the whole map when counts lie on both sides", async () => {
-    const { wrapper } = await setup({ NL: 34, CA: 8 });
-    const choice = wrapper.find(".regions");
-    expect(choice.exists()).toBe(true);
-    // Most of the count is in Europe: the map opens there.
-    expect((wrapper.find("input[value='europe']").element as HTMLInputElement).checked).toBe(true);
+  it("opens on the world and offers each continent that has counts", async () => {
+    const { wrapper } = await setup({ NL: 34, DE: 5, CA: 8, KE: 1 });
+    const options = wrapper.findAll(".regions label").map((l) => l.text());
+    expect(options).toEqual(["World", "Africa 1", "Europe 39", "North America 8"]);
+    expect((wrapper.find("input[value='world']").element as HTMLInputElement).checked).toBe(true);
+    // Choosing a continent draws it at another scale: the Netherlands changes shape.
+    const world = wrapper
+      .findAll("path.counted")
+      .find((p) => p.attributes("aria-label")?.startsWith("Netherlands"))!
+      .attributes("d");
+    await wrapper.find("input[value='EU']").setValue(true);
+    await flushPromises();
+    const europe = wrapper
+      .findAll("path.counted")
+      .find((p) => p.attributes("aria-label")?.startsWith("Netherlands"))!
+      .attributes("d");
+    expect(europe).not.toEqual(world);
+    // One continent: still the world first, with that continent to zoom into.
     const only = await setup({ NL: 3 });
-    expect(only.wrapper.find(".regions").exists()).toBe(false);
+    expect(only.wrapper.findAll(".regions label").map((l) => l.text())).toEqual([
+      "World",
+      "Europe 3",
+    ]);
   });
 
   it("opens a country's link", async () => {

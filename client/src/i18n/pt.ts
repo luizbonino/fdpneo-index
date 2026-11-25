@@ -639,7 +639,16 @@ export const pt: Messages = {
     noSpatial:
       "Ainda nenhum registo indica a sua cobertura espacial numa forma que o índice saiba situar.",
     mapArea: "Área do mapa",
-    mapAreas: { europe: "Europa", all: "Mapa completo" },
+    mapAreas: {
+      world: "Mundo",
+      AF: "África",
+      AS: "Ásia",
+      EU: "Europa",
+      NA: "América do Norte",
+      SA: "América do Sul",
+      OC: "Oceânia",
+      AN: "Antártida",
+    },
     sparqlNote:
       "As consultas SPARQL contam por tipo RDF, pelo que os seus números podem diferir um pouco desta página, que segue os tipos de registo da pesquisa.",
   },

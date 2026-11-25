@@ -641,7 +641,16 @@ export const it: Messages = {
     noSpatial:
       "Nessuna scheda indica ancora la propria copertura spaziale in una forma che l'indice sappia collocare.",
     mapArea: "Area della mappa",
-    mapAreas: { europe: "Europa", all: "Mappa intera" },
+    mapAreas: {
+      world: "Mondo",
+      AF: "Africa",
+      AS: "Asia",
+      EU: "Europa",
+      NA: "America del Nord",
+      SA: "America del Sud",
+      OC: "Oceania",
+      AN: "Antartide",
+    },
     sparqlNote:
       "Le query SPARQL contano per tipo RDF, quindi i loro numeri possono differire leggermente da questa pagina, che segue i tipi di scheda della ricerca.",
   },

@@ -4,21 +4,23 @@
  * dark, on a log scale in at most five steps (counts are skewed: hundreds of
  * records in one country, a handful in the next); countries without any stay
  * neutral. Drawn as SVG from Natural Earth's 1:110m borders (world-atlas,
- * public domain), bundled: no tiles, no requests elsewhere. The view fits the
- * countries that have counts, with a minimum span, so a Europe-only index shows
- * Europe. Hover or keyboard focus shows a country's count; a country can link
+ * public domain), bundled: no tiles, no requests elsewhere. It opens on the
+ * world; each continent with counts can be chosen, with its own count, so an
+ * index whose FDPs are mostly in Europe still shows those elsewhere. Hover or
+ * keyboard focus shows a country's count; a country can link
  * to a search. Small countries the 1:110m borders leave out are in the table,
  * which the page shows under every map.
  */
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import { useRouter, type RouteLocationRaw } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { geoArea, geoBounds, geoNaturalEarth1, geoPath } from "d3-geo";
-import type { Feature, FeatureCollection, Geometry, MultiPoint, Polygon } from "geojson";
+import { geoNaturalEarth1, geoPath } from "d3-geo";
+import type { Feature, FeatureCollection, Geometry, MultiPoint } from "geojson";
 import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import { currentLocale } from "@/i18n";
 import { NUMERIC_TO_ALPHA2 } from "./countryCodes";
+import { CONTINENT_BOX, CONTINENT_OF, CONTINENTS, type Continent } from "./continents";
 
 const props = defineProps<{
   /** Count per ISO 3166-1 alpha-2 code. */
@@ -64,100 +66,50 @@ function nameOf(code: string, fallback = code): string {
   return names.value?.of(code) ?? fallback;
 }
 
-// --- the view: fitted to the countries with counts -------------------------------------
+// --- the view: the world, or one continent that has counts ------------------------------
 
-/** A country's largest landmass: French Guiana does not pull a map of France to America. */
-function mainland(country: Country): Feature {
-  const geometry = country.geometry;
-  if (geometry.type !== "MultiPolygon") return country;
-  const polygons: Polygon[] = geometry.coordinates.map((coordinates) => ({
-    type: "Polygon",
-    coordinates,
-  }));
-  const largest = polygons.reduce((a, b) => (geoArea(b) > geoArea(a) ? b : a));
-  return { type: "Feature", properties: {}, geometry: largest };
-}
-
-// Europe, for the "Europe" view: where most FDPs and most spatial coverage are today.
-const EUROPE = new Set(
-  (
-    "AD AL AT BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GG GI GR HR HU IE IM IS IT JE " +
-    "LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS SE SI SK SM UA VA XK"
-  ).split(" "),
-);
-const total = computed(() => Object.values(props.counts).reduce((a, b) => a + b, 0));
-const inEurope = computed(() =>
-  Object.entries(props.counts).reduce((sum, [code, n]) => sum + (EUROPE.has(code) ? n : 0), 0),
-);
-/** Offer the choice only when there are counts on both sides of it. */
-const regional = computed(() => inEurope.value > 0 && inEurope.value < total.value);
-const region = ref<"all" | "europe">("all");
-watch(
-  [inEurope, total],
-  () => {
-    region.value = regional.value && inEurope.value * 2 >= total.value ? "europe" : "all";
-  },
-  { immediate: true },
-);
+/** Each continent's total, for those with any; Antarctica is not drawn. */
+const continents = computed(() => {
+  const totals = new Map<Continent, number>();
+  for (const [code, n] of Object.entries(props.counts)) {
+    const continent = CONTINENT_OF[code];
+    if (continent && continent !== "AN" && n > 0) {
+      totals.set(continent, (totals.get(continent) ?? 0) + n);
+    }
+  }
+  return CONTINENTS.filter((c) => totals.has(c)).map((c) => ({ key: c, total: totals.get(c)! }));
+});
+const area = ref<"world" | Continent>("world");
+// A continent that no longer has counts (another period, other data): back to the world.
+watch(continents, (list) => {
+  if (area.value !== "world" && !list.some((c) => c.key === area.value)) area.value = "world";
+});
+const format = computed(() => new Intl.NumberFormat(currentLocale()));
 
 const projection = computed(() => {
   const projection = geoNaturalEarth1();
-  if (region.value === "europe" && regional.value) {
-    const box: MultiPoint = {
-      type: "MultiPoint",
-      coordinates: [
-        [-24, 35],
-        [42, 35],
-        [-24, 71],
-        [42, 71],
-      ],
-    };
-    return projection.fitExtent(
-      [
-        [12, 12],
-        [WIDTH - 12, HEIGHT - 12],
-      ],
-      box,
-    );
+  const inset: [[number, number], [number, number]] = [
+    [8, 8],
+    [WIDTH - 8, HEIGHT - 8],
+  ];
+  if (area.value === "world" || !countries.value.length) {
+    return countries.value.length
+      ? projection.fitExtent(inset, { type: "FeatureCollection", features: countries.value })
+      : projection.fitSize([WIDTH, HEIGHT], { type: "Sphere" });
   }
-  const withData = countries.value.filter((c) => c.code && (props.counts[c.code] ?? 0) > 0);
-  const target = (withData.length ? withData : countries.value).map(mainland);
-  if (!target.length) return projection.fitSize([WIDTH, HEIGHT], { type: "Sphere" });
-  const [[west, south], [east, north]] = geoBounds({
-    type: "FeatureCollection",
-    features: target,
-  });
-  // Across the antimeridian, or the whole world: the whole world.
-  if (east < west || east - west > 300) {
-    return projection.fitExtent(
-      [
-        [8, 8],
-        [WIDTH - 8, HEIGHT - 8],
-      ],
-      { type: "FeatureCollection", features: countries.value },
-    );
-  }
-  // At least 40° by 22°, so one small country still shows its neighbours.
-  const lon = (west + east) / 2;
-  const lat = (south + north) / 2;
-  const halfLon = Math.max((east - west) / 2 + 4, 20);
-  const halfLat = Math.max((north - south) / 2 + 3, 11);
+  const [west, south, east, north] = CONTINENT_BOX[area.value];
   const box: MultiPoint = {
     type: "MultiPoint",
     coordinates: [
-      [lon - halfLon, Math.max(-85, lat - halfLat)],
-      [lon + halfLon, Math.min(85, lat + halfLat)],
-      [lon - halfLon, Math.min(85, lat + halfLat)],
-      [lon + halfLon, Math.max(-85, lat - halfLat)],
+      [west, south],
+      [east, south],
+      [west, north],
+      [east, north],
+      [(west + east) / 2, north],
+      [(west + east) / 2, south],
     ],
   };
-  return projection.fitExtent(
-    [
-      [12, 12],
-      [WIDTH - 12, HEIGHT - 12],
-    ],
-    box,
-  );
+  return projection.fitExtent(inset, box);
 });
 const path = computed(() => geoPath(projection.value));
 
@@ -235,10 +187,20 @@ function open(target: RouteLocationRaw | null) {
 
 <template>
   <figure class="stats-map">
-    <div v-if="regional" class="row regions" role="radiogroup" :aria-label="t('stats.mapArea')">
-      <label v-for="r in ['europe', 'all'] as const" :key="r" class="small">
-        <input v-model="region" type="radio" :value="r" />
-        {{ t(`stats.mapAreas.${r}`) }}
+    <div
+      v-if="continents.length"
+      class="row regions"
+      role="radiogroup"
+      :aria-label="t('stats.mapArea')"
+    >
+      <label class="small">
+        <input v-model="area" type="radio" value="world" />
+        {{ t("stats.mapAreas.world") }}
+      </label>
+      <label v-for="c in continents" :key="c.key" class="small">
+        <input v-model="area" type="radio" :value="c.key" />
+        {{ t(`stats.mapAreas.${c.key}`) }}
+        <span class="muted">{{ format.format(c.total) }}</span>
       </label>
     </div>
     <div ref="box" class="frame" @mouseleave="tip = null">
@@ -294,7 +256,8 @@ function open(target: RouteLocationRaw | null) {
   overflow: hidden;
 }
 .regions {
-  gap: var(--fair-space-3);
+  flex-wrap: wrap;
+  gap: var(--fair-space-1) var(--fair-space-4);
 }
 .regions label {
   display: inline-flex;

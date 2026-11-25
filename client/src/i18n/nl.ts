@@ -638,7 +638,16 @@ export const nl: Messages = {
     noSpatial:
       "Nog geen enkel record vermeldt zijn ruimtelijke dekking in een vorm die de index kan plaatsen.",
     mapArea: "Kaartgebied",
-    mapAreas: { europe: "Europa", all: "Hele kaart" },
+    mapAreas: {
+      world: "Wereld",
+      AF: "Afrika",
+      AS: "Azië",
+      EU: "Europa",
+      NA: "Noord-Amerika",
+      SA: "Zuid-Amerika",
+      OC: "Oceanië",
+      AN: "Antarctica",
+    },
     sparqlNote:
       "De SPARQL-query's tellen per RDF-type, dus hun getallen kunnen iets afwijken van deze pagina, die de recordtypen van het zoeken volgt.",
   },

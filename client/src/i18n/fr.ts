@@ -642,7 +642,16 @@ export const fr: Messages = {
     noSpatial:
       "Aucune notice n’indique encore sa couverture spatiale sous une forme que l’index sait placer.",
     mapArea: "Zone de la carte",
-    mapAreas: { europe: "Europe", all: "Carte entière" },
+    mapAreas: {
+      world: "Monde",
+      AF: "Afrique",
+      AS: "Asie",
+      EU: "Europe",
+      NA: "Amérique du Nord",
+      SA: "Amérique du Sud",
+      OC: "Océanie",
+      AN: "Antarctique",
+    },
     sparqlNote:
       "Les requêtes SPARQL comptent par type RDF : leurs chiffres peuvent donc différer légèrement de cette page, qui suit les types de notices de la recherche.",
   },

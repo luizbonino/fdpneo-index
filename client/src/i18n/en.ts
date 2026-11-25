@@ -621,7 +621,16 @@ export const en = {
     recordCount: "No records | One record | {n} records",
     noSpatial: "No record states its spatial coverage in a form the index can place yet.",
     mapArea: "Map area",
-    mapAreas: { europe: "Europe", all: "Whole map" },
+    mapAreas: {
+      world: "World",
+      AF: "Africa",
+      AS: "Asia",
+      EU: "Europe",
+      NA: "North America",
+      SA: "South America",
+      OC: "Oceania",
+      AN: "Antarctica",
+    },
     sparqlNote:
       "The SPARQL queries count by RDF type, so their numbers can differ a little from this page, which follows the search's record types.",
   },

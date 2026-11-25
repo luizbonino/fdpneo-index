@@ -78,6 +78,8 @@ The first release will contain:
   includes the month's database (`GEOIP_MONTH`).
 - **`deploy/compose.proxy.yaml`**: the client joins the Docker network of a
   reverse proxy on the same host, such as Caddy.
+- **Maps** on the Statistics page open on the world, with a view of each
+  continent that has FDPs or records, and its count.
 - **Metadata health** (TASKS 15.8): after every harvest, how far an FDP's
   metadata reaches (FDP → catalogue → dataset → distribution → data
   service), the pages that could not be read by kind, the index's own stops,

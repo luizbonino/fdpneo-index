@@ -19,7 +19,7 @@
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "typecheck": "vue-tsc --build",
-    "generate-api": "openapi-typescript ../server/openapi.json -o src/api/schema.ts",
+    "generate-api": "openapi-typescript ../server/openapi.json -o src/api/schema.ts && prettier --write src/api/schema.ts",
     "test:e2e": "playwright test",
     "grammar": "lezer-generator --typeScript src/sparql/lang/sparql.grammar -o src/sparql/lang/parser.ts"
   },

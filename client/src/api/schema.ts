@@ -4,5968 +4,5992 @@
  */
 
 export interface paths {
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Service Info */
-        get: operations["service_info__get"];
-        put?: never;
-        /**
-         * Ping: announce a running FAIR Data Point
-         * @description Inform about a running FAIR Data Point. It is expected to send pings regularly (at least weekly). There is a rate limit per IP address within a period of time.
-         */
-        post: operations["receive_ping__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/duplicates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * FDPs registered more than once
-         * @description Entries whose URLs differ only in scheme, case, default port or a trailing slash.
-         */
-        get: operations["duplicates_index_admin_duplicates_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Service Info */
+    get: operations["service_info__get"];
+    put?: never;
+    /**
+     * Ping: announce a running FAIR Data Point
+     * @description Inform about a running FAIR Data Point. It is expected to send pings regularly (at least weekly). There is a rate limit per IP address within a period of time.
+     */
+    post: operations["receive_ping__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/duplicates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/duplicates/merge": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Keep one entry per FDP
-         * @description Delete all but one entry of each group, except groups with conflicts.
-         */
-        post: operations["merge_duplicates_index_admin_duplicates_merge_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * FDPs registered more than once
+     * @description Entries whose URLs differ only in scheme, case, default port or a trailing slash.
+     */
+    get: operations["duplicates_index_admin_duplicates_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/duplicates/merge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/ping-webhook": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ping Webhook */
-        post: operations["ping_webhook_index_admin_ping_webhook_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Keep one entry per FDP
+     * @description Delete all but one entry of each group, except groups with conflicts.
+     */
+    post: operations["merge_duplicates_index_admin_duplicates_merge_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/ping-webhook": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/trigger": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Trigger
-         * @description Retrieve (and, for accepted entries, harvest) one FDP now; creates the entry if missing.
-         */
-        post: operations["trigger_index_admin_trigger_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Ping Webhook */
+    post: operations["ping_webhook_index_admin_ping_webhook_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/trigger": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/admin/trigger-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger All */
-        post: operations["trigger_all_index_admin_trigger_all_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Trigger
+     * @description Retrieve (and, for accepted entries, harvest) one FDP now; creates the entry if missing.
+     */
+    post: operations["trigger_index_admin_trigger_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/admin/trigger-all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/catalog": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The catalogue feed
-         * @description Harvested catalogues, datasets, series and services as a DCAT-AP catalogue: one dcat:CatalogRecord per resource (foaf:primaryTopic the resource, dct:source its FDP document, dct:conformsTo the profiles it meets) with the resource's triples as harvested. Paged with Hydra: follow hydra:next.
-         */
-        get: operations["catalog_index_catalog_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Trigger All */
+    post: operations["trigger_all_index_admin_trigger_all_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/catalog": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/catalog/records/{public_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * A catalogue record
-         * @description One dcat:CatalogRecord of the feed with its resource's triples.
-         */
-        get: operations["catalog_record_index_catalog_records__public_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * The catalogue feed
+     * @description Harvested catalogues, datasets, series and services as a DCAT-AP catalogue: one dcat:CatalogRecord per resource (foaf:primaryTopic the resource, dct:source its FDP document, dct:conformsTo the profiles it meets) with the resource's triples as harvested. Paged with Hydra: follow hydra:next.
+     */
+    get: operations["catalog_index_catalog_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/catalog/records/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/checks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Who may check an FDP before registering it */
-        get: operations["check_policy_index_checks_get"];
-        put?: never;
-        /**
-         * Check an FDP before registering it
-         * @description Read the FDP's root metadata and a sample of its pages, as the index would, and
-         *     report their metadata health; nothing is stored, the FDP is not registered.
-         *
-         *     The sample is at most 200 pages, and 5 children of each page. Anyone may check
-         *     when the index accepts FDPs without approval (under the ping's rate limit);
-         *     otherwise administrators, unless the `checkBeforeRegistering` setting says
-         *     otherwise. Poll `GET /index/checks/{id}` for the result: a check takes up to
-         *     two minutes.
-         */
-        post: operations["start_check_index_checks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * A catalogue record
+     * @description One dcat:CatalogRecord of the feed with its resource's triples.
+     */
+    get: operations["catalog_record_index_catalog_records__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/checks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/checks/{check_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** A check's result */
-        get: operations["get_check_index_checks__check_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Who may check an FDP before registering it */
+    get: operations["check_policy_index_checks_get"];
+    put?: never;
+    /**
+     * Check an FDP before registering it
+     * @description Read the FDP's root metadata and a sample of its pages, as the index would, and
+     *     report their metadata health; nothing is stored, the FDP is not registered.
+     *
+     *     The sample is at most 200 pages, and 5 children of each page. Anyone may check
+     *     when the index accepts FDPs without approval (under the ping's rate limit);
+     *     otherwise administrators, unless the `checkBeforeRegistering` setting says
+     *     otherwise. Poll `GET /index/checks/{id}` for the result: a check takes up to
+     *     two minutes.
+     */
+    post: operations["start_check_index_checks_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/checks/{check_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Client Config
-         * @description What the web client needs to know: version, and how administrators sign in.
-         */
-        get: operations["client_config_index_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** A check's result */
+    get: operations["get_check_index_checks__check_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/config": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/entries/{entry_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * An FDP's conformance report
-         * @description Per active pack, the FDP's records by status, and the most frequent problems with an example record.
-         */
-        get: operations["get_entry_report_index_conformance_entries__entry_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Client Config
+     * @description What the web client needs to know: version, and how administrators sign in.
+     */
+    get: operations["client_config_index_config_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/entries/{entry_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/packs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * SHACL profile packs
-         * @description The packs this index can validate harvested records against: bundled (DCAT-AP, HealthDCAT-AP, Health-RI core) and the operator's.
-         */
-        get: operations["list_packs_index_conformance_packs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * An FDP's conformance report
+     * @description Per active pack, the FDP's records by status, and the most frequent problems with an example record.
+     */
+    get: operations["get_entry_report_index_conformance_entries__entry_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/packs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/records": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Records and their conformance
-         * @description Records validated against one pack, most violations first. `path`, `component` and `severity` keep the records with that problem.
-         */
-        get: operations["list_records_index_conformance_records_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * SHACL profile packs
+     * @description The packs this index can validate harvested records against: bundled (DCAT-AP, HealthDCAT-AP, Health-RI core) and the operator's.
+     */
+    get: operations["list_packs_index_conformance_packs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/records": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/records/{public_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * A record's findings
-         * @description One record's results per pack, with up to 50 findings each. The id is the search's resource id.
-         */
-        get: operations["get_record_index_conformance_records__public_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Records and their conformance
+     * @description Records validated against one pack, most violations first. `path`, `component` and `severity` keep the records with that problem.
+     */
+    get: operations["list_records_index_conformance_records_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/records/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Conformance settings
-         * @description The packs validated against, in order, and who may read reports.
-         */
-        get: operations["get_settings_index_conformance_settings_get"];
-        /**
-         * Change the conformance settings
-         * @description Records are validated again in the background where a pack, its files or its kinds changed; results of packs no longer listed are removed.
-         */
-        put: operations["put_settings_index_conformance_settings_put"];
-        post?: never;
-        /**
-         * Reset the conformance settings
-         * @description DCAT-AP 3.0.1 only, reports public.
-         */
-        delete: operations["reset_settings_index_conformance_settings_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * A record's findings
+     * @description One record's results per pack, with up to 50 findings each. The id is the search's resource id.
+     */
+    get: operations["get_record_index_conformance_records__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/conformance/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Validate again
-         * @description Validate every record of one FDP, or of all, again, even if nothing changed.
-         */
-        post: operations["validate_index_conformance_validate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Conformance settings
+     * @description The packs validated against, in order, and who may read reports.
+     */
+    get: operations["get_settings_index_conformance_settings_get"];
+    /**
+     * Change the conformance settings
+     * @description Records are validated again in the background where a pack, its files or its kinds changed; results of packs no longer listed are removed.
+     */
+    put: operations["put_settings_index_conformance_settings_put"];
+    post?: never;
+    /**
+     * Reset the conformance settings
+     * @description DCAT-AP 3.0.1 only, reports public.
+     */
+    delete: operations["reset_settings_index_conformance_settings_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/conformance/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Entries */
-        get: operations["list_entries_index_entries_get"];
-        put?: never;
-        /**
-         * Add an FDP (administrators)
-         * @description Register an FDP and retrieve its root metadata now (addition).
-         *
-         *     The entry gets `permit` (default: the approval policy's) and `options`;
-         *     an existing entry with that URL is updated instead.
-         */
-        post: operations["create_entry_index_entries_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Validate again
+     * @description Validate every record of one FDP, or of all, again, even if nothing changed.
+     */
+    post: operations["validate_index_conformance_validate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** All Entries */
-        get: operations["all_entries_index_entries_all_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Entries */
+    get: operations["list_entries_index_entries_get"];
+    put?: never;
+    /**
+     * Add an FDP (administrators)
+     * @description Register an FDP and retrieve its root metadata now (addition).
+     *
+     *     The entry gets `permit` (default: the approval policy's) and `options`;
+     *     an existing entry with that URL is updated instead.
+     */
+    post: operations["create_entry_index_entries_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Entries Info */
-        get: operations["entries_info_index_entries_info_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** All Entries */
+    get: operations["all_entries_index_entries_all_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Entry */
-        get: operations["get_entry_index_entries__entry_id__get"];
-        /**
-         * Update Entry
-         * @description Change the permit (as in the reference) and the per-FDP options (addition).
-         *
-         *     `options.harvest: false` makes the entry directory only: it stays listed
-         *     and checked, and its harvested metadata is removed from search and SPARQL.
-         *     `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
-         *     harvests again at that interval even when the root metadata did not
-         *     change; it takes effect at the entry's checks.
-         *     `options.harvestPagesPerRun`, `harvestPagesPerWalk` and `harvestOrigins`
-         *     give this FDP its own harvest budget and other sites it may read (TASKS
-         *     15.7); `null` returns one to the deployment's default.
-         */
-        put: operations["update_entry_index_entries__entry_id__put"];
-        post?: never;
-        /** Delete Entry */
-        delete: operations["delete_entry_index_entries__entry_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Entries Info */
+    get: operations["entries_info_index_entries_info_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}/data": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Entry Data
-         * @description The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
-         *
-         *     N-Triples are served as stored; other formats are rendered in a thread (a
-         *     large harvest takes seconds), and anonymous callers are rate limited.
-         */
-        get: operations["entry_data_index_entries__entry_id__data_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Entry */
+    get: operations["get_entry_index_entries__entry_id__get"];
+    /**
+     * Update Entry
+     * @description Change the permit (as in the reference) and the per-FDP options (addition).
+     *
+     *     `options.harvest: false` makes the entry directory only: it stays listed
+     *     and checked, and its harvested metadata is removed from search and SPARQL.
+     *     `options.harvestInterval` (ISO-8601, at least an hour; empty clears it)
+     *     harvests again at that interval even when the root metadata did not
+     *     change; it takes effect at the entry's checks.
+     *     `options.harvestPagesPerRun`, `harvestPagesPerWalk` and `harvestOrigins`
+     *     give this FDP its own harvest budget and other sites it may read (TASKS
+     *     15.7); `null` returns one to the deployment's default.
+     */
+    put: operations["update_entry_index_entries__entry_id__put"];
+    post?: never;
+    /** Delete Entry */
+    delete: operations["delete_entry_index_entries__entry_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/data": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Entry Events */
-        get: operations["entry_events_index_entries__entry_id__events_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Entry Data
+     * @description The harvested metadata of an entry, as Turtle (default), JSON-LD, N-Triples or RDF/XML.
+     *
+     *     N-Triples are served as stored; other formats are rendered in a thread (a
+     *     large harvest takes seconds), and anonymous callers are rate limited.
+     */
+    get: operations["entry_data_index_entries__entry_id__data_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/entries/{entry_id}/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * What the index found in an FDP's metadata
-         * @description Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).
-         *
-         *     Computed from the stored pages after each harvest; null until the first
-         *     report. Who may read it follows the conformance `reports` setting.
-         */
-        get: operations["get_entry_health_index_entries__entry_id__health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Entry Events */
+    get: operations["entry_events_index_entries__entry_id__events_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/events/{event_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Event */
-        get: operations["get_event_index_events__event_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * What the index found in an FDP's metadata
+     * @description Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).
+     *
+     *     Computed from the stored pages after each harvest; null until the first
+     *     report. Who may read it follows the conformance `reports` setting.
+     */
+    get: operations["get_entry_health_index_entries__entry_id__health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/events/{event_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Every FDP's metadata health
-         * @description One row per FDP in the public list with a health report (TASKS 15.8).
-         */
-        get: operations["health_table_index_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Event */
+    get: operations["get_event_index_events__event_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/network-profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** What this index expects of the FDPs it lists */
-        get: operations["get_profile_index_network_profile_get"];
-        /**
-         * Set the network profile (administrators)
-         * @description The health reports are computed again, and the network's SHACL checked.
-         */
-        put: operations["put_profile_index_network_profile_put"];
-        post?: never;
-        /** Return to the installed or generic profile (administrators) */
-        delete: operations["reset_profile_index_network_profile_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Every FDP's metadata health
+     * @description One row per FDP in the public list with a health report (TASKS 15.8).
+     */
+    get: operations["health_table_index_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/network-profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/network-profile/examples": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The bundled network profiles */
-        get: operations["profile_examples_index_network_profile_examples_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** What this index expects of the FDPs it lists */
+    get: operations["get_profile_index_network_profile_get"];
+    /**
+     * Set the network profile (administrators)
+     * @description The health reports are computed again, and the network's SHACL checked.
+     */
+    put: operations["put_profile_index_network_profile_put"];
+    post?: never;
+    /** Return to the installed or generic profile (administrators) */
+    delete: operations["reset_profile_index_network_profile_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/network-profile/examples": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/network-profile/schema": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The network profile template's JSON Schema */
-        get: operations["profile_schema_index_network_profile_schema_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** The bundled network profiles */
+    get: operations["profile_examples_index_network_profile_examples_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/network-profile/schema": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/oai": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * OAI-PMH
-         * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
-         */
-        get: operations["oai_get_index_oai_get"];
-        put?: never;
-        /**
-         * OAI-PMH (form)
-         * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
-         */
-        post: operations["oai_post_index_oai_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** The network profile template's JSON Schema */
+    get: operations["profile_schema_index_network_profile_schema_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/oai": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Register an FDP and check it now
-         * @description Self-service registration (addition): a ping whose retrieval runs before the answer.
-         *
-         *     The same deny list, rate limit and approval policy apply as to `POST /`.
-         *     The answer says whether the FDP's root metadata was found and valid, and
-         *     whether the entry waits for approval.
-         */
-        post: operations["register_index_register_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * OAI-PMH
+     * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
+     */
+    get: operations["oai_get_index_oai_get"];
+    put?: never;
+    /**
+     * OAI-PMH (form)
+     * @description The catalogue feed over OAI-PMH 2.0, metadata format dcat_ap (RDF/XML).
+     */
+    post: operations["oai_post_index_oai_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search the harvested metadata
-         * @description Faceted search over every accepted FDP's harvested DCAT metadata.
-         *
-         *     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
-         *     `license`, `accessRights`, …) is a repeatable parameter; values within a
-         *     field are ORed, fields are ANDed, `!value` excludes. Any property found in
-         *     the harvested metadata is a facet and filter too, named `prop:<IRI>`
-         *     (see `/index/search/properties`). Also `type`, `fdp`,
-         *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
-         *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
-         *     dates; a resource matches when its temporal coverage overlaps the period),
-         *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
-         *     `semantic=off|hybrid|only` where the index has semantic search on (by
-         *     default hybrid: full text and meaning fused; the response says so in
-         *     `semantic`),
-         *     `cursor=*` for keyset paging through every result (then each response's
-         *     `nextCursor`; with `sort=modified|issued|title|harvested`),
-         *     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
-         *     counts groups, `resources` the resources), every hit lists its copies in
-         *     other FDPs (`duplicates`, `duplicateCount`),
-         *     `fdpState=ACTIVE`, `sort`, `page`, `size`,
-         *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
-         *     each hit has `highlight`: its title and description as text segments with
-         *     the matching words marked (`{"text", "match"}`), never HTML.
-         *
-         *     With `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file
-         *     format filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of
-         *     the hits. Paging links are in the `Link`
-         *     header: `first`, `prev` and `next`, or the next cursor.
-         */
-        get: operations["search_index_search_get"];
-        put?: never;
-        /**
-         * Search with structured filters
-         * @description The search of `GET /index/search` with a JSON body, for expert and machine use.
-         *
-         *     `filters` is a list of `{"field" | "path", "op", "value" | "values" | "from"/"to"}`:
-         *     `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
-         *     as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
-         *     `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
-         *     `temporal`; `intersects` on `bbox` (`"minLon,minLat,maxLon,maxLat"` or four values). Filters on one field are ORed, the rest ANDed, as in `GET`.
-         */
-        post: operations["search_structured_index_search_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Register an FDP and check it now
+     * @description Self-service registration (addition): a ping whose retrieval runs before the answer.
+     *
+     *     The same deny list, rate limit and approval policy apply as to `POST /`.
+     *     The answer says whether the FDP's root metadata was found and valid, and
+     *     whether the entry waits for approval.
+     */
+    post: operations["register_index_register_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/facets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * All buckets of one facet
-         * @description All buckets of one facet. With `tree=true` for a field with a hierarchy
-         *     (Subject): `tree`, nested by broader concepts, each counting resources tagged
-         *     with it or anything narrower; filter on them with `<field>^`.
-         */
-        get: operations["facet_index_search_facets_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Search the harvested metadata
+     * @description Faceted search over every accepted FDP's harvested DCAT metadata.
+     *
+     *     Filters: every facet field (`theme`, `keyword`, `publisher`, `format`,
+     *     `license`, `accessRights`, …) is a repeatable parameter; values within a
+     *     field are ORed, fields are ANDed, `!value` excludes. Any property found in
+     *     the harvested metadata is a facet and filter too, named `prop:<IRI>`
+     *     (see `/index/search/properties`). Also `type`, `fdp`,
+     *     `issuedFrom`/`issuedTo`, `modifiedFrom`/`modifiedTo`,
+     *     `harvestedFrom`/`harvestedTo`, `temporalFrom`/`temporalTo` (years, months or
+     *     dates; a resource matches when its temporal coverage overlaps the period),
+     *     `<field>Min`/`<field>Max` for number fields (`recordsMin=1000`),
+     *     `semantic=off|hybrid|only` where the index has semantic search on (by
+     *     default hybrid: full text and meaning fused; the response says so in
+     *     `semantic`),
+     *     `cursor=*` for keyset paging through every result (then each response's
+     *     `nextCursor`; with `sort=modified|issued|title|harvested`),
+     *     `collapse=true` (one hit per group of copies across FDPs; `totalResults`
+     *     counts groups, `resources` the resources), every hit lists its copies in
+     *     other FDPs (`duplicates`, `duplicateCount`),
+     *     `fdpState=ACTIVE`, `sort`, `page`, `size`,
+     *     `facets` (comma-separated, or `none`) and `facetSize`. With `highlight=true`,
+     *     each hit has `highlight`: its title and description as text segments with
+     *     the matching words marked (`{"text", "match"}`), never HTML.
+     *
+     *     With `output` (`jsonld`, `ttl`, `nt`, `rdf`; not `format`, which is the file
+     *     format filter) or an RDF `Accept` header, the results as a `dcat:Catalog` of
+     *     the hits. Paging links are in the `Link`
+     *     header: `first`, `prev` and `next`, or the next cursor.
+     */
+    get: operations["search_index_search_get"];
+    put?: never;
+    /**
+     * Search with structured filters
+     * @description The search of `GET /index/search` with a JSON body, for expert and machine use.
+     *
+     *     `filters` is a list of `{"field" | "path", "op", "value" | "values" | "from"/"to"}`:
+     *     `eq`, `in` and `not` on any field (`prop:<IRI>` for a captured property, or `path`
+     *     as a CURIE); `prefix`, `contains`, `exists`, `missing` on values; `gte`, `lte`,
+     *     `between` on `issued`, `modified`, `harvested` and number fields; `overlaps` on
+     *     `temporal`; `intersects` on `bbox` (`"minLon,minLat,maxLon,maxLat"` or four values). Filters on one field are ORed, the rest ANDed, as in `GET`.
+     */
+    post: operations["search_structured_index_search_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/facets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/labels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Labels for IRIs */
-        get: operations["labels_index_search_labels_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * All buckets of one facet
+     * @description All buckets of one facet. With `tree=true` for a field with a hierarchy
+     *     (Subject): `tree`, nested by broader concepts, each counting resources tagged
+     *     with it or anything narrower; filter on them with `<field>^`.
+     */
+    get: operations["facet_index_search_facets_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/labels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/landing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Counters and facet descriptions */
-        get: operations["landing_index_search_landing_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Labels for IRIs */
+    get: operations["labels_index_search_labels_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/landing": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/opensearch.xml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * OpenSearch description
-         * @description The index as a search engine for browsers and tools (TASKS 9.7): templates for
-         *     the search page, JSON, JSON-LD and Turtle results, and suggestions. Pages count
-         *     from 0 (`pageOffset="0"`). Absolute URLs use `FDPINDEX_PUBLIC_URL` when set.
-         */
-        get: operations["opensearch_index_search_opensearch_xml_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Counters and facet descriptions */
+    get: operations["landing_index_search_landing_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/opensearch.xml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The search profile
-         * @description The profile in use, and the administrator's overlay on the bundled one (if any).
-         */
-        get: operations["profile_index_search_profile_get"];
-        /**
-         * Change the search profile
-         * @description Store an overlay on the bundled profile, as JSON or YAML; every entry is re-projected.
-         *
-         *     Sections: `prefixes`, `fields` (a field by name replaces or adds one,
-         *     `null` removes one), `types`, `normalise` (entries added), `cards`,
-         *     `landing`, `capture`. A new field with `facet: main` or `more` is a
-         *     facet and a filter at once; its counts appear as entries are projected.
-         */
-        put: operations["put_profile_index_search_profile_put"];
-        post?: never;
-        /** Restore the bundled search profile */
-        delete: operations["delete_profile_index_search_profile_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * OpenSearch description
+     * @description The index as a search engine for browsers and tools (TASKS 9.7): templates for
+     *     the search page, JSON, JSON-LD and Turtle results, and suggestions. Pages count
+     *     from 0 (`pageOffset="0"`). Absolute URLs use `FDPINDEX_PUBLIC_URL` when set.
+     */
+    get: operations["opensearch_index_search_opensearch_xml_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/profile/examples/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * A bundled example overlay
-         * @description An overlay to start from (`healthdcat-ap`: HealthDCAT-AP's number, yes/no,
-         *     vocabulary and agent fields): as YAML with its comments, and as an object. Apply
-         *     it with `PUT /index/search/profile`.
-         */
-        get: operations["profile_example_index_search_profile_examples__name__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * The search profile
+     * @description The profile in use, and the administrator's overlay on the bundled one (if any).
+     */
+    get: operations["profile_index_search_profile_get"];
+    /**
+     * Change the search profile
+     * @description Store an overlay on the bundled profile, as JSON or YAML; every entry is re-projected.
+     *
+     *     Sections: `prefixes`, `fields` (a field by name replaces or adds one,
+     *     `null` removes one), `types`, `normalise` (entries added), `cards`,
+     *     `landing`, `capture`. A new field with `facet: main` or `more` is a
+     *     facet and a filter at once; its counts appear as entries are projected.
+     */
+    put: operations["put_profile_index_search_profile_put"];
+    post?: never;
+    /** Restore the bundled search profile */
+    delete: operations["delete_profile_index_search_profile_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/profile/examples/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/properties": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Properties to add as facets
-         * @description Properties of the harvested metadata, with the number of resources that have them.
-         *
-         *     Each is a facet and a filter named `prop:<IRI>` on `/index/search`.
-         *     Values are IRIs and short literals, one step from the resource. Visitors
-         *     see the properties the index offers (`visitors` false: none).
-         */
-        get: operations["properties_index_search_properties_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * A bundled example overlay
+     * @description An overlay to start from (`healthdcat-ap`: HealthDCAT-AP's number, yes/no,
+     *     vocabulary and agent fields): as YAML with its comments, and as an object. Apply
+     *     it with `PUT /index/search/profile`.
+     */
+    get: operations["profile_example_index_search_profile_examples__name__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/properties": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/reindex": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Re-project harvested metadata */
-        post: operations["reindex_index_search_reindex_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Properties to add as facets
+     * @description Properties of the harvested metadata, with the number of resources that have them.
+     *
+     *     Each is a facet and a filter named `prop:<IRI>` on `/index/search`.
+     *     Values are IRIs and short literals, one step from the resource. Visitors
+     *     see the properties the index offers (`visitors` false: none).
+     */
+    get: operations["properties_index_search_properties_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/reindex": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/resources/{public_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * One resource
-         * @description The resource with every value and its parents and children, as JSON.
-         *
-         *     With `format` (`ttl`, `jsonld`, `nt`, `rdf`) or an RDF `Accept` header, the
-         *     triples harvested for it, as the FDP published them.
-         */
-        get: operations["resource_index_search_resources__public_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Re-project harvested metadata */
+    post: operations["reindex_index_search_reindex_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/resources/{public_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/saved": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Saved searches
-         * @description The index's saved searches (TASKS 10.3); featured ones are on the search page.
-         */
-        get: operations["saved_searches_index_search_saved_get"];
-        put?: never;
-        /**
-         * Save a search
-         * @description `query` is the search page's query string (`q=registry&theme=…`); `featured`
-         *     lists it on the search page for everyone.
-         */
-        post: operations["save_search_index_search_saved_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * One resource
+     * @description The resource with every value and its parents and children, as JSON.
+     *
+     *     With `format` (`ttl`, `jsonld`, `nt`, `rdf`) or an RDF `Accept` header, the
+     *     triples harvested for it, as the FDP published them.
+     */
+    get: operations["resource_index_search_resources__public_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/saved": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/saved/{search_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Change a saved search */
-        put: operations["update_saved_search_index_search_saved__search_id__put"];
-        post?: never;
-        /** Delete a saved search */
-        delete: operations["delete_saved_search_index_search_saved__search_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Saved searches
+     * @description The index's saved searches (TASKS 10.3); featured ones are on the search page.
+     */
+    get: operations["saved_searches_index_search_saved_get"];
+    put?: never;
+    /**
+     * Save a search
+     * @description `query` is the search page's query string (`q=registry&theme=…`); `featured`
+     *     lists it on the search page for everyone.
+     */
+    post: operations["save_search_index_search_saved_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/saved/{search_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search settings */
-        get: operations["get_search_settings_index_search_settings_get"];
-        /**
-         * Change the search settings
-         * @description Default facets (order, `main`/`more`/`hidden`, labels) and property facets.
-         *
-         *     `facets` lists profile facets, `fdp` and `prop:<IRI>`; facets left out keep
-         *     the profile's place after the listed ones. `properties.visitors` lets
-         *     visitors add facets on any property, except those in `properties.hidden`.
-         */
-        put: operations["put_search_settings_index_search_settings_put"];
-        post?: never;
-        /** Restore the default search settings */
-        delete: operations["delete_search_settings_index_search_settings_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    /** Change a saved search */
+    put: operations["update_saved_search_index_search_saved__search_id__put"];
+    post?: never;
+    /** Delete a saved search */
+    delete: operations["delete_saved_search_index_search_saved__search_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/sparql": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * A faceted search as SPARQL
-         * @description The SPARQL equivalent of `GET /index/search` with the same parameters.
-         *
-         *     Returns `query` (with `PREFIX` lines), `prefixes` and `approximation`:
-         *     the parts SPARQL can only approximate (`fulltext`, `ranking`, `dates`,
-         *     `harvested`, `type`), also explained in comments at the top of the query.
-         */
-        get: operations["search_sparql_index_search_sparql_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Search settings */
+    get: operations["get_search_settings_index_search_settings_get"];
+    /**
+     * Change the search settings
+     * @description Default facets (order, `main`/`more`/`hidden`, labels) and property facets.
+     *
+     *     `facets` lists profile facets, `fdp` and `prop:<IRI>`; facets left out keep
+     *     the profile's place after the listed ones. `properties.visitors` lets
+     *     visitors add facets on any property, except those in `properties.hidden`.
+     */
+    put: operations["put_search_settings_index_search_settings_put"];
+    post?: never;
+    /** Restore the default search settings */
+    delete: operations["delete_search_settings_index_search_settings_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/sparql": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Projection statistics */
-        get: operations["stats_index_search_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * A faceted search as SPARQL
+     * @description The SPARQL equivalent of `GET /index/search` with the same parameters.
+     *
+     *     Returns `query` (with `PREFIX` lines), `prefixes` and `approximation`:
+     *     the parts SPARQL can only approximate (`fulltext`, `ranking`, `dates`,
+     *     `harvested`, `type`), also explained in comments at the top of the query.
+     */
+    get: operations["search_sparql_index_search_sparql_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/search/suggest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Suggestions while typing
-         * @description Resources whose title contains `q`, and filter values (keywords, subjects, themes,
-         *     publishers) whose name starts with it, with counts. At least two characters.
-         *
-         *     With `output=opensearch`, OpenSearch suggestions for browsers (TASKS 9.7):
-         *     `[q, [texts…]]`.
-         */
-        get: operations["suggest_index_search_suggest_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Projection statistics */
+    get: operations["stats_index_search_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/search/suggest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Settings */
-        get: operations["get_settings_index_settings_get"];
-        /** Update Settings */
-        put: operations["update_settings_index_settings_put"];
-        post?: never;
-        /** Reset Settings */
-        delete: operations["reset_settings_index_settings_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Suggestions while typing
+     * @description Resources whose title contains `q`, and filter values (keywords, subjects, themes,
+     *     publishers) whose name starts with it, with counts. At least two characters.
+     *
+     *     With `output=opensearch`, OpenSearch suggestions for browsers (TASKS 9.7):
+     *     `[q, [texts…]]`.
+     */
+    get: operations["suggest_index_search_suggest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Sparql Get
-         * @description SPARQL 1.1 Protocol query by GET; without ``query``, the service description (Turtle).
-         */
-        get: operations["sparql_get_index_sparql_get"];
-        put?: never;
-        /**
-         * Sparql Post
-         * @description SPARQL 1.1 Protocol query by POST: a form with ``query`` or an ``application/sparql-query`` body.
-         */
-        post: operations["sparql_post_index_sparql_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Settings */
+    get: operations["get_settings_index_settings_get"];
+    /** Update Settings */
+    put: operations["update_settings_index_settings_put"];
+    post?: never;
+    /** Reset Settings */
+    delete: operations["reset_settings_index_settings_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/examples": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Sparql Examples
-         * @description The query library: grouped example queries with typed parameters.
-         */
-        get: operations["sparql_examples_index_sparql_examples_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Sparql Get
+     * @description SPARQL 1.1 Protocol query by GET; without ``query``, the service description (Turtle).
+     */
+    get: operations["sparql_get_index_sparql_get"];
+    put?: never;
+    /**
+     * Sparql Post
+     * @description SPARQL 1.1 Protocol query by POST: a form with ``query`` or an ``application/sparql-query`` body.
+     */
+    post: operations["sparql_post_index_sparql_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/examples/{example_id}/expand": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sparql Example Expand
-         * @description The example's query with its parameters bound, ready to run or edit.
-         */
-        post: operations["sparql_example_expand_index_sparql_examples__example_id__expand_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Sparql Examples
+     * @description The query library: grouped example queries with typed parameters.
+     */
+    get: operations["sparql_examples_index_sparql_examples_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples/{example_id}/expand": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/examples/{example_id}/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sparql Example Run
-         * @description Run an example with parameters; results as for ``/index/sparql``.
-         */
-        post: operations["sparql_example_run_index_sparql_examples__example_id__run_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Example Expand
+     * @description The example's query with its parameters bound, ready to run or edit.
+     */
+    post: operations["sparql_example_expand_index_sparql_examples__example_id__expand_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/examples/{example_id}/run": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/labels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sparql Labels
-         * @description Labels for up to 500 IRIs: bundled vocabularies, the harvested data, and labels
-         *     resolved from the concepts' own vocabularies (ADR-0006).
-         */
-        post: operations["sparql_labels_index_sparql_labels_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Example Run
+     * @description Run an example with parameters; results as for ``/index/sparql``.
+     */
+    post: operations["sparql_example_run_index_sparql_examples__example_id__run_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/labels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/schema": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Sparql Schema
-         * @description Classes and properties in the data (with counts), named graphs, and known prefixes.
-         *
-         *     A property that feeds a field of the search profile carries `fields` (name,
-         *     label, help): the builder names it as the search page does.
-         */
-        get: operations["sparql_schema_index_sparql_schema_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Labels
+     * @description Labels for up to 500 IRIs: bundled vocabularies, the harvested data, and labels
+     *     resolved from the concepts' own vocabularies (ADR-0006).
+     */
+    post: operations["sparql_labels_index_sparql_labels_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/schema": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/suggest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Sparql Suggest
-         * @description Values of ``predicate`` (or instances of ``type``) containing ``q``, with labels and counts.
-         */
-        get: operations["sparql_suggest_index_sparql_suggest_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Sparql Schema
+     * @description Classes and properties in the data (with counts), named graphs, and known prefixes.
+     *
+     *     A property that feeds a field of the search profile carries `fields` (name,
+     *     label, help): the builder names it as the search page does.
+     */
+    get: operations["sparql_schema_index_sparql_schema_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/suggest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/sparql/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sparql Validate
-         * @description Parse and gate a query without running it: ``ok``, or a message with line and column.
-         */
-        post: operations["sparql_validate_index_sparql_validate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Sparql Suggest
+     * @description Values of ``predicate`` (or instances of ``type``) containing ``q``, with labels and counts.
+     */
+    get: operations["sparql_suggest_index_sparql_suggest_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/sparql/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Statistics on the index */
-        get: operations["statistics_index_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Sparql Validate
+     * @description Parse and gate a query without running it: ``ok``, or a message with line and column.
+     */
+    post: operations["sparql_validate_index_sparql_validate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/webhooks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Webhooks */
-        get: operations["list_webhooks_index_webhooks_get"];
-        put?: never;
-        /** Create Webhook */
-        post: operations["create_webhook_index_webhooks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Statistics on the index */
+    get: operations["statistics_index_stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/webhooks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/index/webhooks/{webhook_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Webhook */
-        get: operations["get_webhook_index_webhooks__webhook_id__get"];
-        /** Update Webhook */
-        put: operations["update_webhook_index_webhooks__webhook_id__put"];
-        post?: never;
-        /** Delete Webhook */
-        delete: operations["delete_webhook_index_webhooks__webhook_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Webhooks */
+    get: operations["list_webhooks_index_webhooks_get"];
+    put?: never;
+    /** Create Webhook */
+    post: operations["create_webhook_index_webhooks_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/webhooks/{webhook_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** Get Webhook */
+    get: operations["get_webhook_index_webhooks__webhook_id__get"];
+    /** Update Webhook */
+    put: operations["update_webhook_index_webhooks__webhook_id__put"];
+    post?: never;
+    /** Delete Webhook */
+    delete: operations["delete_webhook_index_webhooks__webhook_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** ActivePack */
-        "ActivePack-Input": {
-            /**
-             * Files
-             * @description Files validated against; null for the pack's defaults
-             */
-            files?: string[] | null;
-            /**
-             * Key
-             * @description id@version, as GET /index/conformance/packs lists it
-             */
-            key: string;
-            /**
-             * Kinds
-             * @description Record kinds validated; null for the pack's own
-             */
-            kinds?: ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
-            /**
-             * Role
-             * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
-             * @default lens
-             * @enum {string}
-             */
-            role: "required" | "lens";
-        };
-        /** ActivePack */
-        "ActivePack-Output": {
-            /**
-             * Files
-             * @description Files validated against; null for the pack's defaults
-             */
-            files: string[] | null;
-            /**
-             * Key
-             * @description id@version, as GET /index/conformance/packs lists it
-             */
-            key: string;
-            /**
-             * Kinds
-             * @description Record kinds validated; null for the pack's own
-             */
-            kinds: ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
-            /**
-             * Role
-             * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
-             * @default lens
-             * @enum {string}
-             */
-            role: "required" | "lens";
-        };
-        /** Chart */
-        Chart: {
-            /** Label */
-            label?: string | null;
-            /**
-             * Type
-             * @default none
-             * @enum {string}
-             */
-            type: "none" | "bar" | "barh" | "pie" | "line";
-            /** Value */
-            value?: string | null;
-        };
-        /** CheckPolicyView */
-        CheckPolicyView: {
-            /**
-             * Allowed
-             * @description Whether the caller may
-             */
-            allowed: boolean;
-            /**
-             * Pages
-             * @description The most pages a check reads
-             */
-            pages: number;
-            /**
-             * Perpage
-             * @description The most children it reads of each page
-             */
-            perPage: number;
-            /**
-             * Who
-             * @description Who may check an FDP before registering it: anyone when the index accepts FDPs without approval, else administrators, unless they chose otherwise
-             * @enum {string}
-             */
-            who: "anyone" | "admins";
-        };
-        /** CheckRegisteredView */
-        CheckRegisteredView: {
-            permit: components["schemas"]["EntryPermit"];
-            /** Uuid */
-            uuid: string;
-        };
-        /**
-         * CheckRequest
-         * @description An FDP to check before registering it (TASKS 15.11).
-         */
-        CheckRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /** CheckRootView */
-        CheckRootView: {
-            /** Error */
-            error: string | null;
-            /**
-             * State
-             * @description VALID, INVALID or UNREACHABLE, as a ping's retrieval says
-             */
-            state: string;
-            /** Title */
-            title: string | null;
-        };
-        /**
-         * CheckView
-         * @description A check of an FDP before registering it (TASKS 15.11). Nothing is stored.
-         */
-        CheckView: {
-            /** Clienturl */
-            clientUrl: string;
-            /** Finishedat */
-            finishedAt: string | null;
-            /** Id */
-            id: string;
-            /** @description The index's entry for this URL, when it has one the caller may see */
-            registered: components["schemas"]["CheckRegisteredView"] | null;
-            /** @description The health of a sample of the FDP's pages; null when the root metadata is not an FDP's */
-            report: components["schemas"]["HealthReportView"] | null;
-            /** @description The root metadata; null while running */
-            root: components["schemas"]["CheckRootView"] | null;
-            /**
-             * Sampledout
-             * @description Pages the sample left out (beyond the children read of each page)
-             * @default 0
-             */
-            sampledOut: number;
-            /** Startedat */
-            startedAt: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "running" | "done";
-        };
-        /** Choice */
-        Choice: {
-            /**
-             * Kind
-             * @default iri
-             * @enum {string}
-             */
-            kind: "iri" | "text";
-            /** Label */
-            label: string;
-            /** Value */
-            value: string;
-        };
-        /** ConformanceSettings */
-        ConformanceSettings: {
-            /**
-             * Declared
-             * @description Check each record against what it declares with dct:conformsTo
-             * @default true
-             */
-            declared: boolean;
-            /** Packs */
-            packs?: components["schemas"]["ActivePack-Input"][];
-            /**
-             * Reports
-             * @description Who may read conformance reports
-             * @default public
-             * @enum {string}
-             */
-            reports: "public" | "admin";
-            surfaces?: components["schemas"]["Surfaces-Input"];
-        };
-        /** ConformanceSettingsView */
-        ConformanceSettingsView: {
-            /**
-             * Declared
-             * @description Check each record against what it declares with dct:conformsTo
-             * @default true
-             */
-            declared: boolean;
-            /** Isdefault */
-            isDefault: boolean;
-            /** Packs */
-            packs: components["schemas"]["ActivePack-Output"][];
-            /**
-             * Reports
-             * @description Who may read conformance reports
-             * @default public
-             * @enum {string}
-             */
-            reports: "public" | "admin";
-            surfaces: components["schemas"]["Surfaces-Output"];
-        };
-        /** ConformanceShare */
-        ConformanceShare: {
-            /** Bykind */
-            byKind: {
-                [key: string]: components["schemas"]["KindShare"];
-            };
-            /**
-             * Checked
-             * @description Records checked against it
-             */
-            checked: number;
-            /**
-             * Conforms
-             * @description Records that meet it
-             */
-            conforms: number;
-            /**
-             * Pack
-             * @description The profile pack's id
-             */
-            pack: string;
-            /**
-             * Role
-             * @description declared: what records name; required: every record is held to it; lens: a profile visitors may look through, not claimed (TASKS 15.13)
-             * @default required
-             * @enum {string}
-             */
-            role: "declared" | "required" | "lens";
-            /**
-             * Specification
-             * @description The specification's IRI
-             */
-            specification: string;
-            /**
-             * Title
-             * @description The pack's title by language
-             */
-            title: {
-                [key: string]: string;
-            };
-            /**
-             * Undeclared
-             * @description For `declared`: records that declare no profile, not counted as checked
-             * @default 0
-             */
-            undeclared: number;
-        };
-        /**
-         * DuplicateGroupView
-         * @description Entries that are one FDP under variants of its URL (fdpindex.urls).
-         */
-        DuplicateGroupView: {
-            /**
-             * Conflicts
-             * @description Why a merge leaves this group to an administrator; empty when it can merge
-             */
-            conflicts: string[];
-            /** @description The entry kept: working, named by the FDP itself, https, oldest */
-            keep: components["schemas"]["EntryView"];
-            /**
-             * Key
-             * @description The URL without scheme, case, default port or trailing slash
-             */
-            key: string;
-            /**
-             * Merged
-             * @description True when this request merged the group
-             */
-            merged: boolean;
-            /**
-             * Remove
-             * @description The entries a merge deletes
-             */
-            remove: components["schemas"]["EntryView"][];
-        };
-        /** EntriesInfoView */
-        EntriesInfoView: {
-            /** Entriescount */
-            entriesCount: {
-                [key: string]: number;
-            };
-        };
-        /** EntryCreateRequest */
-        EntryCreateRequest: {
-            /** Clienturl */
-            clientUrl: string;
-            options?: components["schemas"]["EntryOptionsRequest"] | null;
-            permit?: components["schemas"]["EntryPermit"] | null;
-        };
-        /** EntryDetailView */
-        EntryDetailView: {
-            /** Clienturl */
-            clientUrl: string;
-            currentMetadata: components["schemas"]["RepositoryMetadataView"] | null;
-            /** Events */
-            events: components["schemas"]["EventView"][];
-            /** Expiredtime */
-            expiredTime?: string | null;
-            harvest?: components["schemas"]["HarvestView"] | null;
-            health?: components["schemas"]["HealthView"] | null;
-            /** Lastretrievaltime */
-            lastRetrievalTime: string | null;
-            /** @description Where the FDP is, and which source says so (TASKS 15.4) */
-            location?: components["schemas"]["LocationView"] | null;
-            /** Modificationtime */
-            modificationTime: string;
-            options?: components["schemas"]["EntryOptionsView"] | null;
-            permit: components["schemas"]["EntryPermit"];
-            /** Registrationtime */
-            registrationTime: string;
-            /** State */
-            state: string;
-            /** Uuid */
-            uuid: string;
-        };
-        /**
-         * EntryOptionsRequest
-         * @description Leave a field out to keep it; ``null`` returns a budget or origins to the default.
-         */
-        EntryOptionsRequest: {
-            /** Country */
-            country?: string | null;
-            /** Harvest */
-            harvest?: boolean | null;
-            /** Harvestinterval */
-            harvestInterval?: string | null;
-            /** Harvestorigins */
-            harvestOrigins?: string[] | null;
-            /** Harvestpagesperrun */
-            harvestPagesPerRun?: number | null;
-            /** Harvestpagesperwalk */
-            harvestPagesPerWalk?: number | null;
-        };
-        /**
-         * EntryOptionsView
-         * @description Per-FDP options (TASKS 4.7).
-         */
-        EntryOptionsView: {
-            /**
-             * Country
-             * @description Set by an administrator (ISO 3166-1 alpha-2); first of the sources
-             */
-            country?: string | null;
-            /**
-             * Harvest
-             * @description False: directory only, checked but never harvested
-             */
-            harvest: boolean;
-            /**
-             * Harvestbudgetset
-             * @description True: the pages above were set for this FDP; false: the defaults
-             */
-            harvestBudgetSet: boolean;
-            /**
-             * Harvestinterval
-             * @description Harvest again at least this often (ISO-8601 duration); null: when changed
-             */
-            harvestInterval?: string | null;
-            /**
-             * Harvestorigins
-             * @description Other sites the harvest may read for this FDP
-             */
-            harvestOrigins?: string[];
-            /**
-             * Harvestpagesperrun
-             * @description Pages one harvest run reads before it continues later
-             */
-            harvestPagesPerRun: number;
-            /**
-             * Harvestpagesperwalk
-             * @description Pages one harvest reads over all its runs, at most
-             */
-            harvestPagesPerWalk: number;
-        };
-        /**
-         * EntryPageView
-         * @description A Spring Data ``Page`` as Jackson writes it, minus ``pageable`` / ``sort`` internals.
-         */
-        EntryPageView: {
-            /** Content */
-            content: components["schemas"]["EntryView"][];
-            /** Empty */
-            empty: boolean;
-            /** First */
-            first: boolean;
-            /** Last */
-            last: boolean;
-            /** Number */
-            number: number;
-            /** Numberofelements */
-            numberOfElements: number;
-            /** Size */
-            size: number;
-            /** Totalelements */
-            totalElements: number;
-            /** Totalpages */
-            totalPages: number;
-        };
-        /**
-         * EntryPermit
-         * @enum {string}
-         */
-        EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
-        /** EntryReport */
-        EntryReport: {
-            /** Entry */
-            entry: string;
-            /** Packs */
-            packs: components["schemas"]["PackSummary"][];
-            /**
-             * Problems
-             * @description The most frequent problems, worst first
-             */
-            problems: components["schemas"]["Problem"][];
-            /**
-             * Records
-             * @description Records of the FDP the last validation saw
-             */
-            records: number;
-            /** Validatedat */
-            validatedAt: string | null;
-        };
-        /**
-         * EntryUpdateRequest
-         * @description The reference sends ``permit``; ``options`` is an addition. Either may be left out.
-         */
-        EntryUpdateRequest: {
-            options?: components["schemas"]["EntryOptionsRequest"] | null;
-            permit?: components["schemas"]["EntryPermit"] | null;
-        };
-        /** EntryView */
-        EntryView: {
-            /** Clienturl */
-            clientUrl: string;
-            /** Expiredtime */
-            expiredTime?: string | null;
-            /** Lastretrievaltime */
-            lastRetrievalTime: string | null;
-            /** Modificationtime */
-            modificationTime: string;
-            permit: components["schemas"]["EntryPermit"];
-            /** Registrationtime */
-            registrationTime: string;
-            /** State */
-            state: string;
-            /** Title */
-            title?: string | null;
-            /** Uuid */
-            uuid: string;
-        };
-        /**
-         * EventDetailView
-         * @description Admin-only: the whole event, including recorded exchanges (addition).
-         */
-        EventDetailView: {
-            /** Created */
-            created: string;
-            /** Executed */
-            executed?: string | null;
-            /** Finished */
-            finished: string | null;
-            /** Outcome */
-            outcome?: string | null;
-            /** Payload */
-            payload: {
-                [key: string]: unknown;
-            };
-            /** Relatedto */
-            relatedTo: string | null;
-            /** Triggeredby */
-            triggeredBy: string | null;
-            /** Type */
-            type: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
-        /** EventPageView */
-        EventPageView: {
-            /** Content */
-            content: components["schemas"]["EventDetailView"][];
-            /** Number */
-            number: number;
-            /** Size */
-            size: number;
-            /** Totalelements */
-            totalElements: number;
-        };
-        /** EventView */
-        EventView: {
-            /** Created */
-            created: string;
-            /** Executed */
-            executed?: string | null;
-            /** Finished */
-            finished: string | null;
-            /** Outcome */
-            outcome?: string | null;
-            /** Type */
-            type: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
-        /** Example */
-        Example: {
-            chart?: components["schemas"]["Chart"];
-            /** Description */
-            description: string;
-            /** Group */
-            group: string;
-            /** Id */
-            id: string;
-            /** Parameters */
-            parameters?: components["schemas"]["Parameter"][];
-            /** Query */
-            query: string;
-            /** Title */
-            title: string;
-        };
-        /** ExampleRequest */
-        ExampleRequest: {
-            /** Parameters */
-            parameters?: {
-                [key: string]: string;
-            };
-        };
-        /**
-         * ExpirySettings
-         * @description Entries without contact for a long time (TASKS 4.6).
-         *
-         *     An accepted entry whose last successful retrieval (or, never retrieved, its
-         *     registration) is older than ``after`` is marked expired once: an ``Expiry``
-         *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
-         *     the public directory and the search. A successful retrieval revives it.
-         */
-        "ExpirySettings-Input": {
-            /**
-             * After
-             * Format: duration
-             * @default P90D
-             */
-            after: string;
-            /**
-             * Enabled
-             * @default false
-             */
-            enabled: boolean;
-            /**
-             * Hide
-             * @default false
-             */
-            hide: boolean;
-        };
-        /**
-         * ExpirySettings
-         * @description Entries without contact for a long time (TASKS 4.6).
-         *
-         *     An accepted entry whose last successful retrieval (or, never retrieved, its
-         *     registration) is older than ``after`` is marked expired once: an ``Expiry``
-         *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
-         *     the public directory and the search. A successful retrieval revives it.
-         */
-        "ExpirySettings-Output": {
-            /**
-             * After
-             * @default PT2160H
-             */
-            after: string;
-            /**
-             * Enabled
-             * @default false
-             */
-            enabled: boolean;
-            /**
-             * Hide
-             * @default false
-             */
-            hide: boolean;
-        };
-        /** FacetSetting */
-        "FacetSetting-Input": {
-            /** Help */
-            help?: {
-                [key: string]: string;
-            };
-            /**
-             * Label
-             * @description Per language; overrides
-             */
-            label?: {
-                [key: string]: string;
-            };
-            /**
-             * Name
-             * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
-             */
-            name: string;
-            /**
-             * Placement
-             * @default main
-             * @enum {string}
-             */
-            placement: "main" | "more" | "hidden";
-        };
-        /** FacetSetting */
-        "FacetSetting-Output": {
-            /** Help */
-            help: {
-                [key: string]: string;
-            };
-            /**
-             * Label
-             * @description Per language; overrides
-             */
-            label: {
-                [key: string]: string;
-            };
-            /**
-             * Name
-             * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
-             */
-            name: string;
-            /**
-             * Placement
-             * @default main
-             * @enum {string}
-             */
-            placement: "main" | "more" | "hidden";
-        };
-        /** FdpCountry */
-        FdpCountry: {
-            /**
-             * Bysource
-             * @description How many were placed by each source: admin, stated, publisher, domain, server
-             */
-            bySource: {
-                [key: string]: number;
-            };
-            /**
-             * Country
-             * @description ISO 3166-1 alpha-2
-             */
-            country: string;
-            /** Fdps */
-            fdps: number;
-        };
-        /** FdpCounts */
-        FdpCounts: {
-            /**
-             * Bycountry
-             * @description Where the FDPs are (see the entry's `location`)
-             */
-            byCountry: components["schemas"]["FdpCountry"][];
-            /**
-             * Bystate
-             * @description By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN
-             */
-            byState: {
-                [key: string]: number;
-            };
-            /**
-             * Total
-             * @description FDPs in the public list
-             */
-            total: number;
-            /**
-             * Unplaced
-             * @description FDPs no source could place
-             */
-            unplaced: number;
-        };
-        /**
-         * FilterRequest
-         * @description One structured filter of `POST /index/search` (search design §2.1).
-         */
-        FilterRequest: {
-            /**
-             * Field
-             * @description A profile field, or prop:<IRI>
-             */
-            field?: string | null;
-            /** From */
-            from?: string | number | null;
-            /**
-             * Op
-             * @enum {string}
-             */
-            op: "eq" | "in" | "not" | "prefix" | "contains" | "exists" | "missing" | "gte" | "lte" | "between" | "overlaps" | "intersects";
-            /**
-             * Path
-             * @description A property, as a CURIE or IRI, or a two-step path the profile captures (dcat:contactPoint/vcard:hasEmail)
-             */
-            path?: string | null;
-            /** To */
-            to?: string | number | null;
-            /** Value */
-            value?: string | number | null;
-            /** Values */
-            values?: string[] | null;
-        };
-        /** FindingView */
-        FindingView: {
-            /** Component */
-            component: string;
-            /** Focusnode */
-            focusNode: string;
-            /** Message */
-            message: string | null;
-            /** Path */
-            path: string | null;
-            /**
-             * Severity
-             * @enum {string}
-             */
-            severity: "violation" | "warning" | "info";
-            /** Shape */
-            shape: string | null;
-            /** Value */
-            value: string | null;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** HarvestView */
-        HarvestView: {
-            /** Harvestedat */
-            harvestedAt: string | null;
-            /** Nodes */
-            nodes: number;
-            /** @description Set while a harvest continues over several runs */
-            walk?: components["schemas"]["HarvestWalkView"] | null;
-        };
-        /**
-         * HarvestWalkView
-         * @description A harvest walk with runs still to go (TASKS 15.7).
-         */
-        HarvestWalkView: {
-            /**
-             * Continuesat
-             * @description When the next run starts; null while one runs
-             */
-            continuesAt: string | null;
-            /**
-             * Pages
-             * @description Pages asked for so far, read or failed
-             */
-            pages: number;
-            /**
-             * Queued
-             * @description Pages found and not yet read
-             */
-            queued: number;
-            /**
-             * Running
-             * @description A run is reading the FDP now
-             * @default false
-             */
-            running: boolean;
-            /**
-             * Runs
-             * @description Runs so far
-             */
-            runs: number;
-            /** Startedat */
-            startedAt: string;
-        };
-        /** HealthCheckSettings */
-        "HealthCheckSettings-Input": {
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /**
-             * Failurethreshold
-             * @default 3
-             */
-            failureThreshold: number;
-            /**
-             * Interval
-             * Format: duration
-             * @default P1D
-             */
-            interval: string;
-            /** Permits */
-            permits?: components["schemas"]["EntryPermit"][];
-            /**
-             * Reharvestonchange
-             * @default true
-             */
-            reharvestOnChange: boolean;
-        };
-        /** HealthCheckSettings */
-        "HealthCheckSettings-Output": {
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /**
-             * Failurethreshold
-             * @default 3
-             */
-            failureThreshold: number;
-            /**
-             * Interval
-             * @default PT24H
-             */
-            interval: string;
-            /** Permits */
-            permits: components["schemas"]["EntryPermit"][];
-            /**
-             * Reharvestonchange
-             * @default true
-             */
-            reharvestOnChange: boolean;
-        };
-        /** HealthFailureView */
-        HealthFailureView: {
-            /** Count */
-            count: number;
-            /**
-             * Examples
-             * @description Up to five pages that failed
-             */
-            examples: string[];
-            /**
-             * Kind
-             * @description not-found, http-error, timeout, unparsable, too-large, refused, other
-             */
-            kind: string;
-        };
-        /** HealthFindingView */
-        HealthFindingView: {
-            /**
-             * Code
-             * @description Findings: linked-only-in-dcat, not-linked-in-dcat, catalog-without-datasets. Notes: dataset-without-distributions, distribution-without-access
-             */
-            code: string;
-            /** Count */
-            count: number;
-            /**
-             * Examples
-             * @description Up to five pages or links it concerns
-             */
-            examples: string[];
-        };
-        /**
-         * HealthReportView
-         * @description A health report: of an FDP's stored pages, or of a check's sample.
-         */
-        HealthReportView: {
-            /**
-             * Complete
-             * @description The harvest read every page it found; null when not known
-             */
-            complete: boolean | null;
-            /**
-             * Failures
-             * @description Pages that could not be read, by kind
-             */
-            failures: components["schemas"]["HealthFailureView"][];
-            /**
-             * Findings
-             * @description Against the FDP specification, which every FDP claims
-             */
-            findings: components["schemas"]["HealthFindingView"][];
-            /**
-             * Levels
-             * @description Pages per level, and other pages
-             */
-            levels: {
-                [key: string]: number;
-            };
-            /**
-             * Notes
-             * @description DCAT's advice, which an FDP never promised: not counted in status
-             */
-            notes?: components["schemas"]["HealthFindingView"][];
-            /**
-             * Pages
-             * @description Pages the index holds
-             */
-            pages: number;
-            /**
-             * Reach
-             * @description The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read
-             */
-            reach: string | null;
-            /**
-             * Recommendations
-             * @description The network profile's recommendations the FDP does not follow
-             */
-            recommendations?: components["schemas"]["HealthRequirementView"][];
-            /**
-             * Requirements
-             * @description The network profile's requirements the FDP does not meet
-             */
-            requirements?: components["schemas"]["HealthRequirementView"][];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "fine" | "findings" | "unreadable";
-            /** @description Where the index stopped by its own rules */
-            stops: components["schemas"]["HealthStopsView"];
-        };
-        /**
-         * HealthRequirementView
-         * @description What the network profile asks that the FDP does not meet (TASKS 15.9).
-         */
-        HealthRequirementView: {
-            /**
-             * Code
-             * @description reach: does not reach the level; requires/recommends: records at the level lack the property; vocabulary: values not from the expected vocabulary
-             * @enum {string}
-             */
-            code: "reach" | "requires" | "recommends" | "vocabulary";
-            /**
-             * Count
-             * @description Records concerned (1 for reach)
-             */
-            count: number;
-            /** Examples */
-            examples: string[];
-            /** Level */
-            level: string | null;
-            /**
-             * Property
-             * @description The property's IRI
-             */
-            property: string | null;
-        };
-        /** HealthRow */
-        HealthRow: {
-            /** Clienturl */
-            clientUrl: string;
-            /**
-             * Failed
-             * @description Pages that could not be read
-             */
-            failed: number;
-            /**
-             * Findings
-             * @description Count per finding
-             */
-            findings: {
-                [key: string]: number;
-            };
-            /**
-             * Levels
-             * @description Pages per level
-             */
-            levels: {
-                [key: string]: number;
-            };
-            /**
-             * Notes
-             * @description Count per note
-             */
-            notes?: {
-                [key: string]: number;
-            };
-            /** Pages */
-            pages: number;
-            /**
-             * Partial
-             * @description The harvest stopped at its page limit
-             */
-            partial: boolean;
-            /** Reach */
-            reach: string | null;
-            /**
-             * Requirements
-             * @description The network profile's requirements it does not meet
-             * @default 0
-             */
-            requirements: number;
-            /** Status */
-            status: string;
-            /** Title */
-            title: string | null;
-            /** Uuid */
-            uuid: string;
-        };
-        /** HealthStopsView */
-        HealthStopsView: {
-            /**
-             * Atceiling
-             * @description The harvest stopped at its page limit
-             */
-            atCeiling: boolean;
-            /**
-             * Offsite
-             * @description Links to other sites, not followed
-             */
-            offSite: number;
-            /**
-             * Unread
-             * @description Pages left unread when the harvest stopped at its limit
-             */
-            unread: number;
-        };
-        /**
-         * HealthSummary
-         * @description Metadata health over the FDPs in the public list that have a report (TASKS 15.8).
-         */
-        HealthSummary: {
-            /**
-             * Byreach
-             * @description By the deepest level reached: none, fdp, catalog, dataset, distribution, dataservice
-             */
-            byReach: {
-                [key: string]: number;
-            };
-            /**
-             * Bystatus
-             * @description fine, findings, unreadable
-             */
-            byStatus: {
-                [key: string]: number;
-            };
-            /**
-             * Failures
-             * @description Pages that failed, by kind
-             */
-            failures: {
-                [key: string]: number;
-            };
-            /**
-             * Fdps
-             * @description FDPs with a health report
-             */
-            fdps: number;
-            /**
-             * Findings
-             * @description FDPs with each finding
-             */
-            findings: {
-                [key: string]: number;
-            };
-            /**
-             * Missingrequirements
-             * @description FDPs that miss a requirement of the network profile (TASKS 15.9)
-             * @default 0
-             */
-            missingRequirements: number;
-            /**
-             * Notes
-             * @description FDPs with each note (DCAT's advice)
-             */
-            notes?: {
-                [key: string]: number;
-            };
-            /**
-             * Partial
-             * @description FDPs whose harvest stopped at its page limit
-             */
-            partial: number;
-        };
-        /**
-         * HealthView
-         * @description Liveness-check state of an entry (addition, ADR-0004).
-         */
-        HealthView: {
-            /** Consecutivefailures */
-            consecutiveFailures: number;
-            /** Lastsuccesstime */
-            lastSuccessTime: string | null;
-            /** Nextchecktime */
-            nextCheckTime: string | null;
-        };
-        /** History */
-        History: {
-            /**
-             * Days
-             * @description Every day from the first snapshot, ISO dates
-             */
-            days: string[];
-            /**
-             * Series
-             * @description Per metric (fdps.total, fdps.state.ACTIVE, records.total, records.kind.dataset, conformance.<pack>.conforms …), one value per day; null where no snapshot was taken
-             */
-            series: {
-                [key: string]: (number | null)[];
-            };
-        };
-        /** IndexSettings */
-        IndexSettings: {
-            /** Autopermit */
-            autoPermit: boolean;
-            /**
-             * Checkbeforeregistering
-             * @default policy
-             * @enum {string}
-             */
-            checkBeforeRegistering: "policy" | "anyone" | "admins";
-            expiry?: components["schemas"]["ExpirySettings-Input"];
-            healthCheck?: components["schemas"]["HealthCheckSettings-Input"];
-            ping: components["schemas"]["PingSettings-Input"];
-            retrieval: components["schemas"]["RetrievalSettings-Input"];
-            /**
-             * Verifiedpermit
-             * @default false
-             */
-            verifiedPermit: boolean;
-        };
-        /** IndexSettingsView */
-        IndexSettingsView: {
-            /** Autopermit */
-            autoPermit: boolean;
-            /**
-             * Checkbeforeregistering
-             * @default policy
-             * @enum {string}
-             */
-            checkBeforeRegistering: "policy" | "anyone" | "admins";
-            expiry: components["schemas"]["ExpirySettings-Output"];
-            healthCheck: components["schemas"]["HealthCheckSettings-Output"];
-            /** Isdefault */
-            isDefault: boolean;
-            ping: components["schemas"]["PingSettings-Output"];
-            retrieval: components["schemas"]["RetrievalSettings-Output"];
-            /**
-             * Verifiedpermit
-             * @default false
-             */
-            verifiedPermit: boolean;
-        };
-        /** KindShare */
-        KindShare: {
-            /** Checked */
-            checked: number;
-            /** Conforms */
-            conforms: number;
-        };
-        /** LabelsRequest */
-        LabelsRequest: {
-            /** Iris */
-            iris: string[];
-        };
-        /** LargestFdp */
-        LargestFdp: {
-            /** Clienturl */
-            clientUrl: string;
-            /**
-             * Records
-             * @description Its records, the FDP's own description left out
-             */
-            records: number;
-            /** Title */
-            title: string | null;
-            /** Uuid */
-            uuid: string;
-        };
-        /** LevelRules */
-        LevelRules: {
-            /**
-             * Recommends
-             * @description Properties a record at this level should have
-             */
-            recommends?: string[];
-            /**
-             * Requires
-             * @description Properties every record at this level must have
-             */
-            requires?: string[];
-            /**
-             * Types
-             * @description Classes (CURIEs or IRIs) that count as this level, besides DCAT's
-             */
-            types?: string[];
-        };
-        /** Library */
-        Library: {
-            /** Examples */
-            examples: components["schemas"]["Example"][];
-            /** Groups */
-            groups: string[];
-        };
-        /** LocationView */
-        LocationView: {
-            /**
-             * Country
-             * @description ISO 3166-1 alpha-2
-             */
-            country: string;
-            /**
-             * Source
-             * @description admin: set by an administrator; stated: the FDP's r3d:country; publisher: its publisher's ROR record; domain: its country-code domain; server: where the server that answered is (IP geolocation, after redirects)
-             * @enum {string}
-             */
-            source: "admin" | "stated" | "publisher" | "domain" | "server";
-        };
-        /**
-         * MetadataHealthView
-         * @description What the index found in an FDP's metadata (TASKS 15.8).
-         */
-        MetadataHealthView: {
-            /**
-             * Complete
-             * @description The harvest read every page it found; null when not known
-             */
-            complete: boolean | null;
-            /** Computedat */
-            computedAt: string;
-            /**
-             * Failures
-             * @description Pages that could not be read, by kind
-             */
-            failures: components["schemas"]["HealthFailureView"][];
-            /**
-             * Findings
-             * @description Against the FDP specification, which every FDP claims
-             */
-            findings: components["schemas"]["HealthFindingView"][];
-            /**
-             * Harvestedat
-             * @description When the harvest it describes ended
-             */
-            harvestedAt: string | null;
-            /**
-             * Levels
-             * @description Pages per level, and other pages
-             */
-            levels: {
-                [key: string]: number;
-            };
-            /**
-             * Notes
-             * @description DCAT's advice, which an FDP never promised: not counted in status
-             */
-            notes?: components["schemas"]["HealthFindingView"][];
-            /**
-             * Pages
-             * @description Pages the index holds
-             */
-            pages: number;
-            /**
-             * Reach
-             * @description The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read
-             */
-            reach: string | null;
-            /**
-             * Recommendations
-             * @description The network profile's recommendations the FDP does not follow
-             */
-            recommendations?: components["schemas"]["HealthRequirementView"][];
-            /**
-             * Requirements
-             * @description The network profile's requirements the FDP does not meet
-             */
-            requirements?: components["schemas"]["HealthRequirementView"][];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "fine" | "findings" | "unreadable";
-            /** @description Where the index stopped by its own rules */
-            stops: components["schemas"]["HealthStopsView"];
-        };
-        /** MonthCount */
-        MonthCount: {
-            /** Count */
-            count: number;
-            /**
-             * Month
-             * @description YYYY-MM
-             */
-            month: string;
-        };
-        /** NetworkInfo */
-        NetworkInfo: {
-            /**
-             * Contact
-             * @description A mailto: or web address
-             */
-            contact?: string | null;
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /**
-             * Homepage
-             * @description Where people read about it
-             */
-            homepage?: string | null;
-            /**
-             * Name
-             * @description The network's name
-             * @default
-             */
-            name: string;
-        };
-        /**
-         * NetworkProfile
-         * @description What a network expects of the FDPs it lists (TASKS 15.9).
-         */
-        NetworkProfile: {
-            /**
-             * Benchmarks
-             * @description FAIR Testing Resources benchmarks, run outside the index (TASKS 15.10)
-             */
-            benchmarks?: string[];
-            /** Levels */
-            levels?: {
-                [key: string]: components["schemas"]["LevelRules"];
-            };
-            network?: components["schemas"]["NetworkInfo"];
-            /**
-             * Prefixes
-             * @description CURIE prefixes beyond the common ones
-             */
-            prefixes?: {
-                [key: string]: string;
-            };
-            /**
-             * Profile
-             * @description The template's version
-             * @default 1
-             * @constant
-             */
-            profile: 1;
-            /**
-             * Reach
-             * @description The level an FDP's metadata must reach; none: no level
-             */
-            reach?: ("fdp" | "catalog" | "dataset" | "distribution" | "dataservice") | null;
-            /**
-             * Shapes
-             * @description SHACL documents every record is checked against (as the check 'network')
-             */
-            shapes?: string[];
-            /**
-             * Vocabularies
-             * @description Per property, the IRI prefixes its values must start with
-             */
-            vocabularies?: {
-                [key: string]: string[];
-            };
-        };
-        /** NetworkProfileUpdate */
-        NetworkProfileUpdate: {
-            /**
-             * Source
-             * @description The profile as YAML
-             */
-            source: string;
-        };
-        /** NetworkProfileView */
-        NetworkProfileView: {
-            /**
-             * Empty
-             * @description It expects nothing beyond the FDP specification
-             */
-            empty: boolean;
-            /**
-             * Isdefault
-             * @description The installed or generic profile, not an edit
-             */
-            isDefault: boolean;
-            profile: components["schemas"]["NetworkProfile"];
-            /**
-             * Source
-             * @description The profile as YAML, as it was written
-             */
-            source: string;
-        };
-        /** PackFileView */
-        PackFileView: {
-            /**
-             * Enabled
-             * @description Validated against by default
-             */
-            enabled: boolean;
-            /** Note */
-            note: string;
-            /** Path */
-            path: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "shapes" | "vocabulary" | "recommended" | "deprecated" | "range";
-            /** Variant */
-            variant: string | null;
-        };
-        /** PackResult */
-        PackResult: {
-            /** Error */
-            error: string | null;
-            /** Findings */
-            findings: components["schemas"]["FindingView"][];
-            /** Infos */
-            infos: number;
-            /** Pack */
-            pack: string;
-            /**
-             * Role
-             * @default required
-             * @enum {string}
-             */
-            role: "declared" | "required" | "lens";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
-            /** Validatedat */
-            validatedAt: string | null;
-            /** Variant */
-            variant: string | null;
-            /** Version */
-            version: string;
-            /** Violations */
-            violations: number;
-            /** Warnings */
-            warnings: number;
-        };
-        /** PackSummary */
-        PackSummary: {
-            /**
-             * Claimed
-             * @description Records that declare this pack's specification themselves
-             * @default 0
-             */
-            claimed: number;
-            /** Conforms */
-            conforms: number;
-            /**
-             * Errors
-             * @description Records that could not be validated
-             */
-            errors: number;
-            /** Lastvalidated */
-            lastValidated: string | null;
-            /**
-             * Pack
-             * @description The pack's id
-             */
-            pack: string;
-            /**
-             * Records
-             * @description Records validated against the pack
-             */
-            records: number;
-            /**
-             * Role
-             * @description declared, required or lens
-             * @default required
-             * @enum {string}
-             */
-            role: "declared" | "required" | "lens";
-            /**
-             * Undeclared
-             * @description For `declared`: records that declare no profile
-             * @default 0
-             */
-            undeclared: number;
-            /**
-             * Unresolved
-             * @description For `declared`: records whose declared profiles could not be resolved
-             * @default 0
-             */
-            unresolved: number;
-            /** Version */
-            version: string | null;
-            /**
-             * Violations
-             * @description Records with violations
-             */
-            violations: number;
-            /**
-             * Withwarnings
-             * @description Records with warnings
-             */
-            withWarnings: number;
-        };
-        /** PackView */
-        PackView: {
-            /** Appliesto */
-            appliesTo: ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[];
-            /** Bundled */
-            bundled: boolean;
-            /** Description */
-            description: {
-                [key: string]: string;
-            };
-            /** Files */
-            files: components["schemas"]["PackFileView"][];
-            /** Id */
-            id: string;
-            /**
-             * Key
-             * @description id@version
-             */
-            key: string;
-            /** Licence */
-            licence: string;
-            /** Publisher */
-            publisher: string;
-            /**
-             * Source
-             * @description Where the shapes come from
-             */
-            source: string | null;
-            /**
-             * Specification
-             * @description The specification's IRI (dct:conformsTo)
-             */
-            specification: string;
-            /** Title */
-            title: {
-                [key: string]: string;
-            };
-            /** Variantproperty */
-            variantProperty: string | null;
-            /**
-             * Variants
-             * @description Shapes chosen per record, by `variantProperty`
-             */
-            variants: string[];
-            /** Version */
-            version: string;
-        };
-        /** Parameter */
-        Parameter: {
-            /** Choices */
-            choices?: components["schemas"]["Choice"][];
-            /** Default */
-            default?: string | null;
-            /** Help */
-            help?: string | null;
-            /** Label */
-            label: string;
-            /** Name */
-            name: string;
-            /** Placeholder */
-            placeholder?: string | null;
-            /**
-             * Required
-             * @default false
-             */
-            required: boolean;
-            suggest?: components["schemas"]["Suggest"] | null;
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "iri" | "text" | "date" | "integer" | "choice" | "fdp";
-        };
-        /** PingRequest */
-        PingRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /** PingSettings */
-        "PingSettings-Input": {
-            /** Denylist */
-            denyList: string[];
-            /**
-             * Ratelimitduration
-             * Format: duration
-             */
-            rateLimitDuration: string;
-            /** Ratelimithits */
-            rateLimitHits: number;
-            /**
-             * Validduration
-             * Format: duration
-             */
-            validDuration: string;
-        };
-        /** PingSettings */
-        "PingSettings-Output": {
-            /** Denylist */
-            denyList: string[];
-            /** Ratelimitduration */
-            rateLimitDuration: string;
-            /** Ratelimithits */
-            rateLimitHits: number;
-            /** Validduration */
-            validDuration: string;
-        };
-        /** Problem */
-        Problem: {
-            /**
-             * Component
-             * @description The SHACL constraint component, without its namespace
-             */
-            component: string;
-            /**
-             * Example
-             * @description IRI of a record with this problem
-             */
-            example: string;
-            /** Findings */
-            findings: number;
-            /**
-             * Message
-             * @description One of the messages of this problem
-             */
-            message: string | null;
-            /** Pack */
-            pack: string;
-            /** Path */
-            path: string | null;
-            /**
-             * Records
-             * @description Records with this problem
-             */
-            records: number;
-            /**
-             * Severity
-             * @enum {string}
-             */
-            severity: "violation" | "warning" | "info";
-            /** Shape */
-            shape: string | null;
-        };
-        /** ProfileExample */
-        ProfileExample: {
-            /** Name */
-            name: string;
-            /** Source */
-            source: string;
-            /** Title */
-            title: string;
-        };
-        /** PropertySettings */
-        "PropertySettings-Input": {
-            /**
-             * Hidden
-             * @description Property IRIs, or namespaces ending in / or #, visitors may not use
-             */
-            hidden?: string[];
-            /**
-             * Visitors
-             * @description Visitors may add facets on any captured property
-             * @default true
-             */
-            visitors: boolean;
-        };
-        /** PropertySettings */
-        "PropertySettings-Output": {
-            /**
-             * Hidden
-             * @description Property IRIs, or namespaces ending in / or #, visitors may not use
-             */
-            hidden: string[];
-            /**
-             * Visitors
-             * @description Visitors may add facets on any captured property
-             * @default true
-             */
-            visitors: boolean;
-        };
-        /** RecordCountry */
-        RecordCountry: {
-            /**
-             * Country
-             * @description ISO 3166-1 alpha-2
-             */
-            country: string;
-            /**
-             * Records
-             * @description Records whose dct:spatial names this country or a region in it
-             */
-            records: number;
-            /**
-             * Values
-             * @description The spatial IRIs seen for it (at most 50)
-             */
-            values: string[];
-        };
-        /** RecordCounts */
-        RecordCounts: {
-            /**
-             * Bycountry
-             * @description Where the data is about: dct:spatial by country
-             */
-            byCountry: components["schemas"]["RecordCountry"][];
-            /**
-             * Bykind
-             * @description By kind: fdp, catalog, dataset, series, service …
-             */
-            byKind: {
-                [key: string]: number;
-            };
-            /**
-             * Total
-             * @description Records visitors find in search
-             */
-            total: number;
-        };
-        /** RecordPage */
-        RecordPage: {
-            /** Items */
-            items: components["schemas"]["RecordStatus"][];
-            /** Total */
-            total: number;
-        };
-        /** RecordReport */
-        RecordReport: {
-            /** Entry */
-            entry: string;
-            /** Iri */
-            iri: string;
-            /** Kind */
-            kind: string;
-            /** Publicid */
-            publicId: string;
-            /** Results */
-            results: components["schemas"]["PackResult"][];
-            /** Title */
-            title: string | null;
-        };
-        /** RecordStatus */
-        RecordStatus: {
-            /** Infos */
-            infos: number;
-            /** Iri */
-            iri: string;
-            /** Kind */
-            kind: string;
-            /** Pack */
-            pack: string;
-            /** Publicid */
-            publicId: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
-            /** Title */
-            title: string | null;
-            /** Validatedat */
-            validatedAt: string | null;
-            /** Variant */
-            variant: string | null;
-            /** Violations */
-            violations: number;
-            /** Warnings */
-            warnings: number;
-        };
-        /** RegisterRequest */
-        RegisterRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /**
-         * RegistrationView
-         * @description The outcome of registering an FDP (TASKS 4.9).
-         */
-        RegistrationView: {
-            /** Clienturl */
-            clientUrl: string;
-            /** Error */
-            error: string | null;
-            /** Newentry */
-            newEntry: boolean;
-            permit: components["schemas"]["EntryPermit"];
-            /**
-             * Retrieved
-             * @description False when a retrieval ran shortly before; the state is that one's
-             */
-            retrieved: boolean;
-            /** State */
-            state: string;
-            /** Title */
-            title: string | null;
-            /** Uuid */
-            uuid: string;
-        };
-        /** ReindexRequest */
-        ReindexRequest: {
-            /**
-             * Entry
-             * @description One entry; all when absent
-             */
-            entry?: string | null;
-        };
-        /** RepositoryMetadataView */
-        RepositoryMetadataView: {
-            /** Metadata */
-            metadata: {
-                [key: string]: string;
-            };
-            /** Metadataversion */
-            metadataVersion: number;
-            /** Repositoryuri */
-            repositoryUri: string | null;
-        };
-        /** RetrievalSettings */
-        "RetrievalSettings-Input": {
-            /**
-             * Ratelimitwait
-             * Format: duration
-             */
-            rateLimitWait: string;
-            /**
-             * Timeout
-             * Format: duration
-             */
-            timeout: string;
-        };
-        /** RetrievalSettings */
-        "RetrievalSettings-Output": {
-            /** Ratelimitwait */
-            rateLimitWait: string;
-            /** Timeout */
-            timeout: string;
-        };
-        /** SavedSearch */
-        SavedSearch: {
-            /**
-             * Createdat
-             * Format: date-time
-             */
-            createdAt: string;
-            /** Createdby */
-            createdBy: string;
-            /** Description */
-            description?: string | null;
-            /** Descriptions */
-            descriptions?: {
-                [key: string]: string;
-            };
-            /**
-             * Featured
-             * @default false
-             */
-            featured: boolean;
-            /** Id */
-            id: string;
-            /**
-             * Query
-             * @description The search page's query string, such as q=registry&theme=…
-             */
-            query: string;
-            /** Title */
-            title: string;
-            /** Titles */
-            titles?: {
-                [key: string]: string;
-            };
-            /**
-             * Updatedat
-             * Format: date-time
-             */
-            updatedAt: string;
-        };
-        /** SavedSearchRequest */
-        SavedSearchRequest: {
-            /** Description */
-            description?: string | null;
-            /** Descriptions */
-            descriptions?: {
-                [key: string]: string;
-            };
-            /**
-             * Featured
-             * @default false
-             */
-            featured: boolean;
-            /**
-             * Query
-             * @description The search page's query string, such as q=registry&theme=…
-             */
-            query: string;
-            /** Title */
-            title: string;
-            /** Titles */
-            titles?: {
-                [key: string]: string;
-            };
-        };
-        /**
-         * SearchRequest
-         * @description The body of `POST /index/search`: the same search as `GET`, with typed filters.
-         */
-        SearchRequest: {
-            /**
-             * Collapse
-             * @default false
-             */
-            collapse: boolean;
-            /** Cursor */
-            cursor?: string | null;
-            /**
-             * Facetsize
-             * @default 20
-             */
-            facetSize: number;
-            /** Facets */
-            facets?: string[] | null;
-            /** Fdp */
-            fdp?: string[];
-            /** Fdpstate */
-            fdpState?: string | null;
-            /** Filters */
-            filters?: components["schemas"]["FilterRequest"][];
-            /**
-             * Highlight
-             * @default false
-             */
-            highlight: boolean;
-            /** Lang */
-            lang?: string | null;
-            /**
-             * Page
-             * @default 0
-             */
-            page: number;
-            /**
-             * Q
-             * @default
-             */
-            q: string;
-            /**
-             * Semantic
-             * @default
-             * @enum {string}
-             */
-            semantic: "" | "off" | "hybrid" | "only";
-            /**
-             * Size
-             * @default 20
-             */
-            size: number;
-            /**
-             * Sort
-             * @default
-             */
-            sort: string;
-            /** Types */
-            types?: string[];
-        };
-        /** SearchSettings */
-        SearchSettings: {
-            /**
-             * Defaultlanguage
-             * @description Language of titles and labels when the reader's browser states none
-             * @default en
-             */
-            defaultLanguage: string;
-            /**
-             * Facets
-             * @description Ordered facets; null for the profile's
-             */
-            facets?: components["schemas"]["FacetSetting-Input"][] | null;
-            /**
-             * Languagefallback
-             * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
-             */
-            languageFallback?: string[];
-            properties?: components["schemas"]["PropertySettings-Input"];
-        };
-        /** SearchSettingsView */
-        SearchSettingsView: {
-            /**
-             * Defaultlanguage
-             * @description Language of titles and labels when the reader's browser states none
-             * @default en
-             */
-            defaultLanguage: string;
-            /**
-             * Facets
-             * @description Ordered facets; null for the profile's
-             */
-            facets: components["schemas"]["FacetSetting-Output"][] | null;
-            /** Isdefault */
-            isDefault: boolean;
-            /**
-             * Languagefallback
-             * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
-             */
-            languageFallback: string[];
-            properties: components["schemas"]["PropertySettings-Output"];
-        };
-        /** ServiceInfo */
-        ServiceInfo: {
-            /** Auth */
-            auth: ("oidc" | "token")[];
-            /** Catalog */
-            catalog?: {
-                [key: string]: string;
-            } | null;
-            /** Name */
-            name: string;
-            /** Oidc */
-            oidc: {
-                [key: string]: string | null;
-            } | null;
-            /** Ping */
-            ping: string;
-            /** Search */
-            search?: {
-                [key: string]: unknown;
-            } | null;
-            /** Sparql */
-            sparql?: {
-                [key: string]: unknown;
-            } | null;
-            /** Version */
-            version: string;
-        };
-        /** Statistics */
-        Statistics: {
-            /**
-             * Conformance
-             * @description Null when conformance is off or its reports are for administrators
-             */
-            conformance: components["schemas"]["ConformanceShare"][] | null;
-            fdps: components["schemas"]["FdpCounts"];
-            /** Generatedat */
-            generatedAt: string;
-            /** @description Null when health reports are for administrators */
-            health?: components["schemas"]["HealthSummary"] | null;
-            history: components["schemas"]["History"];
-            /**
-             * Largest
-             * @description The FDPs with most records
-             */
-            largest: components["schemas"]["LargestFdp"][];
-            /**
-             * Published
-             * @description Datasets by year of dct:issued
-             */
-            published: components["schemas"]["YearCount"][];
-            /** @description Null when search is off */
-            records: components["schemas"]["RecordCounts"] | null;
-            /**
-             * Registrations
-             * @description FDPs in the public list by month of registration
-             */
-            registrations: components["schemas"]["MonthCount"][];
-        };
-        /**
-         * Suggest
-         * @description Where the UI gets suggestions: objects of a predicate, or instances of a class.
-         */
-        Suggest: {
-            /** Predicate */
-            predicate?: string | null;
-            /** Type */
-            type?: string | null;
-        };
-        /**
-         * Surfaces
-         * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
-         *     null for everything (design §5). Administrators always see everything.
-         */
-        "Surfaces-Input": {
-            /**
-             * Directory
-             * @description The public FDP list: FDPs whose own description conforms
-             */
-            directory?: string | null;
-            /**
-             * Feed
-             * @description The catalogue feed (TASKS 11.5)
-             */
-            feed?: string | null;
-            /**
-             * Search
-             * @description Search hits and facets
-             */
-            search?: string | null;
-            /**
-             * Sparql
-             * @description The SPARQL store's harvested graphs
-             */
-            sparql?: string | null;
-        };
-        /**
-         * Surfaces
-         * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
-         *     null for everything (design §5). Administrators always see everything.
-         */
-        "Surfaces-Output": {
-            /**
-             * Directory
-             * @description The public FDP list: FDPs whose own description conforms
-             */
-            directory: string | null;
-            /**
-             * Feed
-             * @description The catalogue feed (TASKS 11.5)
-             */
-            feed: string | null;
-            /**
-             * Search
-             * @description Search hits and facets
-             */
-            search: string | null;
-            /**
-             * Sparql
-             * @description The SPARQL store's harvested graphs
-             */
-            sparql: string | null;
-        };
-        /** TriggerRequest */
-        TriggerRequest: {
-            /** Clienturl */
-            clientUrl: string;
-        };
-        /** ValidateAccepted */
-        ValidateAccepted: {
-            /**
-             * Scheduled
-             * @description `all` or the FDP's uuid
-             */
-            scheduled: string;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-        };
-        /**
-         * WebhookEvent
-         * @enum {string}
-         */
-        WebhookEvent: "NewEntry" | "IncomingPing" | "EntryValid" | "EntryInvalid" | "EntryUnreachable" | "AdminTrigger" | "WebhookPing" | "EntryExpired";
-        /** WebhookRequest */
-        WebhookRequest: {
-            /**
-             * Allentries
-             * @default true
-             */
-            allEntries: boolean;
-            /**
-             * Allevents
-             * @default false
-             */
-            allEvents: boolean;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /** Entries */
-            entries?: string[];
-            /** Events */
-            events?: components["schemas"]["WebhookEvent"][];
-            /** Payloadurl */
-            payloadUrl: string;
-            /** Secret */
-            secret?: string | null;
-        };
-        /** WebhookView */
-        WebhookView: {
-            /** Allentries */
-            allEntries: boolean;
-            /** Allevents */
-            allEvents: boolean;
-            /** Createdat */
-            createdAt: string;
-            /** Enabled */
-            enabled: boolean;
-            /** Entries */
-            entries: string[];
-            /** Events */
-            events: components["schemas"]["WebhookEvent"][];
-            /** Hassecret */
-            hasSecret: boolean;
-            /** Payloadurl */
-            payloadUrl: string;
-            /** Updatedat */
-            updatedAt: string;
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-        };
-        /** YearCount */
-        YearCount: {
-            /** Count */
-            count: number;
-            /** Year */
-            year: number;
-        };
-        /** ValidateRequest */
-        fdpindex__api__conformance__ValidateRequest: {
-            /**
-             * Entry
-             * @description One FDP; all when absent
-             */
-            entry?: string | null;
-        };
-        /** ValidateRequest */
-        fdpindex__api__sparql__ValidateRequest: {
-            /** Query */
-            query: string;
-        };
+  schemas: {
+    /** ActivePack */
+    "ActivePack-Input": {
+      /**
+       * Files
+       * @description Files validated against; null for the pack's defaults
+       */
+      files?: string[] | null;
+      /**
+       * Key
+       * @description id@version, as GET /index/conformance/packs lists it
+       */
+      key: string;
+      /**
+       * Kinds
+       * @description Record kinds validated; null for the pack's own
+       */
+      kinds?:
+        ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+      /**
+       * Role
+       * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
+       * @default lens
+       * @enum {string}
+       */
+      role: "required" | "lens";
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /** ActivePack */
+    "ActivePack-Output": {
+      /**
+       * Files
+       * @description Files validated against; null for the pack's defaults
+       */
+      files: string[] | null;
+      /**
+       * Key
+       * @description id@version, as GET /index/conformance/packs lists it
+       */
+      key: string;
+      /**
+       * Kinds
+       * @description Record kinds validated; null for the pack's own
+       */
+      kinds:
+        ("fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other")[] | null;
+      /**
+       * Role
+       * @description required: every record is held to it, shown as this index's requirement; lens: visitors may look through it, worded as not claimed (TASKS 15.13)
+       * @default lens
+       * @enum {string}
+       */
+      role: "required" | "lens";
+    };
+    /** Chart */
+    Chart: {
+      /** Label */
+      label?: string | null;
+      /**
+       * Type
+       * @default none
+       * @enum {string}
+       */
+      type: "none" | "bar" | "barh" | "pie" | "line";
+      /** Value */
+      value?: string | null;
+    };
+    /** CheckPolicyView */
+    CheckPolicyView: {
+      /**
+       * Allowed
+       * @description Whether the caller may
+       */
+      allowed: boolean;
+      /**
+       * Pages
+       * @description The most pages a check reads
+       */
+      pages: number;
+      /**
+       * Perpage
+       * @description The most children it reads of each page
+       */
+      perPage: number;
+      /**
+       * Who
+       * @description Who may check an FDP before registering it: anyone when the index accepts FDPs without approval, else administrators, unless they chose otherwise
+       * @enum {string}
+       */
+      who: "anyone" | "admins";
+    };
+    /** CheckRegisteredView */
+    CheckRegisteredView: {
+      permit: components["schemas"]["EntryPermit"];
+      /** Uuid */
+      uuid: string;
+    };
+    /**
+     * CheckRequest
+     * @description An FDP to check before registering it (TASKS 15.11).
+     */
+    CheckRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /** CheckRootView */
+    CheckRootView: {
+      /** Error */
+      error: string | null;
+      /**
+       * State
+       * @description VALID, INVALID or UNREACHABLE, as a ping's retrieval says
+       */
+      state: string;
+      /** Title */
+      title: string | null;
+    };
+    /**
+     * CheckView
+     * @description A check of an FDP before registering it (TASKS 15.11). Nothing is stored.
+     */
+    CheckView: {
+      /** Clienturl */
+      clientUrl: string;
+      /** Finishedat */
+      finishedAt: string | null;
+      /** Id */
+      id: string;
+      /** @description The index's entry for this URL, when it has one the caller may see */
+      registered: components["schemas"]["CheckRegisteredView"] | null;
+      /** @description The health of a sample of the FDP's pages; null when the root metadata is not an FDP's */
+      report: components["schemas"]["HealthReportView"] | null;
+      /** @description The root metadata; null while running */
+      root: components["schemas"]["CheckRootView"] | null;
+      /**
+       * Sampledout
+       * @description Pages the sample left out (beyond the children read of each page)
+       * @default 0
+       */
+      sampledOut: number;
+      /** Startedat */
+      startedAt: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "running" | "done";
+    };
+    /** Choice */
+    Choice: {
+      /**
+       * Kind
+       * @default iri
+       * @enum {string}
+       */
+      kind: "iri" | "text";
+      /** Label */
+      label: string;
+      /** Value */
+      value: string;
+    };
+    /** ConformanceSettings */
+    ConformanceSettings: {
+      /**
+       * Declared
+       * @description Check each record against what it declares with dct:conformsTo
+       * @default true
+       */
+      declared: boolean;
+      /** Packs */
+      packs?: components["schemas"]["ActivePack-Input"][];
+      /**
+       * Reports
+       * @description Who may read conformance reports
+       * @default public
+       * @enum {string}
+       */
+      reports: "public" | "admin";
+      surfaces?: components["schemas"]["Surfaces-Input"];
+    };
+    /** ConformanceSettingsView */
+    ConformanceSettingsView: {
+      /**
+       * Declared
+       * @description Check each record against what it declares with dct:conformsTo
+       * @default true
+       */
+      declared: boolean;
+      /** Isdefault */
+      isDefault: boolean;
+      /** Packs */
+      packs: components["schemas"]["ActivePack-Output"][];
+      /**
+       * Reports
+       * @description Who may read conformance reports
+       * @default public
+       * @enum {string}
+       */
+      reports: "public" | "admin";
+      surfaces: components["schemas"]["Surfaces-Output"];
+    };
+    /** ConformanceShare */
+    ConformanceShare: {
+      /** Bykind */
+      byKind: {
+        [key: string]: components["schemas"]["KindShare"];
+      };
+      /**
+       * Checked
+       * @description Records checked against it
+       */
+      checked: number;
+      /**
+       * Conforms
+       * @description Records that meet it
+       */
+      conforms: number;
+      /**
+       * Pack
+       * @description The profile pack's id
+       */
+      pack: string;
+      /**
+       * Role
+       * @description declared: what records name; required: every record is held to it; lens: a profile visitors may look through, not claimed (TASKS 15.13)
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
+      /**
+       * Specification
+       * @description The specification's IRI
+       */
+      specification: string;
+      /**
+       * Title
+       * @description The pack's title by language
+       */
+      title: {
+        [key: string]: string;
+      };
+      /**
+       * Undeclared
+       * @description For `declared`: records that declare no profile, not counted as checked
+       * @default 0
+       */
+      undeclared: number;
+    };
+    /**
+     * DuplicateGroupView
+     * @description Entries that are one FDP under variants of its URL (fdpindex.urls).
+     */
+    DuplicateGroupView: {
+      /**
+       * Conflicts
+       * @description Why a merge leaves this group to an administrator; empty when it can merge
+       */
+      conflicts: string[];
+      /** @description The entry kept: working, named by the FDP itself, https, oldest */
+      keep: components["schemas"]["EntryView"];
+      /**
+       * Key
+       * @description The URL without scheme, case, default port or trailing slash
+       */
+      key: string;
+      /**
+       * Merged
+       * @description True when this request merged the group
+       */
+      merged: boolean;
+      /**
+       * Remove
+       * @description The entries a merge deletes
+       */
+      remove: components["schemas"]["EntryView"][];
+    };
+    /** EntriesInfoView */
+    EntriesInfoView: {
+      /** Entriescount */
+      entriesCount: {
+        [key: string]: number;
+      };
+    };
+    /** EntryCreateRequest */
+    EntryCreateRequest: {
+      /** Clienturl */
+      clientUrl: string;
+      options?: components["schemas"]["EntryOptionsRequest"] | null;
+      permit?: components["schemas"]["EntryPermit"] | null;
+    };
+    /** EntryDetailView */
+    EntryDetailView: {
+      /** Clienturl */
+      clientUrl: string;
+      currentMetadata: components["schemas"]["RepositoryMetadataView"] | null;
+      /** Events */
+      events: components["schemas"]["EventView"][];
+      /** Expiredtime */
+      expiredTime?: string | null;
+      harvest?: components["schemas"]["HarvestView"] | null;
+      health?: components["schemas"]["HealthView"] | null;
+      /** Lastretrievaltime */
+      lastRetrievalTime: string | null;
+      /** @description Where the FDP is, and which source says so (TASKS 15.4) */
+      location?: components["schemas"]["LocationView"] | null;
+      /** Modificationtime */
+      modificationTime: string;
+      options?: components["schemas"]["EntryOptionsView"] | null;
+      permit: components["schemas"]["EntryPermit"];
+      /** Registrationtime */
+      registrationTime: string;
+      /** State */
+      state: string;
+      /** Uuid */
+      uuid: string;
+    };
+    /**
+     * EntryOptionsRequest
+     * @description Leave a field out to keep it; ``null`` returns a budget or origins to the default.
+     */
+    EntryOptionsRequest: {
+      /** Country */
+      country?: string | null;
+      /** Harvest */
+      harvest?: boolean | null;
+      /** Harvestinterval */
+      harvestInterval?: string | null;
+      /** Harvestorigins */
+      harvestOrigins?: string[] | null;
+      /** Harvestpagesperrun */
+      harvestPagesPerRun?: number | null;
+      /** Harvestpagesperwalk */
+      harvestPagesPerWalk?: number | null;
+    };
+    /**
+     * EntryOptionsView
+     * @description Per-FDP options (TASKS 4.7).
+     */
+    EntryOptionsView: {
+      /**
+       * Country
+       * @description Set by an administrator (ISO 3166-1 alpha-2); first of the sources
+       */
+      country?: string | null;
+      /**
+       * Harvest
+       * @description False: directory only, checked but never harvested
+       */
+      harvest: boolean;
+      /**
+       * Harvestbudgetset
+       * @description True: the pages above were set for this FDP; false: the defaults
+       */
+      harvestBudgetSet: boolean;
+      /**
+       * Harvestinterval
+       * @description Harvest again at least this often (ISO-8601 duration); null: when changed
+       */
+      harvestInterval?: string | null;
+      /**
+       * Harvestorigins
+       * @description Other sites the harvest may read for this FDP
+       */
+      harvestOrigins?: string[];
+      /**
+       * Harvestpagesperrun
+       * @description Pages one harvest run reads before it continues later
+       */
+      harvestPagesPerRun: number;
+      /**
+       * Harvestpagesperwalk
+       * @description Pages one harvest reads over all its runs, at most
+       */
+      harvestPagesPerWalk: number;
+    };
+    /**
+     * EntryPageView
+     * @description A Spring Data ``Page`` as Jackson writes it, minus ``pageable`` / ``sort`` internals.
+     */
+    EntryPageView: {
+      /** Content */
+      content: components["schemas"]["EntryView"][];
+      /** Empty */
+      empty: boolean;
+      /** First */
+      first: boolean;
+      /** Last */
+      last: boolean;
+      /** Number */
+      number: number;
+      /** Numberofelements */
+      numberOfElements: number;
+      /** Size */
+      size: number;
+      /** Totalelements */
+      totalElements: number;
+      /** Totalpages */
+      totalPages: number;
+    };
+    /**
+     * EntryPermit
+     * @enum {string}
+     */
+    EntryPermit: "PENDING" | "ACCEPTED" | "REJECTED";
+    /** EntryReport */
+    EntryReport: {
+      /** Entry */
+      entry: string;
+      /** Packs */
+      packs: components["schemas"]["PackSummary"][];
+      /**
+       * Problems
+       * @description The most frequent problems, worst first
+       */
+      problems: components["schemas"]["Problem"][];
+      /**
+       * Records
+       * @description Records of the FDP the last validation saw
+       */
+      records: number;
+      /** Validatedat */
+      validatedAt: string | null;
+    };
+    /**
+     * EntryUpdateRequest
+     * @description The reference sends ``permit``; ``options`` is an addition. Either may be left out.
+     */
+    EntryUpdateRequest: {
+      options?: components["schemas"]["EntryOptionsRequest"] | null;
+      permit?: components["schemas"]["EntryPermit"] | null;
+    };
+    /** EntryView */
+    EntryView: {
+      /** Clienturl */
+      clientUrl: string;
+      /** Expiredtime */
+      expiredTime?: string | null;
+      /** Lastretrievaltime */
+      lastRetrievalTime: string | null;
+      /** Modificationtime */
+      modificationTime: string;
+      permit: components["schemas"]["EntryPermit"];
+      /** Registrationtime */
+      registrationTime: string;
+      /** State */
+      state: string;
+      /** Title */
+      title?: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /**
+     * EventDetailView
+     * @description Admin-only: the whole event, including recorded exchanges (addition).
+     */
+    EventDetailView: {
+      /** Created */
+      created: string;
+      /** Executed */
+      executed?: string | null;
+      /** Finished */
+      finished: string | null;
+      /** Outcome */
+      outcome?: string | null;
+      /** Payload */
+      payload: {
+        [key: string]: unknown;
+      };
+      /** Relatedto */
+      relatedTo: string | null;
+      /** Triggeredby */
+      triggeredBy: string | null;
+      /** Type */
+      type: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+    /** EventPageView */
+    EventPageView: {
+      /** Content */
+      content: components["schemas"]["EventDetailView"][];
+      /** Number */
+      number: number;
+      /** Size */
+      size: number;
+      /** Totalelements */
+      totalElements: number;
+    };
+    /** EventView */
+    EventView: {
+      /** Created */
+      created: string;
+      /** Executed */
+      executed?: string | null;
+      /** Finished */
+      finished: string | null;
+      /** Outcome */
+      outcome?: string | null;
+      /** Type */
+      type: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+    /** Example */
+    Example: {
+      chart?: components["schemas"]["Chart"];
+      /** Description */
+      description: string;
+      /** Group */
+      group: string;
+      /** Id */
+      id: string;
+      /** Parameters */
+      parameters?: components["schemas"]["Parameter"][];
+      /** Query */
+      query: string;
+      /** Title */
+      title: string;
+    };
+    /** ExampleRequest */
+    ExampleRequest: {
+      /** Parameters */
+      parameters?: {
+        [key: string]: string;
+      };
+    };
+    /**
+     * ExpirySettings
+     * @description Entries without contact for a long time (TASKS 4.6).
+     *
+     *     An accepted entry whose last successful retrieval (or, never retrieved, its
+     *     registration) is older than ``after`` is marked expired once: an ``Expiry``
+     *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
+     *     the public directory and the search. A successful retrieval revives it.
+     */
+    "ExpirySettings-Input": {
+      /**
+       * After
+       * Format: duration
+       * @default P90D
+       */
+      after: string;
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Hide
+       * @default false
+       */
+      hide: boolean;
+    };
+    /**
+     * ExpirySettings
+     * @description Entries without contact for a long time (TASKS 4.6).
+     *
+     *     An accepted entry whose last successful retrieval (or, never retrieved, its
+     *     registration) is older than ``after`` is marked expired once: an ``Expiry``
+     *     event and an ``EntryExpired`` webhook. With ``hide``, expired entries leave
+     *     the public directory and the search. A successful retrieval revives it.
+     */
+    "ExpirySettings-Output": {
+      /**
+       * After
+       * @default PT2160H
+       */
+      after: string;
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Hide
+       * @default false
+       */
+      hide: boolean;
+    };
+    /** FacetSetting */
+    "FacetSetting-Input": {
+      /** Help */
+      help?: {
+        [key: string]: string;
+      };
+      /**
+       * Label
+       * @description Per language; overrides
+       */
+      label?: {
+        [key: string]: string;
+      };
+      /**
+       * Name
+       * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
+       */
+      name: string;
+      /**
+       * Placement
+       * @default main
+       * @enum {string}
+       */
+      placement: "main" | "more" | "hidden";
+    };
+    /** FacetSetting */
+    "FacetSetting-Output": {
+      /** Help */
+      help: {
+        [key: string]: string;
+      };
+      /**
+       * Label
+       * @description Per language; overrides
+       */
+      label: {
+        [key: string]: string;
+      };
+      /**
+       * Name
+       * @description A facet field of the profile, `fdp`, or `prop:<IRI>`
+       */
+      name: string;
+      /**
+       * Placement
+       * @default main
+       * @enum {string}
+       */
+      placement: "main" | "more" | "hidden";
+    };
+    /** FdpCountry */
+    FdpCountry: {
+      /**
+       * Bysource
+       * @description How many were placed by each source: admin, stated, publisher, domain, server
+       */
+      bySource: {
+        [key: string]: number;
+      };
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /** Fdps */
+      fdps: number;
+    };
+    /** FdpCounts */
+    FdpCounts: {
+      /**
+       * Bycountry
+       * @description Where the FDPs are (see the entry's `location`)
+       */
+      byCountry: components["schemas"]["FdpCountry"][];
+      /**
+       * Bystate
+       * @description By state: ACTIVE, INACTIVE, UNREACHABLE, INVALID, UNKNOWN
+       */
+      byState: {
+        [key: string]: number;
+      };
+      /**
+       * Total
+       * @description FDPs in the public list
+       */
+      total: number;
+      /**
+       * Unplaced
+       * @description FDPs no source could place
+       */
+      unplaced: number;
+    };
+    /**
+     * FilterRequest
+     * @description One structured filter of `POST /index/search` (search design §2.1).
+     */
+    FilterRequest: {
+      /**
+       * Field
+       * @description A profile field, or prop:<IRI>
+       */
+      field?: string | null;
+      /** From */
+      from?: string | number | null;
+      /**
+       * Op
+       * @enum {string}
+       */
+      op:
+        | "eq"
+        | "in"
+        | "not"
+        | "prefix"
+        | "contains"
+        | "exists"
+        | "missing"
+        | "gte"
+        | "lte"
+        | "between"
+        | "overlaps"
+        | "intersects";
+      /**
+       * Path
+       * @description A property, as a CURIE or IRI, or a two-step path the profile captures (dcat:contactPoint/vcard:hasEmail)
+       */
+      path?: string | null;
+      /** To */
+      to?: string | number | null;
+      /** Value */
+      value?: string | number | null;
+      /** Values */
+      values?: string[] | null;
+    };
+    /** FindingView */
+    FindingView: {
+      /** Component */
+      component: string;
+      /** Focusnode */
+      focusNode: string;
+      /** Message */
+      message: string | null;
+      /** Path */
+      path: string | null;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "violation" | "warning" | "info";
+      /** Shape */
+      shape: string | null;
+      /** Value */
+      value: string | null;
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /** HarvestView */
+    HarvestView: {
+      /** Harvestedat */
+      harvestedAt: string | null;
+      /** Nodes */
+      nodes: number;
+      /** @description Set while a harvest continues over several runs */
+      walk?: components["schemas"]["HarvestWalkView"] | null;
+    };
+    /**
+     * HarvestWalkView
+     * @description A harvest walk with runs still to go (TASKS 15.7).
+     */
+    HarvestWalkView: {
+      /**
+       * Continuesat
+       * @description When the next run starts; null while one runs
+       */
+      continuesAt: string | null;
+      /**
+       * Pages
+       * @description Pages asked for so far, read or failed
+       */
+      pages: number;
+      /**
+       * Queued
+       * @description Pages found and not yet read
+       */
+      queued: number;
+      /**
+       * Running
+       * @description A run is reading the FDP now
+       * @default false
+       */
+      running: boolean;
+      /**
+       * Runs
+       * @description Runs so far
+       */
+      runs: number;
+      /** Startedat */
+      startedAt: string;
+    };
+    /** HealthCheckSettings */
+    "HealthCheckSettings-Input": {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Failurethreshold
+       * @default 3
+       */
+      failureThreshold: number;
+      /**
+       * Interval
+       * Format: duration
+       * @default P1D
+       */
+      interval: string;
+      /** Permits */
+      permits?: components["schemas"]["EntryPermit"][];
+      /**
+       * Reharvestonchange
+       * @default true
+       */
+      reharvestOnChange: boolean;
+    };
+    /** HealthCheckSettings */
+    "HealthCheckSettings-Output": {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Failurethreshold
+       * @default 3
+       */
+      failureThreshold: number;
+      /**
+       * Interval
+       * @default PT24H
+       */
+      interval: string;
+      /** Permits */
+      permits: components["schemas"]["EntryPermit"][];
+      /**
+       * Reharvestonchange
+       * @default true
+       */
+      reharvestOnChange: boolean;
+    };
+    /** HealthFailureView */
+    HealthFailureView: {
+      /** Count */
+      count: number;
+      /**
+       * Examples
+       * @description Up to five pages that failed
+       */
+      examples: string[];
+      /**
+       * Kind
+       * @description not-found, http-error, timeout, unparsable, too-large, refused, other
+       */
+      kind: string;
+    };
+    /** HealthFindingView */
+    HealthFindingView: {
+      /**
+       * Code
+       * @description Findings: linked-only-in-dcat, not-linked-in-dcat, catalog-without-datasets. Notes: dataset-without-distributions, distribution-without-access
+       */
+      code: string;
+      /** Count */
+      count: number;
+      /**
+       * Examples
+       * @description Up to five pages or links it concerns
+       */
+      examples: string[];
+    };
+    /**
+     * HealthReportView
+     * @description A health report: of an FDP's stored pages, or of a check's sample.
+     */
+    HealthReportView: {
+      /**
+       * Complete
+       * @description The harvest read every page it found; null when not known
+       */
+      complete: boolean | null;
+      /**
+       * Failures
+       * @description Pages that could not be read, by kind
+       */
+      failures: components["schemas"]["HealthFailureView"][];
+      /**
+       * Findings
+       * @description Against the FDP specification, which every FDP claims
+       */
+      findings: components["schemas"]["HealthFindingView"][];
+      /**
+       * Levels
+       * @description Pages per level, and other pages
+       */
+      levels: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description DCAT's advice, which an FDP never promised: not counted in status
+       */
+      notes?: components["schemas"]["HealthFindingView"][];
+      /**
+       * Pages
+       * @description Pages the index holds
+       */
+      pages: number;
+      /**
+       * Reach
+       * @description The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read
+       */
+      reach: string | null;
+      /**
+       * Recommendations
+       * @description The network profile's recommendations the FDP does not follow
+       */
+      recommendations?: components["schemas"]["HealthRequirementView"][];
+      /**
+       * Requirements
+       * @description The network profile's requirements the FDP does not meet
+       */
+      requirements?: components["schemas"]["HealthRequirementView"][];
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "fine" | "findings" | "unreadable";
+      /** @description Where the index stopped by its own rules */
+      stops: components["schemas"]["HealthStopsView"];
+    };
+    /**
+     * HealthRequirementView
+     * @description What the network profile asks that the FDP does not meet (TASKS 15.9).
+     */
+    HealthRequirementView: {
+      /**
+       * Code
+       * @description reach: does not reach the level; requires/recommends: records at the level lack the property; vocabulary: values not from the expected vocabulary
+       * @enum {string}
+       */
+      code: "reach" | "requires" | "recommends" | "vocabulary";
+      /**
+       * Count
+       * @description Records concerned (1 for reach)
+       */
+      count: number;
+      /** Examples */
+      examples: string[];
+      /** Level */
+      level: string | null;
+      /**
+       * Property
+       * @description The property's IRI
+       */
+      property: string | null;
+    };
+    /** HealthRow */
+    HealthRow: {
+      /** Clienturl */
+      clientUrl: string;
+      /**
+       * Failed
+       * @description Pages that could not be read
+       */
+      failed: number;
+      /**
+       * Findings
+       * @description Count per finding
+       */
+      findings: {
+        [key: string]: number;
+      };
+      /**
+       * Levels
+       * @description Pages per level
+       */
+      levels: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description Count per note
+       */
+      notes?: {
+        [key: string]: number;
+      };
+      /** Pages */
+      pages: number;
+      /**
+       * Partial
+       * @description The harvest stopped at its page limit
+       */
+      partial: boolean;
+      /** Reach */
+      reach: string | null;
+      /**
+       * Requirements
+       * @description The network profile's requirements it does not meet
+       * @default 0
+       */
+      requirements: number;
+      /** Status */
+      status: string;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /** HealthStopsView */
+    HealthStopsView: {
+      /**
+       * Atceiling
+       * @description The harvest stopped at its page limit
+       */
+      atCeiling: boolean;
+      /**
+       * Offsite
+       * @description Links to other sites, not followed
+       */
+      offSite: number;
+      /**
+       * Unread
+       * @description Pages left unread when the harvest stopped at its limit
+       */
+      unread: number;
+    };
+    /**
+     * HealthSummary
+     * @description Metadata health over the FDPs in the public list that have a report (TASKS 15.8).
+     */
+    HealthSummary: {
+      /**
+       * Byreach
+       * @description By the deepest level reached: none, fdp, catalog, dataset, distribution, dataservice
+       */
+      byReach: {
+        [key: string]: number;
+      };
+      /**
+       * Bystatus
+       * @description fine, findings, unreadable
+       */
+      byStatus: {
+        [key: string]: number;
+      };
+      /**
+       * Failures
+       * @description Pages that failed, by kind
+       */
+      failures: {
+        [key: string]: number;
+      };
+      /**
+       * Fdps
+       * @description FDPs with a health report
+       */
+      fdps: number;
+      /**
+       * Findings
+       * @description FDPs with each finding
+       */
+      findings: {
+        [key: string]: number;
+      };
+      /**
+       * Missingrequirements
+       * @description FDPs that miss a requirement of the network profile (TASKS 15.9)
+       * @default 0
+       */
+      missingRequirements: number;
+      /**
+       * Notes
+       * @description FDPs with each note (DCAT's advice)
+       */
+      notes?: {
+        [key: string]: number;
+      };
+      /**
+       * Partial
+       * @description FDPs whose harvest stopped at its page limit
+       */
+      partial: number;
+    };
+    /**
+     * HealthView
+     * @description Liveness-check state of an entry (addition, ADR-0004).
+     */
+    HealthView: {
+      /** Consecutivefailures */
+      consecutiveFailures: number;
+      /** Lastsuccesstime */
+      lastSuccessTime: string | null;
+      /** Nextchecktime */
+      nextCheckTime: string | null;
+    };
+    /** History */
+    History: {
+      /**
+       * Days
+       * @description Every day from the first snapshot, ISO dates
+       */
+      days: string[];
+      /**
+       * Series
+       * @description Per metric (fdps.total, fdps.state.ACTIVE, records.total, records.kind.dataset, conformance.<pack>.conforms …), one value per day; null where no snapshot was taken
+       */
+      series: {
+        [key: string]: (number | null)[];
+      };
+    };
+    /** IndexSettings */
+    IndexSettings: {
+      /** Autopermit */
+      autoPermit: boolean;
+      /**
+       * Checkbeforeregistering
+       * @default policy
+       * @enum {string}
+       */
+      checkBeforeRegistering: "policy" | "anyone" | "admins";
+      expiry?: components["schemas"]["ExpirySettings-Input"];
+      healthCheck?: components["schemas"]["HealthCheckSettings-Input"];
+      ping: components["schemas"]["PingSettings-Input"];
+      retrieval: components["schemas"]["RetrievalSettings-Input"];
+      /**
+       * Verifiedpermit
+       * @default false
+       */
+      verifiedPermit: boolean;
+    };
+    /** IndexSettingsView */
+    IndexSettingsView: {
+      /** Autopermit */
+      autoPermit: boolean;
+      /**
+       * Checkbeforeregistering
+       * @default policy
+       * @enum {string}
+       */
+      checkBeforeRegistering: "policy" | "anyone" | "admins";
+      expiry: components["schemas"]["ExpirySettings-Output"];
+      healthCheck: components["schemas"]["HealthCheckSettings-Output"];
+      /** Isdefault */
+      isDefault: boolean;
+      ping: components["schemas"]["PingSettings-Output"];
+      retrieval: components["schemas"]["RetrievalSettings-Output"];
+      /**
+       * Verifiedpermit
+       * @default false
+       */
+      verifiedPermit: boolean;
+    };
+    /** KindShare */
+    KindShare: {
+      /** Checked */
+      checked: number;
+      /** Conforms */
+      conforms: number;
+    };
+    /** LabelsRequest */
+    LabelsRequest: {
+      /** Iris */
+      iris: string[];
+    };
+    /** LargestFdp */
+    LargestFdp: {
+      /** Clienturl */
+      clientUrl: string;
+      /**
+       * Records
+       * @description Its records, the FDP's own description left out
+       */
+      records: number;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /** LevelRules */
+    LevelRules: {
+      /**
+       * Recommends
+       * @description Properties a record at this level should have
+       */
+      recommends?: string[];
+      /**
+       * Requires
+       * @description Properties every record at this level must have
+       */
+      requires?: string[];
+      /**
+       * Types
+       * @description Classes (CURIEs or IRIs) that count as this level, besides DCAT's
+       */
+      types?: string[];
+    };
+    /** Library */
+    Library: {
+      /** Examples */
+      examples: components["schemas"]["Example"][];
+      /** Groups */
+      groups: string[];
+    };
+    /** LocationView */
+    LocationView: {
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /**
+       * Source
+       * @description admin: set by an administrator; stated: the FDP's r3d:country; publisher: its publisher's ROR record; domain: its country-code domain; server: where the server that answered is (IP geolocation, after redirects)
+       * @enum {string}
+       */
+      source: "admin" | "stated" | "publisher" | "domain" | "server";
+    };
+    /**
+     * MetadataHealthView
+     * @description What the index found in an FDP's metadata (TASKS 15.8).
+     */
+    MetadataHealthView: {
+      /**
+       * Complete
+       * @description The harvest read every page it found; null when not known
+       */
+      complete: boolean | null;
+      /** Computedat */
+      computedAt: string;
+      /**
+       * Failures
+       * @description Pages that could not be read, by kind
+       */
+      failures: components["schemas"]["HealthFailureView"][];
+      /**
+       * Findings
+       * @description Against the FDP specification, which every FDP claims
+       */
+      findings: components["schemas"]["HealthFindingView"][];
+      /**
+       * Harvestedat
+       * @description When the harvest it describes ended
+       */
+      harvestedAt: string | null;
+      /**
+       * Levels
+       * @description Pages per level, and other pages
+       */
+      levels: {
+        [key: string]: number;
+      };
+      /**
+       * Notes
+       * @description DCAT's advice, which an FDP never promised: not counted in status
+       */
+      notes?: components["schemas"]["HealthFindingView"][];
+      /**
+       * Pages
+       * @description Pages the index holds
+       */
+      pages: number;
+      /**
+       * Reach
+       * @description The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read
+       */
+      reach: string | null;
+      /**
+       * Recommendations
+       * @description The network profile's recommendations the FDP does not follow
+       */
+      recommendations?: components["schemas"]["HealthRequirementView"][];
+      /**
+       * Requirements
+       * @description The network profile's requirements the FDP does not meet
+       */
+      requirements?: components["schemas"]["HealthRequirementView"][];
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "fine" | "findings" | "unreadable";
+      /** @description Where the index stopped by its own rules */
+      stops: components["schemas"]["HealthStopsView"];
+    };
+    /** MonthCount */
+    MonthCount: {
+      /** Count */
+      count: number;
+      /**
+       * Month
+       * @description YYYY-MM
+       */
+      month: string;
+    };
+    /** NetworkInfo */
+    NetworkInfo: {
+      /**
+       * Contact
+       * @description A mailto: or web address
+       */
+      contact?: string | null;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /**
+       * Homepage
+       * @description Where people read about it
+       */
+      homepage?: string | null;
+      /**
+       * Name
+       * @description The network's name
+       * @default
+       */
+      name: string;
+    };
+    /**
+     * NetworkProfile
+     * @description What a network expects of the FDPs it lists (TASKS 15.9).
+     */
+    NetworkProfile: {
+      /**
+       * Benchmarks
+       * @description FAIR Testing Resources benchmarks, run outside the index (TASKS 15.10)
+       */
+      benchmarks?: string[];
+      /** Levels */
+      levels?: {
+        [key: string]: components["schemas"]["LevelRules"];
+      };
+      network?: components["schemas"]["NetworkInfo"];
+      /**
+       * Prefixes
+       * @description CURIE prefixes beyond the common ones
+       */
+      prefixes?: {
+        [key: string]: string;
+      };
+      /**
+       * Profile
+       * @description The template's version
+       * @default 1
+       * @constant
+       */
+      profile: 1;
+      /**
+       * Reach
+       * @description The level an FDP's metadata must reach; none: no level
+       */
+      reach?: ("fdp" | "catalog" | "dataset" | "distribution" | "dataservice") | null;
+      /**
+       * Shapes
+       * @description SHACL documents every record is checked against (as the check 'network')
+       */
+      shapes?: string[];
+      /**
+       * Vocabularies
+       * @description Per property, the IRI prefixes its values must start with
+       */
+      vocabularies?: {
+        [key: string]: string[];
+      };
+    };
+    /** NetworkProfileUpdate */
+    NetworkProfileUpdate: {
+      /**
+       * Source
+       * @description The profile as YAML
+       */
+      source: string;
+    };
+    /** NetworkProfileView */
+    NetworkProfileView: {
+      /**
+       * Empty
+       * @description It expects nothing beyond the FDP specification
+       */
+      empty: boolean;
+      /**
+       * Isdefault
+       * @description The installed or generic profile, not an edit
+       */
+      isDefault: boolean;
+      profile: components["schemas"]["NetworkProfile"];
+      /**
+       * Source
+       * @description The profile as YAML, as it was written
+       */
+      source: string;
+    };
+    /** PackFileView */
+    PackFileView: {
+      /**
+       * Enabled
+       * @description Validated against by default
+       */
+      enabled: boolean;
+      /** Note */
+      note: string;
+      /** Path */
+      path: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "shapes" | "vocabulary" | "recommended" | "deprecated" | "range";
+      /** Variant */
+      variant: string | null;
+    };
+    /** PackResult */
+    PackResult: {
+      /** Error */
+      error: string | null;
+      /** Findings */
+      findings: components["schemas"]["FindingView"][];
+      /** Infos */
+      infos: number;
+      /** Pack */
+      pack: string;
+      /**
+       * Role
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
+      /** Validatedat */
+      validatedAt: string | null;
+      /** Variant */
+      variant: string | null;
+      /** Version */
+      version: string;
+      /** Violations */
+      violations: number;
+      /** Warnings */
+      warnings: number;
+    };
+    /** PackSummary */
+    PackSummary: {
+      /**
+       * Claimed
+       * @description Records that declare this pack's specification themselves
+       * @default 0
+       */
+      claimed: number;
+      /** Conforms */
+      conforms: number;
+      /**
+       * Errors
+       * @description Records that could not be validated
+       */
+      errors: number;
+      /** Lastvalidated */
+      lastValidated: string | null;
+      /**
+       * Pack
+       * @description The pack's id
+       */
+      pack: string;
+      /**
+       * Records
+       * @description Records validated against the pack
+       */
+      records: number;
+      /**
+       * Role
+       * @description declared, required or lens
+       * @default required
+       * @enum {string}
+       */
+      role: "declared" | "required" | "lens";
+      /**
+       * Undeclared
+       * @description For `declared`: records that declare no profile
+       * @default 0
+       */
+      undeclared: number;
+      /**
+       * Unresolved
+       * @description For `declared`: records whose declared profiles could not be resolved
+       * @default 0
+       */
+      unresolved: number;
+      /** Version */
+      version: string | null;
+      /**
+       * Violations
+       * @description Records with violations
+       */
+      violations: number;
+      /**
+       * Withwarnings
+       * @description Records with warnings
+       */
+      withWarnings: number;
+    };
+    /** PackView */
+    PackView: {
+      /** Appliesto */
+      appliesTo: (
+        "fdp" | "catalog" | "dataset" | "series" | "service" | "distribution" | "other"
+      )[];
+      /** Bundled */
+      bundled: boolean;
+      /** Description */
+      description: {
+        [key: string]: string;
+      };
+      /** Files */
+      files: components["schemas"]["PackFileView"][];
+      /** Id */
+      id: string;
+      /**
+       * Key
+       * @description id@version
+       */
+      key: string;
+      /** Licence */
+      licence: string;
+      /** Publisher */
+      publisher: string;
+      /**
+       * Source
+       * @description Where the shapes come from
+       */
+      source: string | null;
+      /**
+       * Specification
+       * @description The specification's IRI (dct:conformsTo)
+       */
+      specification: string;
+      /** Title */
+      title: {
+        [key: string]: string;
+      };
+      /** Variantproperty */
+      variantProperty: string | null;
+      /**
+       * Variants
+       * @description Shapes chosen per record, by `variantProperty`
+       */
+      variants: string[];
+      /** Version */
+      version: string;
+    };
+    /** Parameter */
+    Parameter: {
+      /** Choices */
+      choices?: components["schemas"]["Choice"][];
+      /** Default */
+      default?: string | null;
+      /** Help */
+      help?: string | null;
+      /** Label */
+      label: string;
+      /** Name */
+      name: string;
+      /** Placeholder */
+      placeholder?: string | null;
+      /**
+       * Required
+       * @default false
+       */
+      required: boolean;
+      suggest?: components["schemas"]["Suggest"] | null;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "iri" | "text" | "date" | "integer" | "choice" | "fdp";
+    };
+    /** PingRequest */
+    PingRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /** PingSettings */
+    "PingSettings-Input": {
+      /** Denylist */
+      denyList: string[];
+      /**
+       * Ratelimitduration
+       * Format: duration
+       */
+      rateLimitDuration: string;
+      /** Ratelimithits */
+      rateLimitHits: number;
+      /**
+       * Validduration
+       * Format: duration
+       */
+      validDuration: string;
+    };
+    /** PingSettings */
+    "PingSettings-Output": {
+      /** Denylist */
+      denyList: string[];
+      /** Ratelimitduration */
+      rateLimitDuration: string;
+      /** Ratelimithits */
+      rateLimitHits: number;
+      /** Validduration */
+      validDuration: string;
+    };
+    /** Problem */
+    Problem: {
+      /**
+       * Component
+       * @description The SHACL constraint component, without its namespace
+       */
+      component: string;
+      /**
+       * Example
+       * @description IRI of a record with this problem
+       */
+      example: string;
+      /** Findings */
+      findings: number;
+      /**
+       * Message
+       * @description One of the messages of this problem
+       */
+      message: string | null;
+      /** Pack */
+      pack: string;
+      /** Path */
+      path: string | null;
+      /**
+       * Records
+       * @description Records with this problem
+       */
+      records: number;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "violation" | "warning" | "info";
+      /** Shape */
+      shape: string | null;
+    };
+    /** ProfileExample */
+    ProfileExample: {
+      /** Name */
+      name: string;
+      /** Source */
+      source: string;
+      /** Title */
+      title: string;
+    };
+    /** PropertySettings */
+    "PropertySettings-Input": {
+      /**
+       * Hidden
+       * @description Property IRIs, or namespaces ending in / or #, visitors may not use
+       */
+      hidden?: string[];
+      /**
+       * Visitors
+       * @description Visitors may add facets on any captured property
+       * @default true
+       */
+      visitors: boolean;
+    };
+    /** PropertySettings */
+    "PropertySettings-Output": {
+      /**
+       * Hidden
+       * @description Property IRIs, or namespaces ending in / or #, visitors may not use
+       */
+      hidden: string[];
+      /**
+       * Visitors
+       * @description Visitors may add facets on any captured property
+       * @default true
+       */
+      visitors: boolean;
+    };
+    /** RecordCountry */
+    RecordCountry: {
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2
+       */
+      country: string;
+      /**
+       * Records
+       * @description Records whose dct:spatial names this country or a region in it
+       */
+      records: number;
+      /**
+       * Values
+       * @description The spatial IRIs seen for it (at most 50)
+       */
+      values: string[];
+    };
+    /** RecordCounts */
+    RecordCounts: {
+      /**
+       * Bycountry
+       * @description Where the data is about: dct:spatial by country
+       */
+      byCountry: components["schemas"]["RecordCountry"][];
+      /**
+       * Bykind
+       * @description By kind: fdp, catalog, dataset, series, service …
+       */
+      byKind: {
+        [key: string]: number;
+      };
+      /**
+       * Total
+       * @description Records visitors find in search
+       */
+      total: number;
+    };
+    /** RecordPage */
+    RecordPage: {
+      /** Items */
+      items: components["schemas"]["RecordStatus"][];
+      /** Total */
+      total: number;
+    };
+    /** RecordReport */
+    RecordReport: {
+      /** Entry */
+      entry: string;
+      /** Iri */
+      iri: string;
+      /** Kind */
+      kind: string;
+      /** Publicid */
+      publicId: string;
+      /** Results */
+      results: components["schemas"]["PackResult"][];
+      /** Title */
+      title: string | null;
+    };
+    /** RecordStatus */
+    RecordStatus: {
+      /** Infos */
+      infos: number;
+      /** Iri */
+      iri: string;
+      /** Kind */
+      kind: string;
+      /** Pack */
+      pack: string;
+      /** Publicid */
+      publicId: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "conforms" | "violations" | "error" | "undeclared" | "unresolved";
+      /** Title */
+      title: string | null;
+      /** Validatedat */
+      validatedAt: string | null;
+      /** Variant */
+      variant: string | null;
+      /** Violations */
+      violations: number;
+      /** Warnings */
+      warnings: number;
+    };
+    /** RegisterRequest */
+    RegisterRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /**
+     * RegistrationView
+     * @description The outcome of registering an FDP (TASKS 4.9).
+     */
+    RegistrationView: {
+      /** Clienturl */
+      clientUrl: string;
+      /** Error */
+      error: string | null;
+      /** Newentry */
+      newEntry: boolean;
+      permit: components["schemas"]["EntryPermit"];
+      /**
+       * Retrieved
+       * @description False when a retrieval ran shortly before; the state is that one's
+       */
+      retrieved: boolean;
+      /** State */
+      state: string;
+      /** Title */
+      title: string | null;
+      /** Uuid */
+      uuid: string;
+    };
+    /** ReindexRequest */
+    ReindexRequest: {
+      /**
+       * Entry
+       * @description One entry; all when absent
+       */
+      entry?: string | null;
+    };
+    /** RepositoryMetadataView */
+    RepositoryMetadataView: {
+      /** Metadata */
+      metadata: {
+        [key: string]: string;
+      };
+      /** Metadataversion */
+      metadataVersion: number;
+      /** Repositoryuri */
+      repositoryUri: string | null;
+    };
+    /** RetrievalSettings */
+    "RetrievalSettings-Input": {
+      /**
+       * Ratelimitwait
+       * Format: duration
+       */
+      rateLimitWait: string;
+      /**
+       * Timeout
+       * Format: duration
+       */
+      timeout: string;
+    };
+    /** RetrievalSettings */
+    "RetrievalSettings-Output": {
+      /** Ratelimitwait */
+      rateLimitWait: string;
+      /** Timeout */
+      timeout: string;
+    };
+    /** SavedSearch */
+    SavedSearch: {
+      /**
+       * Createdat
+       * Format: date-time
+       */
+      createdAt: string;
+      /** Createdby */
+      createdBy: string;
+      /** Description */
+      description?: string | null;
+      /** Descriptions */
+      descriptions?: {
+        [key: string]: string;
+      };
+      /**
+       * Featured
+       * @default false
+       */
+      featured: boolean;
+      /** Id */
+      id: string;
+      /**
+       * Query
+       * @description The search page's query string, such as q=registry&theme=…
+       */
+      query: string;
+      /** Title */
+      title: string;
+      /** Titles */
+      titles?: {
+        [key: string]: string;
+      };
+      /**
+       * Updatedat
+       * Format: date-time
+       */
+      updatedAt: string;
+    };
+    /** SavedSearchRequest */
+    SavedSearchRequest: {
+      /** Description */
+      description?: string | null;
+      /** Descriptions */
+      descriptions?: {
+        [key: string]: string;
+      };
+      /**
+       * Featured
+       * @default false
+       */
+      featured: boolean;
+      /**
+       * Query
+       * @description The search page's query string, such as q=registry&theme=…
+       */
+      query: string;
+      /** Title */
+      title: string;
+      /** Titles */
+      titles?: {
+        [key: string]: string;
+      };
+    };
+    /**
+     * SearchRequest
+     * @description The body of `POST /index/search`: the same search as `GET`, with typed filters.
+     */
+    SearchRequest: {
+      /**
+       * Collapse
+       * @default false
+       */
+      collapse: boolean;
+      /** Cursor */
+      cursor?: string | null;
+      /**
+       * Facetsize
+       * @default 20
+       */
+      facetSize: number;
+      /** Facets */
+      facets?: string[] | null;
+      /** Fdp */
+      fdp?: string[];
+      /** Fdpstate */
+      fdpState?: string | null;
+      /** Filters */
+      filters?: components["schemas"]["FilterRequest"][];
+      /**
+       * Highlight
+       * @default false
+       */
+      highlight: boolean;
+      /** Lang */
+      lang?: string | null;
+      /**
+       * Page
+       * @default 0
+       */
+      page: number;
+      /**
+       * Q
+       * @default
+       */
+      q: string;
+      /**
+       * Semantic
+       * @default
+       * @enum {string}
+       */
+      semantic: "" | "off" | "hybrid" | "only";
+      /**
+       * Size
+       * @default 20
+       */
+      size: number;
+      /**
+       * Sort
+       * @default
+       */
+      sort: string;
+      /** Types */
+      types?: string[];
+    };
+    /** SearchSettings */
+    SearchSettings: {
+      /**
+       * Defaultlanguage
+       * @description Language of titles and labels when the reader's browser states none
+       * @default en
+       */
+      defaultLanguage: string;
+      /**
+       * Facets
+       * @description Ordered facets; null for the profile's
+       */
+      facets?: components["schemas"]["FacetSetting-Input"][] | null;
+      /**
+       * Languagefallback
+       * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
+       */
+      languageFallback?: string[];
+      properties?: components["schemas"]["PropertySettings-Input"];
+    };
+    /** SearchSettingsView */
+    SearchSettingsView: {
+      /**
+       * Defaultlanguage
+       * @description Language of titles and labels when the reader's browser states none
+       * @default en
+       */
+      defaultLanguage: string;
+      /**
+       * Facets
+       * @description Ordered facets; null for the profile's
+       */
+      facets: components["schemas"]["FacetSetting-Output"][] | null;
+      /** Isdefault */
+      isDefault: boolean;
+      /**
+       * Languagefallback
+       * @description When a title or label is not in the reader's language nor untagged: these languages, in order (TASKS 11.8)
+       */
+      languageFallback: string[];
+      properties: components["schemas"]["PropertySettings-Output"];
+    };
+    /** ServiceInfo */
+    ServiceInfo: {
+      /** Auth */
+      auth: ("oidc" | "token")[];
+      /** Catalog */
+      catalog?: {
+        [key: string]: string;
+      } | null;
+      /** Name */
+      name: string;
+      /** Oidc */
+      oidc: {
+        [key: string]: string | null;
+      } | null;
+      /** Ping */
+      ping: string;
+      /** Search */
+      search?: {
+        [key: string]: unknown;
+      } | null;
+      /** Sparql */
+      sparql?: {
+        [key: string]: unknown;
+      } | null;
+      /** Version */
+      version: string;
+    };
+    /** Statistics */
+    Statistics: {
+      /**
+       * Conformance
+       * @description Null when conformance is off or its reports are for administrators
+       */
+      conformance: components["schemas"]["ConformanceShare"][] | null;
+      fdps: components["schemas"]["FdpCounts"];
+      /** Generatedat */
+      generatedAt: string;
+      /** @description Null when health reports are for administrators */
+      health?: components["schemas"]["HealthSummary"] | null;
+      history: components["schemas"]["History"];
+      /**
+       * Largest
+       * @description The FDPs with most records
+       */
+      largest: components["schemas"]["LargestFdp"][];
+      /**
+       * Published
+       * @description Datasets by year of dct:issued
+       */
+      published: components["schemas"]["YearCount"][];
+      /** @description Null when search is off */
+      records: components["schemas"]["RecordCounts"] | null;
+      /**
+       * Registrations
+       * @description FDPs in the public list by month of registration
+       */
+      registrations: components["schemas"]["MonthCount"][];
+    };
+    /**
+     * Suggest
+     * @description Where the UI gets suggestions: objects of a predicate, or instances of a class.
+     */
+    Suggest: {
+      /** Predicate */
+      predicate?: string | null;
+      /** Type */
+      type?: string | null;
+    };
+    /**
+     * Surfaces
+     * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
+     *     null for everything (design §5). Administrators always see everything.
+     */
+    "Surfaces-Input": {
+      /**
+       * Directory
+       * @description The public FDP list: FDPs whose own description conforms
+       */
+      directory?: string | null;
+      /**
+       * Feed
+       * @description The catalogue feed (TASKS 11.5)
+       */
+      feed?: string | null;
+      /**
+       * Search
+       * @description Search hits and facets
+       */
+      search?: string | null;
+      /**
+       * Sparql
+       * @description The SPARQL store's harvested graphs
+       */
+      sparql?: string | null;
+    };
+    /**
+     * Surfaces
+     * @description The minimum each surface shows to visitors: a pack id (no violations against it), or
+     *     null for everything (design §5). Administrators always see everything.
+     */
+    "Surfaces-Output": {
+      /**
+       * Directory
+       * @description The public FDP list: FDPs whose own description conforms
+       */
+      directory: string | null;
+      /**
+       * Feed
+       * @description The catalogue feed (TASKS 11.5)
+       */
+      feed: string | null;
+      /**
+       * Search
+       * @description Search hits and facets
+       */
+      search: string | null;
+      /**
+       * Sparql
+       * @description The SPARQL store's harvested graphs
+       */
+      sparql: string | null;
+    };
+    /** TriggerRequest */
+    TriggerRequest: {
+      /** Clienturl */
+      clientUrl: string;
+    };
+    /** ValidateAccepted */
+    ValidateAccepted: {
+      /**
+       * Scheduled
+       * @description `all` or the FDP's uuid
+       */
+      scheduled: string;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Context */
+      ctx?: Record<string, never>;
+      /** Input */
+      input?: unknown;
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+    };
+    /**
+     * WebhookEvent
+     * @enum {string}
+     */
+    WebhookEvent:
+      | "NewEntry"
+      | "IncomingPing"
+      | "EntryValid"
+      | "EntryInvalid"
+      | "EntryUnreachable"
+      | "AdminTrigger"
+      | "WebhookPing"
+      | "EntryExpired";
+    /** WebhookRequest */
+    WebhookRequest: {
+      /**
+       * Allentries
+       * @default true
+       */
+      allEntries: boolean;
+      /**
+       * Allevents
+       * @default false
+       */
+      allEvents: boolean;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /** Entries */
+      entries?: string[];
+      /** Events */
+      events?: components["schemas"]["WebhookEvent"][];
+      /** Payloadurl */
+      payloadUrl: string;
+      /** Secret */
+      secret?: string | null;
+    };
+    /** WebhookView */
+    WebhookView: {
+      /** Allentries */
+      allEntries: boolean;
+      /** Allevents */
+      allEvents: boolean;
+      /** Createdat */
+      createdAt: string;
+      /** Enabled */
+      enabled: boolean;
+      /** Entries */
+      entries: string[];
+      /** Events */
+      events: components["schemas"]["WebhookEvent"][];
+      /** Hassecret */
+      hasSecret: boolean;
+      /** Payloadurl */
+      payloadUrl: string;
+      /** Updatedat */
+      updatedAt: string;
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+    };
+    /** YearCount */
+    YearCount: {
+      /** Count */
+      count: number;
+      /** Year */
+      year: number;
+    };
+    /** ValidateRequest */
+    fdpindex__api__conformance__ValidateRequest: {
+      /**
+       * Entry
+       * @description One FDP; all when absent
+       */
+      entry?: string | null;
+    };
+    /** ValidateRequest */
+    fdpindex__api__sparql__ValidateRequest: {
+      /** Query */
+      query: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    service_info__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceInfo"];
-                };
-            };
-        };
-    };
-    receive_ping__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PingRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid ping */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description URL denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    duplicates_index_admin_duplicates_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DuplicateGroupView"][];
-                };
-            };
-        };
-    };
-    merge_duplicates_index_admin_duplicates_merge_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DuplicateGroupView"][];
-                };
-            };
-        };
-    };
-    ping_webhook_index_admin_ping_webhook_post: {
-        parameters: {
-            query: {
-                webhook: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    trigger_index_admin_trigger_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TriggerRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    trigger_all_index_admin_trigger_all_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    catalog_index_catalog_get: {
-        parameters: {
-            query?: {
-                /** @description Position from hydra:next */
-                after?: number | null;
-                size?: number;
-                /** @description ttl, rdf, jsonld or nt */
-                format?: string | null;
-            };
-            header?: {
-                accept?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    catalog_record_index_catalog_records__public_id__get: {
-        parameters: {
-            query?: {
-                /** @description ttl, rdf, jsonld or nt */
-                format?: string | null;
-            };
-            header?: {
-                accept?: string;
-            };
-            path: {
-                public_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_policy_index_checks_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckPolicyView"];
-                };
-            };
-        };
-    };
-    start_check_index_checks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CheckRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckView"];
-                };
-            };
-            /** @description Not an http(s) URL */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Only administrators may check */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description URL denied, or only administrators may check */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Rate limit exceeded, or too many checks at once */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_check_index_checks__check_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                check_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CheckView"];
-                };
-            };
-            /** @description No such check, or more than an hour old */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_config_index_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceInfo"];
-                };
-            };
-        };
-    };
-    get_entry_report_index_conformance_entries__entry_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryReport"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_packs_index_conformance_packs_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PackView"][];
-                };
-            };
-        };
-    };
-    list_records_index_conformance_records_get: {
-        parameters: {
-            query?: {
-                /** @description A pack id, or `declared`; the first active by default */
-                pack?: string | null;
-                entry?: string | null;
-                status?: ("conforms" | "violations" | "error" | "undeclared" | "unresolved") | null;
-                path?: string | null;
-                component?: string | null;
-                severity?: ("violation" | "warning" | "info") | null;
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecordPage"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_record_index_conformance_records__public_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                public_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecordReport"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_settings_index_conformance_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConformanceSettingsView"];
-                };
-            };
-        };
-    };
-    put_settings_index_conformance_settings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConformanceSettings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConformanceSettingsView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_settings_index_conformance_settings_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConformanceSettingsView"];
-                };
-            };
-        };
-    };
-    validate_index_conformance_validate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["fdpindex__api__conformance__ValidateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidateAccepted"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_entries_index_entries_get: {
-        parameters: {
-            query?: {
-                state?: string;
-                permit?: string;
-                q?: string;
-                page?: number;
-                size?: number;
-                sort?: string[] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryPageView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_entry_index_entries_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EntryCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    all_entries_index_entries_all_get: {
-        parameters: {
-            query?: {
-                permit?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryView"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    entries_info_index_entries_info_get: {
-        parameters: {
-            query?: {
-                permit?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntriesInfoView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_entry_index_entries__entry_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_entry_index_entries__entry_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EntryUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntryDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_entry_index_entries__entry_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    entry_data_index_entries__entry_id__data_get: {
-        parameters: {
-            query?: {
-                format?: string | null;
-            };
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    entry_events_index_entries__entry_id__events_get: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EventPageView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_entry_health_index_entries__entry_id__health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                entry_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MetadataHealthView"] | null;
-                };
-            };
-            /** @description Reports are for administrators */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_event_index_events__event_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                event_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EventDetailView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    health_table_index_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthRow"][];
-                };
-            };
-            /** @description Reports are for administrators */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_profile_index_network_profile_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NetworkProfileView"];
-                };
-            };
-        };
-    };
-    put_profile_index_network_profile_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NetworkProfileUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NetworkProfileView"];
-                };
-            };
-            /** @description Not a valid profile; the message says why */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_profile_index_network_profile_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NetworkProfileView"];
-                };
-            };
-        };
-    };
-    profile_examples_index_network_profile_examples_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileExample"][];
-                };
-            };
-        };
-    };
-    profile_schema_index_network_profile_schema_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    oai_get_index_oai_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "text/xml": unknown;
-                };
-            };
-        };
-    };
-    oai_post_index_oai_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "text/xml": unknown;
-                };
-            };
-        };
-    };
-    register_index_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegistrationView"];
-                };
-            };
-            /** @description Not an http(s) URL */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description URL denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    search_index_search_get: {
-        parameters: {
-            query?: {
-                /** @description Words, "phrases", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:"a name", -keyword:x */
-                q?: string;
-                lang?: string | null;
-                output?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    search_structured_index_search_post: {
-        parameters: {
-            query?: {
-                output?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    facet_index_search_facets_get: {
-        parameters: {
-            query: {
-                field: string;
-                contains?: string;
-                size?: number;
-                lang?: string | null;
-                tree?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    labels_index_search_labels_get: {
-        parameters: {
-            query: {
-                iri: string[];
-                lang?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    landing_index_search_landing_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    opensearch_index_search_opensearch_xml_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/opensearchdescription+xml": unknown;
-                };
-            };
-        };
-    };
-    profile_index_search_profile_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    put_profile_index_search_profile_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    delete_profile_index_search_profile_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    profile_example_index_search_profile_examples__name__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    properties_index_search_properties_get: {
-        parameters: {
-            query?: {
-                type?: string[] | null;
-                contains?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reindex_index_search_reindex_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["ReindexRequest"] | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resource_index_search_resources__public_id__get: {
-        parameters: {
-            query?: {
-                format?: string | null;
-                lang?: string | null;
-            };
-            header?: never;
-            path: {
-                public_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "application/ld+json": unknown;
-                    "application/n-triples": unknown;
-                    "application/rdf+xml": unknown;
-                    "text/turtle": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    saved_searches_index_search_saved_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SavedSearch"][];
-                };
-            };
-        };
-    };
-    save_search_index_search_saved_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SavedSearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SavedSearch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_saved_search_index_search_saved__search_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                search_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SavedSearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SavedSearch"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_saved_search_index_search_saved__search_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                search_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_search_settings_index_search_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchSettingsView"];
-                };
-            };
-        };
-    };
-    put_search_settings_index_search_settings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SearchSettings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchSettingsView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_search_settings_index_search_settings_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchSettingsView"];
-                };
-            };
-        };
-    };
-    search_sparql_index_search_sparql_get: {
-        parameters: {
-            query?: {
-                lang?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    stats_index_search_stats_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    suggest_index_search_suggest_get: {
-        parameters: {
-            query?: {
-                q?: string;
-                type?: string[] | null;
-                lang?: string | null;
-                output?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_settings_index_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
-        };
-    };
-    update_settings_index_settings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IndexSettings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_settings_index_settings_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexSettingsView"];
-                };
-            };
-        };
-    };
-    sparql_get_index_sparql_get: {
-        parameters: {
-            query?: {
-                query?: string | null;
-                format?: string | null;
-                "default-graph-uri"?: string[] | null;
-                "named-graph-uri"?: string[] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_post_index_sparql_post: {
-        parameters: {
-            query?: {
-                format?: string | null;
-                "default-graph-uri"?: string[] | null;
-                "named-graph-uri"?: string[] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/sparql-query": string;
-                "application/x-www-form-urlencoded": {
-                    query?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_examples_index_sparql_examples_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Library"];
-                };
-            };
-        };
-    };
-    sparql_example_expand_index_sparql_examples__example_id__expand_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                example_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExampleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_example_run_index_sparql_examples__example_id__run_post: {
-        parameters: {
-            query?: {
-                format?: string | null;
-            };
-            header?: never;
-            path: {
-                example_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExampleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_labels_index_sparql_labels_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LabelsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: {
-                            [key: string]: string;
-                        };
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_schema_index_sparql_schema_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    sparql_suggest_index_sparql_suggest_get: {
-        parameters: {
-            query?: {
-                q?: string;
-                predicate?: string | null;
-                type?: string | null;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sparql_validate_index_sparql_validate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["fdpindex__api__sparql__ValidateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    statistics_index_stats_get: {
-        parameters: {
-            query?: {
-                /** @description Days of history */
-                days?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Statistics"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_webhooks_index_webhooks_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"][];
-                };
-            };
-        };
-    };
-    create_webhook_index_webhooks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebhookRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_webhook_index_webhooks__webhook_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_webhook_index_webhooks__webhook_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebhookRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_webhook_index_webhooks__webhook_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                webhook_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+  service_info__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServiceInfo"];
+        };
+      };
+    };
+  };
+  receive_ping__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PingRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid ping */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description URL denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  duplicates_index_admin_duplicates_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateGroupView"][];
+        };
+      };
+    };
+  };
+  merge_duplicates_index_admin_duplicates_merge_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateGroupView"][];
+        };
+      };
+    };
+  };
+  ping_webhook_index_admin_ping_webhook_post: {
+    parameters: {
+      query: {
+        webhook: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  trigger_index_admin_trigger_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TriggerRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  trigger_all_index_admin_trigger_all_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  catalog_index_catalog_get: {
+    parameters: {
+      query?: {
+        /** @description Position from hydra:next */
+        after?: number | null;
+        size?: number;
+        /** @description ttl, rdf, jsonld or nt */
+        format?: string | null;
+      };
+      header?: {
+        accept?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  catalog_record_index_catalog_records__public_id__get: {
+    parameters: {
+      query?: {
+        /** @description ttl, rdf, jsonld or nt */
+        format?: string | null;
+      };
+      header?: {
+        accept?: string;
+      };
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  check_policy_index_checks_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckPolicyView"];
+        };
+      };
+    };
+  };
+  start_check_index_checks_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CheckRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckView"];
+        };
+      };
+      /** @description Not an http(s) URL */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Only administrators may check */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description URL denied, or only administrators may check */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Rate limit exceeded, or too many checks at once */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  get_check_index_checks__check_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        check_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckView"];
+        };
+      };
+      /** @description No such check, or more than an hour old */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  client_config_index_config_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ServiceInfo"];
+        };
+      };
+    };
+  };
+  get_entry_report_index_conformance_entries__entry_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryReport"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_packs_index_conformance_packs_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PackView"][];
+        };
+      };
+    };
+  };
+  list_records_index_conformance_records_get: {
+    parameters: {
+      query?: {
+        /** @description A pack id, or `declared`; the first active by default */
+        pack?: string | null;
+        entry?: string | null;
+        status?: ("conforms" | "violations" | "error" | "undeclared" | "unresolved") | null;
+        path?: string | null;
+        component?: string | null;
+        severity?: ("violation" | "warning" | "info") | null;
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RecordPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_record_index_conformance_records__public_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RecordReport"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_settings_index_conformance_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+    };
+  };
+  put_settings_index_conformance_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConformanceSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_settings_index_conformance_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConformanceSettingsView"];
+        };
+      };
+    };
+  };
+  validate_index_conformance_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["fdpindex__api__conformance__ValidateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ValidateAccepted"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_entries_index_entries_get: {
+    parameters: {
+      query?: {
+        state?: string;
+        permit?: string;
+        q?: string;
+        page?: number;
+        size?: number;
+        sort?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryPageView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_entry_index_entries_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntryCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  all_entries_index_entries_all_get: {
+    parameters: {
+      query?: {
+        permit?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryView"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entries_info_index_entries_info_get: {
+    parameters: {
+      query?: {
+        permit?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntriesInfoView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_entry_index_entries__entry_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_entry_index_entries__entry_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntryUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_entry_index_entries__entry_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_data_index_entries__entry_id__data_get: {
+    parameters: {
+      query?: {
+        format?: string | null;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_events_index_entries__entry_id__events_get: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventPageView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_entry_health_index_entries__entry_id__health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MetadataHealthView"] | null;
+        };
+      };
+      /** @description Reports are for administrators */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_event_index_events__event_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventDetailView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  health_table_index_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HealthRow"][];
+        };
+      };
+      /** @description Reports are for administrators */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  get_profile_index_network_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+    };
+  };
+  put_profile_index_network_profile_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NetworkProfileUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+      /** @description Not a valid profile; the message says why */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_profile_index_network_profile_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NetworkProfileView"];
+        };
+      };
+    };
+  };
+  profile_examples_index_network_profile_examples_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProfileExample"][];
+        };
+      };
+    };
+  };
+  profile_schema_index_network_profile_schema_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  oai_get_index_oai_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "text/xml": unknown;
+        };
+      };
+    };
+  };
+  oai_post_index_oai_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "text/xml": unknown;
+        };
+      };
+    };
+  };
+  register_index_register_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegistrationView"];
+        };
+      };
+      /** @description Not an http(s) URL */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description URL denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  search_index_search_get: {
+    parameters: {
+      query?: {
+        /** @description Words, "phrases", or, -word; field prefixes such as title:word, keyword:x, theme:Health, publisher:"a name", -keyword:x */
+        q?: string;
+        lang?: string | null;
+        output?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  search_structured_index_search_post: {
+    parameters: {
+      query?: {
+        output?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  facet_index_search_facets_get: {
+    parameters: {
+      query: {
+        field: string;
+        contains?: string;
+        size?: number;
+        lang?: string | null;
+        tree?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  labels_index_search_labels_get: {
+    parameters: {
+      query: {
+        iri: string[];
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  landing_index_search_landing_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  opensearch_index_search_opensearch_xml_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/opensearchdescription+xml": unknown;
+        };
+      };
+    };
+  };
+  profile_index_search_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  put_profile_index_search_profile_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  delete_profile_index_search_profile_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  profile_example_index_search_profile_examples__name__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  properties_index_search_properties_get: {
+    parameters: {
+      query?: {
+        type?: string[] | null;
+        contains?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reindex_index_search_reindex_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ReindexRequest"] | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  resource_index_search_resources__public_id__get: {
+    parameters: {
+      query?: {
+        format?: string | null;
+        lang?: string | null;
+      };
+      header?: never;
+      path: {
+        public_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  saved_searches_index_search_saved_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"][];
+        };
+      };
+    };
+  };
+  save_search_index_search_saved_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_saved_search_index_search_saved__search_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SavedSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SavedSearch"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_saved_search_index_search_saved__search_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        search_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_search_settings_index_search_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
+        };
+      };
+    };
+  };
+  put_search_settings_index_search_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_search_settings_index_search_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchSettingsView"];
+        };
+      };
+    };
+  };
+  search_sparql_index_search_sparql_get: {
+    parameters: {
+      query?: {
+        lang?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  stats_index_search_stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  suggest_index_search_suggest_get: {
+    parameters: {
+      query?: {
+        q?: string;
+        type?: string[] | null;
+        lang?: string | null;
+        output?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_settings_index_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+    };
+  };
+  update_settings_index_settings_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IndexSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reset_settings_index_settings_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IndexSettingsView"];
+        };
+      };
+    };
+  };
+  sparql_get_index_sparql_get: {
+    parameters: {
+      query?: {
+        query?: string | null;
+        format?: string | null;
+        "default-graph-uri"?: string[] | null;
+        "named-graph-uri"?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_post_index_sparql_post: {
+    parameters: {
+      query?: {
+        format?: string | null;
+        "default-graph-uri"?: string[] | null;
+        "named-graph-uri"?: string[] | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/sparql-query": string;
+        "application/x-www-form-urlencoded": {
+          query?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_examples_index_sparql_examples_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Library"];
+        };
+      };
+    };
+  };
+  sparql_example_expand_index_sparql_examples__example_id__expand_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        example_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExampleRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_example_run_index_sparql_examples__example_id__run_post: {
+    parameters: {
+      query?: {
+        format?: string | null;
+      };
+      header?: never;
+      path: {
+        example_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExampleRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_labels_index_sparql_labels_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LabelsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: {
+              [key: string]: string;
+            };
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_schema_index_sparql_schema_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  sparql_suggest_index_sparql_suggest_get: {
+    parameters: {
+      query?: {
+        q?: string;
+        predicate?: string | null;
+        type?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          }[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sparql_validate_index_sparql_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["fdpindex__api__sparql__ValidateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  statistics_index_stats_get: {
+    parameters: {
+      query?: {
+        /** @description Days of history */
+        days?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Statistics"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_webhooks_index_webhooks_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"][];
+        };
+      };
+    };
+  };
+  create_webhook_index_webhooks_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebhookRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_webhook_index_webhooks__webhook_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_webhook_index_webhooks__webhook_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WebhookRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_webhook_index_webhooks__webhook_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        webhook_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

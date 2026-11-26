@@ -3,7 +3,8 @@
 Every ``sweep_seconds`` it asks the index to start the checks that are due,
 and to mark entries without contact for too long as expired (TASKS 4.6), and
 starts the next run of harvest walks whose wait is over (TASKS 15.7) and
-the metadata health reports that are due (TASKS 15.8).
+the metadata health reports that are due (TASKS 15.8), and the benchmark
+runs (TASKS 15.10).
 Whether checks run at all, and how often per entry, are index settings; the
 sweep itself is cheap when nothing is due.
 """
@@ -17,14 +18,23 @@ from typing import TYPE_CHECKING
 import structlog
 
 if TYPE_CHECKING:
+    from fdpindex.benchmarks import BenchmarkService
     from fdpindex.service import IndexService
 
 log = structlog.get_logger(__name__)
 
 
 class HealthScheduler:
-    def __init__(self, index: IndexService, *, sweep_seconds: float, batch: int) -> None:
+    def __init__(
+        self,
+        index: IndexService,
+        *,
+        sweep_seconds: float,
+        batch: int,
+        benchmarks: BenchmarkService | None = None,
+    ) -> None:
         self._index = index
+        self._benchmarks = benchmarks
         self._sweep_seconds = sweep_seconds
         self._batch = batch
         self._task: asyncio.Task[None] | None = None
@@ -40,6 +50,8 @@ class HealthScheduler:
                 await self._index.mark_expired(batch=self._batch)
                 await self._index.schedule_due_walks(batch=self._batch)
                 await self._index.schedule_health()
+                if self._benchmarks is not None:
+                    await self._benchmarks.schedule()
             except asyncio.CancelledError:
                 raise
             except Exception:

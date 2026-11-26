@@ -132,6 +132,638 @@
         "title": "ActivePack",
         "type": "object"
       },
+      "BenchmarkCondition": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "guidance": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkGuidance"
+            },
+            "title": "Guidance",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The runner's sentence, as it wrote it",
+            "title": "Message"
+          },
+          "met": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null: the runner could not decide",
+            "title": "Met"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "met",
+          "message",
+          "guidance"
+        ],
+        "title": "BenchmarkCondition",
+        "type": "object"
+      },
+      "BenchmarkConditionCount": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "met": {
+            "description": "Records that meet it",
+            "title": "Met",
+            "type": "integer"
+          },
+          "notMet": {
+            "title": "Notmet",
+            "type": "integer"
+          },
+          "undecided": {
+            "title": "Undecided",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "met",
+          "notMet",
+          "undecided"
+        ],
+        "title": "BenchmarkConditionCount",
+        "type": "object"
+      },
+      "BenchmarkGuidance": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "text"
+        ],
+        "title": "BenchmarkGuidance",
+        "type": "object"
+      },
+      "BenchmarkRecordCounts": {
+        "properties": {
+          "assessed": {
+            "title": "Assessed",
+            "type": "integer"
+          },
+          "due": {
+            "title": "Due",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Records the benchmark applies to",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "assessed",
+          "due",
+          "failed"
+        ],
+        "title": "BenchmarkRecordCounts",
+        "type": "object"
+      },
+      "BenchmarkResultDetail": {
+        "properties": {
+          "assessedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessedat"
+          },
+          "attemptedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attemptedat"
+          },
+          "benchmark": {
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkCondition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the last call failed",
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "incomplete": {
+            "description": "A test errored: the result is incomplete",
+            "title": "Incomplete",
+            "type": "boolean"
+          },
+          "record": {
+            "title": "Record",
+            "type": "string"
+          },
+          "resultSet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the FAIR Testing Resources result set is",
+            "title": "Resultset"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runner"
+          },
+          "state": {
+            "description": "due: waiting for a call (the fields show the last result, if any); failed: the runner did not answer, retried later",
+            "enum": [
+              "due",
+              "done",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "tests": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkTestVerdict"
+            },
+            "title": "Tests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "record",
+          "benchmark",
+          "state",
+          "assessedAt",
+          "attemptedAt",
+          "runner",
+          "incomplete",
+          "conditions",
+          "tests",
+          "error",
+          "entry",
+          "resultSet"
+        ],
+        "title": "BenchmarkResultDetail",
+        "type": "object"
+      },
+      "BenchmarkResultPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkResultView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "title": "BenchmarkResultPage",
+        "type": "object"
+      },
+      "BenchmarkResultView": {
+        "properties": {
+          "assessedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessedat"
+          },
+          "attemptedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attemptedat"
+          },
+          "benchmark": {
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkCondition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the last call failed",
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "incomplete": {
+            "description": "A test errored: the result is incomplete",
+            "title": "Incomplete",
+            "type": "boolean"
+          },
+          "record": {
+            "title": "Record",
+            "type": "string"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runner"
+          },
+          "state": {
+            "description": "due: waiting for a call (the fields show the last result, if any); failed: the runner did not answer, retried later",
+            "enum": [
+              "due",
+              "done",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "tests": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkTestVerdict"
+            },
+            "title": "Tests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "record",
+          "benchmark",
+          "state",
+          "assessedAt",
+          "attemptedAt",
+          "runner",
+          "incomplete",
+          "conditions",
+          "tests",
+          "error"
+        ],
+        "title": "BenchmarkResultView",
+        "type": "object"
+      },
+      "BenchmarkRunQueued": {
+        "properties": {
+          "queued": {
+            "description": "Calls queued, one per benchmark",
+            "title": "Queued",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queued"
+        ],
+        "title": "BenchmarkRunQueued",
+        "type": "object"
+      },
+      "BenchmarkRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "benchmark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One benchmark; default all",
+            "title": "Benchmark"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A record of the FDP; default its root",
+            "title": "Record"
+          }
+        },
+        "title": "BenchmarkRunRequest",
+        "type": "object"
+      },
+      "BenchmarkSettings-Input": {
+        "additionalProperties": false,
+        "description": "Running the network profile's benchmarks (TASKS 15.10, design note benchmarks).\n\n``mode``: ``off`` (no call leaves the index), ``onRequest`` (administrators'\nruns only) or ``scheduled`` (also after a walk that changed an FDP's\nmetadata, at most once per ``interval`` per FDP). ``runner``: another\ninstance of the runner the benchmark names (a self-hosted FAIR Champion);\nempty: the one it names. Calls go one at a time, ``pauseSeconds`` apart, at\nmost ``dailyCalls`` a day.",
+        "properties": {
+          "dailyCalls": {
+            "default": 5000,
+            "maximum": 100000.0,
+            "minimum": 1.0,
+            "title": "Dailycalls",
+            "type": "integer"
+          },
+          "interval": {
+            "default": "P7D",
+            "format": "duration",
+            "title": "Interval",
+            "type": "string"
+          },
+          "mode": {
+            "default": "off",
+            "enum": [
+              "off",
+              "onRequest",
+              "scheduled"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "pauseSeconds": {
+            "default": 5,
+            "maximum": 3600.0,
+            "minimum": 0.0,
+            "title": "Pauseseconds",
+            "type": "integer"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runner"
+          }
+        },
+        "title": "BenchmarkSettings",
+        "type": "object"
+      },
+      "BenchmarkSettings-Output": {
+        "additionalProperties": false,
+        "description": "Running the network profile's benchmarks (TASKS 15.10, design note benchmarks).\n\n``mode``: ``off`` (no call leaves the index), ``onRequest`` (administrators'\nruns only) or ``scheduled`` (also after a walk that changed an FDP's\nmetadata, at most once per ``interval`` per FDP). ``runner``: another\ninstance of the runner the benchmark names (a self-hosted FAIR Champion);\nempty: the one it names. Calls go one at a time, ``pauseSeconds`` apart, at\nmost ``dailyCalls`` a day.",
+        "properties": {
+          "dailyCalls": {
+            "default": 5000,
+            "maximum": 100000.0,
+            "minimum": 1.0,
+            "title": "Dailycalls",
+            "type": "integer"
+          },
+          "interval": {
+            "default": "PT168H",
+            "title": "Interval",
+            "type": "string"
+          },
+          "mode": {
+            "default": "off",
+            "enum": [
+              "off",
+              "onRequest",
+              "scheduled"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "pauseSeconds": {
+            "default": 5,
+            "maximum": 3600.0,
+            "minimum": 0.0,
+            "title": "Pauseseconds",
+            "type": "integer"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runner"
+          }
+        },
+        "required": [
+          "mode",
+          "runner",
+          "interval",
+          "dailyCalls",
+          "pauseSeconds"
+        ],
+        "title": "BenchmarkSettings",
+        "type": "object"
+      },
+      "BenchmarkTestVerdict": {
+        "properties": {
+          "log": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "pass, fail, indeterminate or error",
+            "title": "Result"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "test": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "reference",
+          "title",
+          "test",
+          "metric",
+          "result"
+        ],
+        "title": "BenchmarkTestVerdict",
+        "type": "object"
+      },
       "Chart": {
         "additionalProperties": false,
         "properties": {
@@ -596,6 +1228,159 @@
           "entriesCount"
         ],
         "title": "EntriesInfoView",
+        "type": "object"
+      },
+      "EntryBenchmark": {
+        "properties": {
+          "algorithm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its scoring algorithm (ftr:scoringFunction)",
+            "title": "Algorithm"
+          },
+          "appliesTo": {
+            "description": "Classes it applies to; empty: every record",
+            "items": {
+              "type": "string"
+            },
+            "title": "Appliesto",
+            "type": "array"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/BenchmarkConditionCount"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "iri": {
+            "title": "Iri",
+            "type": "string"
+          },
+          "landingPage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landingpage"
+          },
+          "lastAssessedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastassessedat"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it cannot be run",
+            "title": "Reason"
+          },
+          "records": {
+            "$ref": "#/components/schemas/BenchmarkRecordCounts"
+          },
+          "root": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchmarkResultView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The result on the FDP's root"
+          },
+          "runnable": {
+            "description": "The index can run it",
+            "title": "Runnable",
+            "type": "boolean"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The runner the benchmark names (ftr:supportedBy)",
+            "title": "Runner"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "iri",
+          "title",
+          "landingPage",
+          "runner",
+          "algorithm",
+          "appliesTo",
+          "runnable",
+          "reason",
+          "records",
+          "lastAssessedAt",
+          "conditions",
+          "root"
+        ],
+        "title": "EntryBenchmark",
+        "type": "object"
+      },
+      "EntryBenchmarks": {
+        "properties": {
+          "benchmarks": {
+            "items": {
+              "$ref": "#/components/schemas/EntryBenchmark"
+            },
+            "title": "Benchmarks",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "off",
+              "onRequest",
+              "scheduled"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "benchmarks"
+        ],
+        "title": "EntryBenchmarks",
         "type": "object"
       },
       "EntryCreateRequest": {
@@ -2412,6 +3197,9 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "benchmarks": {
+            "$ref": "#/components/schemas/BenchmarkSettings-Input"
+          },
           "checkBeforeRegistering": {
             "default": "policy",
             "enum": [
@@ -2455,6 +3243,9 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "benchmarks": {
+            "$ref": "#/components/schemas/BenchmarkSettings-Output"
+          },
           "checkBeforeRegistering": {
             "default": "policy",
             "enum": [
@@ -2495,6 +3286,7 @@
           "verifiedPermit",
           "expiry",
           "checkBeforeRegistering",
+          "benchmarks",
           "isDefault"
         ],
         "title": "IndexSettingsView",
@@ -2799,6 +3591,147 @@
           "count"
         ],
         "title": "MonthCount",
+        "type": "object"
+      },
+      "NetworkBenchmark": {
+        "properties": {
+          "algorithm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its scoring algorithm (ftr:scoringFunction)",
+            "title": "Algorithm"
+          },
+          "appliesTo": {
+            "description": "Classes it applies to; empty: every record",
+            "items": {
+              "type": "string"
+            },
+            "title": "Appliesto",
+            "type": "array"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/NetworkBenchmarkCondition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "fdps": {
+            "description": "FDPs with a result",
+            "title": "Fdps",
+            "type": "integer"
+          },
+          "iri": {
+            "title": "Iri",
+            "type": "string"
+          },
+          "landingPage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landingpage"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it cannot be run",
+            "title": "Reason"
+          },
+          "runnable": {
+            "description": "The index can run it",
+            "title": "Runnable",
+            "type": "boolean"
+          },
+          "runner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The runner the benchmark names (ftr:supportedBy)",
+            "title": "Runner"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "iri",
+          "title",
+          "landingPage",
+          "runner",
+          "algorithm",
+          "appliesTo",
+          "runnable",
+          "reason",
+          "fdps",
+          "conditions"
+        ],
+        "title": "NetworkBenchmark",
+        "type": "object"
+      },
+      "NetworkBenchmarkCondition": {
+        "properties": {
+          "assessed": {
+            "description": "Records assessed",
+            "title": "Assessed",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "fdps": {
+            "description": "FDPs whose assessed records all meet it",
+            "title": "Fdps",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "records": {
+            "description": "Records that meet it",
+            "title": "Records",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "fdps",
+          "records",
+          "assessed"
+        ],
+        "title": "NetworkBenchmarkCondition",
         "type": "object"
       },
       "NetworkInfo": {
@@ -4503,6 +5436,21 @@
       },
       "Statistics": {
         "properties": {
+          "benchmarks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NetworkBenchmark"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The network's benchmarks (TASKS 15.10); null when runs are off or health reports are for administrators",
+            "title": "Benchmarks"
+          },
           "conformance": {
             "anyOf": [
               {
@@ -5195,6 +6143,88 @@
         "summary": "Trigger All",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/benchmark-results/{result_id}": {
+      "get": {
+        "operationId": "benchmark_result_index_benchmark_results__result_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Result Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchmarkResultDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One benchmark result, with the tests' logs",
+        "tags": [
+          "Benchmarks"
+        ]
+      }
+    },
+    "/index/benchmark-results/{result_id}/result-set": {
+      "get": {
+        "operationId": "benchmark_result_set_index_benchmark_results__result_id__result_set_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Result Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/ld+json": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The FAIR Testing Resources result set, as the runner gave it",
+        "tags": [
+          "Benchmarks"
         ]
       }
     },
@@ -6274,6 +7304,225 @@
         "summary": "Update Entry",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}/benchmarks": {
+      "get": {
+        "description": "The network's own verdict, beside the metadata health: never part of its status.",
+        "operationId": "entry_benchmarks_index_entries__entry_id__benchmarks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryBenchmarks"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Results are for administrators"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "The network's benchmarks on an FDP",
+        "tags": [
+          "Benchmarks"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}/benchmarks/results": {
+      "get": {
+        "operationId": "entry_benchmark_results_index_entries__entry_id__benchmarks_results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benchmark",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Benchmark"
+            }
+          },
+          {
+            "in": "query",
+            "name": "condition",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 50,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Condition"
+            }
+          },
+          {
+            "in": "query",
+            "name": "met",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Met"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchmarkResultPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "An FDP's benchmark results per record",
+        "tags": [
+          "Benchmarks"
+        ]
+      }
+    },
+    "/index/entries/{entry_id}/benchmarks/runs": {
+      "post": {
+        "description": "Queued before scheduled work; the results replace the record's earlier ones.",
+        "operationId": "run_entry_benchmarks_index_entries__entry_id__benchmarks_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BenchmarkRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchmarkRunQueued"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "Benchmark runs are off"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run the benchmarks on one record now (administrators)",
+        "tags": [
+          "Benchmarks"
         ]
       }
     },

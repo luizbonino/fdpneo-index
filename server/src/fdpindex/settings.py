@@ -10,7 +10,8 @@ ping settings only, not ``autoPermit``.
 Addition: ``healthCheck`` configures the scheduled liveness checks of
 ADR-0004 (``enabled``, ``interval``, ``failureThreshold``, ``permits``,
 ``reharvestOnChange``). Stored settings without it take its defaults, and it
-counts towards ``isDefault``.
+counts towards ``isDefault``; so do ``benchmarks`` (TASKS 15.10) and the later
+additions.
 """
 
 from __future__ import annotations
@@ -144,6 +145,41 @@ class ExpirySettings(_Camel):
         return value
 
 
+class BenchmarkSettings(_Camel):
+    """Running the network profile's benchmarks (TASKS 15.10, design note benchmarks).
+
+    ``mode``: ``off`` (no call leaves the index), ``onRequest`` (administrators'
+    runs only) or ``scheduled`` (also after a walk that changed an FDP's
+    metadata, at most once per ``interval`` per FDP). ``runner``: another
+    instance of the runner the benchmark names (a self-hosted FAIR Champion);
+    empty: the one it names. Calls go one at a time, ``pauseSeconds`` apart, at
+    most ``dailyCalls`` a day.
+    """
+
+    mode: Literal["off", "onRequest", "scheduled"] = "off"
+    runner: str | None = None
+    interval: Duration = timedelta(days=7)
+    daily_calls: int = Field(default=5000, alias="dailyCalls", ge=1, le=100_000)
+    pause_seconds: int = Field(default=5, alias="pauseSeconds", ge=0, le=3600)
+
+    @field_validator("runner")
+    @classmethod
+    def _web(cls, value: str | None) -> str | None:
+        if not value or not value.strip():
+            return None
+        text = value.strip().rstrip("/")
+        if not re.match(r"^https?://[^/\s]+", text):
+            raise ValueError("must be an http(s) address")
+        return text
+
+    @field_validator("interval")
+    @classmethod
+    def _at_least_a_day(cls, value: timedelta) -> timedelta:
+        if value < timedelta(days=1):
+            raise ValueError("must be at least one day")
+        return value
+
+
 class IndexSettings(_Camel):
     retrieval: RetrievalSettings
     ping: PingSettings
@@ -160,6 +196,7 @@ class IndexSettings(_Camel):
     check_before_registering: Literal["policy", "anyone", "admins"] = Field(
         default="policy", alias="checkBeforeRegistering"
     )
+    benchmarks: BenchmarkSettings = Field(default_factory=BenchmarkSettings)
 
     def check_policy(self) -> Literal["anyone", "admins"]:
         """Who may check an FDP before registering it."""
@@ -175,6 +212,7 @@ class IndexSettings(_Camel):
             and self.verified_permit == defaults.verified_permit
             and self.expiry == defaults.expiry
             and self.check_before_registering == defaults.check_before_registering
+            and self.benchmarks == defaults.benchmarks
         )
 
     def denies(self, client_url: str) -> bool:
@@ -245,5 +283,6 @@ class SettingsService:
             verifiedPermit=settings.verified_permit,
             expiry=settings.expiry,
             checkBeforeRegistering=settings.check_before_registering,
+            benchmarks=settings.benchmarks,
             isDefault=settings.matches_defaults(self.defaults()),
         )

@@ -151,6 +151,10 @@ linking to a search for its records.
 | | Hide expired FDPs from the public directory and the search | off |
 | Deny list | Regular expressions matched against the whole address | `localhost` |
 | Registration | Who may check an FDP before registering it | as the approval policy says |
+| Network benchmarks | Runs | off |
+| | Another runner instance | none: the one each benchmark names |
+| | At most once per FDP every | 7 days |
+| | Calls a day, pause between calls | 5 000, 5 seconds |
 
 An expired FDP gets an *Expired* badge, an `Expiry` event and an
 `EntryExpired` webhook, once. It revives as soon as the index reaches it
@@ -203,6 +207,36 @@ which expects nothing beyond the FDP specification, or ERDERA's example. It
 shows on the public **Expectations** page; requirements show in each FDP's
 metadata health, and the shapes as the conformance check *This network's
 rules*. A change computes every report again in the background.
+
+### The network's benchmarks
+
+The profile's `benchmarks` are FAIR Testing Resources benchmarks. The index
+reads each one's description for its runner (`ftr:supportedBy`), its scoring
+algorithm (`ftr:scoringFunction`) and the records it applies to
+(`dpv:isApplicableFor`; `schema:Dataset` means the FDP's datasets, the
+profile's own dataset classes included). It can run benchmarks whose runner
+is FAIR Champion; another runner is listed as not run, with the reason
+([design note](design/benchmarks.md)).
+
+**Settings → Network benchmarks → Runs** is **Off** by default: nothing is
+sent anywhere, not even to read the descriptions. **On request** lets
+administrators run the benchmarks on one record of an FDP from its page (the
+FDP itself by default). **Scheduled** also compares an FDP's records with
+their results after a harvest, at most once a week per FDP, and queues the
+records that changed or were never assessed. Every call sends one record's
+address to the runner. Calls go one at a time, a pause apart, at most a
+number a day; a large FDP's first pass takes days (`fdp.lovd.nl`'s 23 000
+datasets, about five at the defaults).
+
+The public FAIR Champion (`https://w3id.org/FAIR-Champion`) is a shared
+service run by OSTrails. Tell them before scheduling runs on it, or give
+**Another runner instance**: the address of a FAIR Champion of your own.
+
+A call that fails (the runner does not answer, an HTTP error) is tried again
+after an hour, six hours and a day, and never counts as the record's result;
+three failures in a row pause the calls for half an hour. Results follow the
+metadata health's visibility, show on each FDP's page and the Statistics
+page, and never change an FDP's health status.
 
 ## Conformance
 

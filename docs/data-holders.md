@@ -95,6 +95,28 @@ with how to act on them, but do not count against your FDP:
 An empty LDP container is not a problem: the FDP software makes one for
 every kind of child a record may have.
 
+## The network's benchmarks
+
+When the index's network profile names benchmarks (FAIR Testing Resources,
+such as ERDERA's Virtual Platform Onboarding Benchmark) and an administrator
+has switched runs on, your FDP's page has a **The network's benchmarks**
+section. The index sends each of your records the benchmark applies to (its
+address only) to the runner the benchmark names, FAIR Champion, which runs
+the network's tests on it as anyone could on FAIR Champion's own page.
+
+For each condition of the benchmark ("Minimal metadata requirements for L1
+are met") you see how many of your records meet it, the result on your FDP
+itself, and the records that do not meet it, with the network's guidance
+links. **Tests and logs** shows each test's verdict and its log, which says
+what the test looked for and did not find. The FAIR Testing Resources result
+set is published as it came.
+
+This is the network's verdict, not the index's: it does not change your
+metadata health. A record is assessed again only after it changes, so fix
+the record and wait for the next harvest; an administrator can also run the
+benchmark on one record at once. "Could not be assessed" means the runner
+did not answer, never that your record failed.
+
 ## Why my metadata looks as it does in search
 
 - **The title is the page address**: the resource has no `dct:title`,

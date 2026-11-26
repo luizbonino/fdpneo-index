@@ -30,6 +30,22 @@ export type HealthRow = Schemas["HealthRow"];
 export type NetworkProfileView = Schemas["NetworkProfileView"];
 export type ProfileExample = Schemas["ProfileExample"];
 export type HealthRequirement = Schemas["HealthRequirementView"];
+/** A network's benchmarks on an FDP (TASKS 15.10). */
+export type EntryBenchmarks = Schemas["EntryBenchmarks"];
+export type EntryBenchmark = Schemas["EntryBenchmark"];
+export type BenchmarkResult = Schemas["BenchmarkResultView"];
+export type BenchmarkResultDetail = Schemas["BenchmarkResultDetail"];
+export type BenchmarkResultPage = Schemas["BenchmarkResultPage"];
+export type NetworkBenchmark = Schemas["NetworkBenchmark"];
+export type BenchmarkMode = Settings["benchmarks"]["mode"];
+export const BENCHMARK_MODES: BenchmarkMode[] = ["off", "onRequest", "scheduled"];
+export interface BenchmarkResultQuery {
+  benchmark?: string | undefined;
+  condition?: string | undefined;
+  met?: boolean | undefined;
+  page?: number;
+  size?: number;
+}
 /** The structural findings and failure kinds, in display order (TASKS 15.8). */
 export const HEALTH_LEVELS = ["fdp", "catalog", "dataset", "distribution", "dataservice"] as const;
 export const HEALTH_FINDINGS = [
@@ -105,6 +121,23 @@ export const api = {
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),
   entryHealth: (uuid: string) => request<MetadataHealth | null>(`/index/entries/${uuid}/health`),
   healthTable: () => request<HealthRow[]>("/index/health"),
+  entryBenchmarks: (uuid: string) => request<EntryBenchmarks>(`/index/entries/${uuid}/benchmarks`),
+  benchmarkResults: (uuid: string, q: BenchmarkResultQuery) =>
+    request<BenchmarkResultPage>(
+      `/index/entries/${uuid}/benchmarks/results${query({
+        benchmark: q.benchmark,
+        condition: q.condition,
+        met: q.met === undefined ? undefined : String(q.met),
+        page: q.page,
+        size: q.size,
+      })}`,
+    ),
+  benchmarkResult: (id: string) => request<BenchmarkResultDetail>(`/index/benchmark-results/${id}`),
+  runBenchmarks: (uuid: string, record?: string) =>
+    request<{ queued: number }>(`/index/entries/${uuid}/benchmarks/runs`, {
+      method: "POST",
+      body: record ? { record } : {},
+    }),
   networkProfile: () => request<NetworkProfileView>("/index/network-profile"),
   saveNetworkProfile: (source: string) =>
     request<NetworkProfileView>("/index/network-profile", { method: "PUT", body: { source } }),

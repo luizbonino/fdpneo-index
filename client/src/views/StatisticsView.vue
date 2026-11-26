@@ -23,6 +23,7 @@ import StatsSparkline from "@/components/stats/StatsSparkline.vue";
 import SparqlLink from "@/components/stats/SparqlLink.vue";
 import StatsMap from "@/components/stats/StatsMap.vue";
 import HealthStats from "@/components/health/HealthStats.vue";
+import BenchmarkStats from "@/components/health/BenchmarkStats.vue";
 import {
   DATASETS_BY_YEAR,
   FDPS_BY_STATE,
@@ -370,6 +371,7 @@ function spatialSearch(country: string) {
         </section>
 
         <HealthStats v-if="body.health && body.health.fdps" :summary="body.health" />
+        <BenchmarkStats v-if="body.benchmarks?.length" :benchmarks="body.benchmarks" />
 
         <section v-if="allShares.length" class="card wide" aria-labelledby="h-conformance">
           <h2 id="h-conformance">{{ t("stats.conformance") }}</h2>

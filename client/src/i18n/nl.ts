@@ -263,6 +263,33 @@ export const nl: Messages = {
     expiryEnabled: "FDP's als verlopen markeren",
     expiryAfter: "Na zo lang zonder contact",
     expiryHide: "Verlopen FDP's verbergen in het openbare overzicht en bij zoeken",
+    benchmarks: "Benchmarks van het netwerk",
+    benchmarksLead:
+      "Voert de benchmarks uit die het netwerkprofiel noemt, op elk record waarop ze van toepassing zijn, via de runner die elke benchmark noemt (FAIR Champion). Elke aanroep stuurt het adres van één record naar die dienst.",
+    benchmarkMode: "Uitvoering",
+    benchmarkModes: {
+      off: "Uit",
+      onRequest: "Op verzoek",
+      scheduled: "Gepland",
+    },
+    benchmarkModesHelp: {
+      off: "Er wordt niets naar een runner gestuurd en de beschrijvingen van de benchmarks worden niet gelezen.",
+      onRequest: "Alleen wanneer een beheerder erom vraagt, vanaf de pagina van een FDP.",
+      scheduled:
+        "Ook na een harvest die de metadata van een FDP veranderde: gewijzigde records worden opnieuw beoordeeld.",
+    },
+    benchmarkRunner: "Een andere runner",
+    benchmarkRunnerHelp:
+      "Het adres van uw eigen FAIR Champion, gebruikt in plaats van die een benchmark noemt; leeg: die het noemt. Laat de beheerders van een gedeelde dienst het weten voordat u er geplande uitvoeringen op zet.",
+    benchmarkInterval: "Hoogstens één keer per FDP elke",
+    benchmarkIntervalHelp:
+      "Hoe vaak de records van een FDP hoogstens met hun uitkomsten worden vergeleken.",
+    benchmarkDaily: "Aanroepen per dag",
+    benchmarkDailySuffix: "hoogstens",
+    benchmarkPause: "Pauze tussen aanroepen",
+    benchmarkPauseSuffix: "seconden",
+    benchmarkPauseHelp:
+      "Aanroepen gaan één voor één; de eerste ronde van een grote FDP duurt dagen.",
     pings: "Pings",
     validDuration: "Een FDP blijft actief gedurende",
     validDurationHelp:
@@ -572,6 +599,14 @@ export const nl: Messages = {
     },
   },
   stats: {
+    benchmarks: "De benchmarks van het netwerk",
+    benchmarksLead:
+      "De eigen tests van het netwerk op de FDP’s in de lijst: per voorwaarde de FDP’s waarvan alle beoordeelde records eraan voldoen, en de records die eraan voldoen.",
+    benchmarksNone: "Nog geen uitkomsten.",
+    benchmarksFdps: "Geen FDP’s met uitkomsten | Eén FDP met uitkomsten | {n} FDP’s met uitkomsten",
+    benchmarksAllMet: "FDP’s, elk record",
+    benchmarksRecordsMet: "Records",
+    benchmarksShare: "Aandeel records",
     title: "Statistieken",
     lead: "Wat deze index bevat en hoe dat verandert, geteld zoals bezoekers de index zien. Het verloop wordt elk uur vastgelegd.",
     period: "Periode",
@@ -1092,7 +1127,8 @@ export const nl: Messages = {
     fromVocab: "uit",
     shapes: "Regels (SHACL) waaraan elk record wordt getoetst",
     benchmarks: "De eigen tests van het netwerk",
-    benchmarksLead: "Uitgevoerd door het netwerk buiten deze index, met eigen uitkomsten.",
+    benchmarksLead:
+      "De eigen tests van het netwerk, die deze index via de runner van het netwerk uitvoert wanneer een beheerder ze aanzet; de uitkomsten staan op de pagina van elke FDP en op de pagina Statistieken.",
     declared:
       "Records worden ook getoetst aan wat ze zelf opgeven; dat telt nooit tegen een FDP die niets opgeeft.",
   },
@@ -1130,5 +1166,53 @@ export const nl: Messages = {
     afterwards:
       "Na registratie leest de index alle pagina’s van de FDP en houdt dit rapport actueel.",
     register: "Deze FDP registreren",
+  },
+  benchmarks: {
+    title: "De benchmarks van het netwerk",
+    lead: "De eigen tests van het netwerk, uitgevoerd op de records van deze FDP door de runner die het netwerk koos. Het oordeel is dat van het netwerk, naast de gezondheid van de metadata en geen deel ervan.",
+    off: "Benchmarks worden op deze index niet uitgevoerd.",
+    onRequest: "Benchmarks worden hier alleen uitgevoerd wanneer een beheerder erom vraagt.",
+    notRun: "Niet uitgevoerd: {reason}",
+    lastAssessed: "laatst beoordeeld {when}",
+    records: "{assessed} van {total} records beoordeeld",
+    noRecords:
+      "Geen records van deze FDP vallen onder de benchmark, of de index heeft ze nog niet vergeleken.",
+    due: "{n} wachtend",
+    failed:
+      "{n} konden niet worden beoordeeld (de runner antwoordde niet); later opnieuw geprobeerd",
+    conditions: "Voorwaarden",
+    metBy: "voldaan door {met} van {total}",
+    share: "{n}% van de records",
+    root: "Op de FDP zelf",
+    met: "Voldaan",
+    notMet: "Niet voldaan",
+    undecided: "Onbeslist",
+    recordsTitle: "Records",
+    condition: "Voorwaarde",
+    anyCondition: "Elke voorwaarde",
+    show: "Toon",
+    all: "Alle",
+    noneMatch: "Geen records gevonden.",
+    incomplete: "Een test kon niet worden uitgevoerd: deze uitkomst is onvolledig.",
+    tests: "Tests en logs",
+    hideTests: "Tests verbergen",
+    results: {
+      pass: "Geslaagd",
+      fail: "Gezakt",
+      indeterminate: "Onbepaald",
+      error: "Fout",
+      unknown: "Onbekend",
+    },
+    log: "Log",
+    resultSet: "De resultatenset (FAIR Testing Resources, JSON-LD)",
+    previous: "Vorige",
+    next: "Volgende",
+    page: "Pagina {page} van {pages}",
+    runTitle: "De benchmarks nu op één record uitvoeren",
+    run: "Uitvoeren",
+    waiting: "Wachten…",
+    runHelp: "Een record van deze FDP, met zijn adres; leeg: de FDP zelf. Gaat vóór gepland werk.",
+    queued:
+      "Geen uitvoering in de wachtrij | Eén uitvoering in de wachtrij | {n} uitvoeringen in de wachtrij",
   },
 };

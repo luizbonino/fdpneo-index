@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import time
 from collections import defaultdict
 from datetime import date, timedelta
@@ -46,6 +47,7 @@ from fdpindex.service import API_STATES
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+    from fdpindex.benchmarks import BenchmarkService
     from fdpindex.conformance.service import ConformanceService
     from fdpindex.search.query import SearchService
     from fdpindex.service import IndexService
@@ -71,8 +73,10 @@ class StatsService:
         index: IndexService,
         search: SearchService | None,
         conformance: ConformanceService | None,
+        benchmarks: BenchmarkService | None = None,
     ) -> None:
         self._session_factory = session_factory
+        self._benchmarks = benchmarks
         self._index = index
         self._search = search
         self._conformance = conformance
@@ -132,6 +136,7 @@ class StatsService:
             "largest": [],
             "conformance": None,
             "health": await self.health_summary() if health else None,
+            "benchmarks": await self.benchmark_summary() if health else None,
         }
         if self._search is None:
             return result
@@ -402,6 +407,13 @@ class StatsService:
         out.sort(key=lambda row: (row["title"] or row["clientUrl"]).lower())
         return out
 
+    async def benchmark_summary(self) -> list[dict[str, Any]] | None:
+        """The network's benchmarks over the public list (TASKS 15.10); none while off."""
+        if self._benchmarks is None or (await self._benchmarks.options()).mode == "off":
+            return None
+        entries = await self._index.all_entries([EntryPermit.ACCEPTED], public=True)
+        return await self._benchmarks.network(e.uuid for e in entries)
+
     # --- dates the data carries ---------------------------------------------------------
 
     async def registrations(self) -> list[dict[str, Any]]:
@@ -470,6 +482,14 @@ class StatsService:
                 metrics[f"health.reach.{reach}"] = n
             for status, n in health["byStatus"].items():
                 metrics[f"health.status.{status}"] = n
+        benchmarks: list[dict[str, Any]] = current["benchmarks"] or []
+        for benchmark in benchmarks:
+            tag = hashlib.sha256(benchmark["iri"].encode()).hexdigest()[:8]
+            metrics[f"health.benchmark.{tag}.fdps"] = benchmark["fdps"]
+            conditions: list[dict[str, Any]] = benchmark["conditions"]
+            for condition in conditions:
+                for count in ("fdps", "records", "assessed"):
+                    metrics[f"health.benchmark.{tag}.{condition['id']}.{count}"] = condition[count]
         shares: list[dict[str, Any]] = current["conformance"] or []
         for share in shares:
             metrics[f"conformance.{share['pack']}.checked"] = share["checked"]

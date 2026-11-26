@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fdpindex import __version__
+from fdpindex.api.benchmarks import router as benchmarks_router
 from fdpindex.api.catalog import router as catalog_router
 from fdpindex.api.conformance import router as conformance_router
 from fdpindex.api.network import router as network_router
@@ -26,6 +27,7 @@ from fdpindex.api.search import router as search_router
 from fdpindex.api.sparql import router as sparql_router
 from fdpindex.api.stats import router as stats_router
 from fdpindex.auth import Authenticator, OidcVerifier
+from fdpindex.benchmarks import BenchmarkService
 from fdpindex.catalog.feed import CatalogFeed, CatalogMeta
 from fdpindex.config import Settings, get_settings
 from fdpindex.conformance.declared import DeclaredResolver
@@ -247,8 +249,23 @@ def create_app(
         async def network_shapes() -> list[str]:
             return list((await network.profile()).shapes)
 
+        async def profile_benchmarks() -> list[str]:
+            return list((await network.profile()).benchmarks)
+
+        benchmarks = BenchmarkService(
+            factory,
+            settings_service,
+            outbound,
+            jobs,
+            benchmarks=profile_benchmarks,
+            expectations=expectations,
+        )
+        app.state.benchmarks = benchmarks
+        index.add_listener(benchmarks.index_changed)
+
         async def network_changed() -> None:
             await index.health_expectations_changed()
+            await benchmarks.profile_changed()
             if conformance is not None:
                 conformance.settings_changed()
 
@@ -257,13 +274,16 @@ def create_app(
         if conformance is not None:
             conformance.network_shapes = network_shapes
         app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
-        stats = StatsService(factory, index, search, conformance)
+        stats = StatsService(factory, index, search, conformance, benchmarks)
         app.state.stats = stats
         app.state.checks = CheckService(index, settings_service, jobs)
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(
-            index, sweep_seconds=config.health_sweep_seconds, batch=config.health_batch
+            index,
+            sweep_seconds=config.health_sweep_seconds,
+            batch=config.health_batch,
+            benchmarks=benchmarks,
         )
         stats_scheduler = StatsScheduler(stats, seconds=config.stats_snapshot_seconds)
         if run_scheduler:
@@ -317,6 +337,7 @@ def create_app(
     app.include_router(catalog_router)
     app.include_router(stats_router)
     app.include_router(network_router)
+    app.include_router(benchmarks_router)
     return app
 
 

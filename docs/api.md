@@ -150,6 +150,27 @@ Content-Type: application/json
 GET /index/checks/{check}
 ```
 
+The network's benchmarks on an FDP, when the index publishes health reports:
+per benchmark, its records assessed and per condition how many meet it, and
+the result on the FDP itself. The results per record can be filtered by
+benchmark, by `condition` and by `met`:
+
+```http
+GET /index/entries/{uuid}/benchmarks
+```
+
+```http
+GET /index/entries/{uuid}/benchmarks/results?met=false&size=10
+```
+
+One result, with every test's verdict and log, is at
+`GET /index/benchmark-results/{id}`; the FAIR Testing Resources result set as
+the runner gave it (JSON-LD) at `GET /index/benchmark-results/{id}/result-set`.
+Administrators run the benchmarks on one record at once with
+`POST /index/entries/{uuid}/benchmarks/runs` and `{"record": "…"}` (the FDP
+itself when left out); the answer is `202 Accepted`, or `409` while runs are
+off.
+
 An FDP's conformance report, when the index publishes reports:
 
 ```http

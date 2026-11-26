@@ -59,7 +59,7 @@ with the reason. The JSON Schema is at `GET /index/network-profile/schema`.
 | `levels.recommends` | **Recommendations** in the metadata health; they do not count against the FDP |
 | `levels.types` | Which records count as each level, in the health report and its reach |
 | `shapes` | A conformance check of its own, **This network's rules**, required of every record. The documents are fetched under the index's outbound rules and kept for a day |
-| `benchmarks` | Listed on the Expectations page. Running them through their runner (FAIR Champion) is TASKS 15.10 |
+| `benchmarks` | Listed on the Expectations page; run through their runner (FAIR Champion) when an administrator switches runs on ([Administering](administering.md#the-networks-benchmarks)) |
 
 ## Setting it
 

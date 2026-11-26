@@ -85,6 +85,13 @@ def test_default_settings_serialise_like_the_reference() -> None:
         "verifiedPermit": False,
         "expiry": {"enabled": False, "after": "PT2160H", "hide": False},
         "checkBeforeRegistering": "policy",  # TASKS 15.11
+        "benchmarks": {  # TASKS 15.10
+            "mode": "off",
+            "runner": None,
+            "interval": "PT168H",
+            "dailyCalls": 5000,
+            "pauseSeconds": 5,
+        },
     }
 
 

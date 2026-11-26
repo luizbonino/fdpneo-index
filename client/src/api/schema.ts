@@ -119,6 +119,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/benchmark-results/{result_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One benchmark result, with the tests' logs */
+    get: operations["benchmark_result_index_benchmark_results__result_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/benchmark-results/{result_id}/result-set": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The FAIR Testing Resources result set, as the runner gave it */
+    get: operations["benchmark_result_set_index_benchmark_results__result_id__result_set_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/catalog": {
     parameters: {
       query?: never;
@@ -436,6 +470,63 @@ export interface paths {
     post?: never;
     /** Delete Entry */
     delete: operations["delete_entry_index_entries__entry_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/benchmarks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The network's benchmarks on an FDP
+     * @description The network's own verdict, beside the metadata health: never part of its status.
+     */
+    get: operations["entry_benchmarks_index_entries__entry_id__benchmarks_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/benchmarks/results": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An FDP's benchmark results per record */
+    get: operations["entry_benchmark_results_index_entries__entry_id__benchmarks_results_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/entries/{entry_id}/benchmarks/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run the benchmarks on one record now (administrators)
+     * @description Queued before scheduled work; the results replace the record's earlier ones.
+     */
+    post: operations["run_entry_benchmarks_index_entries__entry_id__benchmarks_runs_post"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1327,6 +1418,264 @@ export interface components {
        */
       role: "required" | "lens";
     };
+    /** BenchmarkCondition */
+    BenchmarkCondition: {
+      /** Description */
+      description: string;
+      /** Guidance */
+      guidance: components["schemas"]["BenchmarkGuidance"][];
+      /** Id */
+      id: string;
+      /**
+       * Message
+       * @description The runner's sentence, as it wrote it
+       */
+      message: string | null;
+      /**
+       * Met
+       * @description Null: the runner could not decide
+       */
+      met: boolean | null;
+    };
+    /** BenchmarkConditionCount */
+    BenchmarkConditionCount: {
+      /** Description */
+      description: string;
+      /** Id */
+      id: string;
+      /**
+       * Met
+       * @description Records that meet it
+       */
+      met: number;
+      /** Notmet */
+      notMet: number;
+      /** Undecided */
+      undecided: number;
+    };
+    /** BenchmarkGuidance */
+    BenchmarkGuidance: {
+      /** Text */
+      text: string;
+      /** Url */
+      url: string;
+    };
+    /** BenchmarkRecordCounts */
+    BenchmarkRecordCounts: {
+      /** Assessed */
+      assessed: number;
+      /** Due */
+      due: number;
+      /** Failed */
+      failed: number;
+      /**
+       * Total
+       * @description Records the benchmark applies to
+       */
+      total: number;
+    };
+    /** BenchmarkResultDetail */
+    BenchmarkResultDetail: {
+      /** Assessedat */
+      assessedAt: string | null;
+      /** Attemptedat */
+      attemptedAt: string | null;
+      /** Benchmark */
+      benchmark: string;
+      /** Conditions */
+      conditions: components["schemas"]["BenchmarkCondition"][];
+      /** Entry */
+      entry: string;
+      /**
+       * Error
+       * @description Why the last call failed
+       */
+      error: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Incomplete
+       * @description A test errored: the result is incomplete
+       */
+      incomplete: boolean;
+      /** Record */
+      record: string;
+      /**
+       * Resultset
+       * @description Where the FAIR Testing Resources result set is
+       */
+      resultSet: string | null;
+      /** Runner */
+      runner: string | null;
+      /**
+       * State
+       * @description due: waiting for a call (the fields show the last result, if any); failed: the runner did not answer, retried later
+       * @enum {string}
+       */
+      state: "due" | "done" | "failed";
+      /** Tests */
+      tests: components["schemas"]["BenchmarkTestVerdict"][];
+    };
+    /** BenchmarkResultPage */
+    BenchmarkResultPage: {
+      /** Items */
+      items: components["schemas"]["BenchmarkResultView"][];
+      /** Page */
+      page: number;
+      /** Size */
+      size: number;
+      /** Total */
+      total: number;
+    };
+    /** BenchmarkResultView */
+    BenchmarkResultView: {
+      /** Assessedat */
+      assessedAt: string | null;
+      /** Attemptedat */
+      attemptedAt: string | null;
+      /** Benchmark */
+      benchmark: string;
+      /** Conditions */
+      conditions: components["schemas"]["BenchmarkCondition"][];
+      /**
+       * Error
+       * @description Why the last call failed
+       */
+      error: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Incomplete
+       * @description A test errored: the result is incomplete
+       */
+      incomplete: boolean;
+      /** Record */
+      record: string;
+      /** Runner */
+      runner: string | null;
+      /**
+       * State
+       * @description due: waiting for a call (the fields show the last result, if any); failed: the runner did not answer, retried later
+       * @enum {string}
+       */
+      state: "due" | "done" | "failed";
+      /** Tests */
+      tests: components["schemas"]["BenchmarkTestVerdict"][];
+    };
+    /** BenchmarkRunQueued */
+    BenchmarkRunQueued: {
+      /**
+       * Queued
+       * @description Calls queued, one per benchmark
+       */
+      queued: number;
+    };
+    /** BenchmarkRunRequest */
+    BenchmarkRunRequest: {
+      /**
+       * Benchmark
+       * @description One benchmark; default all
+       */
+      benchmark?: string | null;
+      /**
+       * Record
+       * @description A record of the FDP; default its root
+       */
+      record?: string | null;
+    };
+    /**
+     * BenchmarkSettings
+     * @description Running the network profile's benchmarks (TASKS 15.10, design note benchmarks).
+     *
+     *     ``mode``: ``off`` (no call leaves the index), ``onRequest`` (administrators'
+     *     runs only) or ``scheduled`` (also after a walk that changed an FDP's
+     *     metadata, at most once per ``interval`` per FDP). ``runner``: another
+     *     instance of the runner the benchmark names (a self-hosted FAIR Champion);
+     *     empty: the one it names. Calls go one at a time, ``pauseSeconds`` apart, at
+     *     most ``dailyCalls`` a day.
+     */
+    "BenchmarkSettings-Input": {
+      /**
+       * Dailycalls
+       * @default 5000
+       */
+      dailyCalls: number;
+      /**
+       * Interval
+       * Format: duration
+       * @default P7D
+       */
+      interval: string;
+      /**
+       * Mode
+       * @default off
+       * @enum {string}
+       */
+      mode: "off" | "onRequest" | "scheduled";
+      /**
+       * Pauseseconds
+       * @default 5
+       */
+      pauseSeconds: number;
+      /** Runner */
+      runner?: string | null;
+    };
+    /**
+     * BenchmarkSettings
+     * @description Running the network profile's benchmarks (TASKS 15.10, design note benchmarks).
+     *
+     *     ``mode``: ``off`` (no call leaves the index), ``onRequest`` (administrators'
+     *     runs only) or ``scheduled`` (also after a walk that changed an FDP's
+     *     metadata, at most once per ``interval`` per FDP). ``runner``: another
+     *     instance of the runner the benchmark names (a self-hosted FAIR Champion);
+     *     empty: the one it names. Calls go one at a time, ``pauseSeconds`` apart, at
+     *     most ``dailyCalls`` a day.
+     */
+    "BenchmarkSettings-Output": {
+      /**
+       * Dailycalls
+       * @default 5000
+       */
+      dailyCalls: number;
+      /**
+       * Interval
+       * @default PT168H
+       */
+      interval: string;
+      /**
+       * Mode
+       * @default off
+       * @enum {string}
+       */
+      mode: "off" | "onRequest" | "scheduled";
+      /**
+       * Pauseseconds
+       * @default 5
+       */
+      pauseSeconds: number;
+      /** Runner */
+      runner: string | null;
+    };
+    /** BenchmarkTestVerdict */
+    BenchmarkTestVerdict: {
+      /** Log */
+      log?: string | null;
+      /** Metric */
+      metric: string | null;
+      /** Reference */
+      reference: string | null;
+      /**
+       * Result
+       * @description pass, fail, indeterminate or error
+       */
+      result: string | null;
+      /** Summary */
+      summary?: string | null;
+      /** Test */
+      test: string | null;
+      /** Title */
+      title: string | null;
+    };
     /** Chart */
     Chart: {
       /** Label */
@@ -1555,6 +1904,57 @@ export interface components {
       entriesCount: {
         [key: string]: number;
       };
+    };
+    /** EntryBenchmark */
+    EntryBenchmark: {
+      /**
+       * Algorithm
+       * @description Its scoring algorithm (ftr:scoringFunction)
+       */
+      algorithm: string | null;
+      /**
+       * Appliesto
+       * @description Classes it applies to; empty: every record
+       */
+      appliesTo: string[];
+      /** Conditions */
+      conditions: components["schemas"]["BenchmarkConditionCount"][];
+      /** Iri */
+      iri: string;
+      /** Landingpage */
+      landingPage: string | null;
+      /** Lastassessedat */
+      lastAssessedAt: string | null;
+      /**
+       * Reason
+       * @description Why it cannot be run
+       */
+      reason: string | null;
+      records: components["schemas"]["BenchmarkRecordCounts"];
+      /** @description The result on the FDP's root */
+      root: components["schemas"]["BenchmarkResultView"] | null;
+      /**
+       * Runnable
+       * @description The index can run it
+       */
+      runnable: boolean;
+      /**
+       * Runner
+       * @description The runner the benchmark names (ftr:supportedBy)
+       */
+      runner: string | null;
+      /** Title */
+      title: string | null;
+    };
+    /** EntryBenchmarks */
+    EntryBenchmarks: {
+      /** Benchmarks */
+      benchmarks: components["schemas"]["EntryBenchmark"][];
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: "off" | "onRequest" | "scheduled";
     };
     /** EntryCreateRequest */
     EntryCreateRequest: {
@@ -2384,6 +2784,7 @@ export interface components {
     IndexSettings: {
       /** Autopermit */
       autoPermit: boolean;
+      benchmarks?: components["schemas"]["BenchmarkSettings-Input"];
       /**
        * Checkbeforeregistering
        * @default policy
@@ -2404,6 +2805,7 @@ export interface components {
     IndexSettingsView: {
       /** Autopermit */
       autoPermit: boolean;
+      benchmarks: components["schemas"]["BenchmarkSettings-Output"];
       /**
        * Checkbeforeregistering
        * @default policy
@@ -2563,6 +2965,69 @@ export interface components {
        * @description YYYY-MM
        */
       month: string;
+    };
+    /** NetworkBenchmark */
+    NetworkBenchmark: {
+      /**
+       * Algorithm
+       * @description Its scoring algorithm (ftr:scoringFunction)
+       */
+      algorithm: string | null;
+      /**
+       * Appliesto
+       * @description Classes it applies to; empty: every record
+       */
+      appliesTo: string[];
+      /** Conditions */
+      conditions: components["schemas"]["NetworkBenchmarkCondition"][];
+      /**
+       * Fdps
+       * @description FDPs with a result
+       */
+      fdps: number;
+      /** Iri */
+      iri: string;
+      /** Landingpage */
+      landingPage: string | null;
+      /**
+       * Reason
+       * @description Why it cannot be run
+       */
+      reason: string | null;
+      /**
+       * Runnable
+       * @description The index can run it
+       */
+      runnable: boolean;
+      /**
+       * Runner
+       * @description The runner the benchmark names (ftr:supportedBy)
+       */
+      runner: string | null;
+      /** Title */
+      title: string | null;
+    };
+    /** NetworkBenchmarkCondition */
+    NetworkBenchmarkCondition: {
+      /**
+       * Assessed
+       * @description Records assessed
+       */
+      assessed: number;
+      /** Description */
+      description: string;
+      /**
+       * Fdps
+       * @description FDPs whose assessed records all meet it
+       */
+      fdps: number;
+      /** Id */
+      id: string;
+      /**
+       * Records
+       * @description Records that meet it
+       */
+      records: number;
     };
     /** NetworkInfo */
     NetworkInfo: {
@@ -3306,6 +3771,11 @@ export interface components {
     /** Statistics */
     Statistics: {
       /**
+       * Benchmarks
+       * @description The network's benchmarks (TASKS 15.10); null when runs are off or health reports are for administrators
+       */
+      benchmarks?: components["schemas"]["NetworkBenchmark"][] | null;
+      /**
        * Conformance
        * @description Null when conformance is off or its reports are for administrators
        */
@@ -3705,6 +4175,68 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  benchmark_result_index_benchmark_results__result_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        result_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BenchmarkResultDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  benchmark_result_set_index_benchmark_results__result_id__result_set_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        result_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/ld+json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
       };
     };
   };
@@ -4365,6 +4897,123 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_benchmarks_index_entries__entry_id__benchmarks_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntryBenchmarks"];
+        };
+      };
+      /** @description Results are for administrators */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  entry_benchmark_results_index_entries__entry_id__benchmarks_results_get: {
+    parameters: {
+      query?: {
+        benchmark?: string | null;
+        condition?: string | null;
+        met?: boolean | null;
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BenchmarkResultPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  run_entry_benchmarks_index_entries__entry_id__benchmarks_runs_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BenchmarkRunRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BenchmarkRunQueued"];
+        };
+      };
+      /** @description Benchmark runs are off */
+      409: {
         headers: {
           [name: string]: unknown;
         };

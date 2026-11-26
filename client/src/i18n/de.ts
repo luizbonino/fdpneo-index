@@ -266,6 +266,34 @@ export const de: Messages = {
     expiryEnabled: "FDPs als abgelaufen markieren",
     expiryAfter: "Nach dieser Zeit ohne Kontakt",
     expiryHide: "Abgelaufene FDPs im öffentlichen Verzeichnis und in der Suche ausblenden",
+    benchmarks: "Benchmarks des Netzwerks",
+    benchmarksLead:
+      "Führt die Benchmarks des Netzwerkprofils auf jedem Datensatz aus, für den sie gelten, über den Runner, den jeder Benchmark nennt (FAIR Champion). Jeder Aufruf sendet die Adresse eines Datensatzes an diesen Dienst.",
+    benchmarkMode: "Läufe",
+    benchmarkModes: {
+      off: "Aus",
+      onRequest: "Auf Anfrage",
+      scheduled: "Geplant",
+    },
+    benchmarkModesHelp: {
+      off: "Nichts wird an einen Runner gesendet, und die Beschreibungen der Benchmarks werden nicht gelesen.",
+      onRequest:
+        "Nur auf Anfrage einer Administratorin oder eines Administrators, von der Seite eines FDP.",
+      scheduled:
+        "Auch nach einem Harvest, der die Metadaten eines FDP geändert hat: geänderte Datensätze werden erneut bewertet.",
+    },
+    benchmarkRunner: "Eine andere Runner-Instanz",
+    benchmarkRunnerHelp:
+      "Die Adresse Ihres eigenen FAIR Champion, statt der, die ein Benchmark nennt; leer: die genannte. Informieren Sie die Betreiber eines gemeinsamen Dienstes, bevor Sie dort geplante Läufe einrichten.",
+    benchmarkInterval: "Höchstens einmal pro FDP alle",
+    benchmarkIntervalHelp:
+      "Wie oft die Datensätze eines FDP höchstens mit ihren Ergebnissen verglichen werden.",
+    benchmarkDaily: "Aufrufe pro Tag",
+    benchmarkDailySuffix: "höchstens",
+    benchmarkPause: "Pause zwischen Aufrufen",
+    benchmarkPauseSuffix: "Sekunden",
+    benchmarkPauseHelp:
+      "Aufrufe laufen nacheinander; der erste Durchgang eines großen FDP verteilt sich über Tage.",
     pings: "Pings",
     validDuration: "Ein FDP bleibt aktiv für",
     validDurationHelp:
@@ -578,6 +606,15 @@ export const de: Messages = {
     },
   },
   stats: {
+    benchmarks: "Die Benchmarks des Netzwerks",
+    benchmarksLead:
+      "Die eigenen Tests des Netzwerks auf den FDPs der Liste: je Bedingung die FDPs, deren bewertete Datensätze sie alle erfüllen, und die Datensätze, die sie erfüllen.",
+    benchmarksNone: "Noch keine Ergebnisse.",
+    benchmarksFdps:
+      "Keine FDPs mit Ergebnissen | Ein FDP mit Ergebnissen | {n} FDPs mit Ergebnissen",
+    benchmarksAllMet: "FDPs, jeder Datensatz",
+    benchmarksRecordsMet: "Datensätze",
+    benchmarksShare: "Anteil der Datensätze",
     title: "Statistik",
     lead: "Was dieser Index enthält und wie sich das ändert, so gezählt, wie Besucher den Index sehen. Die Verläufe werden stündlich erfasst.",
     period: "Zeitraum",
@@ -1096,7 +1133,8 @@ export const de: Messages = {
     fromVocab: "aus",
     shapes: "Regeln (SHACL), gegen die jeder Datensatz geprüft wird",
     benchmarks: "Die eigenen Tests des Netzwerks",
-    benchmarksLead: "Vom Netzwerk außerhalb dieses Index ausgeführt, mit eigenen Ergebnissen.",
+    benchmarksLead:
+      "Die eigenen Tests des Netzwerks, die dieser Index über den Runner des Netzwerks ausführt, wenn eine Administratorin oder ein Administrator sie einschaltet; die Ergebnisse stehen auf der Seite jedes FDP und auf der Seite Statistik.",
     declared:
       "Datensätze werden auch gegen das geprüft, was sie selbst angeben; das zählt nie gegen einen FDP, der nichts angibt.",
   },
@@ -1134,5 +1172,54 @@ export const de: Messages = {
     afterwards:
       "Nach der Registrierung liest der Index alle Seiten des FDP und hält diesen Bericht aktuell.",
     register: "Diesen FDP registrieren",
+  },
+  benchmarks: {
+    title: "Die Benchmarks des Netzwerks",
+    lead: "Die eigenen Tests des Netzwerks, auf den Datensätzen dieses FDP vom Runner ausgeführt, den das Netzwerk gewählt hat. Das Urteil ist das des Netzwerks, neben der Metadaten-Gesundheit und nicht Teil davon.",
+    off: "Benchmarks werden auf diesem Index nicht ausgeführt.",
+    onRequest:
+      "Benchmarks laufen hier nur auf Anfrage einer Administratorin oder eines Administrators.",
+    notRun: "Nicht ausgeführt: {reason}",
+    lastAssessed: "zuletzt bewertet {when}",
+    records: "{assessed} von {total} Datensätzen bewertet",
+    noRecords:
+      "Kein Datensatz dieses FDP fällt unter den Benchmark, oder der Index hat sie noch nicht verglichen.",
+    due: "{n} wartend",
+    failed:
+      "{n} konnten nicht bewertet werden (der Runner hat nicht geantwortet); später erneut versucht",
+    conditions: "Bedingungen",
+    metBy: "erfüllt von {met} von {total}",
+    share: "{n} % der Datensätze",
+    root: "Am FDP selbst",
+    met: "Erfüllt",
+    notMet: "Nicht erfüllt",
+    undecided: "Unentschieden",
+    recordsTitle: "Datensätze",
+    condition: "Bedingung",
+    anyCondition: "Jede Bedingung",
+    show: "Zeigen",
+    all: "Alle",
+    noneMatch: "Keine passenden Datensätze.",
+    incomplete: "Ein Test konnte nicht laufen: dieses Ergebnis ist unvollständig.",
+    tests: "Tests und Protokolle",
+    hideTests: "Tests ausblenden",
+    results: {
+      pass: "Bestanden",
+      fail: "Nicht bestanden",
+      indeterminate: "Unbestimmt",
+      error: "Fehler",
+      unknown: "Unbekannt",
+    },
+    log: "Protokoll",
+    resultSet: "Die Ergebnismenge (FAIR Testing Resources, JSON-LD)",
+    previous: "Zurück",
+    next: "Weiter",
+    page: "Seite {page} von {pages}",
+    runTitle: "Die Benchmarks jetzt auf einem Datensatz ausführen",
+    run: "Ausführen",
+    waiting: "Warten…",
+    runHelp:
+      "Ein Datensatz dieses FDP, mit seiner Adresse; leer: der FDP selbst. Geht geplanter Arbeit vor.",
+    queued: "Kein Lauf eingereiht | Ein Lauf eingereiht | {n} Läufe eingereiht",
   },
 };

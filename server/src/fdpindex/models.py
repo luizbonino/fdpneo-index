@@ -21,6 +21,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -273,6 +274,86 @@ class DeclaredProfile(Base):
     # The SHACL documents read, and the profiles followed (prof:isProfileOf).
     sources: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
     error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
+class BenchmarkDefinition(Base):
+    """A benchmark a network profile names, as the index read it (TASKS 15.10).
+
+    ``status``: ``resolved`` (``runner`` and ``algorithm`` known, and the index can
+    call the runner) or ``unresolved`` (``error`` says why). Read again after a day.
+    """
+
+    __tablename__ = "benchmark_definition"
+
+    iri: Mapped[str] = mapped_column(String(2048), primary_key=True)
+    fetched_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    landing_page: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    runner: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    algorithm: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # Classes the benchmark says it applies to (dpv:isApplicableFor); empty: every record.
+    applies_to: Mapped[list[str]] = mapped_column(JsonType, nullable=False, default=list)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
+class BenchmarkResult(Base):
+    """The latest result of one benchmark on one record of an FDP (TASKS 15.10).
+
+    ``state``: ``due`` (waiting for a call; the fields below still hold the last
+    result, if any), ``done``, or ``failed`` (the call failed ``attempts`` times:
+    the runner did not answer; never the FDP's failure). ``content_hash`` is the
+    record's when it was assessed: a record is due again only when it changes.
+    """
+
+    __tablename__ = "benchmark_result"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), nullable=False
+    )
+    benchmark_iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    record_iri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    # sha256 of benchmark and record IRI: the IRIs are too long for a unique index.
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="due")
+    # Asked for by an administrator: called before scheduled work.
+    priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_try_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    attempted_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    assessed_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    runner: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    algorithm: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    # Some test errored (the test service, not the record): the result is incomplete.
+    incomplete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # [{id, description, met, message, guidance: [{url, text}]}]
+    conditions: Mapped[list[dict[str, Any]] | None] = mapped_column(JsonType, nullable=True)
+    # [{reference, title, test, metric, result, weight}]
+    tests: Mapped[list[dict[str, Any]] | None] = mapped_column(JsonType, nullable=True)
+    # The FAIR Testing Resources result set as the runner gave it (JSON-LD), gzipped:
+    # some 28 KB each, 4 KB compressed, with every test's log.
+    result_set: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("entry_uuid", "key", name="uq_benchmark_result_entry_key"),
+        Index("ix_benchmark_result_state", "state", "next_try_at"),
+    )
+
+
+class BenchmarkPlan(Base):
+    """When an FDP's records were last compared with their results (TASKS 15.10)."""
+
+    __tablename__ = "benchmark_plan"
+
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), primary_key=True
+    )
+    planned_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False, default=utcnow)
+    # The walk whose pages were compared.
+    walk_finished_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
 
 
 class MetadataHealth(Base):

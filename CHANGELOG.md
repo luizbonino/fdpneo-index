@@ -85,6 +85,18 @@ The first release will contain:
   held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
   on by default**, and the profiles an administrator activates are shown as
   this index's requirements or as lenses. Migration 0020.
+- **The network's benchmarks** (TASKS 15.10): the FAIR Testing Resources
+  benchmarks a network profile names (ERDERA's Onboarding Benchmark, for
+  one) run through FAIR Champion on every record they apply to, read from
+  the benchmark's own description. Off by default; on request (an
+  administrator runs one record) or scheduled (after a harvest, records that
+  changed, at most weekly per FDP), one call at a time under a daily cap,
+  another FAIR Champion instance if wanted. Results per record and
+  condition with the network's guidance and the tests' logs on each FDP's
+  page, counts on the Statistics page, the FTR result set republished;
+  the network's verdict, never in the health status. Migration 0021.
+  Pages no longer grow wider than a phone's screen when a card holds a
+  wide table or a long line (the Settings page did).
 - **Check before registering** (TASKS 15.11): the Register page and a
   waiting FDP's page read an FDP as the index would, its root metadata and
   the metadata health of a sample of its pages (200 pages, 5 children of

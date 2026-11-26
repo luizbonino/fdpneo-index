@@ -159,77 +159,79 @@ async function reset() {
     </div>
     <p class="muted small">{{ t("searchSettings.lead") }}</p>
 
-    <table class="facets">
-      <thead>
-        <tr>
-          <th scope="col">{{ t("searchSettings.facet") }}</th>
-          <th scope="col">{{ t("searchSettings.placement") }}</th>
-          <th scope="col">
-            <span class="visually-hidden">{{ t("searchSettings.actions") }}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(row, index) in rows"
-          :key="row.name"
-          :class="{ off: row.placement === 'hidden' }"
-        >
-          <td>
-            <template v-if="isPropertyFacet(row.name)">
-              <input
-                class="input label-input"
-                :value="row.label.en ?? ''"
-                :placeholder="title(row.name)"
-                :aria-label="t('searchSettings.label', { name: title(row.name) })"
-                @input="setLabel(row, ($event.target as HTMLInputElement).value)"
-              />
-              <code class="iri">{{ row.name.slice(PROPERTY_FACET.length) }}</code>
-            </template>
-            <span v-else>{{ title(row.name) }}</span>
-          </td>
-          <td>
-            <select
-              v-model="row.placement"
-              class="input select"
-              :aria-label="t('searchSettings.placementOf', { name: title(row.name) })"
-            >
-              <option v-for="placement in PLACEMENTS" :key="placement" :value="placement">
-                {{ t(`searchSettings.placements.${placement}`) }}
-              </option>
-            </select>
-          </td>
-          <td class="buttons">
-            <button
-              type="button"
-              class="btn ghost sm"
-              :disabled="index === 0"
-              :aria-label="t('searchSettings.up', { name: title(row.name) })"
-              @click="move(index, -1)"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              class="btn ghost sm"
-              :disabled="index === rows.length - 1"
-              :aria-label="t('searchSettings.down', { name: title(row.name) })"
-              @click="move(index, 1)"
-            >
-              ↓
-            </button>
-            <button
-              v-if="isPropertyFacet(row.name)"
-              type="button"
-              class="btn ghost sm"
-              @click="remove(index)"
-            >
-              {{ t("search.remove") }}
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="facets">
+        <thead>
+          <tr>
+            <th scope="col">{{ t("searchSettings.facet") }}</th>
+            <th scope="col">{{ t("searchSettings.placement") }}</th>
+            <th scope="col">
+              <span class="visually-hidden">{{ t("searchSettings.actions") }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(row, index) in rows"
+            :key="row.name"
+            :class="{ off: row.placement === 'hidden' }"
+          >
+            <td>
+              <template v-if="isPropertyFacet(row.name)">
+                <input
+                  class="input label-input"
+                  :value="row.label.en ?? ''"
+                  :placeholder="title(row.name)"
+                  :aria-label="t('searchSettings.label', { name: title(row.name) })"
+                  @input="setLabel(row, ($event.target as HTMLInputElement).value)"
+                />
+                <code class="iri">{{ row.name.slice(PROPERTY_FACET.length) }}</code>
+              </template>
+              <span v-else>{{ title(row.name) }}</span>
+            </td>
+            <td>
+              <select
+                v-model="row.placement"
+                class="input select"
+                :aria-label="t('searchSettings.placementOf', { name: title(row.name) })"
+              >
+                <option v-for="placement in PLACEMENTS" :key="placement" :value="placement">
+                  {{ t(`searchSettings.placements.${placement}`) }}
+                </option>
+              </select>
+            </td>
+            <td class="buttons">
+              <button
+                type="button"
+                class="btn ghost sm"
+                :disabled="index === 0"
+                :aria-label="t('searchSettings.up', { name: title(row.name) })"
+                @click="move(index, -1)"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="btn ghost sm"
+                :disabled="index === rows.length - 1"
+                :aria-label="t('searchSettings.down', { name: title(row.name) })"
+                @click="move(index, 1)"
+              >
+                ↓
+              </button>
+              <button
+                v-if="isPropertyFacet(row.name)"
+                type="button"
+                class="btn ghost sm"
+                @click="remove(index)"
+              >
+                {{ t("search.remove") }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div>
       <button type="button" class="btn sm" @click="adding = true">
         {{ t("searchSettings.addProperty") }}
@@ -307,6 +309,9 @@ h3 {
 h3 {
   font-size: var(--fair-text-md, 1rem);
   margin-top: var(--fair-space-3);
+}
+.table-scroll {
+  overflow-x: auto;
 }
 .facets {
   width: 100%;

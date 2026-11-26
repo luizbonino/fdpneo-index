@@ -8,7 +8,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueryClient } from "@tanstack/vue-query";
-import { PERMITS, api, type Settings, type SettingsUpdate } from "@/api";
+import { BENCHMARK_MODES, PERMITS, api, type Settings, type SettingsUpdate } from "@/api";
 import { ApiError } from "@/api/client";
 import { keys, useSettings } from "@/composables/queries";
 import { confirm, toast } from "@/composables/feedback";
@@ -40,6 +40,7 @@ const form = reactive<SettingsForm>({
   verifiedPermit: false,
   expiry: { enabled: false, after: "PT2160H", hide: false },
   checkBeforeRegistering: "policy",
+  benchmarks: { mode: "off", runner: null, interval: "PT168H", dailyCalls: 5000, pauseSeconds: 5 },
 });
 const errors = ref<Record<string, string>>({});
 const saving = ref(false);
@@ -52,6 +53,7 @@ function load(value: Settings) {
   form.verifiedPermit = value.verifiedPermit;
   form.expiry = { ...value.expiry };
   form.checkBeforeRegistering = value.checkBeforeRegistering ?? "policy";
+  form.benchmarks = { ...value.benchmarks };
 }
 
 /** Automatic, after a successful check (verified), or manual: two settings in the API. */
@@ -109,6 +111,7 @@ async function save() {
     const body: SettingsUpdate = {
       ...form,
       ping: { ...form.ping, denyList: form.ping.denyList.filter((p) => p.trim()) },
+      benchmarks: { ...form.benchmarks, runner: form.benchmarks.runner?.trim() || null },
     };
     const saved = await api.saveSettings(body);
     client.setQueryData(keys.settings, saved);
@@ -295,6 +298,74 @@ function fieldError(path: string): string | undefined {
             <input v-model="form.expiry.hide" type="checkbox" />
             {{ t("settings.expiryHide") }}
           </label>
+        </fieldset>
+      </section>
+
+      <section class="card stack" aria-labelledby="bench-settings-h">
+        <h2 id="bench-settings-h">{{ t("settings.benchmarks") }}</h2>
+        <p class="muted small">{{ t("settings.benchmarksLead") }}</p>
+        <fieldset class="stack plain">
+          <legend class="label">{{ t("settings.benchmarkMode") }}</legend>
+          <label v-for="option in BENCHMARK_MODES" :key="option" class="check approval">
+            <input v-model="form.benchmarks.mode" type="radio" name="bench-mode" :value="option" />
+            <span>
+              {{ t(`settings.benchmarkModes.${option}`) }}
+              <span class="help muted small">{{ t(`settings.benchmarkModesHelp.${option}`) }}</span>
+            </span>
+          </label>
+        </fieldset>
+        <fieldset class="stack plain" :disabled="form.benchmarks.mode === 'off'">
+          <div class="field">
+            <label for="bench-runner">{{ t("settings.benchmarkRunner") }}</label>
+            <input
+              id="bench-runner"
+              v-model="form.benchmarks.runner"
+              class="input"
+              type="url"
+              placeholder="https://w3id.org/FAIR-Champion"
+            />
+            <span class="help">{{ t("settings.benchmarkRunnerHelp") }}</span>
+            <span v-if="fieldError('runner')" class="error">{{ fieldError("runner") }}</span>
+          </div>
+          <div class="field">
+            <label for="bench-interval">{{ t("settings.benchmarkInterval") }}</label>
+            <DurationInput
+              id="bench-interval"
+              v-model="form.benchmarks.interval"
+              :units="['days']"
+            />
+            <span class="help">{{ t("settings.benchmarkIntervalHelp") }}</span>
+            <span v-if="fieldError('interval')" class="error">{{ fieldError("interval") }}</span>
+          </div>
+          <div class="field">
+            <label for="bench-daily">{{ t("settings.benchmarkDaily") }}</label>
+            <div class="row">
+              <input
+                id="bench-daily"
+                v-model.number="form.benchmarks.dailyCalls"
+                class="input hits"
+                type="number"
+                min="1"
+                max="100000"
+              />
+              <span class="muted">{{ t("settings.benchmarkDailySuffix") }}</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="bench-pause">{{ t("settings.benchmarkPause") }}</label>
+            <div class="row">
+              <input
+                id="bench-pause"
+                v-model.number="form.benchmarks.pauseSeconds"
+                class="input hits"
+                type="number"
+                min="0"
+                max="3600"
+              />
+              <span class="muted">{{ t("settings.benchmarkPauseSuffix") }}</span>
+            </div>
+            <span class="help">{{ t("settings.benchmarkPauseHelp") }}</span>
+          </div>
         </fieldset>
       </section>
 

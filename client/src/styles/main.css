@@ -110,6 +110,8 @@ button:disabled {
   margin: 0 auto;
   padding: var(--fair-space-8) var(--fair-space-6) var(--fair-space-16);
   display: grid;
+  /* A child wider than the screen scrolls or wraps inside; it does not widen the page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--fair-space-6);
 }
 .page-head {
@@ -132,6 +134,7 @@ button:disabled {
 }
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--fair-space-3);
 }
 

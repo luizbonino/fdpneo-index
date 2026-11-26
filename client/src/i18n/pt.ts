@@ -263,6 +263,33 @@ export const pt: Messages = {
     expiryEnabled: "Marcar FDP como expirados",
     expiryAfter: "Após este tempo sem contacto",
     expiryHide: "Ocultar os FDP expirados do diretório público e da pesquisa",
+    benchmarks: "Benchmarks da rede",
+    benchmarksLead:
+      "Executa os benchmarks que o perfil da rede indica sobre cada registo a que se aplicam, através do runner que cada benchmark indica (FAIR Champion). Cada chamada envia o endereço de um registo a esse serviço.",
+    benchmarkMode: "Execuções",
+    benchmarkModes: {
+      off: "Desativadas",
+      onRequest: "A pedido",
+      scheduled: "Agendadas",
+    },
+    benchmarkModesHelp: {
+      off: "Nada é enviado a nenhum runner e as descrições dos benchmarks não são lidas.",
+      onRequest: "Só a pedido de um administrador, a partir da página de um FDP.",
+      scheduled:
+        "Também após uma recolha que alterou os metadados de um FDP: os registos alterados são avaliados de novo.",
+    },
+    benchmarkRunner: "Outra instância do runner",
+    benchmarkRunnerHelp:
+      "O endereço do seu próprio FAIR Champion, usado em vez do que um benchmark indica; vazio: o indicado. Avise quem gere um serviço partilhado antes de agendar execuções nele.",
+    benchmarkInterval: "No máximo uma vez por FDP a cada",
+    benchmarkIntervalHelp:
+      "Com que frequência, no máximo, os registos de um FDP são comparados com os seus resultados.",
+    benchmarkDaily: "Chamadas por dia",
+    benchmarkDailySuffix: "no máximo",
+    benchmarkPause: "Pausa entre chamadas",
+    benchmarkPauseSuffix: "segundos",
+    benchmarkPauseHelp:
+      "As chamadas são feitas uma a uma; a primeira passagem de um FDP grande estende-se por vários dias.",
     pings: "Pings",
     validDuration: "Um FDP permanece ativo durante",
     validDurationHelp:
@@ -574,6 +601,14 @@ export const pt: Messages = {
     },
   },
   stats: {
+    benchmarks: "Os benchmarks da rede",
+    benchmarksLead:
+      "Os testes próprios da rede sobre os FDP da lista: por condição, os FDP cujos registos avaliados a cumprem todos, e os registos que a cumprem.",
+    benchmarksNone: "Ainda não há resultados.",
+    benchmarksFdps: "Nenhum FDP com resultados | Um FDP com resultados | {n} FDP com resultados",
+    benchmarksAllMet: "FDP, cada registo",
+    benchmarksRecordsMet: "Registos",
+    benchmarksShare: "Proporção de registos",
     title: "Estatísticas",
     lead: "O que este índice contém e como isso muda, contado tal como os visitantes veem o índice. A evolução é registada de hora a hora.",
     period: "Período",
@@ -1091,7 +1126,8 @@ export const pt: Messages = {
     fromVocab: "de",
     shapes: "Regras (SHACL) face às quais cada registo é verificado",
     benchmarks: "Os testes próprios da rede",
-    benchmarksLead: "Executados pela rede fora deste índice, com os seus próprios resultados.",
+    benchmarksLead:
+      "Os testes próprios da rede, que este índice executa através do runner da rede quando um administrador os ativa; os resultados aparecem na página de cada FDP e na página Estatísticas.",
     declared:
       "Os registos também são verificados face ao que declaram eles próprios, o que nunca conta contra um FDP que nada declara.",
   },
@@ -1129,5 +1165,52 @@ export const pt: Messages = {
     afterwards:
       "Depois de registado, o índice lê todas as páginas do FDP e mantém este relatório atualizado.",
     register: "Registar este FDP",
+  },
+  benchmarks: {
+    title: "Os benchmarks da rede",
+    lead: "Os testes próprios da rede, executados sobre os registos deste FDP pelo runner que a rede escolheu. O veredicto é da rede, ao lado da saúde dos metadados e não faz parte dela.",
+    off: "Os benchmarks não são executados neste índice.",
+    onRequest: "Aqui os benchmarks só são executados a pedido de um administrador.",
+    notRun: "Não executado: {reason}",
+    lastAssessed: "avaliado {when}",
+    records: "{assessed} de {total} registos avaliados",
+    noRecords:
+      "Nenhum registo deste FDP está abrangido pelo benchmark, ou o índice ainda não os comparou.",
+    due: "{n} em espera",
+    failed: "{n} não puderam ser avaliados (o runner não respondeu); nova tentativa mais tarde",
+    conditions: "Condições",
+    metBy: "cumprida por {met} de {total}",
+    share: "{n}% dos registos",
+    root: "No próprio FDP",
+    met: "Cumprida",
+    notMet: "Não cumprida",
+    undecided: "Por decidir",
+    recordsTitle: "Registos",
+    condition: "Condição",
+    anyCondition: "Qualquer condição",
+    show: "Mostrar",
+    all: "Todos",
+    noneMatch: "Nenhum registo corresponde.",
+    incomplete: "Um teste não pôde ser executado: este resultado está incompleto.",
+    tests: "Testes e registos de execução",
+    hideTests: "Ocultar os testes",
+    results: {
+      pass: "Aprovado",
+      fail: "Reprovado",
+      indeterminate: "Indeterminado",
+      error: "Erro",
+      unknown: "Desconhecido",
+    },
+    log: "Registo de execução",
+    resultSet: "O conjunto de resultados (FAIR Testing Resources, JSON-LD)",
+    previous: "Anterior",
+    next: "Seguinte",
+    page: "Página {page} de {pages}",
+    runTitle: "Executar os benchmarks agora num registo",
+    run: "Executar",
+    waiting: "A aguardar…",
+    runHelp:
+      "Um registo deste FDP, pelo seu endereço; vazio: o próprio FDP. Passa à frente do trabalho agendado.",
+    queued: "Nenhuma execução em fila | Uma execução em fila | {n} execuções em fila",
   },
 };

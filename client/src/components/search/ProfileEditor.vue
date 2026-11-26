@@ -122,7 +122,10 @@ async function load(name: string, title: string) {
     <p class="muted small">{{ t("profile.lead") }}</p>
     <p class="small">
       {{ t("profile.facets", { n: facets.length }) }}
-      <code v-for="name in facets" :key="name" class="name">{{ name }}</code>
+      <!-- A space between the names, so the line breaks on a phone. -->
+      <template v-for="name in facets" :key="name"
+        >{{ " " }}<code class="name">{{ name }}</code></template
+      >
     </p>
     <p v-if="profile.data.value?.indexing" class="notice warn small">{{ t("profile.indexing") }}</p>
     <div class="field">

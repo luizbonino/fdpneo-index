@@ -38,6 +38,8 @@ from fdpindex.errors import NotFound, PingDenied, RateLimited
 from fdpindex.findings import Page, WalkSummary, analyse, page_key, read_page
 from fdpindex.harvest import KnownNode, harvest
 from fdpindex.models import (
+    BenchmarkPlan,
+    BenchmarkResult,
     Concept,
     EntryPermit,
     EntryState,
@@ -1232,6 +1234,11 @@ class IndexService:
             await session.execute(
                 delete(MetadataHealth).where(MetadataHealth.entry_uuid == entry_id)
             )
+            # The network's benchmark results on it (TASKS 15.10).
+            await session.execute(
+                delete(BenchmarkResult).where(BenchmarkResult.entry_uuid == entry_id)
+            )
+            await session.execute(delete(BenchmarkPlan).where(BenchmarkPlan.entry_uuid == entry_id))
         self._notify(IndexChange("removed", entry_id))
 
     async def harvested_ntriples(self, entry_id: UUID) -> str:

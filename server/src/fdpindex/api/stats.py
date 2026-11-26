@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Annotated, Literal
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from fdpindex.api.benchmarks import NetworkBenchmark
 from fdpindex.auth import Principal, current_principal
 from fdpindex.errors import Forbidden, Unauthorized
 
@@ -175,6 +176,11 @@ class Statistics(_Camel):
     history: History
     health: HealthSummary | None = Field(
         default=None, description="Null when health reports are for administrators"
+    )
+    benchmarks: list[NetworkBenchmark] | None = Field(
+        default=None,
+        description="The network's benchmarks (TASKS 15.10); null when runs are off or "
+        "health reports are for administrators",
     )
 
 

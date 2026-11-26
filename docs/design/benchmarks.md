@@ -1,6 +1,6 @@
 # Running a network's benchmarks (TASKS 15.10)
 
-Status: proposal, for review (2026-11-26). Nothing here is built yet.
+Status: reviewed (2026-11-26); decisions in §3. Built in TASKS 15.10.
 
 The index triggers other tools; it does not contain them (metadata-health
 design, decision 4). This note covers the first case: a network profile
@@ -68,9 +68,35 @@ version 1.1.22, last commit 2026-09-11) and one run against
   `GET /index/entries/{uuid}/benchmarks`; the Expectations page links each
   benchmark to its results.
 
-## 3. Questions for review
+## 3. Decisions
 
-### 1. Which records of an FDP are assessed?
+1. **Every record the benchmark applies to** (option c), and an administrator
+   can run it on any single record of an FDP. Which records a benchmark applies
+   to comes from its description (`dpv:isApplicableFor`, ERDERA's
+   `schema:Dataset`): classes DCAT and schema.org share map to the index's
+   levels, so `schema:Dataset` means the FDP's datasets, the network profile's
+   own dataset classes included; a benchmark that states nothing applies to
+   every record. To keep the load on a shared service bounded, a record is
+   assessed again only when its content changed since its last result (or the
+   benchmark's algorithm changed); a walk that changed nothing costs no call.
+   The first pass over a large FDP spreads over days under the daily cap.
+2. **After a walk that changed an FDP's metadata, at most once a week per FDP,
+   and on an administrator's request** (option b).
+3. **Administrators start runs; results are visible as the health reports are**
+   (option a).
+4. **Off until an administrator switches it on** (option b), with the runner the
+   benchmark names unless an administrator gives another instance. The setting
+   has three positions: off, on request (administrators' runs only) and
+   scheduled.
+5. **The network's own verdict**, beside the metadata health and on the
+   Statistics page, not in the health status (option a).
+6. **The latest result per record and benchmark** (option a); the Statistics
+   page keeps daily counts.
+7. **Benchmarks only for now** (option b); the runner is an adapter.
+
+The questions as they were put:
+
+### Q1. Which records of an FDP are assessed?
 
 - **(a)** The FDP's root only.
 - **(b)** The root and a sample of the records the benchmark applies to (up
@@ -87,7 +113,7 @@ half of a shared public service for one FDP.
 *Recommendation: (b)*, and an administrator can run the benchmark on any
 single record from its page.
 
-### 2. When do runs happen?
+### Q2. When do runs happen?
 
 - **(a)** Only when an administrator asks.
 - **(b)** After a walk that changed an FDP's metadata, at most once a week
@@ -100,7 +126,7 @@ the runner small. (c) runs on unchanged FDPs and misses changes for weeks.
 
 *Recommendation: (b).*
 
-### 3. Who may start a run, and who sees the results?
+### Q3. Who may start a run, and who sees the results?
 
 - **(a)** Administrators start runs; the results are visible as the metadata
   health reports are (public by default).
@@ -116,7 +142,7 @@ health findings do.
 *Recommendation: (a).* Maintainers can run the benchmark themselves on FAIR
 Champion's own page.
 
-### 4. On by default, and which runner instance?
+### Q4. On by default, and which runner instance?
 
 - **(a)** On whenever the network profile names benchmarks, with the runner
   the benchmark names.
@@ -133,7 +159,7 @@ the choice of instance open.
 *Recommendation: (b).* Before the testbed runs benchmarks on a schedule,
 OSTrails should know: it is their shared service.
 
-### 5. How do the results count?
+### Q5. How do the results count?
 
 - **(a)** As the network's own verdict, beside the metadata health: worded as
   theirs ("ERDERA Onboarding: Level 1 met"), counted on the Statistics page
@@ -149,7 +175,7 @@ also lists its rules as the profile's requirements or shapes.
 
 *Recommendation: (a).*
 
-### 6. How much history?
+### Q6. How much history?
 
 - **(a)** The latest result per record and benchmark.
 - **(b)** Every result.
@@ -162,7 +188,7 @@ the level now".
 Statistics page keeps the daily counts per condition, as it does for
 health.
 
-### 7. Other tools now, or later?
+### Q7. Other tools now, or later?
 
 - **(a)** Now: an administrator registers any tool (its address, when to
   call it, a secret) and the index calls it with an FDP and reads its result,
@@ -192,7 +218,8 @@ Not needed to build this, but worth reporting:
 
 ## 5. Tasks
 
-- 15.10 This design, reviewed; then the build: benchmark resolution and the
-  Champion adapter, the run queue with its caps, the results table and API,
-  the FDP page section, the Statistics counts, the settings, the data
-  holders' and administrators' guides.
+- 15.10 Done (2026-11-26): `fdpindex.benchmarks`, migration 0021, the API
+  under `/index/entries/{uuid}/benchmarks` and `/index/benchmark-results`, the
+  FDP page section, the Statistics table, the settings card, the data
+  holders' and administrators' guides. Checked against the public FAIR
+  Champion with ERDERA's benchmark on one FDP's root.

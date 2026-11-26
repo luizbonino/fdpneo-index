@@ -270,9 +270,9 @@ names a benchmark (3.3), such as ERDERA's Onboarding Benchmark. The index
 reads its description (a `ftr:Benchmark`, with `ftr:supportedBy` naming the
 runner, here FAIR Champion), asks the runner to apply it to an FDP, and
 keeps the result. Nothing in this is specific to ERDERA: any community with
-a benchmark in FAIRsharing plugs in the same way. How a runner is called
-(its API, and whether it takes the FDP's URL or a record's) is confirmed
-with FAIR Champion when 15.10 starts.
+a benchmark in FAIRsharing plugs in the same way. How a runner is called,
+and the questions it raises, are in [Running a network's
+benchmarks](benchmarks.md) (2026-11-26).
 
 Two things the published records do not give yet, which the index needs:
 

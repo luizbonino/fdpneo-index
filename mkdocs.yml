@@ -90,3 +90,4 @@ nav:
       - design/sources.md
       - design/provenance.md
       - design/metadata-health.md
+      - design/benchmarks.md

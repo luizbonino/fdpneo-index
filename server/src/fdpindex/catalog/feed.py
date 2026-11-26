@@ -6,7 +6,11 @@ dataset, dataset series or data service, minted under the index's own URL
 (``foaf:primaryTopic``, the resource under its own IRI), where the index got
 it (``dct:source``, the FDP's document) and when the index last saw it change
 (``dct:modified``), and which checked profiles it conforms to
-(``dct:conformsTo``). The resource's triples follow as harvested: nothing is
+(``dct:conformsTo``). It is also the index's statement about its copy
+(TASKS 15.3, ``fdpindex.provenance``): ``prov:wasDerivedFrom`` the resource,
+``prov:wasGeneratedBy`` the harvest that last fetched it, when
+(``fdp-o:fetchedAt``), its hash and, for a copy kept from an earlier harvest,
+``fdp-o:staleSince``. The resource's triples follow as harvested: nothing is
 normalised or merged, and copies in several FDPs stay separate records.
 
 Records are read from the search projection, which already knows every
@@ -30,8 +34,16 @@ from fdpindex.models import (
     ConformanceResult,
     EntryPermit,
     HarvestedNode,
+    HarvestRecord,
     IndexEntry,
     SearchResource,
+)
+from fdpindex.provenance import (
+    Harvests,
+    bind as bind_provenance,
+    describe_copy,
+    describe_index,
+    harvest_iri,
 )
 
 if TYPE_CHECKING:
@@ -77,6 +89,11 @@ class FeedRecord:
     modified: datetime
     conforms_to: list[str] = field(default_factory=lambda: [])
     nodes: list[str] = field(default_factory=lambda: [])  # N-Triples: own node, distributions
+    # The copy's provenance (TASKS 15.3): its own node's fetch, and the harvest of it.
+    fetched_at: datetime | None = None
+    content_hash: str | None = None
+    stale_since: datetime | None = None
+    harvest_id: UUID | None = None
 
 
 @dataclass
@@ -226,7 +243,12 @@ class CatalogFeed:
             rows = (
                 await session.execute(
                     select(
-                        HarvestedNode.entry_uuid, HarvestedNode.node_iri, HarvestedNode.ntriples
+                        HarvestedNode.entry_uuid,
+                        HarvestedNode.node_iri,
+                        HarvestedNode.ntriples,
+                        HarvestedNode.harvested_at,
+                        HarvestedNode.content_hash,
+                        HarvestedNode.stale_since,
                     ).where(
                         or_(
                             *(
@@ -237,9 +259,27 @@ class CatalogFeed:
                     )
                 )
             ).all()
-            for entry, node, ntriples in rows:
+            for entry, node, ntriples, fetched_at, content_hash, stale_since in rows:
                 for record in wanted.get((entry, str(node)), []):
                     record.nodes.append(str(ntriples))
+                    if record.node_iri == str(node):
+                        record.fetched_at = fetched_at
+                        record.content_hash = str(content_hash)
+                        record.stale_since = stale_since
+        entries = {r.entry_uuid for r in records}
+        started: dict[UUID, list[tuple[datetime, UUID]]] = {}
+        for entry, harvest_id, moment in (
+            await session.execute(
+                select(HarvestRecord.entry_uuid, HarvestRecord.id, HarvestRecord.started_at).where(
+                    HarvestRecord.entry_uuid.in_(list(entries))
+                )
+            )
+        ).all():
+            started.setdefault(entry, []).append((moment, harvest_id))
+        by_entry = {entry: Harvests(pairs) for entry, pairs in started.items()}
+        for record in records:
+            harvests = by_entry.get(record.entry_uuid)
+            record.harvest_id = harvests.at(record.fetched_at) if harvests else None
         if self._specs is None:
             return
         specs = await self._specs()
@@ -277,7 +317,13 @@ class CatalogFeed:
             graph.add((catalog, FOAF.homepage, URIRef(meta.homepage)))
 
     def add_record(
-        self, graph: Graph, catalog: URIRef | None, record: FeedRecord, iri: str
+        self,
+        graph: Graph,
+        catalog: URIRef | None,
+        record: FeedRecord,
+        iri: str,
+        *,
+        base: str | None = None,
     ) -> None:
         node = URIRef(iri)
         topic = URIRef(record.iri)
@@ -285,6 +331,15 @@ class CatalogFeed:
         graph.add((node, FOAF.primaryTopic, topic))
         graph.add((node, DCT.source, URIRef(record.node_iri)))
         graph.add((node, DCT.modified, Literal(record.modified.isoformat(), datatype=XSD.dateTime)))
+        describe_copy(
+            graph,
+            node,
+            source=record.iri,
+            harvest=harvest_iri(base, record.harvest_id) if record.harvest_id else None,
+            fetched_at=record.fetched_at,
+            content_hash=record.content_hash,
+            stale_since=record.stale_since,
+        )
         if record.conforms_to:
             # DCAT-AP allows one dct:conformsTo on a catalogue record: the first profile it
             # meets, in the deployment's order. The search and the reports list them all.
@@ -314,7 +369,7 @@ def _record(row: SearchResource) -> FeedRecord:
 def bind(graph: Graph) -> Graph:
     for prefix, ns in (("dcat", DCAT), ("dct", DCT), ("foaf", FOAF), ("hydra", HYDRA)):
         graph.bind(prefix, ns)
-    return graph
+    return bind_provenance(graph)
 
 
 def page_graph(
@@ -326,11 +381,14 @@ def page_graph(
     view_iri: str,
     first_iri: str,
     next_iri: str | None,
+    base: str | None = None,
 ) -> Graph:
     """One page of the feed: the catalogue, its Hydra view, and the page's records."""
     graph = bind(Graph())
     catalog = URIRef(catalog_iri)
     feed.catalog_node(graph, catalog)
+    if base is not None:  # the agent of the harvests the records name
+        describe_index(graph, base, feed.meta.title)
     graph.add((catalog, RDF.type, HYDRA.Collection))
     graph.add((catalog, HYDRA.totalItems, Literal(page.total, datatype=XSD.integer)))
     view = URIRef(view_iri)
@@ -340,12 +398,19 @@ def page_graph(
     if next_iri is not None:
         graph.add((view, HYDRA.next, URIRef(next_iri)))
     for record in page.records:
-        feed.add_record(graph, catalog, record, record_iri(record.public_id))
+        feed.add_record(graph, catalog, record, record_iri(record.public_id), base=base)
     return graph
 
 
-def record_graph(feed: CatalogFeed, record: FeedRecord, *, catalog_iri: str, iri: str) -> Graph:
+def record_graph(
+    feed: CatalogFeed,
+    record: FeedRecord,
+    *,
+    catalog_iri: str,
+    iri: str,
+    base: str | None = None,
+) -> Graph:
     graph = bind(Graph())
-    feed.add_record(graph, None, record, iri)
+    feed.add_record(graph, None, record, iri, base=base)
     graph.add((URIRef(catalog_iri), DCAT.record, URIRef(iri)))
     return graph

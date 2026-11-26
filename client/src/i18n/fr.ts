@@ -1220,4 +1220,57 @@ export const fr: Messages = {
       "Un enregistrement de ce FDP, par son adresse ; vide : le FDP lui-même. Passe avant le travail planifié.",
     queued: "Aucune exécution en file | Une exécution en file | {n} exécutions en file",
   },
+  harvests: {
+    title: "Moissonnages",
+    lead: "Chaque fois que l’index a parcouru les métadonnées de ce FDP : la provenance publique des copies qu’il republie.",
+    summary: "{read} pages lues, {changed} ajoutées, modifiées ou supprimées, {failed} en échec",
+    runCount: "aucune passe | une passe | {n} passes",
+    newer: "Plus récents",
+    older: "Plus anciens",
+    outcomes: {
+      inProgress: "En cours",
+      complete: "Complet",
+      partial: "Partiel",
+      failed: "Échoué",
+    },
+    fetched: "Récupéré",
+    byHarvest: "par le moissonnage du {when}",
+    staleCopy:
+      "Conservé d’un moissonnage antérieur depuis {when} : le dernier n’a pas pu le récupérer.",
+    notFound: "Ce moissonnage n’est pas dans l’index.",
+    eyebrow: "Moissonnage",
+    heading: "Moissonnage du {when}",
+    pageLead:
+      "Un parcours de l’index sur les métadonnées de ce FDP : quand, comment il s’est terminé et ce qu’il a trouvé.",
+    fdp: "FAIR Data Point",
+    started: "Commencé",
+    ended: "Terminé",
+    counts: {
+      pagesRead: "Pages lues",
+      added: "Ajoutées",
+      changed: "Modifiées",
+      removed: "Supprimées",
+      notModified: "Inchangées",
+      failed: "Illisibles",
+    },
+    failureReason: "Pourquoi",
+    atCeiling:
+      "Le parcours s’est arrêté à la limite de pages de l’index pour ce FDP ; les pages en dessous n’ont pas été lues.",
+    explain: {
+      inProgress: "Le parcours continue en passes suivantes ; les chiffres jusqu’ici.",
+      complete: "Chaque page atteinte par le parcours a été lue.",
+      partial:
+        "Certaines pages n’ont pas pu être lues, ou le parcours s’est arrêté à une limite ; leurs copies antérieures sont conservées et marquées périmées.",
+      failed:
+        "Le parcours n’a rien pu lire ; l’index conserve ses copies antérieures, marquées périmées.",
+    },
+    runsTitle: "Passes | Une passe | {n} passes",
+    runsLead:
+      "Un grand FDP est lu en passes espacées de quelques minutes, pour qu’aucune requête ne dure longtemps.",
+    run: "Passe",
+    provTitle: "En PROV-O",
+    provLead:
+      "L’adresse de ce moissonnage le décrit en PROV-O et dans l’ontologie FAIR Data Point ; les enregistrements du flux catalogue nomment le moissonnage qui a récupéré chaque copie.",
+    iri: "L’adresse de ce moissonnage",
+  },
 };

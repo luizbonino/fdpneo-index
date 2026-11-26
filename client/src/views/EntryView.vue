@@ -15,6 +15,7 @@ import EventTimeline from "@/components/EventTimeline.vue";
 import MetadataHealth from "@/components/health/MetadataHealth.vue";
 import CheckPanel from "@/components/health/CheckPanel.vue";
 import BenchmarkResults from "@/components/health/BenchmarkResults.vue";
+import HarvestHistory from "@/components/harvest/HarvestHistory.vue";
 import ConformanceReport from "@/components/conformance/ConformanceReport.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
 import { currentLocale } from "@/i18n";
@@ -437,6 +438,7 @@ async function remove() {
             preview.data.value
           }}</pre>
         </template>
+        <HarvestHistory :uuid="detail.uuid" />
       </section>
 
       <MetadataHealth v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />

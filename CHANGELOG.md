@@ -85,6 +85,15 @@ The first release will contain:
   held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
   on by default**, and the profiles an administrator activates are shown as
   this index's requirements or as lenses. Migration 0020.
+- **Harvest provenance** (TASKS 15.2, 15.3): every walk over an FDP's
+  metadata is kept as a harvest with its runs, its outcome (failed walks
+  too), page counts and failure reasons, public at `/index/harvests/{id}` in
+  PROV-O and the FAIR Data Point Ontology 2.1 (draft) or JSON, and listed per
+  FDP. Catalogue-feed and OAI-PMH records say where each copy came from:
+  `prov:wasDerivedFrom`, `prov:wasGeneratedBy` its harvest, fetch time,
+  content hash and staleness. SPARQL has the latest harvest of each FDP in
+  `urn:fdpindex:provenance`; FDP, harvest and resource pages show it. Walks
+  from before are rebuilt from their events. Migration 0022.
 - **The network's benchmarks** (TASKS 15.10): the FAIR Testing Resources
   benchmarks a network profile names (ERDERA's Onboarding Benchmark, for
   one) run through FAIR Champion on every record they apply to, read from

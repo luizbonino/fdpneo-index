@@ -1216,4 +1216,56 @@ export const es: Messages = {
       "Un registro de este FDP, por su dirección; vacío: el propio FDP. Va antes del trabajo programado.",
     queued: "Ninguna ejecución en cola | Una ejecución en cola | {n} ejecuciones en cola",
   },
+  harvests: {
+    title: "Recolecciones",
+    lead: "Cada vez que el índice recorrió los metadatos de este FDP: la procedencia pública de las copias que republica.",
+    summary: "{read} páginas leídas, {changed} añadidas, cambiadas o eliminadas, {failed} fallidas",
+    runCount: "ninguna pasada | una pasada | {n} pasadas",
+    newer: "Más recientes",
+    older: "Más antiguas",
+    outcomes: {
+      inProgress: "En curso",
+      complete: "Completa",
+      partial: "Parcial",
+      failed: "Fallida",
+    },
+    fetched: "Obtenido",
+    byHarvest: "por la recolección del {when}",
+    staleCopy: "Conservado de una recolección anterior desde {when}: la última no pudo obtenerlo.",
+    notFound: "Esta recolección no está en el índice.",
+    eyebrow: "Recolección",
+    heading: "Recolección del {when}",
+    pageLead:
+      "Un recorrido del índice por los metadatos de este FDP: cuándo, cómo terminó y qué encontró.",
+    fdp: "FAIR Data Point",
+    started: "Iniciada",
+    ended: "Terminada",
+    counts: {
+      pagesRead: "Páginas leídas",
+      added: "Añadidas",
+      changed: "Cambiadas",
+      removed: "Eliminadas",
+      notModified: "Sin cambios",
+      failed: "No se pudieron leer",
+    },
+    failureReason: "Por qué",
+    atCeiling:
+      "El recorrido se detuvo en el límite de páginas del índice para este FDP; las páginas por debajo no se leyeron.",
+    explain: {
+      inProgress: "El recorrido continúa en pasadas siguientes; las cifras hasta ahora.",
+      complete: "Se leyó cada página que alcanzó el recorrido.",
+      partial:
+        "Algunas páginas no se pudieron leer, o el recorrido se detuvo en un límite; sus copias anteriores se conservan, marcadas como desactualizadas.",
+      failed:
+        "El recorrido no pudo leer nada; el índice conserva sus copias anteriores, marcadas como desactualizadas.",
+    },
+    runsTitle: "Pasadas | Una pasada | {n} pasadas",
+    runsLead:
+      "Un FDP grande se lee en pasadas separadas por unos minutos, para que ninguna petición dure mucho.",
+    run: "Pasada",
+    provTitle: "En PROV-O",
+    provLead:
+      "La dirección de esta recolección la describe en PROV-O y la ontología FAIR Data Point; los registros del feed del catálogo nombran la recolección que obtuvo cada copia.",
+    iri: "La dirección de esta recolección",
+  },
 };

@@ -265,6 +265,27 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
               </template>
               <dt>{{ t("resource.harvested") }}</dt>
               <dd :title="absoluteTime(r.harvestedAt)">{{ relativeTime(r.harvestedAt) }}</dd>
+              <template v-if="r.provenance">
+                <dt>{{ t("harvests.fetched") }}</dt>
+                <dd>
+                  <span :title="absoluteTime(r.provenance.fetchedAt)">
+                    {{ relativeTime(r.provenance.fetchedAt) }}
+                  </span>
+                  <template v-if="r.provenance.harvest">
+                    ·
+                    <router-link :to="{ name: 'harvest', params: { id: r.provenance.harvest.id } }">
+                      {{
+                        t("harvests.byHarvest", {
+                          when: absoluteTime(r.provenance.harvest.startedAt),
+                        })
+                      }}
+                    </router-link>
+                  </template>
+                  <span v-if="r.provenance.staleSince" class="stale small">
+                    {{ t("harvests.staleCopy", { when: relativeTime(r.provenance.staleSince) }) }}
+                  </span>
+                </dd>
+              </template>
               <dt>{{ t("resource.completeness") }}</dt>
               <dd>
                 <meter min="0" max="100" low="40" high="75" optimum="100" :value="completeness">
@@ -348,6 +369,10 @@ const completeness = computed(() => Math.round((r.value?.completeness ?? 0) * 10
 }
 .head h1 {
   overflow-wrap: anywhere;
+}
+.stale {
+  display: block;
+  color: var(--fair-warning);
 }
 .fdp {
   display: flex;

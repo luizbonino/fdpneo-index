@@ -28,7 +28,7 @@ from fdpindex.sparql.examples import Example, Library, default_library, expand
 from fdpindex.sparql.gate import CheckedQuery, QueryRejected, check_query, iri_term, string_term
 from fdpindex.sparql.labels import KNOWN_LABELS, humanize
 from fdpindex.sparql.prefixes import PREFIXES, compact, with_prefixes
-from fdpindex.sparql.store import ENTRIES_GRAPH, EXAMPLES_GRAPH, VOID_GRAPH
+from fdpindex.sparql.store import ENTRIES_GRAPH, EXAMPLES_GRAPH, PROVENANCE_GRAPH, VOID_GRAPH
 from fdpindex.sparql.workers import GRAPH_FORMATS, MEDIA_TYPES, SOLUTION_FORMATS, QueryFailed
 
 if TYPE_CHECKING:
@@ -132,7 +132,7 @@ class SparqlService:
     # --- graphs -----------------------------------------------------------------
 
     def default_graphs(self) -> tuple[str, ...]:
-        return (*self.store.snapshot_graphs, ENTRIES_GRAPH.value)
+        return (*self.store.snapshot_graphs, ENTRIES_GRAPH.value, PROVENANCE_GRAPH.value)
 
     def named_graphs(self) -> tuple[str, ...]:
         return (*self.default_graphs(), VOID_GRAPH.value, EXAMPLES_GRAPH.value)
@@ -248,7 +248,8 @@ class SparqlService:
                 for iri, n in properties
             ],
             "graphs": graphs,
-            "defaultGraph": "union of the FDP graphs and urn:fdpindex:entries",
+            "defaultGraph": "union of the FDP graphs, urn:fdpindex:entries and "
+            "urn:fdpindex:provenance",
         }
         self._schema_cache = (snapshot, result)
         return result

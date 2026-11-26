@@ -1,7 +1,9 @@
 # Harvest provenance (TASKS 15.2, 15.3)
 
-Status: reviewed (2026-11-26); questions 1–5 decided, question 6 open.
-Nothing here is built yet (15.3).
+Status: reviewed (2026-11-26), all six questions decided; built in TASKS
+15.3 (2026-11-26). The FDP-O terms are drafted for FDP-O 2.1 on the branch
+`propose/fdpneo-index-harvest-terms` of a local FDP-O checkout, not yet
+proposed upstream.
 
 ## 1. Why
 
@@ -46,12 +48,24 @@ is not kept once it ends; only its summary for the metadata health report.
    `https://w3id.org/fdp/fdp-o#`), not a namespace of the index's own (§4).
    PROV-O is used wherever it has a term.
 
-Open:
+6. **Failed walks are recorded** (option a), with the outcome
+   `fdp-o:HarvestFailed` and the reason in words (no response bodies). A
+   walk only starts after the FDP's root answered a retrieval, so a failed
+   walk is one whose pages all failed in the walk itself.
 
-- **Question 6: also record failed walks?** A walk that could read nothing
-  (the FDP was unreachable) is provenance too: it explains why copies are
-  stale. *Recommendation: yes, with the outcome "failed" and the reason in
-  words (no response bodies).*
+As built:
+
+- Table `harvest` (migration 0022), one row per walk, with its runs as a
+  list; `harvest_walk.harvest_id` links a walk in progress to its row.
+  Walks from before the table are rebuilt once from the `Harvest` events at
+  start-up (runs with the same walk start are one harvest).
+- A run's IRI is a fragment of its harvest's, `…/harvests/{id}#run-2`, so it
+  resolves with the harvest's document, rather than `…/runs/2`.
+- `fdp-o:pagesNotModified` counts pages whose content had not changed, by an
+  HTTP 304 or by the content hash; the run events' `notModified` counts the
+  304s only.
+- The provenance graph is part of SPARQL's default graph, so a query can
+  join a record with the harvest of its FDP.
 
 ## 3. What is published
 
@@ -75,10 +89,10 @@ Open:
     fdp-o:harvestOutcome fdp-o:HarvestComplete ;            # Complete | Partial | Failed
     fdp-o:pagesRead 69120 ; fdp-o:pagesAdded 3 ; fdp-o:pagesChanged 1 ;
     fdp-o:pagesRemoved 0 ; fdp-o:pagesNotModified 69116 ; fdp-o:pagesFailed 0 ;
-    dct:hasPart <…/index/harvests/6f1c…/runs/1>, <…/runs/2> .
+    dct:hasPart <…/index/harvests/6f1c…#run-1>, <…#run-2> .
 
 # One run of it
-<…/index/harvests/6f1c…/runs/2> a fdp-o:HarvestRun ;
+<…/index/harvests/6f1c…#run-2> a fdp-o:HarvestRun ;
     dct:isPartOf <…/index/harvests/6f1c…> ;
     prov:startedAtTime "…"^^xsd:dateTime ; prov:endedAtTime "…"^^xsd:dateTime ;
     fdp-o:pagesRead 2000 .
@@ -130,7 +144,7 @@ The build (15.3) uses these IRIs; they resolve once FDP-O 2.1 is released.
 
 ## 5. Tasks
 
-- 15.2 This design, reviewed (question 6 open).
-- 15.3 Build: the walk table, the provenance graph, `/index/harvests/{id}`
+- 15.2 This design, reviewed. Done.
+- 15.3 Built: the walk table, the provenance graph, `/index/harvests/{id}`
   and the per-FDP list, the feed's provenance, the page lines, tests, the
-  data-holders guide; the FDP-O 2.1 additions as a change to FDP-O.
+  data-holders guide; the FDP-O 2.1 additions drafted as a change to FDP-O.

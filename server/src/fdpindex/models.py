@@ -251,8 +251,43 @@ class HarvestWalk(Base):
     skipped_off_origin: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # When the next run may start; claimed runs push it ahead as a lease.
     continue_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    # The harvest record this walk writes (TASKS 15.3); null for walks begun before it.
+    harvest_id: Mapped[UUID | None] = mapped_column(nullable=True)
 
     __table_args__ = (Index("ix_harvest_walk_continue_at", "continue_at"),)
+
+
+class HarvestRecord(Base):
+    """One harvest of an FDP, kept after it ends: a walk and its runs (TASKS 15.3).
+
+    Public provenance (design note provenance): times, outcome, counts and
+    failure reasons in words, never callers' addresses or response bodies.
+    ``outcome``: ``in progress``, ``complete``, ``partial`` (some pages failed
+    or a limit was reached) or ``failed`` (nothing could be read). ``runs``
+    lists each run: ``{run, startedAt, endedAt, pagesRead, added, changed,
+    removed, notModified, failed}``.
+    """
+
+    __tablename__ = "harvest"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    entry_uuid: Mapped[UUID] = mapped_column(
+        ForeignKey("index_entry.uuid", ondelete="CASCADE"), nullable=False
+    )
+    started_at: Mapped[datetime] = mapped_column(AwareDateTime(), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(AwareDateTime(), nullable=True)
+    outcome: Mapped[str] = mapped_column(String(16), nullable=False, default="in progress")
+    pages_read: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    added: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    changed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    removed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    not_modified: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    at_ceiling: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    failure_reason: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    runs: Mapped[list[dict[str, Any]]] = mapped_column(JsonType, nullable=False, default=list)
+
+    __table_args__ = (Index("ix_harvest_entry_started", "entry_uuid", "started_at"),)
 
 
 class DeclaredProfile(Base):

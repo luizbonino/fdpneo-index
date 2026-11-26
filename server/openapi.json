@@ -2533,6 +2533,229 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HarvestRecordPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HarvestRecordView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "title": "HarvestRecordPage",
+        "type": "object"
+      },
+      "HarvestRecordRunView": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endedat"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "notModified": {
+            "title": "Notmodified",
+            "type": "integer"
+          },
+          "pagesRead": {
+            "title": "Pagesread",
+            "type": "integer"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "run": {
+            "title": "Run",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          }
+        },
+        "required": [
+          "run",
+          "startedAt",
+          "endedAt",
+          "pagesRead",
+          "added",
+          "changed",
+          "removed",
+          "notModified",
+          "failed"
+        ],
+        "title": "HarvestRecordRunView",
+        "type": "object"
+      },
+      "HarvestRecordView": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "atCeiling": {
+            "description": "Stopped at the page limit",
+            "title": "Atceiling",
+            "type": "boolean"
+          },
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endedat"
+          },
+          "entry": {
+            "title": "Entry",
+            "type": "string"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "failureReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failurereason"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "iri": {
+            "description": "The harvest's IRI, this resource's URL",
+            "title": "Iri",
+            "type": "string"
+          },
+          "notModified": {
+            "title": "Notmodified",
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "in progress",
+              "complete",
+              "partial",
+              "failed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "pagesRead": {
+            "title": "Pagesread",
+            "type": "integer"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/HarvestRecordRunView"
+            },
+            "title": "Runs",
+            "type": "array"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "iri",
+          "entry",
+          "clientUrl",
+          "title",
+          "startedAt",
+          "endedAt",
+          "outcome",
+          "pagesRead",
+          "added",
+          "changed",
+          "removed",
+          "notModified",
+          "failed",
+          "atCeiling",
+          "failureReason",
+          "runs"
+        ],
+        "title": "HarvestRecordView",
+        "type": "object"
+      },
       "HarvestView": {
         "properties": {
           "harvestedAt": {
@@ -7654,6 +7877,72 @@
         ]
       }
     },
+    "/index/entries/{entry_id}/harvests": {
+      "get": {
+        "operationId": "entry_harvests_index_entries__entry_id__harvests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarvestRecordPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "An FDP's harvests, the latest first",
+        "tags": [
+          "Harvest provenance"
+        ]
+      }
+    },
     "/index/entries/{entry_id}/health": {
       "get": {
         "description": "Reach, findings with examples, failures by kind, and the index's stops (TASKS 15.8).\n\nComputed from the stored pages after each harvest; null until the first\nreport. Who may read it follows the conformance `reports` setting.",
@@ -7749,6 +8038,85 @@
         "summary": "Get Event",
         "tags": [
           "Index"
+        ]
+      }
+    },
+    "/index/harvests/{harvest_id}": {
+      "get": {
+        "description": "When the index walked the FDP, how it ended, and the pages it read, added,\nchanged, removed, found unchanged and could not read, per run too.",
+        "operationId": "harvest_index_harvests__harvest_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "harvest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Harvest Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "ttl, jsonld, nt or rdf",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ttl, jsonld, nt or rdf",
+              "title": "Format"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept",
+            "required": false,
+            "schema": {
+              "default": "application/json",
+              "title": "Accept",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarvestRecordView"
+                }
+              },
+              "application/ld+json": {},
+              "application/n-triples": {},
+              "application/rdf+xml": {},
+              "text/turtle": {}
+            },
+            "description": "Successful Response"
+          },
+          "303": {
+            "description": "A browser: the harvest's page"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "One harvest of an FDP, with its runs",
+        "tags": [
+          "Harvest provenance"
         ]
       }
     },

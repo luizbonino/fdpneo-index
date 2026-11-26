@@ -293,6 +293,12 @@ export interface ResourceDetail {
   landingPage: string | null;
   sourceUrl: string;
   harvestedAt: string;
+  /** Where the index's copy came from (TASKS 15.3). */
+  provenance?: {
+    fetchedAt: string;
+    staleSince: string | null;
+    harvest: { id: string; startedAt: string; endedAt: string | null; outcome: string } | null;
+  } | null;
   facts: Record<string, number | boolean>;
   fdp: FdpView;
   parents: Brief[];

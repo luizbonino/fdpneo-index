@@ -153,8 +153,11 @@ Each listed FDP's metadata is a named graph, named by the FDP's address;
 the default graph is all of them together. The graph
 `urn:fdpindex:entries` describes the FDPs themselves: `fdpindex:state`,
 `dct:title`, `r3d:country`, `fdpindex:lastRetrieval`,
-`fdpindex:harvestedNodes`. Common prefixes (`dcat:`, `dct:`, `foaf:`,
-`fdp-o:`, …) need no declaration.
+`fdpindex:harvestedNodes`. The graph `urn:fdpindex:provenance` holds the
+latest harvest of each FDP in PROV-O: an `fdp-o:Harvest` that `prov:used`
+the FDP, with its start and end, `fdp-o:harvestOutcome`, page counts and
+runs. Common prefixes (`dcat:`, `dct:`, `foaf:`, `fdp-o:`, …) need no
+declaration.
 
 ```sparql
 # Datasets per FDP
@@ -172,6 +175,18 @@ SELECT ?dataset ?title ?publisher WHERE {
            dct:title ?title .
   OPTIONAL { ?dataset dct:publisher/foaf:name ?publisher }
 }
+```
+
+```sparql
+# When each FDP was last harvested, and how it went
+PREFIX prov: <http://www.w3.org/ns/prov#>
+SELECT ?fdp ?ended ?outcome ?read WHERE {
+  GRAPH <urn:fdpindex:provenance> {
+    ?harvest a fdp-o:Harvest ; prov:used ?fdp ; prov:endedAtTime ?ended ;
+             fdp-o:harvestOutcome ?outcome ; fdp-o:pagesRead ?read .
+  }
+}
+ORDER BY ?ended
 ```
 
 ```sparql

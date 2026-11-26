@@ -572,6 +572,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/index/entries/{entry_id}/harvests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An FDP's harvests, the latest first */
+    get: operations["entry_harvests_index_entries__entry_id__harvests_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/index/entries/{entry_id}/health": {
     parameters: {
       query?: never;
@@ -604,6 +621,27 @@ export interface paths {
     };
     /** Get Event */
     get: operations["get_event_index_events__event_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/index/harvests/{harvest_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One harvest of an FDP, with its runs
+     * @description When the index walked the FDP, how it ended, and the pages it read, added,
+     *     changed, removed, found unchanged and could not read, per run too.
+     */
+    get: operations["harvest_index_harvests__harvest_id__get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2415,6 +2453,84 @@ export interface components {
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /** HarvestRecordPage */
+    HarvestRecordPage: {
+      /** Items */
+      items: components["schemas"]["HarvestRecordView"][];
+      /** Page */
+      page: number;
+      /** Size */
+      size: number;
+      /** Total */
+      total: number;
+    };
+    /** HarvestRecordRunView */
+    HarvestRecordRunView: {
+      /** Added */
+      added: number;
+      /** Changed */
+      changed: number;
+      /** Endedat */
+      endedAt: string | null;
+      /** Failed */
+      failed: number;
+      /** Notmodified */
+      notModified: number;
+      /** Pagesread */
+      pagesRead: number;
+      /** Removed */
+      removed: number;
+      /** Run */
+      run: number;
+      /** Startedat */
+      startedAt: string | null;
+    };
+    /** HarvestRecordView */
+    HarvestRecordView: {
+      /** Added */
+      added: number;
+      /**
+       * Atceiling
+       * @description Stopped at the page limit
+       */
+      atCeiling: boolean;
+      /** Changed */
+      changed: number;
+      /** Clienturl */
+      clientUrl: string;
+      /** Endedat */
+      endedAt: string | null;
+      /** Entry */
+      entry: string;
+      /** Failed */
+      failed: number;
+      /** Failurereason */
+      failureReason: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Iri
+       * @description The harvest's IRI, this resource's URL
+       */
+      iri: string;
+      /** Notmodified */
+      notModified: number;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "in progress" | "complete" | "partial" | "failed";
+      /** Pagesread */
+      pagesRead: number;
+      /** Removed */
+      removed: number;
+      /** Runs */
+      runs: components["schemas"]["HarvestRecordRunView"][];
+      /** Startedat */
+      startedAt: string;
+      /** Title */
+      title: string | null;
     };
     /** HarvestView */
     HarvestView: {
@@ -5101,6 +5217,40 @@ export interface operations {
       };
     };
   };
+  entry_harvests_index_entries__entry_id__harvests_get: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        entry_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HarvestRecordPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   get_entry_health_index_entries__entry_id__health_get: {
     parameters: {
       query?: never;
@@ -5158,6 +5308,53 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["EventDetailView"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  harvest_index_harvests__harvest_id__get: {
+    parameters: {
+      query?: {
+        /** @description ttl, jsonld, nt or rdf */
+        format?: string | null;
+      };
+      header?: {
+        accept?: string;
+      };
+      path: {
+        harvest_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HarvestRecordView"];
+          "application/ld+json": unknown;
+          "application/n-triples": unknown;
+          "application/rdf+xml": unknown;
+          "text/turtle": unknown;
+        };
+      };
+      /** @description A browser: the harvest's page */
+      303: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

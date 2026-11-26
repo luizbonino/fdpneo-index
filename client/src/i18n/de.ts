@@ -1222,4 +1222,58 @@ export const de: Messages = {
       "Ein Datensatz dieses FDP, mit seiner Adresse; leer: der FDP selbst. Geht geplanter Arbeit vor.",
     queued: "Kein Lauf eingereiht | Ein Lauf eingereiht | {n} Läufe eingereiht",
   },
+  harvests: {
+    title: "Harvests",
+    lead: "Jedes Mal, wenn der Index die Metadaten dieses FDP durchlief: öffentliche Herkunft der Kopien, die er erneut veröffentlicht.",
+    summary:
+      "{read} Seiten gelesen, {changed} hinzugefügt, geändert oder entfernt, {failed} fehlgeschlagen",
+    runCount: "keine Läufe | ein Lauf | {n} Läufe",
+    newer: "Neuere",
+    older: "Ältere",
+    outcomes: {
+      inProgress: "Läuft",
+      complete: "Vollständig",
+      partial: "Teilweise",
+      failed: "Fehlgeschlagen",
+    },
+    fetched: "Abgerufen",
+    byHarvest: "vom Harvest am {when}",
+    staleCopy:
+      "Seit {when} aus einem früheren Harvest behalten: der letzte konnte ihn nicht abrufen.",
+    notFound: "Dieser Harvest ist nicht im Index.",
+    eyebrow: "Harvest",
+    heading: "Harvest vom {when}",
+    pageLead:
+      "Ein Durchlauf des Index über die Metadaten dieses FDP: wann, wie er endete und was er fand.",
+    fdp: "FAIR Data Point",
+    started: "Begonnen",
+    ended: "Beendet",
+    counts: {
+      pagesRead: "Seiten gelesen",
+      added: "Hinzugefügt",
+      changed: "Geändert",
+      removed: "Entfernt",
+      notModified: "Unverändert",
+      failed: "Nicht lesbar",
+    },
+    failureReason: "Warum",
+    atCeiling:
+      "Der Durchlauf stoppte an der Seitengrenze des Index für diesen FDP; Seiten darunter wurden nicht gelesen.",
+    explain: {
+      inProgress: "Der Durchlauf geht in weiteren Läufen weiter; die bisherigen Zahlen.",
+      complete: "Jede Seite, die der Durchlauf erreichte, wurde gelesen.",
+      partial:
+        "Einige Seiten konnten nicht gelesen werden, oder der Durchlauf stoppte an einer Grenze; ihre früheren Kopien bleiben erhalten und sind als veraltet markiert.",
+      failed:
+        "Der Durchlauf konnte nichts lesen; der Index behält seine früheren Kopien, als veraltet markiert.",
+    },
+    runsTitle: "Läufe | Ein Lauf | {n} Läufe",
+    runsLead:
+      "Ein großer FDP wird in Läufen gelesen, einige Minuten auseinander, damit keine einzelne Anfrage lange dauert.",
+    run: "Lauf",
+    provTitle: "In PROV-O",
+    provLead:
+      "Die Adresse dieses Harvests beschreibt ihn in PROV-O und der FAIR-Data-Point-Ontologie; die Datensätze des Katalog-Feeds nennen den Harvest, der jede Kopie abrief.",
+    iri: "Die Adresse dieses Harvests",
+  },
 };

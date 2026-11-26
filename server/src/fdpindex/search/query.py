@@ -78,6 +78,7 @@ from fdpindex.models import (
     SearchResource,
     SearchValue,
 )
+from fdpindex.provenance import copy_provenance
 from fdpindex.search import cursor as cursors
 from fdpindex.search.concepts import (
     ConceptGroups,
@@ -1812,6 +1813,10 @@ class SearchService:
                 "landingPage": resource.landing_page,
                 "sourceUrl": resource.node_iri,
                 "harvestedAt": resource.harvested_at.isoformat(),
+                # Where the index's copy came from (TASKS 15.3).
+                "provenance": await copy_provenance(
+                    session, resource.entry_uuid, resource.node_iri
+                ),
                 "facts": resource.facts,
                 "fdp": _fdp_view(entry, threshold),
                 "parents": parents,

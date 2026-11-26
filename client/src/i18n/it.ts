@@ -1217,4 +1217,57 @@ export const it: Messages = {
       "Un record di questo FDP, con il suo indirizzo; vuoto: l’FDP stesso. Ha la precedenza sul lavoro pianificato.",
     queued: "Nessuna esecuzione in coda | Un’esecuzione in coda | {n} esecuzioni in coda",
   },
+  harvests: {
+    title: "Raccolte",
+    lead: "Ogni volta che l’indice ha percorso i metadati di questo FDP: la provenienza pubblica delle copie che ripubblica.",
+    summary: "{read} pagine lette, {changed} aggiunte, modificate o rimosse, {failed} non riuscite",
+    runCount: "nessun passaggio | un passaggio | {n} passaggi",
+    newer: "Più recenti",
+    older: "Meno recenti",
+    outcomes: {
+      inProgress: "In corso",
+      complete: "Completa",
+      partial: "Parziale",
+      failed: "Fallita",
+    },
+    fetched: "Recuperato",
+    byHarvest: "dalla raccolta del {when}",
+    staleCopy:
+      "Conservato da una raccolta precedente dal {when}: l’ultima non ha potuto recuperarlo.",
+    notFound: "Questa raccolta non è nell’indice.",
+    eyebrow: "Raccolta",
+    heading: "Raccolta del {when}",
+    pageLead:
+      "Un percorso dell’indice sui metadati di questo FDP: quando, come è finito e cosa ha trovato.",
+    fdp: "FAIR Data Point",
+    started: "Iniziata",
+    ended: "Terminata",
+    counts: {
+      pagesRead: "Pagine lette",
+      added: "Aggiunte",
+      changed: "Modificate",
+      removed: "Rimosse",
+      notModified: "Invariate",
+      failed: "Non leggibili",
+    },
+    failureReason: "Perché",
+    atCeiling:
+      "Il percorso si è fermato al limite di pagine dell’indice per questo FDP; le pagine sottostanti non sono state lette.",
+    explain: {
+      inProgress: "Il percorso continua in passaggi successivi; i numeri finora.",
+      complete: "Ogni pagina raggiunta dal percorso è stata letta.",
+      partial:
+        "Alcune pagine non sono state lette, o il percorso si è fermato a un limite; le loro copie precedenti sono conservate e segnate come superate.",
+      failed:
+        "Il percorso non ha potuto leggere nulla; l’indice conserva le copie precedenti, segnate come superate.",
+    },
+    runsTitle: "Passaggi | Un passaggio | {n} passaggi",
+    runsLead:
+      "Un FDP grande viene letto in passaggi a pochi minuti di distanza, così che nessuna richiesta duri a lungo.",
+    run: "Passaggio",
+    provTitle: "In PROV-O",
+    provLead:
+      "L’indirizzo di questa raccolta la descrive in PROV-O e nell’ontologia FAIR Data Point; i record del feed del catalogo indicano la raccolta che ha recuperato ogni copia.",
+    iri: "L’indirizzo di questa raccolta",
+  },
 };

@@ -7,6 +7,8 @@ Search design §2.2.1. Layout:
 * ``<urn:fdpindex:entries>``: one ``fdp-o:FAIRDataPoint`` per accepted FDP with
   its title, state, country, last retrieval and node count, so queries can
   join on FDP status without leaving SPARQL;
+* ``<urn:fdpindex:provenance>``: the latest harvest of every accepted FDP, in
+  PROV-O and FDP-O 2.1 (TASKS 15.3, ``fdpindex.provenance``);
 * ``<urn:fdpindex:void>``: VoID class and property partitions with counts,
   for the UI's autocomplete and for tools such as SIB's sparql-editor;
 * ``<urn:fdpindex:sync>``: per FDP, the fingerprint of what was loaded.
@@ -46,7 +48,10 @@ ENTRIES_GRAPH = ox.NamedNode("urn:fdpindex:entries")
 VOID_GRAPH = ox.NamedNode("urn:fdpindex:void")
 SYNC_GRAPH = ox.NamedNode("urn:fdpindex:sync")
 EXAMPLES_GRAPH = ox.NamedNode("urn:fdpindex:examples")
-SERVICE_GRAPHS = frozenset({ENTRIES_GRAPH, VOID_GRAPH, SYNC_GRAPH, EXAMPLES_GRAPH})
+PROVENANCE_GRAPH = ox.NamedNode("urn:fdpindex:provenance")
+SERVICE_GRAPHS = frozenset(
+    {ENTRIES_GRAPH, VOID_GRAPH, SYNC_GRAPH, EXAMPLES_GRAPH, PROVENANCE_GRAPH}
+)
 
 RDF_TYPE = ox.NamedNode("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 XSD = "http://www.w3.org/2001/XMLSchema#"
@@ -239,6 +244,16 @@ class SparqlStore:
             self._changed()
         self._entries = facts
         return True
+
+    def write_provenance(self, ntriples: str) -> None:
+        """Rewrite the provenance graph (TASKS 15.3)."""
+        quads = list(ox.parse(ntriples.encode(), format=ox.RdfFormat.N_TRIPLES))
+        with self._lock:
+            self._store.clear_graph(PROVENANCE_GRAPH)
+            self._store.extend(
+                ox.Quad(q.subject, q.predicate, q.object, PROVENANCE_GRAPH) for q in quads
+            )
+            self._changed()
 
     def write_examples(self, quads: Iterable[ox.Quad]) -> None:
         with self._lock:

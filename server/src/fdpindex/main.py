@@ -21,6 +21,7 @@ from fdpindex import __version__
 from fdpindex.api.benchmarks import router as benchmarks_router
 from fdpindex.api.catalog import router as catalog_router
 from fdpindex.api.conformance import router as conformance_router
+from fdpindex.api.harvests import router as harvests_router
 from fdpindex.api.network import router as network_router
 from fdpindex.api.routes import router
 from fdpindex.api.search import router as search_router
@@ -279,6 +280,10 @@ def create_app(
         app.state.checks = CheckService(index, settings_service, jobs)
         if resume_on_startup:
             await index.resume_unfinished()
+        try:  # walks run before harvest records existed (TASKS 15.3), once
+            await index.backfill_harvests()
+        except Exception:
+            log.exception("harvest_backfill_failed")
         scheduler = HealthScheduler(
             index,
             sweep_seconds=config.health_sweep_seconds,
@@ -338,6 +343,7 @@ def create_app(
     app.include_router(stats_router)
     app.include_router(network_router)
     app.include_router(benchmarks_router)
+    app.include_router(harvests_router)
     return app
 
 
@@ -522,6 +528,8 @@ async def _start_sparql(
         settings_service,
         endpoint=endpoint,
         void_interval=config.sparql_void_interval_seconds,
+        base=config.public_url,
+        title=config.catalog_title,
     )
     index.add_listener(sync.notify)
     sync.start()

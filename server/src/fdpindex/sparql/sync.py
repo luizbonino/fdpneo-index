@@ -6,6 +6,8 @@ records them and a background loop applies them, coalescing bursts:
 * a harvested entry is reloaded when its fingerprint differs from the store's;
 * removals reconcile the store's graphs against the accepted entries;
 * the entries graph is rewritten after any entry change;
+* the provenance graph, the latest harvest of every accepted FDP, is
+  rewritten after a walk ends or an FDP leaves (TASKS 15.3);
 * the VoID description is regenerated at most every ``void_interval``
   seconds, because counting partitions reads the whole store.
 
@@ -22,10 +24,18 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import structlog
+from rdflib import Graph
 from sqlalchemy import func, select
 
 from fdpindex.db import utcnow
-from fdpindex.models import ConformanceResult, EntryPermit, HarvestedNode, IndexEntry
+from fdpindex.models import (
+    ConformanceResult,
+    EntryPermit,
+    HarvestedNode,
+    HarvestRecord,
+    IndexEntry,
+)
+from fdpindex.provenance import describe_harvest, describe_index
 from fdpindex.service import IndexChange, api_state
 from fdpindex.sparql.store import EntryFacts, SparqlStore, fingerprint
 
@@ -49,7 +59,12 @@ class SparqlSync:
         endpoint: str,
         void_interval: float = 60.0,
         debounce: float = 1.0,
+        base: str | None = None,
+        title: str = "FDPneo Index",
     ) -> None:
+        self._base = base
+        self._title = title
+        self._provenance_dirty = True
         self._store = store
         self._session_factory = session_factory
         self._settings = settings
@@ -88,6 +103,9 @@ class SparqlSync:
             self._entries.add(change.entry_id)
         elif change.kind == "removed":
             self._reconcile = True
+            self._provenance_dirty = True
+        elif change.kind == "walked":
+            self._provenance_dirty = True
         self._entries_dirty = True
         self.idle.clear()
         self._wake.set()
@@ -149,6 +167,9 @@ class SparqlSync:
         if self._entries_dirty:
             self._entries_dirty = False
             await self._write_entries()
+        if self._provenance_dirty:
+            self._provenance_dirty = False
+            await self._write_provenance()
         self._void_dirty |= loaded
         due = time.monotonic() >= self._void_at + self._void_interval
         if self._void_dirty and (due or force_void):
@@ -247,6 +268,43 @@ class SparqlSync:
         except Exception:
             log.exception("sparql_entry_failed", entry=str(entry_id))
             return False
+
+    async def _write_provenance(self) -> None:
+        """The latest ended harvest of every accepted FDP, and the index as their agent."""
+        async with self._session_factory() as session:
+            latest = (
+                select(
+                    HarvestRecord.entry_uuid, func.max(HarvestRecord.started_at).label("started")
+                )
+                .where(HarvestRecord.ended_at.is_not(None))
+                .group_by(HarvestRecord.entry_uuid)
+                .subquery()
+            )
+            rows = (
+                await session.execute(
+                    select(HarvestRecord, IndexEntry.client_url)
+                    .join(
+                        latest,
+                        (latest.c.entry_uuid == HarvestRecord.entry_uuid)
+                        & (latest.c.started == HarvestRecord.started_at),
+                    )
+                    .join(IndexEntry, IndexEntry.uuid == HarvestRecord.entry_uuid)
+                    .where(
+                        IndexEntry.permit == EntryPermit.ACCEPTED,
+                        HarvestRecord.ended_at.is_not(None),
+                    )
+                )
+            ).all()
+
+        def render() -> str:
+            graph = Graph()
+            describe_index(graph, self._base, self._title)
+            for record, client_url in rows:
+                describe_harvest(graph, record, fdp=str(client_url), base=self._base)
+            return graph.serialize(format="nt")
+
+        text = await asyncio.to_thread(render)
+        await asyncio.to_thread(self._store.write_provenance, text)
 
     async def _write_entries(self) -> None:
         settings = await self._settings.get()

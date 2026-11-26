@@ -30,6 +30,10 @@ export type HealthRow = Schemas["HealthRow"];
 export type NetworkProfileView = Schemas["NetworkProfileView"];
 export type ProfileExample = Schemas["ProfileExample"];
 export type HealthRequirement = Schemas["HealthRequirementView"];
+/** Harvest provenance (TASKS 15.3). */
+export type HarvestRecord = Schemas["HarvestRecordView"];
+export type HarvestRecordPage = Schemas["HarvestRecordPage"];
+export type HarvestOutcome = HarvestRecord["outcome"];
 /** A network's benchmarks on an FDP (TASKS 15.10). */
 export type EntryBenchmarks = Schemas["EntryBenchmarks"];
 export type EntryBenchmark = Schemas["EntryBenchmark"];
@@ -121,6 +125,11 @@ export const api = {
   entry: (uuid: string) => request<EntryDetail>(`/index/entries/${uuid}`),
   entryHealth: (uuid: string) => request<MetadataHealth | null>(`/index/entries/${uuid}/health`),
   healthTable: () => request<HealthRow[]>("/index/health"),
+  harvest: (id: string) => request<HarvestRecord>(`/index/harvests/${id}`),
+  harvestRdf: (id: string, format: "ttl" | "jsonld") =>
+    apiUrl(`/index/harvests/${id}${query({ format })}`),
+  entryHarvests: (uuid: string, page = 0, size = 5) =>
+    request<HarvestRecordPage>(`/index/entries/${uuid}/harvests${query({ page, size })}`),
   entryBenchmarks: (uuid: string) => request<EntryBenchmarks>(`/index/entries/${uuid}/benchmarks`),
   benchmarkResults: (uuid: string, q: BenchmarkResultQuery) =>
     request<BenchmarkResultPage>(

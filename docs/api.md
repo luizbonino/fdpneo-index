@@ -171,6 +171,18 @@ Administrators run the benchmarks on one record at once with
 itself when left out); the answer is `202 Accepted`, or `409` while runs are
 off.
 
+An FDP's harvests, the latest first: when the index walked its metadata,
+how each walk ended, and the pages it read, added, changed, removed, found
+unchanged and could not read, per run too:
+
+```http
+GET /index/entries/{uuid}/harvests?size=5
+```
+
+Each harvest's IRI is `/index/harvests/{id}`: JSON, or Turtle, JSON-LD,
+N-Triples and RDF/XML in PROV-O and the FAIR Data Point Ontology (`format`
+or `Accept`); a browser is sent to its page.
+
 An FDP's conformance report, when the index publishes reports:
 
 ```http

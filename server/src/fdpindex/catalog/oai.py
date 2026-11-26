@@ -93,8 +93,10 @@ class OaiRepository:
         catalog_iri: str,
         record_iri: Callable[[str], str],
         admin_email: str | None,
+        base: str | None = None,
     ) -> None:
         self._feed = feed
+        self._base = base
         self._base_url = base_url
         self._prefix = f"oai:{host}:"
         self._catalog_iri = catalog_iri
@@ -242,6 +244,7 @@ class OaiRepository:
                 record,
                 catalog_iri=self._catalog_iri,
                 iri=self._record_iri(record.public_id),
+                base=self._base,
             )
             rdf = graph.serialize(format="xml", encoding="utf-8")
             meta = ET.SubElement(node, f"{{{OAI}}}metadata")

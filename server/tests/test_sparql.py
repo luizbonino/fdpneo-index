@@ -489,6 +489,27 @@ def test_harvested_metadata_is_queryable(api: Api) -> None:
     assert _bindings(entries.content) == [{"title": "Demo FDP"}]
 
 
+def test_the_latest_harvest_of_each_fdp_is_in_sparql(api: Api) -> None:
+    """TASKS 15.3: the provenance graph, in PROV-O and FDP-O."""
+    assert api.client.post("/", json={"clientUrl": FDP}).status_code == 204
+    api.settle()
+    response = api.client.get(
+        "/index/sparql",
+        params={
+            "query": "PREFIX prov: <http://www.w3.org/ns/prov#> "
+            "PREFIX fdpo: <https://w3id.org/fdp/fdp-o#> "
+            "SELECT ?fdp ?outcome ?read WHERE { GRAPH <urn:fdpindex:provenance> "
+            "{ ?h a fdpo:Harvest ; prov:used ?fdp ; fdpo:harvestOutcome ?outcome ; "
+            "fdpo:pagesRead ?read } }"
+        },
+        headers=ADMIN,
+    )
+    assert response.status_code == 200, response.text
+    assert _bindings(response.content) == [
+        {"fdp": FDP, "outcome": "https://w3id.org/fdp/fdp-o#HarvestComplete", "read": "3"}
+    ]
+
+
 def test_a_node_the_store_cannot_parse_is_left_out_not_the_rest(
     api: Api, network: FakeNetwork
 ) -> None:

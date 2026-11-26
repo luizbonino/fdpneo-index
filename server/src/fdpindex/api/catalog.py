@@ -87,6 +87,7 @@ async def catalog(
         view_iri=link(after),
         first_iri=link(None),
         next_iri=link(page.next_after) if page.next_after is not None else None,
+        base=_base(request),
     )
     body = graph.serialize(format=FORMATS[media])
     headers = {"Vary": "Accept"}
@@ -113,7 +114,13 @@ async def catalog_record(
     if record is None:
         raise NotFound(f"No catalogue record '{public_id}'")
     catalog_iri, records = _urls(request)
-    graph = record_graph(feed, record, catalog_iri=catalog_iri, iri=records + record.public_id)
+    graph = record_graph(
+        feed,
+        record,
+        catalog_iri=catalog_iri,
+        iri=records + record.public_id,
+        base=_base(request),
+    )
     return Response(
         graph.serialize(format=FORMATS[media]), media_type=media, headers={"Vary": "Accept"}
     )
@@ -154,5 +161,6 @@ async def _oai(request: Request, args: dict[str, str]) -> Response:
         catalog_iri=catalog_iri,
         record_iri=lambda public_id: records + public_id,
         admin_email=request.app.state.config.catalog_contact_email,
+        base=base,
     )
     return Response(await repository.respond(args), media_type="text/xml; charset=utf-8")

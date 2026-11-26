@@ -1213,4 +1213,57 @@ export const pt: Messages = {
       "Um registo deste FDP, pelo seu endereço; vazio: o próprio FDP. Passa à frente do trabalho agendado.",
     queued: "Nenhuma execução em fila | Uma execução em fila | {n} execuções em fila",
   },
+  harvests: {
+    title: "Recolhas",
+    lead: "Cada vez que o índice percorreu os metadados deste FDP: a proveniência pública das cópias que republica.",
+    summary:
+      "{read} páginas lidas, {changed} adicionadas, alteradas ou removidas, {failed} falhadas",
+    runCount: "nenhuma passagem | uma passagem | {n} passagens",
+    newer: "Mais recentes",
+    older: "Mais antigas",
+    outcomes: {
+      inProgress: "Em curso",
+      complete: "Completa",
+      partial: "Parcial",
+      failed: "Falhada",
+    },
+    fetched: "Obtido",
+    byHarvest: "pela recolha de {when}",
+    staleCopy: "Guardado de uma recolha anterior desde {when}: a última não o conseguiu obter.",
+    notFound: "Esta recolha não está no índice.",
+    eyebrow: "Recolha",
+    heading: "Recolha de {when}",
+    pageLead:
+      "Um percurso do índice pelos metadados deste FDP: quando, como terminou e o que encontrou.",
+    fdp: "FAIR Data Point",
+    started: "Iniciada",
+    ended: "Terminada",
+    counts: {
+      pagesRead: "Páginas lidas",
+      added: "Adicionadas",
+      changed: "Alteradas",
+      removed: "Removidas",
+      notModified: "Inalteradas",
+      failed: "Ilegíveis",
+    },
+    failureReason: "Porquê",
+    atCeiling:
+      "O percurso parou no limite de páginas do índice para este FDP; as páginas abaixo não foram lidas.",
+    explain: {
+      inProgress: "O percurso continua em passagens seguintes; os números até agora.",
+      complete: "Cada página alcançada pelo percurso foi lida.",
+      partial:
+        "Algumas páginas não puderam ser lidas, ou o percurso parou num limite; as suas cópias anteriores são guardadas e marcadas como desatualizadas.",
+      failed:
+        "O percurso não conseguiu ler nada; o índice guarda as suas cópias anteriores, marcadas como desatualizadas.",
+    },
+    runsTitle: "Passagens | Uma passagem | {n} passagens",
+    runsLead:
+      "Um FDP grande é lido em passagens com alguns minutos de intervalo, para que nenhum pedido demore muito.",
+    run: "Passagem",
+    provTitle: "Em PROV-O",
+    provLead:
+      "O endereço desta recolha descreve-a em PROV-O e na ontologia FAIR Data Point; os registos do feed do catálogo indicam a recolha que obteve cada cópia.",
+    iri: "O endereço desta recolha",
+  },
 };

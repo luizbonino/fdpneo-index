@@ -46,6 +46,7 @@ from fdpindex.models import (
     Event,
     EventType,
     HarvestedNode,
+    HarvestRecord,
     HarvestWalk,
     IndexEntry,
     MetadataHealth,
@@ -107,11 +108,13 @@ class IndexChange:
     """A notification for derived stores (the SPARQL store, the search projection).
 
     ``kind`` is ``harvested`` (an entry's nodes changed), ``removed`` (an entry's
-    harvested data is gone: rejected or deleted) or ``entries`` (entry fields such
-    as state or title changed). Listeners must be cheap: record and return.
+    harvested data is gone: rejected or deleted), ``entries`` (entry fields such
+    as state or title changed) or ``walked`` (a walk over an entry's metadata
+    ended, whatever it found: its provenance changed, TASKS 15.3). Listeners must
+    be cheap: record and return.
     """
 
-    kind: Literal["harvested", "removed", "entries"]
+    kind: Literal["harvested", "removed", "entries", "walked"]
     entry_id: UUID | None = None
     changes: HarvestChanges | None = None
 
@@ -154,6 +157,59 @@ def _read_pages(
     return [
         read_page(iri, text, root=page_key(iri) == root, watched=watched) for iri, text in batch
     ]
+
+
+def _new_record(entry_id: UUID, started: datetime) -> HarvestRecord:
+    return HarvestRecord(
+        id=uuid4(),
+        entry_uuid=entry_id,
+        started_at=started,
+        outcome="in progress",
+        pages_read=0,
+        added=0,
+        changed=0,
+        removed=0,
+        not_modified=0,
+        failed=0,
+        at_ceiling=False,
+        runs=[],
+    )
+
+
+def _record_run(
+    record: HarvestRecord,
+    *,
+    run: int,
+    started: datetime,
+    ended: datetime,
+    read: int,
+    added: int,
+    changed: int,
+    removed: int,
+    not_modified: int,
+    failed: int,
+) -> None:
+    """Add one run to a harvest record and to its totals."""
+    record.runs = [
+        *(record.runs or []),
+        {
+            "run": run,
+            "startedAt": _instant(started),
+            "endedAt": _instant(ended),
+            "pagesRead": read,
+            "added": added,
+            "changed": changed,
+            "removed": removed,
+            "notModified": not_modified,
+            "failed": failed,
+        },
+    ]
+    record.pages_read += read
+    record.added += added
+    record.changed += changed
+    record.removed += removed
+    record.not_modified += not_modified
+    record.failed += failed
 
 
 def _instant(moment: datetime | None) -> str | None:
@@ -1073,6 +1129,12 @@ class IndexService:
                 )
                 session.add(walk)
             walk.runs += 1
+            # The walk's public record (TASKS 15.3), made by its first run.
+            record = await session.get(HarvestRecord, walk.harvest_id) if walk.harvest_id else None
+            if record is None:
+                record = _new_record(entry_id, walk_started)
+                session.add(record)
+                walk.harvest_id = record.id
             walk.pages += len(result.nodes) + len(result.failed)
             walk.failed = {**walk.failed, **{k: v[:200] for k, v in result.failed.items()}}
             walk.unreached = walk.unreached or bool(result.unreached_below)
@@ -1134,6 +1196,28 @@ class IndexService:
                     session.expunge(walk)
                 else:
                     await session.delete(walk)
+            _record_run(
+                record,
+                run=walk.runs,
+                started=started,
+                ended=now,
+                read=len(fresh),
+                added=len(added),
+                changed=len(changed),
+                removed=len(removed),
+                # Unchanged, by an HTTP 304 or by the content hash (fdp-o:pagesNotModified).
+                not_modified=max(0, len(fresh) - len(added) - len(changed)),
+                failed=len(result.failed),
+            )
+            if finished:
+                record.ended_at = now
+                record.outcome = outcome
+                record.at_ceiling = at_ceiling
+                if outcome != "complete":
+                    reason = next(iter(walk.failed.values()), None)
+                    record.failure_reason = reason or (
+                        "stopped at the page limit" if at_ceiling else None
+                    )
             failed = dict(list(result.failed.items())[:MAX_REPORTED_FAILURES])
             await self._finish_harvest(
                 harvest_ids,
@@ -1150,6 +1234,7 @@ class IndexService:
                     "limitReached": result.limit_reached,
                     "skippedOffOrigin": result.skipped_off_origin,
                     "seconds": round((utcnow() - started).total_seconds(), 1),
+                    "harvestId": str(record.id),
                     "walk": {
                         "startedAt": _instant(walk_started),
                         "run": walk.runs,
@@ -1177,6 +1262,8 @@ class IndexService:
         changes = HarvestChanges(frozenset(added), frozenset(changed), frozenset(removed))
         if fresh or removed:
             self._notify(IndexChange("harvested", entry_id, changes))
+        if finished:
+            self._notify(IndexChange("walked", entry_id))
 
     async def schedule_due_walks(self, *, batch: int = 100) -> int:
         """Start the next run of every walk whose wait is over; return how many (TASKS 15.7).
@@ -1450,6 +1537,135 @@ class IndexService:
         """The entry for ``client_url`` (or the same FDP under another spelling)."""
         async with self._session_factory() as session:
             return await _known_entry(session, client_url)
+
+    # --- harvest provenance (TASKS 15.3) -------------------------------------------------
+
+    async def harvest_record(self, harvest_id: UUID) -> HarvestRecord:
+        async with self._session_factory() as session:
+            record = await session.get(HarvestRecord, harvest_id)
+        if record is None:
+            raise NotFound("Harvest not found")
+        return record
+
+    async def harvest_records(
+        self, entry_id: UUID, *, page: int = 0, size: int = 20
+    ) -> tuple[list[HarvestRecord], int]:
+        """An FDP's harvests, the latest first."""
+        async with self._session_factory() as session:
+            total = int(
+                await session.scalar(
+                    select(func.count())
+                    .select_from(HarvestRecord)
+                    .where(HarvestRecord.entry_uuid == entry_id)
+                )
+                or 0
+            )
+            records = list(
+                await session.scalars(
+                    select(HarvestRecord)
+                    .where(HarvestRecord.entry_uuid == entry_id)
+                    .order_by(HarvestRecord.started_at.desc())
+                    .offset(page * size)
+                    .limit(size)
+                )
+            )
+        return records, total
+
+    async def backfill_harvests(self) -> int:
+        """Rebuild the harvests of walks run before harvest records existed (TASKS 15.3).
+
+        Once, while the table is empty: each ``Harvest`` event is a run, and runs
+        with the same walk start (``walk.startedAt``) are one harvest; events from
+        before walks (TASKS 15.7) are a harvest each. A walk still in progress gets
+        its record linked. Returns how many harvests were made.
+        """
+        async with self._session_factory() as session:
+            if await session.scalar(select(HarvestRecord.id).limit(1)) is not None:
+                return 0
+            events = list(
+                await session.scalars(
+                    select(Event)
+                    .where(Event.type == EventType.HARVEST, Event.finished_at.is_not(None))
+                    .order_by(Event.related_to, Event.executed_at)
+                )
+            )
+            walks = {walk.entry_uuid: walk for walk in await session.scalars(select(HarvestWalk))}
+        groups: dict[tuple[UUID, str], list[tuple[datetime, datetime, dict[str, Any]]]] = {}
+        seen: set[tuple[UUID, datetime]] = set()
+        for event in events:
+            report = dict((event.payload or {}).get("harvest") or {})
+            if event.related_to is None or report.get("outcome") in (None, "skipped"):
+                continue
+            begun = event.executed_at or event.created_at
+            if (event.related_to, begun) in seen:  # one pass done for several requests
+                continue
+            seen.add((event.related_to, begun))
+            walk_info: dict[str, Any] = dict(report.get("walk") or {})
+            key = (event.related_to, str(walk_info.get("startedAt") or event.uuid))
+            ended = event.finished_at or begun
+            groups.setdefault(key, []).append((begun, ended, report))
+        made: list[HarvestRecord] = []
+        for (entry_id, start), runs in groups.items():
+            try:
+                started = datetime.fromisoformat(start)
+            except ValueError:
+                started = runs[0][0]
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=UTC)
+            record = _new_record(entry_id, started)
+            for number, (begun, ended, report) in enumerate(runs, start=1):
+                _record_run(
+                    record,
+                    run=number,
+                    started=begun,
+                    ended=ended,
+                    read=int(report.get("nodes") or 0),
+                    added=int(report.get("added") or 0),
+                    changed=int(report.get("changed") or 0),
+                    removed=int(report.get("removed") or 0),
+                    not_modified=max(
+                        0,
+                        int(report.get("nodes") or 0)
+                        - int(report.get("added") or 0)
+                        - int(report.get("changed") or 0),
+                    ),
+                    failed=int(report.get("failedCount") or len(report.get("failed") or {})),
+                )
+                failures: dict[str, Any] = dict(report.get("failed") or {})
+                if failures and record.failure_reason is None:
+                    record.failure_reason = str(next(iter(failures.values())))[:512]
+            last = runs[-1][2]
+            outcome = str(last.get("outcome"))
+            walk = walks.get(entry_id)
+            if outcome == "in progress":
+                current = walk is not None and abs((walk.started_at - started).total_seconds()) < 1
+                if current:
+                    record.outcome = "in progress"
+                    walk.harvest_id = record.id  # pyright: ignore[reportOptionalMemberAccess]
+                else:  # a walk that never had its last run
+                    record.outcome, record.ended_at = "partial", runs[-1][1]
+                    record.failure_reason = record.failure_reason or "ended without its last run"
+            else:
+                record.outcome = (
+                    outcome if outcome in {"complete", "partial", "failed"} else "partial"
+                )
+                record.ended_at = runs[-1][1]
+                last_walk: dict[str, Any] = dict(last.get("walk") or {})
+                record.at_ceiling = bool(last_walk.get("atCeiling"))
+                if record.outcome == "complete":
+                    record.failure_reason = None
+            made.append(record)
+        if not made:
+            return 0
+        async with self._session_factory() as session, session.begin():
+            session.add_all(made)
+            for walk in walks.values():
+                if walk.harvest_id is not None:
+                    current = await session.get(HarvestWalk, walk.entry_uuid)
+                    if current is not None:
+                        current.harvest_id = walk.harvest_id
+        log.info("harvests_backfilled", harvests=len(made), events=len(events))
+        return len(made)
 
     async def harvest_walk(self, entry_id: UUID) -> HarvestWalk | None:
         """The entry's walk in progress, if any (TASKS 15.7)."""

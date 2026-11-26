@@ -1215,4 +1215,57 @@ export const nl: Messages = {
     queued:
       "Geen uitvoering in de wachtrij | Eén uitvoering in de wachtrij | {n} uitvoeringen in de wachtrij",
   },
+  harvests: {
+    title: "Harvests",
+    lead: "Elke keer dat de index de metadata van deze FDP doorliep: openbare herkomst van de kopieën die hij opnieuw publiceert.",
+    summary:
+      "{read} pagina’s gelezen, {changed} toegevoegd, gewijzigd of verwijderd, {failed} mislukt",
+    runCount: "geen ronden | één ronde | {n} ronden",
+    newer: "Nieuwer",
+    older: "Ouder",
+    outcomes: {
+      inProgress: "Bezig",
+      complete: "Volledig",
+      partial: "Gedeeltelijk",
+      failed: "Mislukt",
+    },
+    fetched: "Opgehaald",
+    byHarvest: "door de harvest van {when}",
+    staleCopy: "Bewaard van een eerdere harvest sinds {when}: de laatste kon hem niet ophalen.",
+    notFound: "Deze harvest staat niet in de index.",
+    eyebrow: "Harvest",
+    heading: "Harvest van {when}",
+    pageLead:
+      "Eén doorloop van de index over de metadata van deze FDP: wanneer, hoe hij eindigde en wat hij vond.",
+    fdp: "FAIR Data Point",
+    started: "Begonnen",
+    ended: "Geëindigd",
+    counts: {
+      pagesRead: "Pagina’s gelezen",
+      added: "Toegevoegd",
+      changed: "Gewijzigd",
+      removed: "Verwijderd",
+      notModified: "Ongewijzigd",
+      failed: "Niet te lezen",
+    },
+    failureReason: "Waarom",
+    atCeiling:
+      "De doorloop stopte bij de paginagrens van de index voor deze FDP; pagina’s daaronder zijn niet gelezen.",
+    explain: {
+      inProgress: "De doorloop gaat verder in volgende ronden; de aantallen tot nu toe.",
+      complete: "Elke pagina die de doorloop bereikte is gelezen.",
+      partial:
+        "Sommige pagina’s konden niet worden gelezen, of de doorloop stopte bij een grens; hun eerdere kopieën blijven bewaard en zijn als verouderd gemarkeerd.",
+      failed:
+        "De doorloop kon niets lezen; de index bewaart zijn eerdere kopieën, als verouderd gemarkeerd.",
+    },
+    runsTitle: "Ronden | Eén ronde | {n} ronden",
+    runsLead:
+      "Een grote FDP wordt in ronden gelezen, een paar minuten uit elkaar, zodat geen enkel verzoek lang duurt.",
+    run: "Ronde",
+    provTitle: "In PROV-O",
+    provLead:
+      "Het adres van deze harvest beschrijft hem in PROV-O en de FAIR Data Point-ontologie; de records van de catalogusfeed noemen de harvest die elke kopie ophaalde.",
+    iri: "Het adres van deze harvest",
+  },
 };

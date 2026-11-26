@@ -13,6 +13,7 @@ import PermitBadge from "@/components/PermitBadge.vue";
 import StatusHelp from "@/components/StatusHelp.vue";
 import EventTimeline from "@/components/EventTimeline.vue";
 import MetadataHealth from "@/components/health/MetadataHealth.vue";
+import CheckPanel from "@/components/health/CheckPanel.vue";
 import ConformanceReport from "@/components/conformance/ConformanceReport.vue";
 import { absoluteTime, countryLabel, hostOf, relativeTime } from "@/utils/format";
 import { currentLocale } from "@/i18n";
@@ -438,6 +439,11 @@ async function remove() {
       </section>
 
       <MetadataHealth v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />
+      <section v-else-if="session.isAdmin" class="card stack" aria-labelledby="check-h">
+        <h2 id="check-h">{{ t("check.title") }}</h2>
+        <p class="muted small">{{ t("check.reviewHelp") }}</p>
+        <CheckPanel :url="detail.clientUrl" />
+      </section>
       <ConformanceReport v-if="detail.permit === 'ACCEPTED'" :uuid="detail.uuid" />
     </template>
   </div>

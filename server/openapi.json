@@ -173,6 +173,198 @@
         "title": "Chart",
         "type": "object"
       },
+      "CheckPolicyView": {
+        "properties": {
+          "allowed": {
+            "description": "Whether the caller may",
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "pages": {
+            "description": "The most pages a check reads",
+            "title": "Pages",
+            "type": "integer"
+          },
+          "perPage": {
+            "description": "The most children it reads of each page",
+            "title": "Perpage",
+            "type": "integer"
+          },
+          "who": {
+            "description": "Who may check an FDP before registering it: anyone when the index accepts FDPs without approval, else administrators, unless they chose otherwise",
+            "enum": [
+              "anyone",
+              "admins"
+            ],
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "who",
+          "allowed",
+          "pages",
+          "perPage"
+        ],
+        "title": "CheckPolicyView",
+        "type": "object"
+      },
+      "CheckRegisteredView": {
+        "properties": {
+          "permit": {
+            "$ref": "#/components/schemas/EntryPermit"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "permit"
+        ],
+        "title": "CheckRegisteredView",
+        "type": "object"
+      },
+      "CheckRequest": {
+        "description": "An FDP to check before registering it (TASKS 15.11).",
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientUrl"
+        ],
+        "title": "CheckRequest",
+        "type": "object"
+      },
+      "CheckRootView": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "state": {
+            "description": "VALID, INVALID or UNREACHABLE, as a ping's retrieval says",
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "state",
+          "error",
+          "title"
+        ],
+        "title": "CheckRootView",
+        "type": "object"
+      },
+      "CheckView": {
+        "description": "A check of an FDP before registering it (TASKS 15.11). Nothing is stored.",
+        "properties": {
+          "clientUrl": {
+            "title": "Clienturl",
+            "type": "string"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "registered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckRegisteredView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The index's entry for this URL, when it has one the caller may see"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthReportView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The health of a sample of the FDP's pages; null when the root metadata is not an FDP's"
+          },
+          "root": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckRootView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The root metadata; null while running"
+          },
+          "sampledOut": {
+            "default": 0,
+            "description": "Pages the sample left out (beyond the children read of each page)",
+            "title": "Sampledout",
+            "type": "integer"
+          },
+          "startedAt": {
+            "title": "Startedat",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "done"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "clientUrl",
+          "status",
+          "startedAt",
+          "finishedAt",
+          "root",
+          "registered",
+          "report"
+        ],
+        "title": "CheckView",
+        "type": "object"
+      },
       "Choice": {
         "additionalProperties": false,
         "properties": {
@@ -1779,6 +1971,113 @@
         "title": "HealthFindingView",
         "type": "object"
       },
+      "HealthReportView": {
+        "description": "A health report: of an FDP's stored pages, or of a check's sample.",
+        "properties": {
+          "complete": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The harvest read every page it found; null when not known",
+            "title": "Complete"
+          },
+          "failures": {
+            "description": "Pages that could not be read, by kind",
+            "items": {
+              "$ref": "#/components/schemas/HealthFailureView"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "findings": {
+            "description": "Against the FDP specification, which every FDP claims",
+            "items": {
+              "$ref": "#/components/schemas/HealthFindingView"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "levels": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Pages per level, and other pages",
+            "title": "Levels",
+            "type": "object"
+          },
+          "notes": {
+            "description": "DCAT's advice, which an FDP never promised: not counted in status",
+            "items": {
+              "$ref": "#/components/schemas/HealthFindingView"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "pages": {
+            "description": "Pages the index holds",
+            "title": "Pages",
+            "type": "integer"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The deepest level reached: fdp, catalog, dataset, distribution, dataservice; null when nothing could be read",
+            "title": "Reach"
+          },
+          "recommendations": {
+            "description": "The network profile's recommendations the FDP does not follow",
+            "items": {
+              "$ref": "#/components/schemas/HealthRequirementView"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "requirements": {
+            "description": "The network profile's requirements the FDP does not meet",
+            "items": {
+              "$ref": "#/components/schemas/HealthRequirementView"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "fine",
+              "findings",
+              "unreadable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stops": {
+            "$ref": "#/components/schemas/HealthStopsView",
+            "description": "Where the index stopped by its own rules"
+          }
+        },
+        "required": [
+          "reach",
+          "status",
+          "pages",
+          "levels",
+          "findings",
+          "failures",
+          "stops",
+          "complete"
+        ],
+        "title": "HealthReportView",
+        "type": "object"
+      },
       "HealthRequirementView": {
         "description": "What the network profile asks that the FDP does not meet (TASKS 15.9).",
         "properties": {
@@ -2113,6 +2412,16 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "checkBeforeRegistering": {
+            "default": "policy",
+            "enum": [
+              "policy",
+              "anyone",
+              "admins"
+            ],
+            "title": "Checkbeforeregistering",
+            "type": "string"
+          },
           "expiry": {
             "$ref": "#/components/schemas/ExpirySettings-Input"
           },
@@ -2146,6 +2455,16 @@
             "title": "Autopermit",
             "type": "boolean"
           },
+          "checkBeforeRegistering": {
+            "default": "policy",
+            "enum": [
+              "policy",
+              "anyone",
+              "admins"
+            ],
+            "title": "Checkbeforeregistering",
+            "type": "string"
+          },
           "expiry": {
             "$ref": "#/components/schemas/ExpirySettings-Output"
           },
@@ -2175,6 +2494,7 @@
           "healthCheck",
           "verifiedPermit",
           "expiry",
+          "checkBeforeRegistering",
           "isDefault"
         ],
         "title": "IndexSettingsView",
@@ -2448,8 +2768,6 @@
           }
         },
         "required": [
-          "computedAt",
-          "harvestedAt",
           "reach",
           "status",
           "pages",
@@ -2457,7 +2775,9 @@
           "findings",
           "failures",
           "stops",
-          "complete"
+          "complete",
+          "computedAt",
+          "harvestedAt"
         ],
         "title": "MetadataHealthView",
         "type": "object"
@@ -5043,6 +5363,124 @@
         "summary": "A catalogue record",
         "tags": [
           "Catalogue feed"
+        ]
+      }
+    },
+    "/index/checks": {
+      "get": {
+        "operationId": "check_policy_index_checks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckPolicyView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Who may check an FDP before registering it",
+        "tags": [
+          "Index"
+        ]
+      },
+      "post": {
+        "description": "Read the FDP's root metadata and a sample of its pages, as the index would, and\nreport their metadata health; nothing is stored, the FDP is not registered.\n\nThe sample is at most 200 pages, and 5 children of each page. Anyone may check\nwhen the index accepts FDPs without approval (under the ping's rate limit);\notherwise administrators, unless the `checkBeforeRegistering` setting says\notherwise. Poll `GET /index/checks/{id}` for the result: a check takes up to\ntwo minutes.",
+        "operationId": "start_check_index_checks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Not an http(s) URL"
+          },
+          "401": {
+            "description": "Only administrators may check"
+          },
+          "403": {
+            "description": "URL denied, or only administrators may check"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Rate limit exceeded, or too many checks at once"
+          }
+        },
+        "summary": "Check an FDP before registering it",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/checks/{check_id}": {
+      "get": {
+        "operationId": "get_check_index_checks__check_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "check_id",
+            "required": true,
+            "schema": {
+              "title": "Check Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such check, or more than an hour old"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "A check's result",
+        "tags": [
+          "Index"
         ]
       }
     },

@@ -30,6 +30,16 @@ How new FDPs are accepted is a setting (**Settings → Registration**):
   valid FDP metadata from them; until then they wait.
 - **By an administrator**: they wait under **Approvals**.
 
+A waiting FDP's page has **Check first**: the index reads its root
+metadata and a sample of its pages (up to 200, 5 children of each) and
+shows their metadata health, so you review it with what the index would
+find in front of you. Nothing is stored. Who may check an FDP before
+registering it is a setting (**Settings → Registration**): as the approval
+policy says (anyone when FDPs are accepted automatically or after a
+successful check, otherwise administrators), anyone, or administrators
+only. Visitors' checks count against the ping rate limit of their address,
+and the deny list applies.
+
 **Approvals** lists the waiting FDPs; accept or reject one by one or in
 bulk. Rejected FDPs stay registered but hidden, and their harvested
 metadata is removed; accepting one later harvests it again.
@@ -140,6 +150,7 @@ linking to a search for its records.
 | FDPs out of contact | Mark FDPs as expired | off; after 90 days |
 | | Hide expired FDPs from the public directory and the search | off |
 | Deny list | Regular expressions matched against the whole address | `localhost` |
+| Registration | Who may check an FDP before registering it | as the approval policy says |
 
 An expired FDP gets an *Expired* badge, an `Expiry` event and an
 `EntryExpired` webhook, once. It revives as soon as the index reaches it

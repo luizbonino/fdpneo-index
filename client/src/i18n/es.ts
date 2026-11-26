@@ -250,6 +250,14 @@ export const es: Messages = {
         "Aparecen en la lista y se recolectan cuando el índice ha recuperado de ellos metadatos válidos; hasta entonces, esperan en Aprobaciones.",
       manual: "Esperan en Aprobaciones hasta que un administrador los acepta.",
     },
+    checkBefore: "Quién puede comprobar un FDP antes de registrarlo",
+    checkBeforeHelp:
+      "Una comprobación lee hasta 200 páginas del FDP sin registrarlo. Según la política de aprobación: cualquiera cuando los FDP se listan sin un administrador; si no, los administradores, desde la página de un FDP pendiente.",
+    checkBeforeOptions: {
+      policy: "Según la política de aprobación",
+      anyone: "Cualquiera, dentro del límite de pings",
+      admins: "Solo administradores",
+    },
     expiry: "FDP sin contacto",
     expiryLead:
       "Un FDP al que el índice no ha podido acceder durante mucho tiempo puede marcarse como caducado: un evento Expiry y un webhook EntryExpired. Se reactiva en cuanto el índice vuelve a acceder a él.",
@@ -1100,5 +1108,29 @@ export const es: Messages = {
     saved: "Perfil de la red guardado.",
     reset: "Usar el perfil instalado",
     resetConfirm: "¿Sustituir este perfil por el instalado?",
+  },
+  check: {
+    title: "Comprobar primero",
+    help: "Vea lo que el índice encontraría antes de registrarse: si la dirección responde como un FDP y la salud de los metadatos de una muestra de sus páginas (hasta {pages} páginas, {n} hijas de cada una). No se guarda nada y el FDP no se registra.",
+    reviewHelp:
+      "Lo que el índice encontraría en los metadatos de este FDP, leído ahora de una muestra de sus páginas. No se guarda nada.",
+    lead: "Lo que el índice encontró en una muestra de las páginas del FDP, comprobadas como las de los FDP registrados.",
+    whole: "La muestra leyó todas las páginas que encontró: {n}.",
+    sample:
+      "Una muestra: {n} páginas leídas, {pages} más omitidas. El FDP completo puede llegar más lejos de lo que muestra la muestra.",
+    start: "Comprobar",
+    again: "Comprobar de nuevo",
+    running: "Comprobando…",
+    wait: "Leyendo hasta {pages} páginas, {n} hijas de cada una; tarda hasta dos minutos.",
+    verdict: {
+      valid: "Esta dirección responde con los metadatos de un FDP.",
+      invalid:
+        "Esta dirección no responde con los metadatos de un FDP, así que el índice no la listaría.",
+      unreachable: "El índice no pudo alcanzar esta dirección.",
+    },
+    registered: "Este FDP ya está en el índice.",
+    afterwards:
+      "Una vez registrado, el índice lee todas las páginas del FDP y mantiene este informe al día.",
+    register: "Registrar este FDP",
   },
 };

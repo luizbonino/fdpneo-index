@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from pydantic import (
     BaseModel,
@@ -155,6 +155,17 @@ class IndexSettings(_Camel):
     # valid, instead of waiting for an administrator (TASKS 4.8).
     verified_permit: bool = Field(default=False, alias="verifiedPermit")
     expiry: ExpirySettings = Field(default_factory=ExpirySettings)
+    # Who may check an FDP before registering it (TASKS 15.11): "policy" follows the
+    # approval policy (anyone when FDPs are accepted without an administrator).
+    check_before_registering: Literal["policy", "anyone", "admins"] = Field(
+        default="policy", alias="checkBeforeRegistering"
+    )
+
+    def check_policy(self) -> Literal["anyone", "admins"]:
+        """Who may check an FDP before registering it."""
+        if self.check_before_registering != "policy":
+            return self.check_before_registering
+        return "anyone" if self.auto_permit or self.verified_permit else "admins"
 
     def matches_defaults(self, defaults: IndexSettings) -> bool:
         return (
@@ -163,6 +174,7 @@ class IndexSettings(_Camel):
             and self.health_check == defaults.health_check
             and self.verified_permit == defaults.verified_permit
             and self.expiry == defaults.expiry
+            and self.check_before_registering == defaults.check_before_registering
         )
 
     def denies(self, client_url: str) -> bool:
@@ -232,5 +244,6 @@ class SettingsService:
             healthCheck=settings.health_check,
             verifiedPermit=settings.verified_permit,
             expiry=settings.expiry,
+            checkBeforeRegistering=settings.check_before_registering,
             isDefault=settings.matches_defaults(self.defaults()),
         )

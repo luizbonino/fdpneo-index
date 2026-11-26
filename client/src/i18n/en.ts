@@ -240,6 +240,14 @@ export const en = {
         "Listed and harvested once the index has retrieved valid metadata from them; until then they wait under Approvals.",
       manual: "They wait under Approvals until an administrator accepts them.",
     },
+    checkBefore: "Who may check an FDP before registering it",
+    checkBeforeHelp:
+      "A check reads up to 200 of the FDP’s pages without registering it. As the approval policy says: anyone when FDPs are listed without an administrator, otherwise administrators, from a pending FDP’s page.",
+    checkBeforeOptions: {
+      policy: "As the approval policy says",
+      anyone: "Anyone, under the ping rate limit",
+      admins: "Administrators only",
+    },
     expiry: "FDPs out of contact",
     expiryLead:
       "An FDP the index has not reached for a long time can be marked expired: an Expiry event and an EntryExpired webhook. It revives as soon as the index reaches it again.",
@@ -1078,5 +1086,29 @@ export const en = {
     saved: "Network profile saved.",
     reset: "Use the installed profile",
     resetConfirm: "Replace this profile with the installed one?",
+  },
+  check: {
+    title: "Check first",
+    help: "See what the index would find before you register: whether the address answers as an FDP, and the metadata health of a sample of its pages (up to {pages} pages, {n} children of each). Nothing is stored, and the FDP is not registered.",
+    reviewHelp:
+      "What the index would find in this FDP’s metadata, read now from a sample of its pages. Nothing is stored.",
+    lead: "What the index found in a sample of the FDP’s pages, checked as it checks registered FDPs.",
+    whole: "The sample read every page it found: {n}.",
+    sample:
+      "A sample: {n} pages read, {pages} more left out. The whole FDP may reach further than the sample shows.",
+    start: "Check",
+    again: "Check again",
+    running: "Checking…",
+    wait: "Reading up to {pages} pages, {n} children of each; this takes up to two minutes.",
+    verdict: {
+      valid: "This address answers with an FDP’s metadata.",
+      invalid:
+        "This address does not answer with an FDP’s metadata, so the index would not list it.",
+      unreachable: "The index could not reach this address.",
+    },
+    registered: "This FDP is already in the index.",
+    afterwards:
+      "Once registered, the index reads all the FDP’s pages and keeps this report up to date.",
+    register: "Register this FDP",
   },
 };

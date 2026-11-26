@@ -101,6 +101,8 @@ class HarvestResult:
     limit_reached: bool = False
     # Pages still to read, in order: the next run starts here.
     queue: list[str] = field(default_factory=lambda: [])
+    # Children left out by ``per_page`` (a sample, TASKS 15.11).
+    sampled_out: set[str] = field(default_factory=lambda: set())
     # The FDP asked the index to wait (429, or 503 with Retry-After): seconds, or
     # 0 when it gave no time.
     retry_after: float | None = None
@@ -225,6 +227,7 @@ async def harvest(
     queue: Iterable[str] | None = None,
     seen: Collection[str] = (),
     origins: Iterable[str] = (),
+    per_page: int | None = None,
 ) -> HarvestResult:
     """Run one budgeted run of a walk over an FDP's metadata tree.
 
@@ -235,7 +238,10 @@ async def harvest(
 
     ``queue`` continues a walk (default: the client URL alone); ``seen`` holds
     the pages earlier runs of the walk already asked for. ``origins`` are other
-    sites an administrator allowed for this FDP.
+    sites an administrator allowed for this FDP. ``per_page`` reads a sample:
+    at most that many new children of each page are queued, so a small budget
+    still goes down to the lower levels (the check before registering, TASKS
+    15.11); the others are listed in ``sampled_out``.
     """
     result = HarvestResult()
     allowed = {_origin(client_url), *(_origin(o) for o in origins)}
@@ -280,7 +286,14 @@ async def harvest(
                 headers=headers,
             )
         except OutboundError as err:
-            _enqueue(stored_children(node, stored, err.message), pending, visited, allowed, result)
+            _enqueue(
+                stored_children(node, stored, err.message),
+                pending,
+                visited,
+                allowed,
+                result,
+                per_page,
+            )
             continue
         if response.status == 429 or (
             response.status == 503 and response.headers.get("retry-after")
@@ -309,11 +322,15 @@ async def harvest(
             continue
         elif not 200 <= response.status < 300:
             reason = f"HTTP {response.status}"
-            _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
+            _enqueue(
+                stored_children(node, stored, reason), pending, visited, allowed, result, per_page
+            )
             continue
         elif response.truncated:
             reason = "response too large"
-            _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
+            _enqueue(
+                stored_children(node, stored, reason), pending, visited, allowed, result, per_page
+            )
             continue
         else:
             try:
@@ -322,13 +339,20 @@ async def harvest(
                 )
             except RdfParseError as err:
                 reason = f"cannot parse: {err}"
-                _enqueue(stored_children(node, stored, reason), pending, visited, allowed, result)
+                _enqueue(
+                    stored_children(node, stored, reason),
+                    pending,
+                    visited,
+                    allowed,
+                    result,
+                    per_page,
+                )
                 continue
             harvested.etag = _header(response.headers, "etag")
             harvested.last_modified = _header(response.headers, "last-modified")
         total_bytes += len(harvested.ntriples)
         result.nodes.append(harvested)
-        _enqueue(children, pending, visited, allowed, result)
+        _enqueue(children, pending, visited, allowed, result, per_page)
     result.queue = list(pending)
     log.info(
         "harvest_completed",
@@ -350,13 +374,20 @@ def _enqueue(
     visited: set[str],
     allowed: set[tuple[str, str, int | None]],
     result: HarvestResult,
+    per_page: int | None = None,
 ) -> None:
+    taken = 0
     for child in children:
         child = _normalise(child)
         if child in visited:
             continue
-        visited.add(child)
         if _origin(child) not in allowed:
+            visited.add(child)
             result.skipped_off_origin += 1
             continue
+        if per_page is not None and taken >= per_page:
+            result.sampled_out.add(child)
+            continue
+        visited.add(child)
+        taken += 1
         pending.append(child)

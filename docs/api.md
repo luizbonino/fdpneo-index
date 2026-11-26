@@ -127,6 +127,29 @@ The directory, in the Java FAIR Data Point index's format:
 GET /index/entries?page=0&size=20
 ```
 
+An FDP's metadata health, when the index publishes reports:
+
+```http
+GET /index/entries/{uuid}/health
+```
+
+Checking an FDP before registering it: the answer (`202 Accepted`) has an
+`id`; poll it until `status` is `done` (a check takes up to two minutes).
+The result has the root metadata's state and the health `report` of a
+sample of the FDP's pages. `GET /index/checks` says whether the caller may
+check.
+
+```http
+POST /index/checks
+Content-Type: application/json
+
+{"clientUrl": "https://fdp.example.org"}
+```
+
+```http
+GET /index/checks/{check}
+```
+
 An FDP's conformance report, when the index publishes reports:
 
 ```http

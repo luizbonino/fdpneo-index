@@ -46,6 +46,7 @@ from fdpindex.network import (
     default_source as default_network_profile,
 )
 from fdpindex.outbound import OutboundClient, outbound_http, system_resolver
+from fdpindex.precheck import CheckService
 from fdpindex.search.concepts import ConceptResolver, ResolverSettings
 from fdpindex.search.indexer import SearchIndexer
 from fdpindex.search.profile_store import ProfileStore, set_default_overlay
@@ -258,6 +259,7 @@ def create_app(
         app.state.catalog_feed = _catalog_feed(config, factory, index, search, conformance)
         stats = StatsService(factory, index, search, conformance)
         app.state.stats = stats
+        app.state.checks = CheckService(index, settings_service, jobs)
         if resume_on_startup:
             await index.resume_unfinished()
         scheduler = HealthScheduler(

@@ -249,6 +249,14 @@ export const nl: Messages = {
         "Vermeld en opgehaald zodra de index geldige metadata van ze heeft opgehaald; tot dan wachten ze onder Goedkeuringen.",
       manual: "Ze wachten onder Goedkeuringen tot een beheerder ze accepteert.",
     },
+    checkBefore: "Wie een FDP mag controleren vóór registratie",
+    checkBeforeHelp:
+      "Een controle leest tot 200 pagina’s van de FDP zonder die te registreren. Volgens het goedkeuringsbeleid: iedereen wanneer FDP’s zonder beheerder worden opgenomen, anders beheerders, vanaf de pagina van een wachtende FDP.",
+    checkBeforeOptions: {
+      policy: "Volgens het goedkeuringsbeleid",
+      anyone: "Iedereen, binnen de pinglimiet",
+      admins: "Alleen beheerders",
+    },
     expiry: "FDP's zonder contact",
     expiryLead:
       "Een FDP die de index lange tijd niet heeft bereikt, kan als verlopen worden gemarkeerd: een Expiry-gebeurtenis en een EntryExpired-webhook. De FDP wordt weer actief zodra de index die opnieuw bereikt.",
@@ -1098,5 +1106,29 @@ export const nl: Messages = {
     saved: "Netwerkprofiel opgeslagen.",
     reset: "Geïnstalleerd profiel gebruiken",
     resetConfirm: "Dit profiel vervangen door het geïnstalleerde?",
+  },
+  check: {
+    title: "Eerst controleren",
+    help: "Zie wat de index zou vinden voordat u registreert: of het adres antwoordt als een FDP, en de gezondheid van de metadata van een steekproef van de pagina’s (tot {pages} pagina’s, {n} onderliggende van elke pagina). Er wordt niets opgeslagen en de FDP wordt niet geregistreerd.",
+    reviewHelp:
+      "Wat de index in de metadata van deze FDP zou vinden, nu gelezen uit een steekproef van de pagina’s. Er wordt niets opgeslagen.",
+    lead: "Wat de index vond in een steekproef van de pagina’s van de FDP, gecontroleerd zoals geregistreerde FDP’s.",
+    whole: "De steekproef las alle gevonden pagina’s: {n}.",
+    sample:
+      "Een steekproef: {n} pagina’s gelezen, {pages} andere overgeslagen. De hele FDP kan verder reiken dan de steekproef laat zien.",
+    start: "Controleren",
+    again: "Opnieuw controleren",
+    running: "Bezig met controleren…",
+    wait: "Leest tot {pages} pagina’s, {n} onderliggende van elke pagina; dit duurt tot twee minuten.",
+    verdict: {
+      valid: "Dit adres antwoordt met de metadata van een FDP.",
+      invalid:
+        "Dit adres antwoordt niet met de metadata van een FDP, dus de index zou het niet opnemen.",
+      unreachable: "De index kon dit adres niet bereiken.",
+    },
+    registered: "Deze FDP staat al in de index.",
+    afterwards:
+      "Na registratie leest de index alle pagina’s van de FDP en houdt dit rapport actueel.",
+    register: "Deze FDP registreren",
   },
 };

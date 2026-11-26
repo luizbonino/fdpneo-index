@@ -23,6 +23,9 @@ export type ServiceInfo = Schemas["ServiceInfo"];
 export type Registration = Schemas["RegistrationView"];
 export type Statistics = Schemas["Statistics"];
 export type MetadataHealth = Schemas["MetadataHealthView"];
+export type HealthReport = Schemas["HealthReportView"];
+export type Check = Schemas["CheckView"];
+export type CheckPolicy = Schemas["CheckPolicyView"];
 export type HealthRow = Schemas["HealthRow"];
 export type NetworkProfileView = Schemas["NetworkProfileView"];
 export type ProfileExample = Schemas["ProfileExample"];
@@ -112,6 +115,10 @@ export const api = {
     request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { permit } }),
   setOptions: (uuid: string, options: EntryOptions) =>
     request<EntryDetail>(`/index/entries/${uuid}`, { method: "PUT", body: { options } }),
+  checkPolicy: () => request<CheckPolicy>("/index/checks"),
+  startCheck: (clientUrl: string) =>
+    request<Check>("/index/checks", { method: "POST", body: { clientUrl } }),
+  check: (id: string) => request<Check>(`/index/checks/${id}`),
   register: (clientUrl: string) =>
     request<Registration>("/index/register", { method: "POST", body: { clientUrl } }),
   createEntry: (clientUrl: string, permit?: Permit, options?: EntryOptions) =>

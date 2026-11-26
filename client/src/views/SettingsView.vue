@@ -39,6 +39,7 @@ const form = reactive<SettingsForm>({
   },
   verifiedPermit: false,
   expiry: { enabled: false, after: "PT2160H", hide: false },
+  checkBeforeRegistering: "policy",
 });
 const errors = ref<Record<string, string>>({});
 const saving = ref(false);
@@ -50,6 +51,7 @@ function load(value: Settings) {
   form.healthCheck = { ...value.healthCheck, permits: [...value.healthCheck.permits] };
   form.verifiedPermit = value.verifiedPermit;
   form.expiry = { ...value.expiry };
+  form.checkBeforeRegistering = value.checkBeforeRegistering ?? "policy";
 }
 
 /** Automatic, after a successful check (verified), or manual: two settings in the API. */
@@ -62,6 +64,8 @@ const approval = computed<Approval>({
   },
 });
 const APPROVALS: Approval[] = ["automatic", "verified", "manual"];
+/** Who may check an FDP before registering it (TASKS 15.11). */
+const CHECKERS = ["policy", "anyone", "admins"] as const;
 watch(
   () => settings.data.value,
   (value) => value && load(value),
@@ -166,6 +170,15 @@ function fieldError(path: string): string | undefined {
             </span>
           </label>
         </fieldset>
+        <div class="field">
+          <label for="check-before">{{ t("settings.checkBefore") }}</label>
+          <select id="check-before" v-model="form.checkBeforeRegistering" class="input narrow">
+            <option v-for="option in CHECKERS" :key="option" :value="option">
+              {{ t(`settings.checkBeforeOptions.${option}`) }}
+            </option>
+          </select>
+          <span class="help">{{ t("settings.checkBeforeHelp") }}</span>
+        </div>
       </section>
 
       <section class="card stack">

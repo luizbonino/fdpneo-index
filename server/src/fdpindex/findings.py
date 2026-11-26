@@ -281,6 +281,9 @@ class WalkSummary:
     off_site: int = 0
     at_ceiling: bool = False
     complete: bool | None = None
+    # Pages the walk knows of but did not read (queued, or left out of a sample): a
+    # link to one is not reported as reached only through DCAT (TASKS 15.11).
+    not_read: frozenset[str] = frozenset()
 
 
 def analyse(
@@ -305,6 +308,7 @@ def analyse(
         for _relation, contained in page.containers.values():
             members.update(_key(m) for m in contained)
     failed_keys = {_key(iri) for iri in walk.failed}
+    not_read = {_key(iri) for iri in walk.not_read}
 
     levels: dict[str, int] = dict.fromkeys((*LEVELS, "other"), 0)
     examples: dict[str, list[str]] = defaultdict(list)
@@ -334,6 +338,7 @@ def analyse(
                 and target_key not in read
                 and target_key not in members
                 and target_key not in failed_keys
+                and target_key not in not_read
                 and target_key not in page.described
                 and target_key != key
                 and _origin(target) in allowed
@@ -364,7 +369,10 @@ def analyse(
 
     reached = [name for name in LEVELS if levels[name]]
     reach = reached[-1] if reached else None
-    requirements, recommendations = _expected(read.values(), reach, expected)
+    # A walk that stopped at its ceiling may not have gone down far enough to know the reach.
+    requirements, recommendations = _expected(
+        read.values(), reach, expected, reach_known=not walk.at_ceiling
+    )
     findings = [
         {"code": code, "count": counts[code], "examples": examples[code]}
         for code in FINDINGS
@@ -406,7 +414,7 @@ def analyse(
 
 
 def _expected(
-    pages: Iterable[Page], reach: str | None, expected: Expectations
+    pages: Iterable[Page], reach: str | None, expected: Expectations, *, reach_known: bool = True
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """What the network profile asks that the FDP does not meet: its required reach,
     required properties and vocabularies; and its recommended properties."""
@@ -441,8 +449,10 @@ def _expected(
                     note(required, counts, ("vocabulary", level, prop), page.iri)
                     break
     requirements: list[dict[str, Any]] = []
-    if expected.reach is not None and (
-        reach is None or LEVELS.index(reach) < LEVELS.index(expected.reach)
+    if (
+        reach_known
+        and expected.reach is not None
+        and (reach is None or LEVELS.index(reach) < LEVELS.index(expected.reach))
     ):
         requirements.append(
             {

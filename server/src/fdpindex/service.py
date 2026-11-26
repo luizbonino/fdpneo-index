@@ -1390,6 +1390,60 @@ class IndexService:
         finally:
             self._health_running.discard(entry_id)
 
+    async def sample_health(
+        self,
+        client_url: str,
+        *,
+        origins: list[str],
+        pages: int,
+        per_page: int,
+        seconds: float,
+    ) -> tuple[Retrieval, dict[str, Any] | None, int]:
+        """Check an FDP before registering it (TASKS 15.11); nothing is stored.
+
+        The root metadata as a ping's retrieval reads it, then, when that is an
+        FDP's, the health report of a sample: at most ``pages`` pages and
+        ``per_page`` children of each, so the sample goes down every level.
+        Returns the retrieval, the report and how many pages the sample left out.
+        """
+        settings = await self._settings.get()
+        root = await self.retrieve(client_url, settings)
+        if root.state is not EntryState.VALID:
+            return root, None, 0
+        result = await harvest(
+            self._outbound,
+            client_url,
+            timeout_seconds=min(
+                settings.retrieval.timeout.total_seconds(), self._harvest_node_timeout
+            ),
+            max_nodes=pages,
+            max_bytes=min(self._harvest_max_bytes, 10 * 1024 * 1024),
+            max_seconds=seconds,
+            origins=origins,
+            per_page=per_page,
+        )
+        expected = await self.expectations() if self.expectations is not None else None
+        watched = expected.watched if expected is not None else frozenset[str]()
+        batch = [(node.node_iri, node.ntriples) for node in result.nodes]
+        read = await asyncio.to_thread(_read_pages, batch, page_key(client_url), watched)
+        summary = WalkSummary(
+            failed=dict(list(result.failed.items())[:MAX_HEALTH_FAILURES]),
+            unread=len(result.queue),
+            off_site=result.skipped_off_origin,
+            at_ceiling=bool(result.queue),
+            complete=bool(result.nodes) and not result.failed and not result.queue,
+            not_read=frozenset({*result.queue, *result.sampled_out}),
+        )
+        report = await asyncio.to_thread(
+            lambda: analyse(client_url, read, summary, origins=origins, expectations=expected)
+        )
+        return root, report, len(result.sampled_out)
+
+    async def find_entry(self, client_url: str) -> IndexEntry | None:
+        """The entry for ``client_url`` (or the same FDP under another spelling)."""
+        async with self._session_factory() as session:
+            return await _known_entry(session, client_url)
+
     async def harvest_walk(self, entry_id: UUID) -> HarvestWalk | None:
         """The entry's walk in progress, if any (TASKS 15.7)."""
         async with self._session_factory() as session:

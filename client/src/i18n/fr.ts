@@ -250,6 +250,14 @@ export const fr: Messages = {
         "Listés et moissonnés une fois que l’index a récupéré des métadonnées valides auprès d’eux ; en attendant, ils patientent dans Approbations.",
       manual: "Ils attendent dans Approbations jusqu’à ce qu’un administrateur les accepte.",
     },
+    checkBefore: "Qui peut vérifier un FDP avant de l’inscrire",
+    checkBeforeHelp:
+      "Une vérification lit jusqu’à 200 pages du FDP sans l’inscrire. Selon la règle d’approbation : tout le monde quand les FDP sont listés sans administrateur, sinon les administrateurs, depuis la page d’un FDP en attente.",
+    checkBeforeOptions: {
+      policy: "Selon la règle d’approbation",
+      anyone: "Tout le monde, dans la limite des pings",
+      admins: "Administrateurs seulement",
+    },
     expiry: "FDP sans contact",
     expiryLead:
       "Un FDP que l’index n’a pas pu joindre depuis longtemps peut être marqué comme expiré : un événement Expiry et un webhook EntryExpired. Il redevient actif dès que l’index le joint à nouveau.",
@@ -1104,5 +1112,28 @@ export const fr: Messages = {
     saved: "Profil du réseau enregistré.",
     reset: "Utiliser le profil installé",
     resetConfirm: "Remplacer ce profil par celui installé ?",
+  },
+  check: {
+    title: "Vérifier d’abord",
+    help: "Voyez ce que l’index trouverait avant de vous inscrire : si l’adresse répond comme un FDP, et la santé des métadonnées d’un échantillon de ses pages (jusqu’à {pages} pages, {n} enfants de chacune). Rien n’est enregistré et le FDP n’est pas inscrit.",
+    reviewHelp:
+      "Ce que l’index trouverait dans les métadonnées de ce FDP, lu maintenant dans un échantillon de ses pages. Rien n’est enregistré.",
+    lead: "Ce que l’index a trouvé dans un échantillon des pages du FDP, vérifiées comme celles des FDP inscrits.",
+    whole: "L’échantillon a lu toutes les pages trouvées : {n}.",
+    sample:
+      "Un échantillon : {n} pages lues, {pages} autres laissées de côté. Le FDP entier peut aller plus loin que l’échantillon ne le montre.",
+    start: "Vérifier",
+    again: "Vérifier de nouveau",
+    running: "Vérification…",
+    wait: "Lecture de {pages} pages au plus, {n} enfants de chacune ; cela prend jusqu’à deux minutes.",
+    verdict: {
+      valid: "Cette adresse répond avec les métadonnées d’un FDP.",
+      invalid:
+        "Cette adresse ne répond pas avec les métadonnées d’un FDP ; l’index ne la listerait pas.",
+      unreachable: "L’index n’a pas pu joindre cette adresse.",
+    },
+    registered: "Ce FDP est déjà dans l’index.",
+    afterwards: "Une fois le FDP inscrit, l’index lit toutes ses pages et tient ce rapport à jour.",
+    register: "Inscrire ce FDP",
   },
 };

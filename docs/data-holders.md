@@ -13,6 +13,14 @@ address (for FDPneo, see [FDPneo servers](with-fdpneo.md)); any other FDP can
 be registered on the index's **Register** page, which pings for you and
 shows at once what the index found.
 
+**Check first.** Before registering, the Register page's **Check first**
+reads your FDP as the index would: whether its address answers with an
+FDP's metadata, and the metadata health (below) of a sample of its pages,
+up to 200 pages and 5 children of each page, so the sample goes down every
+level. Nothing is stored and the FDP is not registered. Anyone may check
+when the index lists FDPs without an administrator; otherwise
+administrators check a waiting FDP from its page, while they review it.
+
 What happens next depends on the index's approval setting: the FDP is
 listed at once, after its metadata was retrieved successfully, or after an
 administrator accepted it. FDPs ping again from time to time (the Java FDP

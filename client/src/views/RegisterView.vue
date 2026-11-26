@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
+import { useQuery } from "@tanstack/vue-query";
 import { useI18n } from "vue-i18n";
 import { api, type Permit } from "@/api";
 import { ApiError } from "@/api/client";
@@ -8,6 +9,7 @@ import { useInvalidateEntries } from "@/composables/queries";
 import { toast } from "@/composables/feedback";
 import CopyField from "@/components/CopyField.vue";
 import StateBadge from "@/components/StateBadge.vue";
+import CheckPanel from "@/components/health/CheckPanel.vue";
 import { runtimeApiUrl, runtimePublicOrigin } from "@/runtimeConfig";
 
 const { t } = useI18n();
@@ -21,6 +23,18 @@ const curl = computed(
   () =>
     `curl -i -X POST ${endpoint.value} \\\n  -H 'Content-Type: application/json' \\\n  -d '{"clientUrl": "https://your-fdp.example.org"}'`,
 );
+
+// Checking first (TASKS 15.11): open to anyone or to administrators, as the index says.
+const checks = useQuery({
+  queryKey: computed(() => ["check-policy", session.isAdmin]),
+  queryFn: () => api.checkPolicy(),
+});
+async function registerChecked(url: string) {
+  address.value = url;
+  await nextTick();
+  document.getElementById("add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("fdp-address")?.focus({ preventScroll: true });
+}
 
 const address = ref("");
 const error = ref("");
@@ -118,6 +132,18 @@ const verdict = computed(() => {
         <li>{{ t("register.steps.two") }}</li>
         <li>{{ t("register.steps.three") }}</li>
       </ol>
+    </section>
+
+    <section v-if="checks.data.value?.allowed" id="check" class="card stack">
+      <h2>{{ t("check.title") }}</h2>
+      <p class="muted">
+        {{ t("check.help", { pages: checks.data.value.pages, n: checks.data.value.perPage }) }}
+      </p>
+      <CheckPanel
+        :pages="checks.data.value.pages"
+        :per-page="checks.data.value.perPage"
+        @register="registerChecked"
+      />
     </section>
 
     <section id="add" class="card stack">

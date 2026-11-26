@@ -252,6 +252,14 @@ export const de: Messages = {
         "Gelistet und abgerufen, sobald der Index gültige Metadaten von ihnen abgerufen hat; bis dahin warten sie unter Freigaben.",
       manual: "Sie warten unter Freigaben, bis die Administration sie annimmt.",
     },
+    checkBefore: "Wer einen FDP vor der Registrierung prüfen darf",
+    checkBeforeHelp:
+      "Eine Prüfung liest bis zu 200 Seiten des FDP, ohne ihn zu registrieren. Nach der Freigaberegel: alle, wenn FDPs ohne Administrator aufgenommen werden, sonst Administratoren, auf der Seite eines wartenden FDP.",
+    checkBeforeOptions: {
+      policy: "Nach der Freigaberegel",
+      anyone: "Alle, im Rahmen des Ping-Limits",
+      admins: "Nur Administratoren",
+    },
     expiry: "FDPs ohne Kontakt",
     expiryLead:
       "Ein FDP, den der Index lange nicht erreicht hat, kann als abgelaufen markiert werden: ein Expiry-Ereignis und ein EntryExpired-Webhook. Er wird wieder aktiv, sobald der Index ihn erneut erreicht.",
@@ -1102,5 +1110,29 @@ export const de: Messages = {
     saved: "Netzwerkprofil gespeichert.",
     reset: "Installiertes Profil verwenden",
     resetConfirm: "Dieses Profil durch das installierte ersetzen?",
+  },
+  check: {
+    title: "Zuerst prüfen",
+    help: "Sehen Sie vor der Registrierung, was der Index finden würde: ob die Adresse als FDP antwortet, und den Zustand der Metadaten einer Stichprobe ihrer Seiten (bis zu {pages} Seiten, {n} untergeordnete je Seite). Nichts wird gespeichert, und der FDP wird nicht registriert.",
+    reviewHelp:
+      "Was der Index in den Metadaten dieses FDP finden würde, jetzt aus einer Stichprobe seiner Seiten gelesen. Nichts wird gespeichert.",
+    lead: "Was der Index in einer Stichprobe der Seiten des FDP gefunden hat, geprüft wie registrierte FDPs.",
+    whole: "Die Stichprobe hat alle gefundenen Seiten gelesen: {n}.",
+    sample:
+      "Eine Stichprobe: {n} Seiten gelesen, {pages} weitere ausgelassen. Der ganze FDP kann weiter reichen, als die Stichprobe zeigt.",
+    start: "Prüfen",
+    again: "Erneut prüfen",
+    running: "Wird geprüft…",
+    wait: "Liest bis zu {pages} Seiten, {n} untergeordnete je Seite; das dauert bis zu zwei Minuten.",
+    verdict: {
+      valid: "Diese Adresse antwortet mit den Metadaten eines FDP.",
+      invalid:
+        "Diese Adresse antwortet nicht mit den Metadaten eines FDP; der Index würde sie nicht aufnehmen.",
+      unreachable: "Der Index konnte diese Adresse nicht erreichen.",
+    },
+    registered: "Dieser FDP ist bereits im Index.",
+    afterwards:
+      "Nach der Registrierung liest der Index alle Seiten des FDP und hält diesen Bericht aktuell.",
+    register: "Diesen FDP registrieren",
   },
 };

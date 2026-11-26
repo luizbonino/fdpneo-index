@@ -183,13 +183,9 @@ class HealthStopsView(_Api):
     )
 
 
-class MetadataHealthView(_Api):
-    """What the index found in an FDP's metadata (TASKS 15.8)."""
+class HealthReportView(_Api):
+    """A health report: of an FDP's stored pages, or of a check's sample."""
 
-    computed_at: str = Field(serialization_alias="computedAt")
-    harvested_at: str | None = Field(
-        serialization_alias="harvestedAt", description="When the harvest it describes ended"
-    )
     reach: str | None = Field(
         description="The deepest level reached: fdp, catalog, dataset, distribution, "
         "dataservice; null when nothing could be read"
@@ -216,6 +212,61 @@ class MetadataHealthView(_Api):
     stops: HealthStopsView = Field(description="Where the index stopped by its own rules")
     complete: bool | None = Field(
         description="The harvest read every page it found; null when not known"
+    )
+
+
+class MetadataHealthView(HealthReportView):
+    """What the index found in an FDP's metadata (TASKS 15.8)."""
+
+    computed_at: str = Field(serialization_alias="computedAt")
+    harvested_at: str | None = Field(
+        serialization_alias="harvestedAt", description="When the harvest it describes ended"
+    )
+
+
+class CheckPolicyView(_Api):
+    who: Literal["anyone", "admins"] = Field(
+        description="Who may check an FDP before registering it: anyone when the index "
+        "accepts FDPs without approval, else administrators, unless they chose otherwise"
+    )
+    allowed: bool = Field(description="Whether the caller may")
+    pages: int = Field(description="The most pages a check reads")
+    per_page: int = Field(
+        serialization_alias="perPage", description="The most children it reads of each page"
+    )
+
+
+class CheckRootView(_Api):
+    state: str = Field(description="VALID, INVALID or UNREACHABLE, as a ping's retrieval says")
+    error: str | None
+    title: str | None
+
+
+class CheckRegisteredView(_Api):
+    uuid: str
+    permit: EntryPermit
+
+
+class CheckView(_Api):
+    """A check of an FDP before registering it (TASKS 15.11). Nothing is stored."""
+
+    id: str
+    client_url: str = Field(serialization_alias="clientUrl")
+    status: Literal["running", "done"]
+    started_at: str = Field(serialization_alias="startedAt")
+    finished_at: str | None = Field(serialization_alias="finishedAt")
+    root: CheckRootView | None = Field(description="The root metadata; null while running")
+    registered: CheckRegisteredView | None = Field(
+        description="The index's entry for this URL, when it has one the caller may see"
+    )
+    report: HealthReportView | None = Field(
+        description="The health of a sample of the FDP's pages; null when the root "
+        "metadata is not an FDP's"
+    )
+    sampled_out: int = Field(
+        default=0,
+        serialization_alias="sampledOut",
+        description="Pages the sample left out (beyond the children read of each page)",
     )
 
 
@@ -373,6 +424,10 @@ class RegisterRequest(BaseModel):
     @classmethod
     def _url(cls, value: str) -> str:
         return _http_url(value)
+
+
+class CheckRequest(RegisterRequest):
+    """An FDP to check before registering it (TASKS 15.11)."""
 
 
 class RegistrationView(_Api):

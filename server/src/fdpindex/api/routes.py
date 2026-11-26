@@ -23,6 +23,11 @@ from sqlalchemy import text
 
 from fdpindex import __version__
 from fdpindex.api.schemas import (
+    CheckPolicyView,
+    CheckRegisteredView,
+    CheckRequest,
+    CheckRootView,
+    CheckView,
     DuplicateGroupView,
     EntriesInfoView,
     EntryCreateRequest,
@@ -37,6 +42,7 @@ from fdpindex.api.schemas import (
     EventView,
     HarvestView,
     HarvestWalkView,
+    HealthReportView,
     HealthView,
     LocationView,
     MetadataHealthView,
@@ -55,6 +61,7 @@ from fdpindex.durations import format_duration, parse_duration
 from fdpindex.errors import BadRequest, Forbidden, NotFound, RateLimited, Unauthorized
 from fdpindex.geo import valid as valid_country
 from fdpindex.models import EntryPermit, EventType, IndexEntry
+from fdpindex.precheck import PAGES, PER_PAGE, Check, CheckService
 from fdpindex.service import DuplicateGroup, IndexService, api_state
 from fdpindex.settings import IndexSettings, IndexSettingsView, SettingsService
 from fdpindex.webhooks import WebhookService
@@ -501,6 +508,104 @@ async def register(body: RegisterRequest, request: Request, index: Index) -> Reg
         error=outcome.error,
         title=(entry.repository_metadata or {}).get("title"),
     )
+
+
+# --- check before registering (TASKS 15.11) -----------------------------------------
+
+
+def _checks(request: Request) -> CheckService:
+    return request.app.state.checks
+
+
+Checks = Annotated[CheckService, Depends(_checks)]
+
+
+def _check_view(check: Check) -> CheckView:
+    registered = check.registered
+    return CheckView(
+        id=check.id,
+        client_url=check.client_url,
+        status="running" if check.running else "done",
+        started_at=instant(check.started_at) or "",
+        finished_at=instant(check.finished_at),
+        root=None
+        if check.state is None
+        else CheckRootView(state=check.state, error=check.error, title=check.title),
+        registered=None
+        if registered is None
+        else CheckRegisteredView(uuid=registered[0], permit=registered[1]),
+        report=None
+        if check.report is None
+        else HealthReportView.model_validate(
+            {
+                **check.report,
+                "stops": {
+                    "off_site": check.report["stops"]["offSite"],
+                    "unread": check.report["stops"]["unread"],
+                    "at_ceiling": check.report["stops"]["atCeiling"],
+                },
+            }
+        ),
+        sampled_out=check.sampled_out,
+    )
+
+
+@router.get(
+    "/index/checks",
+    tags=["Index"],
+    response_model=CheckPolicyView,
+    summary="Who may check an FDP before registering it",
+)
+async def check_policy(checks: Checks, caller: Caller) -> CheckPolicyView:
+    who = await checks.policy()
+    return CheckPolicyView(
+        who=who, allowed=caller.is_admin or who == "anyone", pages=PAGES, per_page=PER_PAGE
+    )
+
+
+@router.post(
+    "/index/checks",
+    tags=["Index"],
+    status_code=202,
+    response_model=CheckView,
+    summary="Check an FDP before registering it",
+    responses={
+        400: {"description": "Not an http(s) URL"},
+        401: {"description": "Only administrators may check"},
+        403: {"description": "URL denied, or only administrators may check"},
+        429: {"description": "Rate limit exceeded, or too many checks at once"},
+    },
+)
+async def start_check(
+    body: CheckRequest, request: Request, checks: Checks, caller: Caller
+) -> CheckView:
+    """Read the FDP's root metadata and a sample of its pages, as the index would, and
+    report their metadata health; nothing is stored, the FDP is not registered.
+
+    The sample is at most 200 pages, and 5 children of each page. Anyone may check
+    when the index accepts FDPs without approval (under the ping's rate limit);
+    otherwise administrators, unless the `checkBeforeRegistering` setting says
+    otherwise. Poll `GET /index/checks/{id}` for the result: a check takes up to
+    two minutes.
+    """
+    if caller.anonymous and not caller.is_admin and await checks.policy() == "admins":
+        raise Unauthorized("Only administrators may check an FDP before it is registered")
+    check = await checks.start(body.client_url, admin=caller.is_admin, remote_addr=_remote(request))
+    return _check_view(check)
+
+
+@router.get(
+    "/index/checks/{check_id}",
+    tags=["Index"],
+    response_model=CheckView,
+    summary="A check's result",
+    responses={404: {"description": "No such check, or more than an hour old"}},
+)
+async def get_check(check_id: str, checks: Checks) -> CheckView:
+    check = checks.get(check_id)
+    if check is None:
+        raise NotFound(f"No check {check_id}")
+    return _check_view(check)
 
 
 @router.delete(

@@ -85,6 +85,14 @@ The first release will contain:
   held against a record. This is the default; **DCAT-AP 3.0.1 is no longer
   on by default**, and the profiles an administrator activates are shown as
   this index's requirements or as lenses. Migration 0020.
+- **Check before registering** (TASKS 15.11): the Register page and a
+  waiting FDP's page read an FDP as the index would, its root metadata and
+  the metadata health of a sample of its pages (200 pages, 5 children of
+  each), without storing anything (`POST /index/checks`). Open to anyone
+  when FDPs are accepted without an administrator, otherwise to
+  administrators; the `checkBeforeRegistering` setting changes that. A walk
+  stopped at its page limit no longer reports a network's required reach,
+  which it cannot know.
 - **Network profiles** (TASKS 15.9): what an index expects of its FDPs, as
   one YAML document with a JSON Schema (reach, per-level required and
   recommended properties and types, vocabularies, SHACL shapes, the

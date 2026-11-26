@@ -2,7 +2,8 @@
 
 Every ```http block of docs/api.md is one request: a method and a path, then
 headers, a blank line and a body. ``{id}`` and ``{uuid}`` stand for a
-resource and an FDP of the test index. Each must answer 200.
+resource and an FDP of the test index, ``{check}`` a check started for the
+test (TASKS 15.11). Each must answer 200, or 202 where it starts work.
 """
 
 from __future__ import annotations
@@ -92,8 +93,12 @@ def test_example(
     client = index.client
     hit = client.get("/index/search", params={"type": "dataset", "size": 1}).json()["hits"][0]
     path = path.replace("{id}", hit["id"]).replace("{uuid}", hit["fdp"]["uuid"])
+    if "{check}" in path:
+        started = client.post("/index/checks", json={"clientUrl": FDP}).json()
+        path = path.replace("{check}", started["id"])
     response = client.request(method, path, headers=headers, content=body or None)
-    assert response.status_code == 200, (
+    expected = 202 if (method, path) == ("POST", "/index/checks") else 200
+    assert response.status_code == expected, (
         f"{method} {path}: {response.status_code} {response.text[:300]}"
     )
 

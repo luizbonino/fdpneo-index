@@ -419,7 +419,9 @@ results instead.
 - 15.10 Triggering other tools and showing their results (3.4), starting
   with a profile's benchmarks run through FAIR Champion; the call agreed
   with its maintainers first.
-- 15.11 Check before registering (3.5).
+- 15.11 Check before registering (3.5). Done: the sample takes at most 5
+  children of each page, so 200 pages reach every level; a pending FDP's
+  page offers it to administrators.
 - 15.12 Declared conformance (3.7): follow `dct:conformsTo` to the FDP's
   profile and SHACL, or to a bundled pack; the default when no pack is
   chosen; DCAT-AP opt-in; "declares no profile". Done.
